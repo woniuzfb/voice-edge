@@ -1,0 +1,2 @@
+.vsix filter=lfs diff=lfs merge=lfs -text
+*.vsix filter=lfs diff=lfs merge=lfs -text
