@@ -20876,8 +20876,31 @@ def _validate_sharepoint_settings() -> None:
 M365_BRIDGE_HOST = os.getenv("M365_BRIDGE_HOST", "127.0.0.1").strip()
 M365_BRIDGE_PORT = int(os.getenv("M365_BRIDGE_PORT", "5002"))
 M365_FIRST_EVENT_TIMEOUT = max(5.0, float(os.getenv("M365_FIRST_EVENT_TIMEOUT", "60")))
-M365_IDLE_TIMEOUT = max(5.0, float(os.getenv("M365_IDLE_TIMEOUT", "180")))
+M365_IDLE_BASE_SECONDS = max(5.0, float(os.getenv("M365_IDLE_BASE_SECONDS", "180")))
+M365_IDLE_SECONDS_PER_FILE = max(
+    0.0, float(os.getenv("M365_IDLE_SECONDS_PER_FILE", "15"))
+)
+M365_IDLE_SECONDS_PER_MIB = max(
+    0.0, float(os.getenv("M365_IDLE_SECONDS_PER_MIB", "12"))
+)
+M365_IDLE_MAX_SECONDS = max(
+    M365_IDLE_BASE_SECONDS, float(os.getenv("M365_IDLE_MAX_SECONDS", "900"))
+)
 M365_GETCHATS_TIMEOUT = max(3.0, float(os.getenv("M365_GETCHATS_TIMEOUT", "20")))
+
+
+def _m365_request_idle_seconds(attachments: Optional[Sequence[dict]]) -> float:
+    """Return this request's idle budget from attachment count and total bytes."""
+    items = list(attachments or [])
+    total_bytes = sum(max(0, int(item.get("size") or 0)) for item in items)
+    return min(
+        M365_IDLE_MAX_SECONDS,
+        M365_IDLE_BASE_SECONDS
+        + len(items) * M365_IDLE_SECONDS_PER_FILE
+        + total_bytes / (1024 * 1024) * M365_IDLE_SECONDS_PER_MIB,
+    )
+
+
 # A browser hook may observe weak UI completion signals (for example
 # isLastUpdate or ReferencesListComplete) several seconds before SignalR sends
 # the authoritative type=3 Completion frame. Keep the relay alive for a bounded
@@ -22266,6 +22289,7 @@ class M365BrowserRuntime:
                         for item in outbound_attachments
                     ],
                 )
+                request_idle_seconds = _m365_request_idle_seconds(outbound_attachments)
                 await self._send_to_ext(
                     {
                         "type": "M365_ASK",
@@ -22275,6 +22299,7 @@ class M365BrowserRuntime:
                         "conversationId": conversation_id or "",
                         "entryUrl": M365_ENTRY_URL,
                         "attachments": outbound_attachments,
+                        "idleTimeoutMs": round(request_idle_seconds * 1000),
                     }
                 )
                 best = ""
@@ -22285,7 +22310,7 @@ class M365BrowserRuntime:
                 pending_done: Optional[dict] = None
                 pending_done_deadline = 0.0
                 first_deadline = time.monotonic() + M365_FIRST_EVENT_TIMEOUT
-                idle_deadline = time.monotonic() + M365_IDLE_TIMEOUT
+                idle_deadline = time.monotonic() + request_idle_seconds
                 loop = asyncio.get_running_loop()
                 # [producer trace] running total of answer characters actually
                 # handed to Continue via emit({"type":"delta"}). By construction
@@ -22390,7 +22415,7 @@ class M365BrowserRuntime:
                         # content. It refreshes liveness but never changes the
                         # append-only text already delivered to Continue.
                         got_any = True
-                        idle_deadline = time.monotonic() + M365_IDLE_TIMEOUT
+                        idle_deadline = time.monotonic() + request_idle_seconds
                         # Forward a liveness ping to the SSE consumer. A reasoning
                         # model can stream progress-only for a long "thinking"
                         # period before the first answer delta.
@@ -22420,7 +22445,7 @@ class M365BrowserRuntime:
                             if M365_RELAY_TRACE:
                                 trace_emitted_chars += len(_delta)
                                 trace_emitted_frames += 1
-                            idle_deadline = time.monotonic() + M365_IDLE_TIMEOUT
+                            idle_deadline = time.monotonic() + request_idle_seconds
                         elif text and text != best:
                             # A non-prefix cumulative snapshot means the upstream
                             # (content-m365.js) let a provisional writeAtCursor
@@ -22458,7 +22483,7 @@ class M365BrowserRuntime:
                             ):
                                 return
                             best_reasoning = text
-                            idle_deadline = time.monotonic() + M365_IDLE_TIMEOUT
+                            idle_deadline = time.monotonic() + request_idle_seconds
                         elif text and text != best_reasoning:
                             # A non-prefix cumulative reasoning snapshot means the
                             # upstream CoT accumulator (content-m365's cotTotal())
@@ -22522,6 +22547,14 @@ class M365BrowserRuntime:
                         # 作为一条 final delta 补发。缺了这段，链接/内联图片会被静默丢掉，
                         # 正文就停在 “给你文件：[”。append_emitted 保证先弱后强两次 DONE
                         # 不会重复下发；弱终态 drain 路径只发 done 不带文本，也不会重复。
+                        # appendText 走带外 done.appendText 专用字段，从不拼进
+                        # done.text，故 best 正常不含它；append_emitted 已保证弱/强两次
+                        # DONE 只下发一次。下载链接重复的真正来源是 appendText 内部就有
+                        # 两条相同链接（同一产物被 harvest 两次 → 两个 descriptor），已在
+                        # 扩展侧 background.js 按内容指纹去重根治。这里不得再按 best 尾部做
+                        # overlap 削减：那既解决不了内部重复，又会在正文以换行结尾、
+                        # appendText 以 \n\n 开头时吃掉分隔空行（详见 _merge_doubao_text
+                        # 的原则：禁止任意 suffix/prefix overlap 移除）。
                         append_text = str(msg.get("appendText") or "")
                         if append_text and not append_emitted:
                             if not emit({"type": "delta", "content": append_text}):
@@ -22656,6 +22689,7 @@ async def _direct_m365_chat_response(
             {"error": f"No text or file provided for {model_name}"}, status_code=400
         )
     tone = M365_BROWSER_MODEL_TONES[model_name]
+    request_idle_seconds = _m365_request_idle_seconds(attachments)
     # Whether Continue asked for reasoning to be surfaced. Mirrors the request
     # shape already parsed by the DeepSeek/chat_api paths. When enabled, the
     # progress-driven keepalives render one visible "思考中…" reasoning block;
@@ -22833,7 +22867,7 @@ async def _direct_m365_chat_response(
                     continue
                 kind = event.get("type")
                 if kind in {"delta", "reasoning", "conversation", "keepalive"}:
-                    deadline = time.monotonic() + M365_IDLE_TIMEOUT
+                    deadline = time.monotonic() + request_idle_seconds
                 if kind == "keepalive":
                     # Liveness ping from a progress-only "thinking" period. The
                     # deadline was just refreshed above. Option A: surface one
@@ -23005,7 +23039,7 @@ async def _direct_m365_chat_response(
                 continue
             kind = event.get("type")
             if kind in {"delta", "reasoning", "conversation", "keepalive"}:
-                deadline = time.monotonic() + M365_IDLE_TIMEOUT
+                deadline = time.monotonic() + request_idle_seconds
             if kind == "keepalive":
                 # Non-streaming accumulates then returns JSON; a keepalive has no
                 # text and only refreshes the deadline (handled above) so a long

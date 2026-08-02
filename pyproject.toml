@@ -1,7 +1,7 @@
 [project]
 name = "voice-edge"
 version = "0.1.0"
-description = "Add your description here"
+description = "Voice Edge AI is a macOS-focused local voice and AI platform. It combines local MLX language and vision models, faster-whisper/apple speech recognition, streaming Edge-TTS synthesis, OpenAI-compatible HTTP APIs, MCP tools, native macOS dictation, Xiaomi XiaoAI integration, and browser-backed AI providers."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

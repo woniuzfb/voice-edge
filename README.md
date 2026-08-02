@@ -1,6 +1,6 @@
 # Voice Edge AI
 
-Voice Edge AI is a macOS-focused local voice and AI platform. It combines local MLX language and vision models, faster-whisper speech recognition, streaming Edge-TTS synthesis, OpenAI-compatible HTTP APIs, MCP tools, native macOS dictation, Xiaomi XiaoAI integration, and browser-backed AI providers.
+Voice Edge AI is a macOS-focused local voice and AI platform. It combines local MLX language and vision models, faster-whisper/apple speech recognition, streaming Edge-TTS synthesis, OpenAI-compatible HTTP APIs, MCP tools, native macOS dictation, Xiaomi XiaoAI integration, and browser-backed AI providers.
 
 ## Highlights
 
@@ -36,7 +36,9 @@ uv sync
 uv run python -m camoufox fetch
 ```
 
-Install the included Firefox authentication-sync extension when using browser-backed providers. Install the included Continue extension package when using Voice Edge through VS Code.
+Install the included Firefox authentication-sync extension when using browser-backed providers.
+
+Install the included Continue extension package when using Voice Edge through VS Code.
 
 ## Running
 
@@ -61,13 +63,14 @@ The first startup may take longer while local components initialize.
 
 ## OpenAI-Compatible APIs
 
-| Capability | Endpoint |
-|---|---|
-| Chat completions | `POST /v1/chat/completions` |
-| Speech-to-text | `POST /v1/audio/transcriptions` |
-| Text-to-speech | `POST /v1/audio/speech` |
-| Embeddings | `POST /v1/embeddings` |
-| Rerank | `POST /v1/rerank` |
+| Capability       | Endpoint                        |
+| ---------------- | ------------------------------- |
+| Chat completions | `POST /v1/chat/completions`     |
+| Speech-to-text   | `POST /v1/audio/transcriptions` |
+| Text-to-speech   | `POST /v1/audio/speech`         |
+| Embeddings       | `POST /v1/embeddings`           |
+| Rerank           | `POST /v1/rerank`               |
+| FIM              | `POST /v1/completions`          |
 
 ## Core Features
 
@@ -253,13 +256,13 @@ export XIAOAI_TAVILY_TOOL_TIMEOUT=30
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|---|---|
-| Double Ctrl | Start or stop English dictation |
-| Double Ctrl + Option | Chinese dictation trigger |
-| Enter | Stop active dictation |
-| Esc | Skip the current speech item |
-| Double Esc | Cancel active playback |
+| Shortcut             | Action                          |
+| -------------------- | ------------------------------- |
+| Double Ctrl          | Start or stop English dictation |
+| Double Ctrl + Option | Chinese dictation trigger       |
+| Enter                | Stop active dictation           |
+| Esc                  | Skip the current speech item    |
+| Double Esc           | Cancel active playback          |
 
 ## Browser Authentication Security
 
@@ -306,6 +309,7 @@ export DEEPSEEK_DEBUG=1
 export DEEPSEEK_LOG_STREAM_CHUNKS=1
 export M365_DEBUG=1
 export M365_RELAY_TRACE=1
+export M365_ATTACHMENT_DEBUG=1
 export XIAOAI_POLL_DEBUG=1
 export XIAOAI_PLAYER_STATUS_DEBUG=1
 ```

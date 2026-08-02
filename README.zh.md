@@ -1,6 +1,6 @@
 # Voice Edge AI
 
-Voice Edge AI 是一个面向 macOS 的本地语音与 AI 平台，集成本地 MLX 语言与视觉模型、faster-whisper 语音识别、Edge-TTS 流式语音合成、OpenAI 兼容 HTTP API、MCP 工具、macOS 原生听写、小米小爱同学集成，以及基于浏览器的 AI 模型。
+Voice Edge AI 是一个面向 macOS 的本地语音与 AI 平台，集成本地 MLX 语言与视觉模型、faster-whisper/apple 语音识别、Edge-TTS 流式语音合成、OpenAI 兼容 HTTP API、MCP 工具、macOS 原生听写、小米小爱同学集成，以及基于浏览器的 AI 模型。
 
 ## 主要能力
 
@@ -36,7 +36,9 @@ uv sync
 uv run python -m camoufox fetch
 ```
 
-使用浏览器模型时，请安装项目随附的 Firefox 认证同步插件。通过 VS Code 使用 Voice Edge 时，请安装项目随附的 Continue 插件。
+使用浏览器模型时，请安装项目随附的 Firefox 认证同步插件。
+
+通过 VS Code 使用 Voice Edge 时，请安装项目随附的 Continue 插件。
 
 ## 运行
 
@@ -61,13 +63,14 @@ uv run start --http
 
 ## OpenAI 兼容 API
 
-| 能力 | 接口 |
-|---|---|
-| 聊天补全 | `POST /v1/chat/completions` |
+| 能力       | 接口                            |
+| ---------- | ------------------------------- |
+| 聊天补全   | `POST /v1/chat/completions`     |
 | 语音转文字 | `POST /v1/audio/transcriptions` |
-| 文字转语音 | `POST /v1/audio/speech` |
-| 嵌入 | `POST /v1/embeddings` |
-| 重排 | `POST /v1/rerank` |
+| 文字转语音 | `POST /v1/audio/speech`         |
+| 嵌入       | `POST /v1/embeddings`           |
+| 重排       | `POST /v1/rerank`               |
+| FIM        | `POST /v1/completions`          |
 
 ## 核心功能
 
@@ -254,13 +257,13 @@ export XIAOAI_TAVILY_TOOL_TIMEOUT=30
 
 ## 键盘快捷键
 
-| 快捷键 | 操作 |
-|---|---|
-| 双击 Ctrl | 开始或停止 英文 听写 |
-| 双击 Ctrl + Option | 中文听写触发方式 |
-| Enter | 停止当前听写 |
-| Esc | 跳过当前语音项 |
-| 双击 Esc | 取消当前播放 |
+| 快捷键             | 操作                 |
+| ------------------ | -------------------- |
+| 双击 Ctrl          | 开始或停止 英文 听写 |
+| 双击 Ctrl + Option | 中文听写触发方式     |
+| Enter              | 停止当前听写         |
+| Esc                | 跳过当前语音项       |
+| 双击 Esc           | 取消当前播放         |
 
 ## 浏览器认证安全
 
@@ -307,6 +310,7 @@ export DEEPSEEK_DEBUG=1
 export DEEPSEEK_LOG_STREAM_CHUNKS=1
 export M365_DEBUG=1
 export M365_RELAY_TRACE=1
+export M365_ATTACHMENT_DEBUG=1
 export XIAOAI_POLL_DEBUG=1
 export XIAOAI_PLAYER_STATUS_DEBUG=1
 ```
