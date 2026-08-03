@@ -70,6 +70,7 @@ from typing import (
     Awaitable,
     ClassVar,
     Dict,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -196,60 +197,89 @@ BROWSER_MODEL_ALIASES = frozenset(
     {"LLM:doubao", "LLM:qwen", *DEEPSEEK_BROWSER_MODEL_TYPES, *M365_BROWSER_MODEL_TONES}
 )
 
+# DeepSeek auto-mode sentinel, honoring the SAME environment override the
+# pre-unification native parser used, the DEEPSEEK_TOOLCALL_SENTINEL env var, so
+# the unified relay's injected sentinel stays configurable through the exact env
+# var that governed the pre-unification path. (There is no fallback-message env
+# var here: on a parse failure the relay preserves the model's original prose
+# and lets the client decide — it never substitutes a canned message.)
+_DEEPSEEK_ENV_SENTINEL = (
+    os.getenv("DEEPSEEK_TOOLCALL_SENTINEL", "\u27e6TOOLCALL\u27e7").strip()
+    or "\u27e6TOOLCALL\u27e7"
+)
+
 BROWSER_MODEL_METADATA = {
     "LLM:m365-claude-opus": {
         "owned_by": "m365-copilot-browser",
         "root": "Claude_Opus",
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": False,
+        "relay_prompt": True,
     },
     "LLM:m365-claude-sonnet": {
         "owned_by": "m365-copilot-browser",
         "root": "Claude_Sonnet",
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": False,
+        "relay_prompt": True,
     },
     "LLM:m365-chatgpt-5.6": {
         "owned_by": "m365-copilot-browser",
         "root": "Gpt_5_6_Reasoning",
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": False,
+        "relay_prompt": True,
     },
     "LLM:m365-chatgpt-5.5": {
         "owned_by": "m365-copilot-browser",
         "root": "Gpt_5_5_Chat",
         "capabilities": ["chat", "web", "work"],
         "supports_tools": False,
+        "relay_prompt": True,
     },
     "LLM:doubao": {
         "owned_by": "doubao-browser",
         "root": "doubao-web",
         "capabilities": ["chat"],
         "supports_tools": False,
+        "relay_prompt": False,
     },
     "LLM:qwen": {
         "owned_by": "qwen-browser",
         "root": "qwen3.6-plus-web",
         "capabilities": ["chat"],
         "supports_tools": False,
+        "relay_prompt": False,
     },
     "LLM:deepseek": {
         "owned_by": "deepseek-browser",
         "root": "deepseek-web-default",
         "capabilities": ["chat", "reasoning", "search", "files"],
         "supports_tools": True,
+        "relay_prompt": False,
+        "tool_format": "json",
+        "tool_auto_detect": "sentinel",
+        "tool_sentinel": _DEEPSEEK_ENV_SENTINEL,
     },
     "LLM:deepseek-expert": {
         "owned_by": "deepseek-browser",
         "root": "deepseek-web-expert",
         "capabilities": ["chat", "reasoning"],
         "supports_tools": True,
+        "relay_prompt": False,
+        "tool_format": "json",
+        "tool_auto_detect": "sentinel",
+        "tool_sentinel": _DEEPSEEK_ENV_SENTINEL,
     },
     "LLM:deepseek-vision": {
         "owned_by": "deepseek-browser",
         "root": "deepseek-web-vision",
         "capabilities": ["chat", "reasoning", "vision", "files"],
         "supports_tools": True,
+        "relay_prompt": False,
+        "tool_format": "json",
+        "tool_auto_detect": "sentinel",
+        "tool_sentinel": _DEEPSEEK_ENV_SENTINEL,
     },
 }
 
@@ -838,6 +868,1521 @@ except (ImportError, AttributeError):
 
 if sys.version_info < (3, 11):
     raise RuntimeError("voice_edge.py requires Python 3.11 or newer")
+
+
+# ###########################################################################
+# BROWSER CLIENT RELAY
+# Model-agnostic client-adaptation layer for the browser relay. Driven by
+# BROWSER_MODEL_METADATA: relay_prompt / supports_tools / tool_format.
+# Two seams per family:
+#   #1 request : prepared = BROWSER_RELAY.prepare(model, body, messages,
+#                              bypass=BrowserRelay.should_bypass(body))
+#                send prepared.text as the single user turn.
+#   #2 stream  : tp = prepared.new_transpiler(); feed model deltas via
+#                tp.push(delta); at end tp.finish_tool_calls() -> tool_calls.
+# XiaoAI (source=='xiaoai') bypasses entirely: no prompt, no tools.
+# ###########################################################################
+
+
+# ===========================================================================
+# 0) POLICY  — derived from BROWSER_MODEL_METADATA (single source of truth)
+# ===========================================================================
+@dataclass(frozen=True)
+class RelayPolicy:
+    """Per-model switches that drive the whole relay. Built from metadata."""
+
+    relay_prompt: bool = False
+    supports_tools: bool = False
+    # --- TWO INDEPENDENT tool axes, both metadata-selectable per model ------
+    # 1) tool_format: how a tool call's BODY is written AND parsed back:
+    #      "codeblock" -> Continue's ```tool``` (TOOL_NAME/BEGIN_ARG/END_ARG)
+    #      "json"      -> DeepSeek-style ```tool_json {"calls":[...]}```
+    # 2) tool_auto_detect: in AUTO mode (tool_choice auto/None) how we decide,
+    #    with near-zero latency, whether a reply is a tool call or plain chat:
+    #      "fence"    -> stream until a ```tool / ```tool_json fence appears
+    #                    (the tool block is the LAST thing; plain chat streams).
+    #      "sentinel" -> the reply MUST begin with `tool_sentinel` to be a call;
+    #                    classify the head (tool/pending/plain) and stream plain
+    #                    immediately. Faithful to DeepSeek's _deepseek_auto_*.
+    # In REQUIRED mode (tool_choice required/explicit) the whole reply is always
+    # buffered and parsed as one tool block, regardless of tool_auto_detect.
+    # A model can therefore mix strategies exactly like DeepSeek does today
+    # (required=fence body, auto=sentinel) purely from metadata.
+    tool_format: str = "codeblock"
+    tool_auto_detect: str = "fence"
+    tool_sentinel: str = "\u27e6TOOLCALL\u27e7"  # ⟦TOOLCALL⟧
+    # NOTE: there is intentionally no "fallback message" policy. When a tool call
+    # commits (fence/sentinel) but the body fails to parse, the relay preserves
+    # the model's ORIGINAL prose and hands it to the client (see the transpilers'
+    # flush_pending). Substituting a canned message is a product decision that
+    # belongs to the client, not the relay.
+
+    @classmethod
+    def from_metadata(cls, model_id: str, registry: dict) -> "RelayPolicy":
+        """Build the policy for `model_id` from its metadata entry.
+
+        Missing keys default to the historical behavior: no prompt relay, no
+        tools, codeblock body, fence-based auto detection.
+        """
+        meta = (registry or {}).get(model_id) or {}
+        fmt = str(meta.get("tool_format") or "codeblock").strip().lower()
+        if fmt not in ("codeblock", "json"):
+            fmt = "codeblock"
+        detect = str(meta.get("tool_auto_detect") or "fence").strip().lower()
+        if detect not in ("fence", "sentinel"):
+            detect = "fence"
+        sentinel = str(meta.get("tool_sentinel") or "\u27e6TOOLCALL\u27e7")
+        return cls(
+            relay_prompt=bool(meta.get("relay_prompt", False)),
+            supports_tools=bool(meta.get("supports_tools", False)),
+            tool_format=fmt,
+            tool_auto_detect=detect,
+            tool_sentinel=sentinel,
+        )
+
+
+# ===========================================================================
+# 1) CONTENT NORMALIZATION  (OpenAI str | content-parts -> flat text)
+# ===========================================================================
+def _content_to_text(content: Any) -> str:
+    """Flatten OpenAI content (str | list[part]) into a single text string."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for part in content:
+            if isinstance(part, dict):
+                t = str(part.get("type") or "").strip().lower()
+                if t in ("text", "input_text", "output_text"):
+                    parts.append(str(part.get("text") or ""))
+            elif isinstance(part, str):
+                parts.append(part)
+        # Join multi-part content with newlines: the pre-unification per-family
+        # extractors all used "\n".join, so "".join would glue adjacent text
+        # parts together and silently drop the paragraph boundaries a client
+        # encodes as separate parts.
+        return "\n".join(parts)
+    if content is None:
+        return ""
+    return str(content)
+
+
+# --- unified client-format layer (ONE decision for ALL browser models) -----
+# The Cline/Continue envelope (<task>…</task>, inline <file_content>,
+# <environment_details>) is a CLIENT format, not a per-model concern. Detection
+# and envelope-aware text extraction therefore live here, in the relay, and are
+# applied uniformly to every browser family (m365 / deepseek / qwen / doubao)
+# instead of being re-implemented (or forgotten) in each handler. This is what
+# makes the relay "unified": one place decides client_kind and one place turns
+# the raw IDE envelope into a clean prompt.
+#
+# The two entries delegate to the canonical Cline parsers (_cline_is_request /
+# _cline_extract_user_prompt). Those parsers are defined further down, physically
+# next to the m365 conversation-identity code that shares their primitives
+# (_client_user_text / _cline_inline_file_spans), but they carry neutral
+# _cline_/_client_ names because the logic is client-format specific and
+# model-agnostic. Name resolution happens at call time, so forward-referencing
+# them from here is valid.
+def _client_detect_kind(messages: list) -> str:
+    """Return the client format: "cline" when the request carries the Cline
+    response protocol (needs the attempt_completion envelope), else "plain".
+    Continue is deliberately NOT classified as cline (it reuses <file_content>
+    only for attachments)."""
+    return "cline" if _cline_is_request(messages) else "plain"
+
+
+def _client_extract_prompt(messages: list) -> str:
+    """Envelope-aware user-text extraction for ALL browser models: unwrap
+    <task>…</task> and strip inline <file_content>/<environment_details>/
+    task_progress so (a) the raw IDE envelope is never sent as the prompt and
+    (b) inline files are not duplicated once as prose and again as each family's
+    attachment egress. A no-op for plain chat with no envelope markers."""
+    return _cline_extract_user_prompt(messages)
+
+
+def _client_count_attachments(messages: list) -> int:
+    """Cheap attachment presence count for the latest user turn — inline Cline
+    <file_content> blocks plus OpenAI content-part file/image parts. Does NOT
+    download URLs or read local files; it only detects that attachments WERE
+    sent, so a family without an upload egress can log the gap instead of
+    dropping them silently. The definitions it calls live in the m365 section
+    and resolve at call time."""
+    message = _client_latest_user_message(messages)
+    if not message:
+        return 0
+    count = 0
+    # Inline Cline <file_content> spans (path-bearing blocks).
+    try:
+        logical = "".join(_client_user_text_parts(message))
+        count += len(_cline_inline_file_spans(logical))
+    except Exception:
+        pass
+    # OpenAI content-part file/image attachments.
+    content = message.get("content")
+    if isinstance(content, list):
+        file_kinds = {"file", "input_file"}
+        image_kinds = {"image_url", "input_image", "imageurl", "image"}
+        for part in content:
+            if isinstance(part, dict):
+                if (
+                    str(part.get("type") or "").strip().lower()
+                    in file_kinds | image_kinds
+                ):
+                    count += 1
+    return count
+
+
+def _browser_inline_files_as_text(messages: list) -> str:
+    """Re-append inline Cline <file_content> attachments as prompt text for
+    browser families WITHOUT an upload egress (qwen / doubao / deepseek).
+
+    The unified relay parses and STRIPS inline <file_content> blocks from the
+    prompt so the raw IDE envelope is never sent. m365 then UPLOADS those files
+    to SharePoint — but qwen/doubao/deepseek have no upload transport, so the
+    stripped file CONTENT would be silently lost (a Cline/Continue client that
+    sends <file_content path="foo.py">code</file_content> would leave the model
+    reasoning with no file). This returns the stripped files re-wrapped as
+    standalone, parseable <file_content> blocks so the model still sees the file
+    text, matching the pre-unification behavior where these families sent the
+    XML-wrapped file inline. Empty string when there are no inline files (e.g.
+    the XiaoAI smart-speaker bypass, which sends plain text)."""
+    message = _client_latest_user_message(messages)
+    if not message:
+        return ""
+    # Let collection errors PROPAGATE (oversize / unreadable local file), exactly
+    # as m365 does via _client_collect_attachments. Swallowing them here would
+    # silently DROP the file — the very data-loss class this fix prevents.
+    files = _cline_collect_inline_files(message)
+    blocks: list[str] = []
+    for item in files:
+        # item["data"] is our own base64 of UTF-8 bytes; decode is total.
+        body = base64.b64decode(item["data"]).decode("utf-8", "replace")
+        blocks.append(f'<file_content path="{item["name"]}">\n{body}\n</file_content>')
+    return "\n\n".join(blocks)
+
+
+def _browser_append_inline_files(prompt: str, messages: list) -> str:
+    """Append _browser_inline_files_as_text(messages) to prompt (no-egress
+    families). Single call point so qwen/doubao/deepseek stay identical."""
+    inline = _browser_inline_files_as_text(messages)
+    if not inline:
+        return prompt
+    return f"{prompt}\n\n{inline}" if prompt else inline
+
+
+def _browser_attachments_egress_stub(model: str, messages: list) -> None:
+    """Warn about attachments a browser family still cannot forward. Inline
+    Cline <file_content> blocks are now re-appended to the prompt as text by
+    _browser_append_inline_files (their content is NOT lost), so this counts
+    ONLY OpenAI content-part file/image attachments — the remaining kind
+    qwen/doubao have no upload transport for. Handlers that DO upload
+    (m365 → SharePoint, deepseek → its own path) never call this."""
+    message = _client_latest_user_message(messages)
+    content = message.get("content") if message else None
+    if not isinstance(content, list):
+        return
+    file_kinds = {"file", "input_file"}
+    image_kinds = {"image_url", "input_image", "imageurl", "image"}
+    n = sum(
+        1
+        for part in content
+        if isinstance(part, dict)
+        and str(part.get("type") or "").strip().lower() in file_kinds | image_kinds
+    )
+    if n:
+        logger.warning(
+            "%s: %d content-part attachment(s) were not forwarded (no upload "
+            "transport for this model yet); inline <file_content> text is "
+            "preserved in the prompt.",
+            model,
+            n,
+        )
+
+
+def _xml_escape(text: str) -> str:
+    return (
+        str(text or "")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+# ===========================================================================
+# 2) TOOL MODEL  — normalized view + schema arg-types
+# ===========================================================================
+@dataclass(frozen=True)
+class NormalizedTool:
+    name: str
+    description: str
+    parameters: dict
+    # Continue ships an optional natural-language example for some builtin
+    # tools (systemMessageDescription: {prefix, exampleArgs}). When present the
+    # tool renders as a ```tool``` example; otherwise as a ```tool_definition```.
+    usage_prefix: str = ""
+    usage_example_args: tuple = ()  # tuple[tuple[name, value], ...]
+
+    def arg_types(self) -> dict:
+        """{arg_name: json_type_string} for coercion / string-protection."""
+        return {a.name: a.json_type for a in _schema_args(self.parameters)}
+
+
+@dataclass(frozen=True)
+class _SchemaArg:
+    name: str
+    json_type: str
+    required: bool
+    description: str
+
+
+def _schema_args(parameters: dict) -> list[_SchemaArg]:
+    props = parameters.get("properties") if isinstance(parameters, dict) else None
+    required = (
+        set(parameters.get("required") or []) if isinstance(parameters, dict) else set()
+    )
+    out: list[_SchemaArg] = []
+    if isinstance(props, dict):
+        for name, spec in props.items():
+            spec = spec if isinstance(spec, dict) else {}
+            out.append(
+                _SchemaArg(
+                    name=str(name),
+                    json_type=str(spec.get("type") or "string"),
+                    required=name in required,
+                    description=str(spec.get("description") or "").strip(),
+                )
+            )
+    return out
+
+
+def _normalize_tool(tool: dict) -> Optional[NormalizedTool]:
+    """Accept OpenAI wrapped ({"function": {...}}) or flat tool dicts.
+
+    Also lifts Continue's `systemMessageDescription: {prefix, exampleArgs}` when
+    present (its builtin tools carry curated examples).
+    """
+    if not isinstance(tool, dict):
+        return None
+    _fn = tool.get("function")
+    fn: dict = _fn if isinstance(_fn, dict) else tool
+    name = str(fn.get("name") or "").strip()
+    if not name:
+        return None
+    smd = tool.get("systemMessageDescription") or fn.get("systemMessageDescription")
+    usage_prefix = ""
+    example_args: tuple = ()
+    if isinstance(smd, dict):
+        usage_prefix = str(smd.get("prefix") or "").strip()
+        raw_args = smd.get("exampleArgs") or []
+        if isinstance(raw_args, list):
+            example_args = tuple(
+                (str(a[0]), a[1])
+                for a in raw_args
+                if isinstance(a, (list, tuple)) and len(a) == 2
+            )
+    _params = fn.get("parameters")
+    return NormalizedTool(
+        name=name,
+        description=str(fn.get("description") or "").strip(),
+        parameters=_params if isinstance(_params, dict) else {},
+        usage_prefix=usage_prefix,
+        usage_example_args=example_args,
+    )
+
+
+def _normalize_tools(tools: Iterable[dict]) -> list[NormalizedTool]:
+    out = []
+    for t in tools or []:
+        n = _normalize_tool(t)
+        if n:
+            out.append(n)
+    return out
+
+
+# ===========================================================================
+# 3) CLIENT TURN  — normalized request (system / tools / current turn body)
+# ===========================================================================
+@dataclass(frozen=True)
+class ToolResult:
+    name: str
+    call_id: str
+    content: str
+
+
+@dataclass
+class ClientTurn:
+    """A model-agnostic, history-stripped view of one OpenAI-style request.
+
+    Only what the browser model needs THIS turn is retained:
+      * system_text        : concatenated system/developer messages (verbatim)
+      * user_text          : the latest user message's flattened text
+      * tools              : normalized client tools (may be empty)
+      * pending_results    : tool results that arrived AFTER the last user turn
+                             (an agent-loop continuation the browser hasn't seen)
+    History is intentionally discarded; the browser owns it.
+    """
+
+    system_text: str = ""
+    user_text: str = ""
+    tools: list = field(default_factory=list)
+    pending_results: list = field(default_factory=list)
+    # Unified client format ("cline" | "plain"): decided ONCE here so every
+    # handler reads the same value (e.g. m365's attempt_completion envelope)
+    # instead of re-detecting it.
+    client_kind: str = "plain"
+
+    @property
+    def is_tool_continuation(self) -> bool:
+        return bool(self.pending_results)
+
+    @classmethod
+    def from_openai(
+        cls, body: dict, messages: list, *, parse_client_envelope: bool = True
+    ) -> "ClientTurn":
+        body = body or {}
+        messages = messages or []
+
+        # ---- system / developer (concatenated, verbatim) ------------------
+        system_chunks: list[str] = []
+        for m in messages:
+            if not isinstance(m, dict):
+                continue
+            if str(m.get("role") or "").strip().lower() in ("system", "developer"):
+                txt = _content_to_text(m.get("content")).strip()
+                if txt:
+                    system_chunks.append(txt)
+
+        # ---- latest user turn index (bounds the tool-result region below) -
+        last_user_idx = -1
+        for i in range(len(messages) - 1, -1, -1):
+            m = messages[i]
+            if (
+                isinstance(m, dict)
+                and str(m.get("role") or "").strip().lower() == "user"
+            ):
+                last_user_idx = i
+                break
+
+        # ---- unified client-format detection + user-text extraction -------
+        # ONE decision for ALL browser models. When parse_client_envelope is on
+        # (every non-bypass request), the Cline/Continue envelope is stripped and
+        # <task> is unwrapped via the shared _client_extract_prompt, so the raw
+        # IDE wrapper never becomes the prompt and inline files are not
+        # duplicated (prose here + attachment egress per family). bypass callers
+        # (XiaoAI) pass parse_client_envelope=False for a pure passthrough.
+        client_kind = "plain"
+        if parse_client_envelope:
+            client_kind = _client_detect_kind(messages)
+            user_text = _client_extract_prompt(messages)
+        elif last_user_idx >= 0:
+            user_text = _content_to_text(messages[last_user_idx].get("content")).strip()
+        else:
+            user_text = ""
+
+        # ---- tool results AFTER the last user turn (agent continuation) ---
+        # Map call_id -> function name from any assistant tool_calls so a bare
+        # tool message (name omitted) can still be labeled.
+        name_by_call_id: dict = {}
+        for m in messages:
+            if not isinstance(m, dict):
+                continue
+            if str(m.get("role") or "").strip().lower() == "assistant":
+                for tc in m.get("tool_calls") or []:
+                    if isinstance(tc, dict):
+                        cid = str(tc.get("id") or "").strip()
+                        _tcfn = tc.get("function")
+                        fn = _tcfn if isinstance(_tcfn, dict) else {}
+                        nm = str(fn.get("name") or "").strip()
+                        if cid and nm:
+                            name_by_call_id[cid] = nm
+
+        pending: list[ToolResult] = []
+        for i in range(last_user_idx + 1, len(messages)):
+            m = messages[i]
+            if not isinstance(m, dict):
+                continue
+            if str(m.get("role") or "").strip().lower() in ("tool", "function"):
+                cid = str(m.get("tool_call_id") or "").strip()
+                nm = str(m.get("name") or name_by_call_id.get(cid) or "").strip()
+                pending.append(
+                    ToolResult(
+                        name=nm,
+                        call_id=cid,
+                        content=_content_to_text(m.get("content")).strip(),
+                    )
+                )
+
+        # ---- tools (respect tool_choice="none") --------------------------
+        raw_tools = body.get("tools")
+        tools = (
+            _normalize_tools(raw_tools)
+            if isinstance(raw_tools, list) and body.get("tool_choice") != "none"
+            else []
+        )
+
+        return cls(
+            system_text="\n\n".join(system_chunks).strip(),
+            user_text=user_text,
+            tools=tools,
+            pending_results=pending,
+            client_kind=client_kind,
+        )
+
+
+# ===========================================================================
+# 4) PROMPT COMPOSITION  (Continue-faithful wire format)
+# ===========================================================================
+# --- 4a. client system prompt -> XML --------------------------------------
+def build_system_xml(system_text: str) -> str:
+    text = (system_text or "").strip()
+    if not text:
+        return ""
+    return f"<client_system_prompt>\n{text}\n</client_system_prompt>"
+
+
+# only families that RELAY the client system prompt (relay_prompt=True
+# — m365 today) carry the classic-Cline instruction that commands the model to
+# answer inside <attempt_completion><result>…</result></attempt_completion>. The
+# transport already adds that envelope, so we tell the model NOT to emit it;
+# otherwise the reply is double-wrapped and the streaming path cannot retract an
+# already-sent open tag. Appended (by compose_turn_text) ONLY when client_kind
+# == "cline" and a system prompt was actually relayed.
+_CLINE_NO_WRAP_INSTRUCTION = (
+    "<transport_output_contract>\n"
+    "Output ONLY the final answer text. Do NOT wrap your answer in "
+    "<attempt_completion>, <result>, or any other tool/XML envelope tags — the "
+    "client transport adds the required response envelope automatically. "
+    "Emitting those tags yourself produces a broken, double-wrapped response.\n"
+    "</transport_output_contract>"
+)
+
+
+# --- 4b. client tools -> <tool_use_instructions> --------------------------
+# Text below is copied verbatim from Continue's
+# core/tools/systemMessageTools/toolCodeblocks/index.ts so the browser model
+# sees byte-identical instructions to what Continue itself would send.
+_TOOL_INSTRUCTIONS_TAG = "<tool_use_instructions>"
+
+_SYSTEM_MESSAGE_PREFIX = (
+    "You have access to tools. To call a tool, you MUST respond with EXACTLY "
+    "the tool code block format shown below.\n\n"
+    "CRITICAL: Follow the exact syntax. Do not use XML tags, JSON objects, or "
+    "any other format for tool calls."
+)
+
+_SYSTEM_MESSAGE_SUFFIX = (
+    "RULES FOR TOOL USE:\n"
+    "1. To call a tool, output a tool code block using EXACTLY the format shown above.\n"
+    "2. Always start the code block on a new line.\n"
+    "3. You can only call ONE tool at a time.\n"
+    "4. The tool code block MUST be the last thing in your response. Stop immediately after the closing fence.\n"
+    "5. Do NOT wrap tool calls in XML tags like <tool_call> or <function=...>.\n"
+    "6. Do NOT use JSON format for tool calls.\n"
+    "7. Do NOT invent tools that are not listed above.\n"
+    "8. If the user's request can be addressed with a listed tool, use it rather than guessing.\n"
+    "9. Do not perform actions with hypothetical files. Use tools to find relevant files."
+)
+
+_EXAMPLE_DYNAMIC_TOOL_DEFINITION = (
+    "```tool_definition\n"
+    "TOOL_NAME: example_tool\n"
+    "TOOL_ARG: arg_1 (string, required)\n"
+    "Description of the first argument\n"
+    "END_ARG\n"
+    "TOOL_ARG: arg_2 (number, optional)\n"
+    "END_ARG\n"
+    "```"
+)
+
+_EXAMPLE_DYNAMIC_TOOL_CALL = (
+    "```tool\n"
+    "TOOL_NAME: example_tool\n"
+    "BEGIN_ARG: arg_1\n"
+    "The value\n"
+    "of arg 1\n"
+    "END_ARG\n"
+    "BEGIN_ARG: arg_2\n"
+    "3\n"
+    "END_ARG\n"
+    "```"
+)
+
+
+def _close_tag(open_tag: str) -> str:
+    # mirrors Continue's closeTag: "<tool_use_instructions>" -> "</tool_use_instructions>"
+    # this bare "</" + open_tag[1:] is only correct for an attribute-less
+    # tag like "<tool_use_instructions>"; a tag carrying attributes would yield
+    # "</tag attr=...>". Assert the precondition so a future caller that passes
+    # an attributed tag fails loudly instead of emitting a malformed closer.
+    assert (
+        open_tag.startswith("<") and open_tag.endswith(">") and " " not in open_tag
+    ), f"_close_tag expects a bare attribute-less tag, got {open_tag!r}"
+    return "</" + open_tag[1:]
+
+
+def _render_tool_definition(tool: NormalizedTool) -> str:
+    lines = ["```tool_definition", f"TOOL_NAME: {tool.name}"]
+    if tool.description:
+        lines.append("TOOL_DESCRIPTION:")
+        lines.append(tool.description)
+    for a in _schema_args(tool.parameters):
+        req = "required" if a.required else "optional"
+        lines.append(f"TOOL_ARG: {a.name} ({a.json_type}, {req})")
+        if a.description:
+            lines.append(a.description)
+        lines.append("END_ARG")
+    lines.append("```")
+    return "\n".join(lines)
+
+
+def _render_example_call(tool: NormalizedTool) -> str:
+    # Continue's createSystemMessageExampleCall
+    call = "```tool\n" + f"TOOL_NAME: {tool.name}"
+    for arg_name, arg_value in tool.usage_example_args:
+        call += f"\nBEGIN_ARG: {arg_name}\n{arg_value}\nEND_ARG"
+    call += "\n```"
+    prefix = tool.usage_prefix.strip()
+    return (prefix + "\n" + call) if prefix else call
+
+
+def build_tool_use_instructions(tools: Sequence[NormalizedTool]) -> str:
+    """Full <tool_use_instructions> block; "" when there are no tools."""
+    if not tools:
+        return ""
+    with_example = [t for t in tools if t.usage_prefix or t.usage_example_args]
+    without_example = [t for t in tools if not (t.usage_prefix or t.usage_example_args)]
+
+    out: list[str] = [_TOOL_INSTRUCTIONS_TAG, _SYSTEM_MESSAGE_PREFIX]
+
+    if with_example:
+        out.append("\nThe following tools are available to you:")
+        for t in with_example:
+            out.append("\n" + _render_example_call(t))
+
+    if without_example:
+        out.append(
+            "\nAlso, these additional tool definitions show other tools you "
+            "can call with the same syntax:"
+        )
+        for t in without_example:
+            out.append("\n" + _render_tool_definition(t))
+        out.append("\nFor example, this tool definition:\n")
+        out.append(_EXAMPLE_DYNAMIC_TOOL_DEFINITION)
+        out.append("\nCan be called like this:\n")
+        out.append(_EXAMPLE_DYNAMIC_TOOL_CALL)
+
+    out.append("\n" + _SYSTEM_MESSAGE_SUFFIX)
+    out.append(_close_tag(_TOOL_INSTRUCTIONS_TAG))
+    return "\n".join(out)
+
+
+# --- 4b-json. client tools -> JSON tool instructions ----------------------
+# The DeepSeek-style alternative: the model emits a single fenced ```tool_json
+# block whose body is {"calls":[{"id","name","input":{...}}]}. This mirrors
+# the same dialect DeepSeek's web tool calls use, so a model tuned for that path
+# speaks it natively. JSON is more robust for
+# tools with nested/array/object arguments (no line-oriented BEGIN_ARG/END_ARG),
+# at the cost of the model having to emit valid JSON.
+_JSON_TOOL_FENCE_TAG = "tool_json"
+
+_JSON_SYSTEM_MESSAGE_PREFIX = (
+    "You have access to tools. To call one or more tools, respond with EXACTLY "
+    "one fenced ```tool_json code block and nothing after it.\n\n"
+    "The block body MUST be a single JSON object of the form:\n"
+    '{"calls": [{"id": "call_1", "name": "TOOL_NAME", "input": { ...args... }}]}\n\n'
+    "CRITICAL: `input` is a JSON object of the tool's arguments. Use correct JSON "
+    "types (numbers unquoted, booleans as true/false, arrays/objects as JSON). "
+    "Do not wrap the call in XML tags or prose."
+)
+
+_JSON_SYSTEM_MESSAGE_SUFFIX = (
+    "RULES FOR TOOL USE:\n"
+    "1. To call tools, output ONE ```tool_json block using EXACTLY the JSON shape above.\n"
+    "2. Always start the code block on a new line.\n"
+    "3. The ```tool_json block MUST be the last thing in your response. Stop after the closing fence.\n"
+    "4. Do NOT invent tools that are not listed above.\n"
+    "5. If the request can be answered directly, answer normally with NO tool block.\n"
+    "6. Do not perform actions with hypothetical files. Use tools to find relevant files."
+)
+
+_JSON_EXAMPLE = (
+    "For example, to call a tool named example_tool:\n\n"
+    "```tool_json\n"
+    '{"calls": [{"id": "call_1", "name": "example_tool", '
+    '"input": {"arg_1": "the value", "arg_2": 3}}]}\n'
+    "```"
+)
+
+
+def build_json_tool_instructions(tools: Sequence[NormalizedTool]) -> str:
+    """Full <tool_use_instructions> block for the JSON (```tool_json```) dialect.
+
+    Tools are declared as a compact JSON manifest (name/description/parameters),
+    which the model reads to know each tool's argument schema.
+    """
+    if not tools:
+        return ""
+    manifest = [
+        {
+            "name": t.name,
+            "description": t.description,
+            "parameters": t.parameters or {"type": "object", "properties": {}},
+        }
+        for t in tools
+    ]
+    out: list[str] = [
+        _TOOL_INSTRUCTIONS_TAG,
+        _JSON_SYSTEM_MESSAGE_PREFIX,
+        "\nThe following tools are available to you (JSON Schema):",
+        "```json\n" + json.dumps(manifest, ensure_ascii=False, indent=2) + "\n```",
+        "\n" + _JSON_EXAMPLE,
+        "\n" + _JSON_SYSTEM_MESSAGE_SUFFIX,
+        _close_tag(_TOOL_INSTRUCTIONS_TAG),
+    ]
+    return "\n".join(out)
+
+
+def build_sentinel_tool_instructions(
+    tools: Sequence[NormalizedTool], sentinel: str
+) -> str:
+    """AUTO-mode speculative instructions: the model answers normally unless it
+    opens with `sentinel` immediately followed by one JSON call object. Faithful
+    the DeepSeek auto-mode convention (no code fence, so a
+    normal answer that starts with ```python never false-triggers)."""
+    if not tools:
+        return ""
+    manifest = [
+        {
+            "name": t.name,
+            "description": t.description,
+            "parameters": t.parameters or {"type": "object", "properties": {}},
+        }
+        for t in tools
+    ]
+    return (
+        # use the shared _TOOL_INSTRUCTIONS_TAG constant (+ its closer)
+        # like the other two builders, so the tag string stays defined once.
+        _TOOL_INSTRUCTIONS_TAG + "\n"
+        "You can use these tools (JSON manifest):\n"
+        + json.dumps(manifest, ensure_ascii=False)
+        + "\n\nAnswer normally in natural language whenever you can handle the "
+        "request yourself. ONLY when calling a tool is genuinely required, make "
+        "the VERY FIRST characters of your reply the exact marker "
+        f"{sentinel} immediately followed by one JSON object, with no text, "
+        "whitespace, or code fence before it:\n"
+        f'{sentinel}{{"calls":[{{"id":"call_1","name":"tool_name","input":{{}}}}]}}\n'
+        "If you are not calling a tool, reply normally and NEVER output "
+        f"{sentinel} anywhere in your answer.\n" + _close_tag(_TOOL_INSTRUCTIONS_TAG)
+    )
+
+
+def build_tool_instructions(
+    policy: "RelayPolicy",
+    tools: Sequence[NormalizedTool],
+    mode: str = "auto",
+) -> str:
+    """Produce tool instructions that MATCH the parser the transpiler will use.
+
+    Selection mirrors PreparedTurn.new_transpiler():
+      * AUTO + tool_auto_detect=="sentinel" -> sentinel speculative instructions
+      * otherwise (required, or auto+fence)  -> fenced ```tool``` / ```tool_json```
+    Keeping this in lockstep with the factory guarantees a model is never told
+    one call syntax and parsed with another.
+    """
+    if mode == "auto" and policy.tool_auto_detect == "sentinel":
+        return build_sentinel_tool_instructions(tools, policy.tool_sentinel)
+    if policy.tool_format == "json":
+        return build_json_tool_instructions(tools)
+    return build_tool_use_instructions(tools)
+
+
+# --- 4c. tool results -> <tool_result> ------------------------------------
+def build_tool_results_block(results: Sequence[ToolResult]) -> str:
+    if not results:
+        return ""
+    blocks: list[str] = []
+    for r in results:
+        attrs = ""
+        if r.name:
+            attrs += f' name="{_xml_escape(r.name)}"'
+        if r.call_id:
+            attrs += f' call_id="{_xml_escape(r.call_id)}"'
+        blocks.append(f"<tool_result{attrs}>\n{r.content}\n</tool_result>")
+    body = "\n".join(blocks)
+    return f"<tool_results>\n{body}\n</tool_results>"
+
+
+# --- 4d. compose the final per-turn text ----------------------------------
+def compose_turn_text(policy: RelayPolicy, turn: ClientTurn, mode: str = "auto") -> str:
+    """Assemble the single string handed to the browser model this turn.
+
+    `mode` is the resolved tool_choice mode ("required"|"auto"|"none"); it
+    selects instructions that MATCH the parser (sentinel vs fence), see
+    build_tool_instructions.
+
+    Layout (any empty section omitted so a relay-less/tool-less turn degrades
+    cleanly to just the user's text):
+
+        <client_system_prompt> ...            (if relay_prompt and system)
+        <tool_use_instructions> ...           (if supports_tools and tools)
+
+        <turn body>                           (tool results, else user text)
+    """
+    # relay_prompt and supports_tools are INDEPENDENT switches:
+    #   * relay_prompt  -> relay the client's system prose (as XML)
+    #   * supports_tools -> relay the client's tools (as instructions)
+    # so a model may take tools without the IDE's system prose, or vice-versa.
+    framing: list[str] = []
+    if policy.relay_prompt:
+        sys_xml = build_system_xml(turn.system_text)
+        if sys_xml:
+            framing.append(sys_xml)
+            # the relayed Cline system prompt tells the model to wrap
+            # its answer in attempt_completion/result; the transport adds that
+            # envelope itself, so instruct the model not to (prevents the
+            # double-wrap the streaming path cannot undo). Cline clients only.
+            if turn.client_kind == "cline":
+                framing.append(_CLINE_NO_WRAP_INSTRUCTION)
+    if policy.supports_tools:
+        tools_xml = build_tool_instructions(policy, turn.tools, mode)
+        if tools_xml:
+            framing.append(tools_xml)
+
+    # Turn body. Two mutually-exclusive cases:
+    #   * tool-result continuation: the browser model already saw the user turn
+    #     and answered it WITH the tool call that produced these results, so the
+    #     user text is stale history (browser owns it) — send ONLY the results.
+    #   * fresh user turn: send the user text.
+    if policy.supports_tools and turn.is_tool_continuation:
+        body = build_tool_results_block(turn.pending_results)
+    else:
+        body = turn.user_text
+
+    header = "\n\n".join(framing)
+    if header and body:
+        return f"{header}\n\n{body}"
+    return header or body
+
+
+# ===========================================================================
+# 5) STREAMING ```tool``` TRANSPILER  ->  OpenAI tool_call
+# ===========================================================================
+# Continue accepts TWO call starts (acceptedToolCallStarts): a fenced ```tool
+# and a bare `tool_name:` line (poor models skip the fence). We honor both.
+_FENCE_OPEN_RE = re.compile(r"(?:^|\n)[ \t]*```tool[ \t]*(?:\r?\n)", re.IGNORECASE)
+_BARE_OPEN_RE = re.compile(r"(?:^|\n)[ \t]*TOOL_?NAME[ \t]*:", re.IGNORECASE)
+# The longest opener prefix we must hold back across a chunk boundary.
+_HOLDBACK = "\n```tool\n"
+_HOLDBACK_MAX = len(_HOLDBACK)
+
+
+def _coerce_value(raw: str, declared_type: Optional[str]) -> Any:
+    """Coerce an arg value the way Continue's parser does, with one guard.
+
+    Continue is schema-FREE: it json.loads the whole trimmed value; on success
+    it uses the parsed value (so `3`->int, `true`->bool, `[1,2]`->list,
+    `"x"`->str), otherwise it keeps the raw string. We mirror that EXCEPT we
+    never numeric/bool-coerce an arg the schema declares as `string` (protects
+    ids/zips/versions like "007" or "1.0.0" from lossy parsing).
+    """
+    s = raw.strip()
+    if declared_type == "string":
+        return raw  # keep author's exact bytes for a declared string
+    try:
+        return json.loads(s)
+    except (ValueError, TypeError):
+        return raw
+
+
+def parse_tool_block(
+    block_text: str, arg_types: Optional[dict] = None
+) -> Optional[dict]:
+    """Parse the body between the fences into an OpenAI tool_call dict.
+
+    Grammar (Continue codeblocks framework):
+        TOOL_NAME: <name>
+        BEGIN_ARG: <arg>
+        <value, possibly multi-line>
+        END_ARG
+        ...
+    Returns None when no TOOL_NAME is found.
+    """
+    lines = block_text.splitlines()
+    arg_types = arg_types or {}
+    name = ""
+    i, n = 0, len(lines)
+
+    while i < n:
+        stripped = lines[i].strip()
+        if not stripped:
+            i += 1
+            continue
+        m = re.match(r"TOOL_?NAME:\s*(?P<name>.+)$", stripped, re.IGNORECASE)
+        if m:
+            name = m.group("name").strip()
+            i += 1
+            break
+        return None  # first directive wasn't TOOL_NAME
+    if not name:
+        return None
+
+    args: dict[str, Any] = {}
+    while i < n:
+        m = re.match(r"BEGIN_?ARG:\s*(?P<arg>.+)$", lines[i].strip(), re.IGNORECASE)
+        if not m:
+            i += 1
+            continue
+        arg_name = m.group("arg").strip()
+        i += 1
+        value_lines: list[str] = []
+        while i < n and not re.match(r"END_?ARG\b", lines[i].strip(), re.IGNORECASE):
+            value_lines.append(lines[i])
+            i += 1
+        i += 1  # skip END_ARG
+        raw_value = "\n".join(value_lines).strip("\n")
+        args[arg_name] = _coerce_value(raw_value, arg_types.get(arg_name))
+
+    return {
+        "id": f"call_{uuid.uuid4().hex[:24]}",
+        "type": "function",
+        "function": {"name": name, "arguments": json.dumps(args, ensure_ascii=False)},
+    }
+
+
+def _split_safe_tail(buffer: str) -> tuple[str, str]:
+    """Split into (emit_now, hold_back) so a fence opener spanning two chunks is
+    never leaked as content. hold_back = longest suffix that could begin
+    "\\n```tool\\n"."""
+    lo = buffer.lower()
+    for h in range(min(len(buffer), _HOLDBACK_MAX), 0, -1):
+        if _HOLDBACK[:h].lower() == lo[-h:]:
+            return buffer[:-h], buffer[-h:]
+    return buffer, ""
+
+
+class ToolCallTranspiler:
+    """Split a model stream into passthrough content and a trailing tool call.
+
+    Contract (rule #4): the tool block is the LAST thing in the response.
+      push(delta) -> list[str]   passthrough content pieces (never block text)
+      finish()    -> dict|None   the parsed OpenAI tool_call, if any
+      flush_pending() -> str     residual held-back text (only if NO tool block)
+
+    Detects both a fenced ```tool opener and a bare `TOOL_NAME:` opener.
+    """
+
+    def __init__(self, arg_types: Optional[dict] = None) -> None:
+        self.arg_types = arg_types or {}
+        self._buf = ""
+        self._in_block = False
+        self._body = ""
+        self._closed = False
+        # for a bare (fence-less) opener we must keep the TOOL_NAME: line
+        self._bare = False
+        # Verbatim text from the opener onward (fence marker + body + closing),
+        # so that on a PARSE FAILURE we can hand the model's original prose back
+        # to the client instead of dropping it or substituting a canned message.
+        self._held = ""
+        self._consumed_as_tool = False
+
+    def push(self, chunk: str) -> list[str]:
+        if not chunk:
+            return []
+        if self._in_block:
+            self._consume(chunk)
+            return []
+
+        self._buf += chunk
+        out: list[str] = []
+
+        fence = _FENCE_OPEN_RE.search(self._buf)
+        bare = _BARE_OPEN_RE.search(self._buf)
+        # choose the earliest opener present
+        opener = None
+        if fence and bare:
+            opener = (
+                ("fence", fence) if fence.start() <= bare.start() else ("bare", bare)
+            )
+        elif fence:
+            opener = ("fence", fence)
+        elif bare:
+            opener = ("bare", bare)
+
+        if opener:
+            kind, m = opener
+            pre = self._buf[: m.start()]
+            if pre:
+                out.append(pre)
+            self._in_block = True
+            if kind == "fence":
+                # Preserve the opening fence verbatim for prose-on-failure.
+                self._held = self._buf[m.start() : m.end()]
+                remainder = self._buf[m.end() :]
+            else:
+                # keep the TOOL_NAME: line inside the block body
+                self._bare = True
+                self._held = ""
+                remainder = self._buf[m.start() :].lstrip("\n")
+            self._buf = ""
+            if remainder:
+                self._consume(remainder)
+            return out
+
+        # no opener yet: hold back only a possible partial fence opener
+        safe, hold = _split_safe_tail(self._buf)
+        if safe:
+            out.append(safe)
+        self._buf = hold
+        return out
+
+    def _consume(self, text: str) -> None:
+        if self._closed:
+            return
+        # Accumulate verbatim so a parse failure can hand back original prose.
+        self._held += text
+        self._body += text
+        m = re.search(r"(?:^|\n)[ \t]*```[ \t]*(?:\r?\n|$)", self._body)
+        if m:
+            self._body = self._body[: m.start()]
+            self._closed = True
+
+    def finish(self) -> Optional[dict]:
+        if self._in_block:
+            return parse_tool_block(self._body, self.arg_types)
+        return None
+
+    def finish_tool_calls(self) -> list[dict]:
+        """Unified interface shared with the JSON transpiler: 0 or 1 call."""
+        call = self.finish()
+        self._consumed_as_tool = bool(call)
+        return [call] if call else []
+
+    def flush_pending(self) -> str:
+        # A block that opened but did NOT become a tool call is preserved
+        # verbatim (fence + body): the relay hands the model's original prose
+        # back to the client rather than dropping it or injecting a message —
+        # the client decides what to do with an unparsable tool attempt.
+        if self._in_block:
+            pending = "" if self._consumed_as_tool else self._held
+            self._held = ""
+            return pending
+        pending = self._buf
+        self._buf = ""
+        return pending
+
+
+# ===========================================================================
+# 5-json) STREAMING ```tool_json``` TRANSPILER  ->  OpenAI tool_calls
+# ===========================================================================
+# DeepSeek-style JSON dialect. The model emits, as the last thing in its reply,
+# one fenced ```tool_json block whose body is {"calls":[{id,name,input}]}.
+# Parsing does brace-balanced JSON
+# extraction, light repair (smart quotes, unquoted keys, trailing commas), and
+# a hard cap of 8 calls. Supports MULTIPLE calls (unlike the single-call
+# codeblock dialect). An optional sentinel (mirrors the DEEPSEEK_TOOLCALL_SENTINEL env var)
+# may precede the block; text before the opener streams through as content.
+_JSON_FENCE_OPEN_RE = re.compile(
+    r"(?:^|\n)[ \t]*```tool_json[ \t]*(?:\r?\n)", re.IGNORECASE
+)
+_JSON_HOLDBACK = "\n```tool_json\n"
+_JSON_HOLDBACK_MAX = len(_JSON_HOLDBACK)
+_JSON_MAX_CALLS = 8
+
+
+def _json_split_safe_tail(buffer: str) -> tuple[str, str]:
+    lo = buffer.lower()
+    for h in range(min(len(buffer), _JSON_HOLDBACK_MAX), 0, -1):
+        if _JSON_HOLDBACK[:h].lower() == lo[-h:]:
+            return buffer[:-h], buffer[-h:]
+    return buffer, ""
+
+
+def _extract_balanced_json(text: str) -> str:
+    """First brace-balanced {...} object (string-aware), or ""."""
+    start = text.find("{")
+    if start < 0:
+        return ""
+    depth = 0
+    in_str = False
+    esc = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : i + 1]
+    return ""
+
+
+def _repair_json(raw: str) -> str:
+    """Light, lossless-intent JSON repairs (smart quotes, unquoted keys,
+    trailing commas)."""
+    repaired = raw.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
+    # quote unquoted object keys: {key: -> {"key":
+    repaired = re.sub(r"(?<=[{,])\s*([A-Za-z_][A-Za-z0-9_-]*)\s*:", r'"\1":', repaired)
+    # drop trailing commas before } or ]
+    repaired = re.sub(r",\s*([}\]])", r"\1", repaired)
+    return repaired
+
+
+def parse_json_tool_block(
+    block_text: str, allowed_names: Optional[set] = None
+) -> list[dict]:
+    """Parse a ```tool_json body ({"calls":[...]}) into OpenAI tool_calls.
+
+    Tolerant JSON, dedup by id, cap at 8, and (when provided) filter to allowed
+    tool names. Returns [] on any failure so a malformed block never crashes the
+    stream.
+    """
+    balanced = _extract_balanced_json(block_text)
+    if balanced:
+        candidates = [balanced, _repair_json(balanced)]
+    else:
+        # the body may be TRUNCATED. Local models routinely emit a
+        # tool_json call that is only missing a trailing "}" or "]}", so
+        # _extract_balanced_json (which needs a COMPLETE brace-balanced object)
+        # returns "" and the call would be lost. Recover it by completing the
+        # missing trailing object/array closers from the first "{" onward.
+        # SAFETY: _complete_missing_json_closers appends ONLY "}"/"]" and RAISES
+        # on an unterminated string or mismatched brackets — so a call whose
+        # string argument was cut mid-value (e.g. a half-written path) fails to
+        # complete and is NEVER forged into a valid call; only a payload whose
+        # strings are all closed and merely lacks structural closers is
+        # recovered. If completion still is not valid JSON, the caller keeps the
+        # model's ORIGINAL prose for the client (flush_pending), exactly as
+        # before — "complete it if we safely can, otherwise return it verbatim".
+        start = block_text.find("{")
+        candidates = []
+        if start >= 0:
+            raw = block_text[start:]
+            for base in (raw, _repair_json(raw)):
+                try:
+                    candidates.append(_complete_missing_json_closers(base))
+                except ValueError:
+                    continue  # unterminated string / mismatched / too many
+    if not candidates:
+        return []
+    payload = None
+    for candidate in candidates:
+        try:
+            payload = json.loads(candidate)
+            break
+        except (json.JSONDecodeError, TypeError):
+            continue
+    if not isinstance(payload, dict) or not isinstance(payload.get("calls"), list):
+        return []
+
+    out: list[dict] = []
+    seen: set = set()
+    for idx, call in enumerate(payload["calls"]):
+        if len(out) >= _JSON_MAX_CALLS:
+            break
+        if not isinstance(call, dict):
+            continue
+        name = str(call.get("name") or "").strip()
+        args = call.get("input", {})
+        call_id = str(call.get("id") or f"call_{idx + 1}").strip()
+        if not name or not isinstance(args, dict):
+            continue
+        if allowed_names is not None and name not in allowed_names:
+            continue
+        if call_id in seen:
+            continue
+        seen.add(call_id)
+        out.append(
+            {
+                "id": call_id,
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "arguments": json.dumps(args, ensure_ascii=False),
+                },
+            }
+        )
+    return out
+
+
+class JsonToolCallTranspiler:
+    """```tool_json``` counterpart of ToolCallTranspiler.
+
+    Same interface (push / finish_tool_calls / flush_pending) so the handler
+    code is identical regardless of format; only the factory differs. Unlike
+    the codeblock dialect this can yield MULTIPLE tool_calls.
+    """
+
+    def __init__(self, allowed_names: Optional[set] = None) -> None:
+        self.allowed_names = set(allowed_names) if allowed_names else None
+        self._buf = ""
+        self._in_block = False
+        self._body = ""
+        self._closed = False
+        # Verbatim held text (fence + body) for prose-on-parse-failure.
+        self._held = ""
+        self._consumed_as_tool = False
+
+    def push(self, chunk: str) -> list[str]:
+        if not chunk:
+            return []
+        if self._in_block:
+            self._consume(chunk)
+            return []
+
+        self._buf += chunk
+        out: list[str] = []
+        m = _JSON_FENCE_OPEN_RE.search(self._buf)
+        if m:
+            pre = self._buf[: m.start()]
+            if pre:
+                out.append(pre)
+            self._in_block = True
+            # Preserve the opening fence verbatim for prose-on-failure.
+            self._held = self._buf[m.start() : m.end()]
+            remainder = self._buf[m.end() :]
+            self._buf = ""
+            if remainder:
+                self._consume(remainder)
+            return out
+
+        safe, hold = _json_split_safe_tail(self._buf)
+        if safe:
+            out.append(safe)
+        self._buf = hold
+        return out
+
+    def _consume(self, text: str) -> None:
+        if self._closed:
+            return
+        self._held += text
+        self._body += text
+        m = re.search(r"(?:^|\n)[ \t]*```[ \t]*(?:\r?\n|$)", self._body)
+        if m:
+            self._body = self._body[: m.start()]
+            self._closed = True
+
+    def finish_tool_calls(self) -> list[dict]:
+        if self._in_block:
+            calls = parse_json_tool_block(self._body, self.allowed_names)
+            self._consumed_as_tool = bool(calls)
+            return calls
+        return []
+
+    def flush_pending(self) -> str:
+        # Preserve original prose verbatim when a fence opened but produced no
+        # tool call (client decides what to do with the unparsable attempt).
+        if self._in_block:
+            pending = "" if self._consumed_as_tool else self._held
+            self._held = ""
+            return pending
+        pending = self._buf
+        self._buf = ""
+        return pending
+
+
+# ===========================================================================
+# 5-sentinel) AUTO-MODE SPECULATIVE TRANSPILER  (sentinel-triggered)
+# ===========================================================================
+# DeepSeek-style auto-mode speculative streaming: in AUTO tool mode a reply is a
+# tool call ONLY if its very first non-space characters are the sentinel; any
+# other reply streams live with near-zero added latency. The buffered call body
+# is parsed with the model's tool_format parser. If the sentinel was emitted but
+# no valid call parses, the model's original prose is preserved (with the
+# internal sentinel marker stripped, since that token is ours, not model output)
+# so the client can decide what to do — the relay never substitutes a canned
+# message. Same push / finish_tool_calls / flush_pending interface as the fence
+# transpilers.
+class SentinelToolTranspiler:
+    def __init__(
+        self,
+        sentinel: str,
+        allowed_names: Optional[set] = None,
+        tool_format: str = "json",
+        arg_types: Optional[dict] = None,
+    ) -> None:
+        self.sentinel = str(sentinel or "")
+        self.allowed_names = set(allowed_names) if allowed_names else None
+        self.tool_format = tool_format
+        self.arg_types = arg_types or {}
+        self._decided = None  # None | "plain" | "tool"
+        self._head = ""  # buffered while undecided
+        self._tool_buf = ""  # buffered once decided == "tool"
+        self._consumed_as_tool = False
+
+    @staticmethod
+    def _classify(head_text: str, sentinel: str) -> str:
+        stripped = str(head_text or "").lstrip()
+        if not stripped:
+            return "pending"
+        if stripped.startswith(sentinel):
+            return "tool"
+        if sentinel.startswith(stripped):
+            return "pending"
+        return "plain"
+
+    def push(self, chunk: str) -> list[str]:
+        if not chunk:
+            return []
+        if self._decided == "plain":
+            return [chunk]
+        if self._decided == "tool":
+            self._tool_buf += chunk
+            return []
+        # undecided: accumulate head and classify from its start
+        self._head += chunk
+        verdict = self._classify(self._head, self.sentinel)
+        if verdict == "pending":
+            return []
+        if verdict == "tool":
+            self._decided = "tool"
+            self._tool_buf = self._head
+            self._head = ""
+            return []
+        # plain: flush the buffered head, then stream live from here on
+        self._decided = "plain"
+        out = [self._head] if self._head else []
+        self._head = ""
+        return out
+
+    def _parse(self, buffered: str) -> list[dict]:
+        body = buffered.lstrip()
+        if body.startswith(self.sentinel):
+            body = body[len(self.sentinel) :]
+        if self.tool_format == "codeblock":
+            call = parse_tool_block(body, self.arg_types)
+            return [call] if call else []
+        return parse_json_tool_block(body, self.allowed_names)
+
+    def finish_tool_calls(self) -> list[dict]:
+        buffered = self._tool_buf if self._decided == "tool" else self._head
+        looks_tool = self._decided == "tool" or (
+            self._decided is None
+            and buffered.lstrip().startswith(self.sentinel)
+            and bool(self.sentinel)
+        )
+        if not looks_tool:
+            return []
+        calls = self._parse(buffered)
+        self._consumed_as_tool = bool(calls)
+        return calls
+
+    def flush_pending(self) -> str:
+        # Committed to a tool call (sentinel seen) but the body did not parse:
+        # preserve the model's original prose, stripping only the internal
+        # sentinel marker (our injected token, never model output) so it is not
+        # leaked. The client decides what to do with the unparsable attempt; the
+        # relay never substitutes a canned message.
+        if self._decided == "tool":
+            if self._consumed_as_tool:
+                return ""
+            body = self._tool_buf.lstrip()
+            if body.startswith(self.sentinel):
+                body = body[len(self.sentinel) :]
+            self._tool_buf = ""
+            return body
+        # NOT a tool call: a short undecided head that never matched the
+        # sentinel is ordinary content and must be flushed as-is.
+        pending = self._head
+        self._head = ""
+        return pending
+
+
+# ===========================================================================
+# 6) FACADE  — the single high-level entry voice_edge.py calls
+# ===========================================================================
+@dataclass
+class PreparedTurn:
+    """Everything a `_direct_*` handler needs after one `RELAY.prepare(...)`."""
+
+    text: str
+    policy: RelayPolicy
+    tools_active: bool
+    arg_types: dict = field(default_factory=dict)
+    allowed_names: set = field(default_factory=set)
+    tool_choice_mode: str = "none"  # "required" | "auto" | "none"
+    # Unified client format ("cline" | "plain") decided by the relay. Handlers
+    # read this instead of re-detecting (e.g. m365 gates its attempt_completion
+    # envelope on client_kind == "cline").
+    client_kind: str = "plain"
+
+    def new_transpiler(self):
+        """A fresh stream transpiler for this model's tool config, or None when
+        tools are inactive (then the handler streams model text unchanged).
+
+        Selection (all metadata-driven, so any model can mix strategies):
+          * REQUIRED mode        -> fence/json body transpiler (whole reply is
+                                    the tool block).
+          * AUTO + tool_auto_detect=="sentinel" -> SentinelToolTranspiler
+                                    (speculative: plain chat streams live).
+          * AUTO + tool_auto_detect=="fence"    -> fence/json body transpiler
+                                    (streams until a fence appears).
+
+        Uniform interface for the handler regardless of choice:
+            tp = prepared.new_transpiler()
+            for piece in tp.push(delta): emit_content(piece)
+            calls = tp.finish_tool_calls()          # list[dict] (0..N)
+            if calls:      emit tool_calls -> finish_reason "tool_calls"
+            else:          emit_content(tp.flush_pending()) -> "stop"
+        On a parse FAILURE, flush_pending() returns the model's original prose
+        (the relay preserves it for the client instead of injecting a message).
+        """
+        if not self.tools_active:
+            return None
+        p = self.policy
+        if self.tool_choice_mode == "auto" and p.tool_auto_detect == "sentinel":
+            return SentinelToolTranspiler(
+                sentinel=p.tool_sentinel,
+                allowed_names=self.allowed_names,
+                tool_format=p.tool_format,
+                arg_types=self.arg_types,
+            )
+        if p.tool_format == "json":
+            return JsonToolCallTranspiler(self.allowed_names)
+        return ToolCallTranspiler(self.arg_types)
+
+
+class BrowserRelay:
+    """Model-agnostic facade. Construct once with the metadata registry."""
+
+    def __init__(self, metadata_registry: dict) -> None:
+        self._registry = metadata_registry or {}
+
+    def policy_for(self, model_id: str) -> RelayPolicy:
+        return RelayPolicy.from_metadata(model_id, self._registry)
+
+    def prepare(
+        self, model_id: str, body: dict, messages: list, *, bypass: bool = False
+    ) -> PreparedTurn:
+        """Seam #1 (request time). Returns the composed per-turn text plus the
+        stream-side config. `text` is the single user turn to send to the
+        browser model; history is stripped (browser owns it).
+
+        bypass=True forces the historical plain passthrough regardless of the
+        model's metadata: NO system prompt relay, NO tool instructions, NO tool
+        interception — just the latest user turn. This preserves the current
+        behavior for non-IDE callers such as the XiaoAI smart-speaker bridge
+        (which POSTs to the same endpoint tagged `source":"xiaoai"` and must not
+        have the IDE's system prose or tools injected). The caller decides when
+        to bypass; a convenience detector is provided as `should_bypass(body)`.
+        """
+        if bypass:
+            # Pure passthrough: no system relay, no tools, and NO client-envelope
+            # parsing (XiaoAI sends plain text; parsing would be a no-op anyway).
+            turn = ClientTurn.from_openai(body, messages, parse_client_envelope=False)
+            return PreparedTurn(
+                text=turn.user_text,
+                policy=RelayPolicy(),  # all-False: pure passthrough
+                tools_active=False,
+                client_kind=turn.client_kind,
+            )
+
+        policy = self.policy_for(model_id)
+        turn = ClientTurn.from_openai(body, messages)
+
+        tools_active = bool(policy.supports_tools and turn.tools)
+        arg_types: dict = {}
+        allowed_names: set = set()
+        if tools_active:
+            for t in turn.tools:
+                arg_types[t.name] = t.arg_types()
+                allowed_names.add(t.name)
+
+        # Resolve tool_choice into the 3-state mode the transpiler factory needs.
+        # required  -> "required" (must call; whole reply is one tool block)
+        # auto/None -> "auto"     (optional; fence or sentinel speculative)
+        # none      -> "none"     (no tools; also implied when tools inactive)
+        _tc = body.get("tool_choice")
+        if not tools_active or _tc == "none":
+            tool_choice_mode = "none"
+        elif _tc == "required" or isinstance(_tc, dict):
+            tool_choice_mode = "required"
+        else:  # None or "auto"
+            tool_choice_mode = "auto"
+
+        # Compose AFTER mode is known so injected instructions match the parser
+        # (sentinel speculative vs fenced block) that new_transpiler() will use.
+        text = compose_turn_text(policy, turn, tool_choice_mode)
+
+        return PreparedTurn(
+            text=text,
+            policy=policy,
+            tools_active=tools_active,
+            arg_types=arg_types,
+            allowed_names=allowed_names,
+            tool_choice_mode=tool_choice_mode,
+            client_kind=turn.client_kind,
+        )
+
+    @staticmethod
+    def should_bypass(body: dict) -> bool:
+        """Whether this request must skip the relay entirely. True for the
+        XiaoAI smart-speaker bridge, which tags its body `source":"xiaoai"`."""
+        return str((body or {}).get("source") or "").strip().lower() == "xiaoai"
+
+
+# --- 6a. optional OpenAI stream helpers (handlers may reuse) ---------------
+def tool_call_stream_chunks(
+    tool_call: dict, completion_id: str, created: int, model: str
+) -> list[dict]:
+    """The two OpenAI chunk payloads for a parsed tool call: the tool_calls
+    delta, then the finish_reason=tool_calls stop. Handlers that already build
+    their own chunks can ignore this."""
+    fn = tool_call.get("function") or {}
+    return [
+        {
+            "id": completion_id,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": model,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {
+                        "tool_calls": [
+                            {
+                                "index": 0,
+                                "id": tool_call.get("id"),
+                                "type": "function",
+                                "function": {
+                                    "name": fn.get("name"),
+                                    "arguments": fn.get("arguments", ""),
+                                },
+                            }
+                        ]
+                    },
+                    "finish_reason": None,
+                }
+            ],
+        },
+        {
+            "id": completion_id,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": model,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}],
+        },
+    ]
+
+
+def tool_call_message(tool_call: dict) -> dict:
+    """The non-streaming assistant message shape for a parsed tool call."""
+    return {"role": "assistant", "content": None, "tool_calls": [tool_call]}
+
+
+# Single relay instance bound to the live model registry.
+BROWSER_RELAY = BrowserRelay(BROWSER_MODEL_METADATA)
+# ############## END BROWSER CLIENT RELAY #########################
 
 
 # ============================================================
@@ -10947,35 +12492,6 @@ def _mask_qwen_token(value: str) -> str:
     return "***" if len(value) <= 12 else f"{value[:6]}...{value[-4:]}"
 
 
-def _qwen_message_text(content) -> str:
-    if isinstance(content, list):
-        return "\n".join(
-            str(part.get("text", ""))
-            for part in content
-            if isinstance(part, dict) and part.get("type") in {"text", "input_text"}
-        ).strip()
-    return str(content or "").strip()
-
-
-def _qwen_latest_user_prompt(messages: list) -> str:
-    """Return only the newest user turn for the browser-backed conversation.
-
-    Qwen web already owns the conversation history identified by chat_id.
-    Replaying the OpenAI/Continue transcript would resend prior turns and leak
-    IDE system prompts into the visible Qwen chat, so only the latest user
-    message is forwarded (mirrors the DeepSeek browser backend).
-    """
-    for message in reversed(messages or []):
-        if not isinstance(message, dict):
-            continue
-        if str(message.get("role") or "").strip().lower() != "user":
-            continue
-        text = _qwen_message_text(message.get("content", ""))
-        if text:
-            return text
-    return ""
-
-
 def _build_qwen_payload(
     chat_id: str,
     model: str,
@@ -12212,7 +13728,29 @@ async def _direct_qwen_chat_response(body: dict, messages: list, stream_mode: bo
     # Qwen web retains its own history per chat_id. Send only the newest user
     # turn so prior turns and IDE system prompts are not replayed into the
     # visible Qwen conversation (mirrors the DeepSeek browser backend).
-    prompt = _qwen_latest_user_prompt(messages)
+    # Seam #1: unified relay. Qwen metadata is relay_prompt=False /
+    # supports_tools=False, so this is behavior-preserving (latest user turn
+    # only) while making the path XiaoAI-bypass aware and uniform with the other
+    # families. Flip the metadata later to relay the system prompt / tools.
+    _qwen_prepared = BROWSER_RELAY.prepare(
+        "LLM:qwen", body, messages, bypass=BrowserRelay.should_bypass(body)
+    )
+    prompt = _qwen_prepared.text
+    # Attachment egress hook (upload not yet implemented for Qwen). The relay has
+    # already parsed + stripped inline files from `prompt`; this makes any drop
+    # explicit and marks where the Qwen upload path will slot in.
+    _browser_attachments_egress_stub("LLM:qwen", messages)
+    # keep inline file text in the prompt.
+    # oversize/unreadable inline files raise ValueError; return a
+    # family-correct 400 (matching m365's _client_collect_attachments) instead
+    # of a 500 whose shared message would mislead a Qwen request.
+    try:
+        prompt = _browser_append_inline_files(prompt, messages)
+    except ValueError as exc:
+        return JSONResponse(
+            {"error": {"message": str(exc), "type": "qwen_file_error"}},
+            status_code=400,
+        )
     if not prompt:
         return JSONResponse({"error": "No text provided for LLM:qwen"}, status_code=400)
     explicit_new = bool(body.get("new_conversation", False))
@@ -12296,12 +13834,35 @@ async def _direct_qwen_chat_response(body: dict, messages: list, stream_mode: bo
 
         async def generate():
             role_sent = False
+            # Seam #2 (tool interception). DORMANT while qwen supports_tools is
+            # False: new_transpiler() returns None and every `is not None` guard
+            # below is skipped, so this path is byte-identical to before. Flip
+            # qwen's metadata (supports_tools + tool_format) to activate.
+            _qwen_tool_tp = _qwen_prepared.new_transpiler()
+            # Shared Cline attempt_completion envelope (no-op unless client_kind
+            # == "cline"); same helper every browser family uses.
+            _qwen_env = ClineEnvelope(_qwen_prepared.client_kind == "cline")
             async for event in events():
                 kind = event.get("type")
                 if kind == "conversation":
                     continue
                 if kind == "delta":
-                    delta = {"content": event.get("content", "")}
+                    content = str(event.get("content") or "")
+                    if _qwen_tool_tp is not None:
+                        content = "".join(_qwen_tool_tp.push(content))
+                        if not content:
+                            continue
+                    # A (defense-in-depth, symmetric with m365): even though qwen
+                    # is relay_prompt=False (the model is NOT instructed to
+                    # self-wrap), a cline request could still make the model echo
+                    # <attempt_completion>/<result> tags from history. strip_envelope_tags()
+                    # removes only those tags (holding back a tag split across
+                    # chunks); it is a byte-exact passthrough when not cline.
+                    content = _qwen_env.strip_envelope_tags(content)
+                    if not content:
+                        continue
+                    content = _qwen_env.open_prefix() + content
+                    delta = {"content": content}
                     if not role_sent:
                         delta["role"] = "assistant"
                         role_sent = True
@@ -12330,13 +13891,179 @@ async def _direct_qwen_chat_response(body: dict, messages: list, stream_mode: bo
                         + "\n\n"
                     )
                 elif kind == "done":
+                    _qwen_cid = event.get("conversation_id", "")
+                    if _qwen_tool_tp is not None:
+                        # Seam #2 terminal (dormant while tp is None). A parsed
+                        # tool block finishes as OpenAI tool_calls; otherwise any
+                        # held-back tail is flushed as a final content delta.
+                        _qwen_calls = _qwen_tool_tp.finish_tool_calls()
+                        if _qwen_calls:
+                            # tool_call turn: no Cline envelope (a call is a
+                            # request, not the final result).
+                            _qwen_close = _qwen_env.suppress()
+                            if _qwen_close:
+                                yield (
+                                    "data: "
+                                    + json.dumps(
+                                        {
+                                            "id": completion_id,
+                                            "object": "chat.completion.chunk",
+                                            "created": created,
+                                            "model": "LLM:qwen",
+                                            "choices": [
+                                                {
+                                                    "index": 0,
+                                                    "delta": (
+                                                        {
+                                                            "role": "assistant",
+                                                            "content": _qwen_close,
+                                                        }
+                                                        if not role_sent
+                                                        else {"content": _qwen_close}
+                                                    ),
+                                                    "finish_reason": None,
+                                                }
+                                            ],
+                                        },
+                                        ensure_ascii=False,
+                                    )
+                                    + "\n\n"
+                                )
+                                role_sent = True
+                            _tc = [
+                                {
+                                    "index": _i,
+                                    "id": _c["id"],
+                                    "type": "function",
+                                    "function": _c["function"],
+                                }
+                                for _i, _c in enumerate(_qwen_calls)
+                            ]
+                            yield (
+                                "data: "
+                                + json.dumps(
+                                    {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": "LLM:qwen",
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": (
+                                                    {
+                                                        "role": "assistant",
+                                                        "tool_calls": _tc,
+                                                    }
+                                                    if not role_sent
+                                                    else {"tool_calls": _tc}
+                                                ),
+                                                "finish_reason": None,
+                                            }
+                                        ],
+                                    },
+                                    ensure_ascii=False,
+                                )
+                                + "\n\n"
+                            )
+                            yield (
+                                "data: "
+                                + json.dumps(
+                                    {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": "LLM:qwen",
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": {},
+                                                "finish_reason": "tool_calls",
+                                            }
+                                        ],
+                                        "conversation_id": _qwen_cid,
+                                    },
+                                    ensure_ascii=False,
+                                )
+                                + "\n\n"
+                            )
+                            yield _SSE_DONE_FRAME
+                            return
+                        _resid = _qwen_tool_tp.flush_pending()
+                        # strip any model-emitted envelope tags from the
+                        # flush_pending residual too (symmetric with deepseek and
+                        # with the delta path). Currently unreachable while qwen
+                        # supports_tools=False (tp is None), so this is
+                        # future-proofing for when tools are enabled.
+                        _resid = _qwen_env.strip_envelope_tags(_resid)
+                        if _resid:
+                            yield (
+                                "data: "
+                                + json.dumps(
+                                    {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": "LLM:qwen",
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": (
+                                                    {
+                                                        "role": "assistant",
+                                                        "content": _resid,
+                                                    }
+                                                    if not role_sent
+                                                    else {"content": _resid}
+                                                ),
+                                                "finish_reason": None,
+                                            }
+                                        ],
+                                    },
+                                    ensure_ascii=False,
+                                )
+                                + "\n\n"
+                            )
+                            role_sent = True
+                    # Cline envelope closing (close tag / empty envelope), unless
+                    # suppressed by a tool_call turn or inactive.
+                    _qwen_closing = _qwen_env.closing()
+                    if _qwen_closing:
+                        yield (
+                            "data: "
+                            + json.dumps(
+                                {
+                                    "id": completion_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": "LLM:qwen",
+                                    "choices": [
+                                        {
+                                            "index": 0,
+                                            "delta": (
+                                                {
+                                                    "role": "assistant",
+                                                    "content": _qwen_closing,
+                                                }
+                                                if not role_sent
+                                                else {"content": _qwen_closing}
+                                            ),
+                                            "finish_reason": None,
+                                        }
+                                    ],
+                                },
+                                ensure_ascii=False,
+                            )
+                            + "\n\n"
+                        )
+                        role_sent = True
                     payload = {
                         "id": completion_id,
                         "object": "chat.completion.chunk",
                         "created": created,
                         "model": "LLM:qwen",
                         "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-                        "conversation_id": event.get("conversation_id", ""),
+                        "conversation_id": _qwen_cid,
                     }
                     yield "data: " + json.dumps(payload, ensure_ascii=False) + "\n\n"
                     yield _SSE_DONE_FRAME
@@ -12364,6 +14091,8 @@ async def _direct_qwen_chat_response(body: dict, messages: list, stream_mode: bo
                 },
                 status_code=502,
             )
+    # Non-stream: wrap the full answer in the Cline envelope when active.
+    _qwen_ns_env = ClineEnvelope(_qwen_prepared.client_kind == "cline")
     return JSONResponse(
         {
             "id": completion_id,
@@ -12373,7 +14102,10 @@ async def _direct_qwen_chat_response(body: dict, messages: list, stream_mode: bo
             "choices": [
                 {
                     "index": 0,
-                    "message": {"role": "assistant", "content": "".join(content)},
+                    "message": {
+                        "role": "assistant",
+                        "content": _qwen_ns_env.wrap("".join(content)),
+                    },
                     "finish_reason": "stop",
                 }
             ],
@@ -12542,273 +14274,6 @@ def _deepseek_http_set_last_session(session_id: str, model_type: str) -> None:
         "conversation",
         {"last_conversation_ids": last_ids, "model_types": modes},
     )
-
-
-def _deepseek_message_text(content) -> str:
-    if isinstance(content, list):
-        return "\n".join(
-            str(part.get("text", ""))
-            for part in content
-            if isinstance(part, dict) and part.get("type") in {"text", "input_text"}
-        ).strip()
-    return str(content or "").strip()
-
-
-def _deepseek_latest_user_prompt(messages: list) -> str:
-    """Return only the newest user turn for the browser-backed conversation.
-
-    DeepSeek already owns the conversation history identified by session_id.
-    Replaying the OpenAI/Continue transcript would duplicate prior turns and
-    leak IDE system prompts into the visible DeepSeek chat.
-    """
-    for message in reversed(messages or []):
-        if not isinstance(message, dict):
-            continue
-        if str(message.get("role") or "").strip().lower() != "user":
-            continue
-        text = _deepseek_message_text(message.get("content"))
-        if text:
-            return text
-    return ""
-
-
-# Sentinel that marks an "auto" tool call. It must be a rare token that plain
-# chat replies never begin with, and must NOT be a markdown code fence (a
-# normal answer often starts with ```python, which would false-trigger).
-DEEPSEEK_TOOLCALL_SENTINEL = (
-    os.getenv("DEEPSEEK_TOOLCALL_SENTINEL", "⟦TOOLCALL⟧").strip() or "⟦TOOLCALL⟧"
-)
-
-# Shown to the client when the model began an auto tool call (emitted the
-# sentinel) but the following JSON could not be parsed. The half-formed JSON
-# and the internal sentinel must never reach the client, so a short, friendly
-# message is sent instead of the raw buffered text.
-DEEPSEEK_TOOLCALL_FALLBACK_TEXT = (
-    os.getenv(
-        "DEEPSEEK_TOOLCALL_FALLBACK_TEXT",
-        "抱歉，工具调用解析失败，请重试。",
-    ).strip()
-    or "抱歉，工具调用解析失败，请重试。"
-)
-
-
-def _deepseek_extract_balanced_json(text: str) -> str:
-    """Return the first balanced {...} object in text, or "" if none.
-
-    Brace-aware and string-aware so trailing prose after the object (which the
-    fenced regex cannot tolerate) is safely ignored.
-    """
-    s = str(text or "")
-    start = s.find("{")
-    if start < 0:
-        return ""
-    depth = 0
-    in_str = False
-    esc = False
-    for i in range(start, len(s)):
-        ch = s[i]
-        if in_str:
-            if esc:
-                esc = False
-            elif ch == "\\":
-                esc = True
-            elif ch == '"':
-                in_str = False
-            continue
-        if ch == '"':
-            in_str = True
-        elif ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                return s[start : i + 1]
-    # Unbalanced (truncated stream): return the remainder so the JSON repair
-    # fallback in _deepseek_parse_tool_json can still try to close it.
-    return s[start:]
-
-
-def _deepseek_parse_sentinel_tool_json(
-    text: str, allowed_names: set[str]
-) -> list[dict]:
-    """Parse an "auto"-mode tool call of the form ``⟦TOOLCALL⟧{json}``.
-
-    Returns [] unless the reply (after leading whitespace) begins with the
-    sentinel. The balanced JSON object is extracted and handed to the same
-    validated parser used by the required-mode fenced path, so both modes
-    share identical name/dup/arg validation and JSON repair.
-    """
-    head = str(text or "").lstrip()
-    if not head.startswith(DEEPSEEK_TOOLCALL_SENTINEL):
-        return []
-    body = head[len(DEEPSEEK_TOOLCALL_SENTINEL) :].strip()
-    obj = _deepseek_extract_balanced_json(body) or body
-    wrapped = "```tool_json\n" + obj + "\n```"
-    return _deepseek_parse_tool_json(wrapped, allowed_names)
-
-
-def _deepseek_auto_classify(head_text: str, sentinel: str) -> str:
-    """Classify a reply's leading text for auto-mode speculative streaming.
-
-    Returns one of:
-      * "tool"    - the head already begins with the sentinel (buffer as a call)
-      * "pending" - still a proper prefix of the sentinel, or only whitespace
-                    (undecided; wait for more content)
-      * "plain"   - cannot become the sentinel (stream immediately)
-
-    The sentinel must not be a code fence, so a normal answer that opens with
-    ```python is classified "plain" and streams with near-zero added latency.
-    """
-    stripped = str(head_text or "").lstrip()
-    if not stripped:
-        return "pending"
-    if stripped.startswith(sentinel):
-        return "tool"
-    if sentinel.startswith(stripped):
-        return "pending"
-    return "plain"
-
-
-def _deepseek_tool_prompt(messages: list, tools, tool_choice) -> str:
-    # Browser conversations already retain their own history. Never replay
-    # system/assistant/tool messages supplied by Continue/OpenAI clients.
-    prompt = _deepseek_latest_user_prompt(messages)
-    if not prompt:
-        return ""
-
-    # Continue commonly attaches its full IDE tool registry to every ordinary
-    # chat request. Inject the manifest for explicit tool use (required) and for
-    # auto (so the model *may* call a tool), but never for tool_choice="none".
-    required = tool_choice == "required" or isinstance(tool_choice, dict)
-    auto = tool_choice is None or tool_choice == "auto"
-    if not tools or not (required or auto):
-        return prompt
-
-    manifest = []
-    for tool in tools:
-        fn = tool.get("function", {}) if isinstance(tool, dict) else {}
-        name = str(fn.get("name") or "").strip()
-        if name:
-            manifest.append(
-                {
-                    "name": name,
-                    "description": str(fn.get("description") or ""),
-                    "parameters": fn.get("parameters") or {"type": "object"},
-                }
-            )
-    if not manifest:
-        return prompt
-    if required:
-        instruction = (
-            "You must call one of the tools in this JSON manifest:\n"
-            + json.dumps(manifest, ensure_ascii=False)
-            + "\nOutput exactly one fenced block and no other text:\n"
-            "```tool_json\n"
-            '{"calls":[{"id":"call_1","name":"tool_name","input":{}}]}\n'
-            "```"
-        )
-    else:
-        # Auto mode: the model decides. Normal chat must stream untouched, so the
-        # decision is made deterministically from the reply's FIRST characters.
-        # A tool call must begin with the sentinel and nothing else; any other
-        # reply must never contain the sentinel. Do NOT use a code fence here —
-        # a normal answer often starts with ```python and would false-trigger.
-        instruction = (
-            "You can use these tools (JSON manifest):\n"
-            + json.dumps(manifest, ensure_ascii=False)
-            + "\n\nAnswer normally in natural language whenever you can handle the "
-            "request yourself. ONLY when calling a tool is genuinely required, make "
-            "the VERY FIRST characters of your reply the exact marker "
-            f"{DEEPSEEK_TOOLCALL_SENTINEL} immediately followed by one JSON object, "
-            "with no text, whitespace, or code fence before it:\n"
-            f'{DEEPSEEK_TOOLCALL_SENTINEL}{{"calls":[{{"id":"call_1",'
-            '"name":"tool_name","input":{}}]}\n'
-            "If you are not calling a tool, reply normally and NEVER output "
-            f"{DEEPSEEK_TOOLCALL_SENTINEL} anywhere in your answer."
-        )
-    return instruction + "\n\n" + prompt
-
-
-def _deepseek_parse_tool_json(text: str, allowed_names: set[str]) -> list[dict]:
-    matches = re.findall(
-        r"```tool_json\s*(\{.*?\})\s*```",
-        str(text or ""),
-        re.IGNORECASE | re.DOTALL,
-    )
-    if not matches:
-        return []
-    result = []
-    seen = set()
-    for block_index, raw_payload in enumerate(matches):
-        repaired = raw_payload.replace("“", '"').replace("”", '"').replace("’", "'")
-        repaired = re.sub(
-            r"(?<=[{,])\s*([A-Za-z_][A-Za-z0-9_-]*)\s*:", r'"\1":', repaired
-        )
-        repaired = re.sub(r",\s*([}\]])", r"\1", repaired)
-        payload = None
-        for candidate in (
-            raw_payload,
-            repaired,
-            _complete_missing_json_closers(repaired),
-        ):
-            try:
-                payload = json.loads(candidate)
-                break
-            except (json.JSONDecodeError, TypeError):
-                continue
-        if not isinstance(payload, dict) or not isinstance(payload.get("calls"), list):
-            _deepseek_log.warning("tool_json block %d is invalid", block_index + 1)
-            continue
-        calls = payload["calls"]
-        if len(calls) > 8:
-            _deepseek_log.warning(
-                "tool_json block %d has %d calls; limiting total to 8",
-                block_index + 1,
-                len(calls),
-            )
-        for call_index, call in enumerate(calls):
-            if len(result) >= 8:
-                _deepseek_log.warning("tool_json calls truncated at 8")
-                return result
-            if not isinstance(call, dict):
-                _deepseek_log.warning(
-                    "tool_json call %d in block %d is not an object",
-                    call_index + 1,
-                    block_index + 1,
-                )
-                continue
-            name = str(call.get("name") or "").strip()
-            args = call.get("input", {})
-            call_id = str(
-                call.get("id") or f"call_{block_index + 1}_{call_index + 1}"
-            ).strip()
-            if not isinstance(args, dict):
-                _deepseek_log.warning(
-                    "tool_json call %s input is not an object", call_id
-                )
-                continue
-            if name not in allowed_names:
-                _deepseek_log.warning(
-                    "tool_json call %s uses disallowed tool %r", call_id, name
-                )
-                continue
-            if call_id in seen:
-                _deepseek_log.warning("tool_json duplicate call id %s ignored", call_id)
-                continue
-            seen.add(call_id)
-            result.append(
-                {
-                    "id": call_id,
-                    "type": "function",
-                    "function": {
-                        "name": name,
-                        "arguments": json.dumps(
-                            args, ensure_ascii=False, separators=(",", ":")
-                        ),
-                    },
-                }
-            )
-    return result
 
 
 DEEPSEEK_UPLOAD_MAX_BYTES = max(
@@ -14923,13 +16388,31 @@ async def _direct_deepseek_chat_response(
     messages: list,
     stream_mode: bool,
 ):
-    raw_tools = body.get("tools")
-    tool_choice = body.get("tool_choice")
-    tools = raw_tools if isinstance(raw_tools, list) and tool_choice != "none" else []
-    prompt = _deepseek_tool_prompt(messages, tools, tool_choice)
+    # Seam #1: unified injection. deepseek metadata (supports_tools=True,
+    # tool_format="json", tool_auto_detect="sentinel", relay_prompt=False)
+    # makes prepare() inject the SAME sentinel (auto) / ```tool_json (required)
+    # instructions the native parsers below already expect, so all four browser
+    # families now build their turn text through one code path. relay_prompt is
+    # False to preserve deepseek's current behavior (no IDE system-prompt relay);
+    # flip it to True in metadata to relay the system prompt like m365.
+    _deepseek_prepared = BROWSER_RELAY.prepare(
+        model_name, body, messages, bypass=BrowserRelay.should_bypass(body)
+    )
+    prompt = _deepseek_prepared.text
     try:
         images, files = await _deepseek_collect_attachments(messages)
     except Exception as exc:
+        return JSONResponse(
+            {"error": {"message": str(exc), "type": "deepseek_file_error"}},
+            status_code=400,
+        )
+    #  _deepseek_collect_attachments only handles OpenAI content-part
+    # attachments; inline Cline <file_content> blocks (stripped by the relay)
+    # would be lost, so re-append their text to the prompt.
+    # oversize/unreadable inline files raise ValueError -> family 400.
+    try:
+        prompt = _browser_append_inline_files(prompt, messages)
+    except ValueError as exc:
         return JSONResponse(
             {"error": {"message": str(exc), "type": "deepseek_file_error"}},
             status_code=400,
@@ -15105,31 +16588,29 @@ async def _direct_deepseek_chat_response(
             if event.get("type") in {"done", "error"}:
                 break
 
-    tool_mode_active = tool_choice == "required" or isinstance(tool_choice, dict)
-    tool_names = {
-        str(tool.get("function", {}).get("name") or "")
-        for tool in tools
-        if isinstance(tool, dict)
-    }
-    tool_names.discard("")
-    allowed = tool_names if tool_mode_active else set()
-    # Auto mode: tools are available but optional. We stream normal chat live and
-    # only divert to a buffered tool call when the reply begins with the sentinel.
-    auto_tool_mode = bool(tool_names) and (tool_choice is None or tool_choice == "auto")
+    # Seam #2: unified tool interception. new_transpiler() returns the transpiler
+    # matching this model's metadata; for deepseek that is:
+    #   * auto (tool_choice auto/None) -> SentinelToolTranspiler (speculative:
+    #     plain chat streams live; a reply opening with the sentinel is buffered)
+    #   * required                     -> JsonToolCallTranspiler (```tool_json```)
+    #   * no tools                     -> None (plain passthrough)
+    # so all four browser families now share ONE stream loop and ONE non-stream
+    # block. Reasoning is never a tool call and always bypasses the transpiler.
+    # A committed-but-unparsable tool call preserves the model's ORIGINAL prose
+    # (flush_pending returns it, sentinel stripped) so the client decides what to
+    # do — the relay never substitutes a canned message.
+    tp = _deepseek_prepared.new_transpiler()
+    # Shared Cline attempt_completion envelope (no-op unless client_kind ==
+    # "cline"); same helper every browser family uses. reasoning_content is
+    # NEVER wrapped — only visible answer content passes through open_prefix.
+    _deepseek_env = ClineEnvelope(_deepseek_prepared.client_kind == "cline")
 
-    # Auto + tools: speculative streaming. Stream normal chat with near-zero added
-    # latency, but if the reply opens with the sentinel, buffer it and parse a
-    # tool call so a partial JSON object is never leaked as assistant content.
-    if stream_mode and auto_tool_mode:
+    if stream_mode:
 
-        async def generate_gated():
+        async def generate():
             role_sent = False
-            decided = None  # None -> undecided, "plain", or "tool"
-            head = ""  # buffered content while still undecided
-            tool_buf = ""  # buffered content once decided == "tool"
-            sentinel = DEEPSEEK_TOOLCALL_SENTINEL
 
-            def chunk(field, value):
+            def content_chunk(field, value):
                 nonlocal role_sent
                 delta = {}
                 if not role_sent:
@@ -15141,7 +16622,28 @@ async def _direct_deepseek_chat_response(
                         "id": completion_id,
                         "object": "chat.completion.chunk",
                         "created": created,
-                        "model": "LLM:deepseek",
+                        "model": model_name,
+                        "choices": [
+                            {"index": 0, "delta": delta, "finish_reason": None}
+                        ],
+                    }
+                )
+
+            def tool_calls_chunk(calls):
+                nonlocal role_sent
+                tc = [{"index": i, **c} for i, c in enumerate(calls)]
+                delta = (
+                    {"role": "assistant", "tool_calls": tc}
+                    if not role_sent
+                    else {"tool_calls": tc}
+                )
+                role_sent = True
+                return _chat_sse_data(
+                    {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": model_name,
                         "choices": [
                             {"index": 0, "delta": delta, "finish_reason": None}
                         ],
@@ -15154,7 +16656,7 @@ async def _direct_deepseek_chat_response(
                         "id": completion_id,
                         "object": "chat.completion.chunk",
                         "created": created,
-                        "model": "LLM:deepseek",
+                        "model": model_name,
                         "choices": [{"index": 0, "delta": {}, "finish_reason": reason}],
                         "conversation_id": session_id,
                     }
@@ -15165,34 +16667,41 @@ async def _direct_deepseek_chat_response(
                 if kind == "conversation":
                     continue
                 if kind == "reasoning":
-                    # Reasoning is never a tool call; stream it straight through.
-                    yield chunk("reasoning_content", str(event.get("content") or ""))
+                    yield content_chunk(
+                        "reasoning_content", str(event.get("content") or "")
+                    )
                     continue
                 if kind == "content":
-                    piece = str(event.get("content") or "")
-                    if not piece:
+                    content = str(event.get("content") or "")
+                    if not content:
                         continue
-                    if decided == "plain":
-                        yield chunk("content", piece)
-                        continue
-                    if decided == "tool":
-                        tool_buf += piece
-                        continue
-                    # Undecided: accumulate the head and classify from its start.
-                    head += piece
-                    verdict = _deepseek_auto_classify(head, sentinel)
-                    if verdict == "pending":
-                        continue
-                    if verdict == "tool":
-                        decided = "tool"
-                        tool_buf = head
-                        head = ""
-                        continue
-                    # "plain": flush the buffered head and stream everything from
-                    # here on with near-zero added latency.
-                    decided = "plain"
-                    yield chunk("content", head)
-                    head = ""
+                    if DEEPSEEK_LOG_STREAM_CHUNKS:
+                        _deepseek_log.info(
+                            "stream.tx id=%s type=content chars=%d at=%.6f",
+                            completion_id[-8:],
+                            len(content),
+                            time.monotonic(),
+                        )
+                    # A (defense-in-depth, symmetric with m365): strip any
+                    # model-emitted attempt_completion/result tags before the
+                    # transport wraps. Byte-exact passthrough when not cline. The
+                    # shared _deepseek_env holds back a tag split across pieces/
+                    # frames, so tp piece boundaries do not break stripping.
+                    if tp is None:
+                        stripped = _deepseek_env.strip_envelope_tags(content)
+                        if stripped:
+                            yield content_chunk(
+                                "content", _deepseek_env.open_prefix() + stripped
+                            )
+                    else:
+                        for piece in tp.push(content):
+                            if not piece:
+                                continue
+                            stripped = _deepseek_env.strip_envelope_tags(piece)
+                            if stripped:
+                                yield content_chunk(
+                                    "content", _deepseek_env.open_prefix() + stripped
+                                )
                     continue
                 if kind == "error":
                     yield _chat_sse_data(
@@ -15207,142 +16716,46 @@ async def _direct_deepseek_chat_response(
                     )
                     return
                 if kind == "done":
-                    buffered = tool_buf if decided == "tool" else head
-                    looks_tool = decided == "tool" or (
-                        decided is None and buffered.lstrip().startswith(sentinel)
-                    )
-                    if looks_tool:
-                        calls = _deepseek_parse_sentinel_tool_json(buffered, tool_names)
+                    if tp is not None:
+                        calls = tp.finish_tool_calls()
                         if calls:
-                            for index, call in enumerate(calls):
-                                yield _chat_sse_data(
-                                    {
-                                        "id": completion_id,
-                                        "object": "chat.completion.chunk",
-                                        "created": created,
-                                        "model": "LLM:deepseek",
-                                        "choices": [
-                                            {
-                                                "index": 0,
-                                                "delta": {
-                                                    "role": "assistant",
-                                                    "tool_calls": [
-                                                        {"index": index, **call}
-                                                    ],
-                                                },
-                                                "finish_reason": None,
-                                            }
-                                        ],
-                                    }
-                                )
+                            # tool_call turn: no Cline envelope.
+                            _ds_close = _deepseek_env.suppress()
+                            if _ds_close:
+                                yield content_chunk("content", _ds_close)
+                            yield tool_calls_chunk(calls)
                             yield final_chunk("tool_calls")
                             yield _SSE_DONE_FRAME
                             return
-                        # Sentinel seen but no valid call parsed. The buffered
-                        # text starts with the internal sentinel and holds only
-                        # broken JSON, so it must NOT be sent to the client.
-                        # Emit a short friendly message instead.
-                        _deepseek_log.warning(
-                            "auto tool sentinel seen but no valid call parsed; "
-                            "sending fallback message (buffered_chars=%d)",
-                            len(buffered),
-                        )
-                        yield chunk("content", DEEPSEEK_TOOLCALL_FALLBACK_TEXT)
-                        yield final_chunk("stop")
-                        yield _SSE_DONE_FRAME
-                        return
-                    # Plain reply (or a short undecided head that never matched).
-                    if head:
-                        yield chunk("content", head)
+                        # No tool call parsed. flush_pending() returns the
+                        # model's ORIGINAL prose on a committed-but-unparsable
+                        # attempt (sentinel stripped); the relay preserves it for
+                        # the client rather than injecting a canned message. It is
+                        # visible content, so it also opens the envelope.
+                        resid = tp.flush_pending()
+                        if resid:
+                            # A: strip model envelope tags from the residual too.
+                            resid = _deepseek_env.strip_envelope_tags(resid)
+                            if resid:
+                                yield content_chunk(
+                                    "content", _deepseek_env.open_prefix() + resid
+                                )
+                    # Cline envelope closing (close tag / empty envelope), unless
+                    # suppressed by a tool_call turn or inactive.
+                    _deepseek_closing = _deepseek_env.closing()
+                    if _deepseek_closing:
+                        yield content_chunk("content", _deepseek_closing)
                     yield final_chunk("stop")
                     yield _SSE_DONE_FRAME
                     return
 
         return StreamingResponse(
-            generate_gated(),
+            generate(),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
-    # Plain chat can be relayed immediately. Tool requests are buffered so a
-    # partial tool_json object is never leaked as assistant content.
-    if stream_mode and not allowed:
-
-        async def generate_live():
-            role_sent = False
-            async for event in next_events():
-                kind = event.get("type")
-                if kind == "conversation":
-                    continue
-                if kind in {"content", "reasoning"}:
-                    content = str(event.get("content") or "")
-                    if DEEPSEEK_LOG_STREAM_CHUNKS:
-                        _deepseek_log.info(
-                            "stream.tx id=%s type=%s chars=%d at=%.6f",
-                            completion_id[-8:],
-                            kind,
-                            len(content),
-                            time.monotonic(),
-                        )
-                    delta = {}
-                    if not role_sent:
-                        delta["role"] = "assistant"
-                        role_sent = True
-                    field = "reasoning_content" if kind == "reasoning" else "content"
-                    delta[field] = str(event.get("content") or "")
-                    yield _chat_sse_data(
-                        {
-                            "id": completion_id,
-                            "object": "chat.completion.chunk",
-                            "created": created,
-                            "model": "LLM:deepseek",
-                            "choices": [
-                                {
-                                    "index": 0,
-                                    "delta": delta,
-                                    "finish_reason": None,
-                                }
-                            ],
-                        }
-                    )
-                elif kind == "error":
-                    yield _chat_sse_data(
-                        {
-                            "error": {
-                                "message": str(
-                                    event.get("message") or "DeepSeek browser error"
-                                ),
-                                "type": "deepseek_browser_error",
-                            }
-                        }
-                    )
-                    return
-                elif kind == "done":
-                    yield _chat_sse_data(
-                        {
-                            "id": completion_id,
-                            "object": "chat.completion.chunk",
-                            "created": created,
-                            "model": "LLM:deepseek",
-                            "choices": [
-                                {
-                                    "index": 0,
-                                    "delta": {},
-                                    "finish_reason": "stop",
-                                }
-                            ],
-                            "conversation_id": session_id,
-                        }
-                    )
-                    yield _SSE_DONE_FRAME
-                    return
-
-        return StreamingResponse(
-            generate_live(),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-        )
-
+    # Non-stream: accumulate the full reply, then run the SAME transpiler over it.
     content_parts = []
     reasoning_parts = []
     error = None
@@ -15363,129 +16776,26 @@ async def _direct_deepseek_chat_response(
 
     text = "".join(content_parts)
     reasoning = "".join(reasoning_parts)
-    if allowed:
-        # Required mode: fenced ```tool_json block.
-        tool_calls = _deepseek_parse_tool_json(text, allowed)
-        clean_text = (
-            re.sub(
-                r"```tool_json\s*\{.*?\}\s*```",
-                "",
-                text,
-                flags=re.IGNORECASE | re.DOTALL,
-            ).strip()
-            if tool_calls
-            else text
-        )
-    elif auto_tool_mode:
-        # Auto mode: the whole reply is either a sentinel tool call or plain text.
-        tool_calls = _deepseek_parse_sentinel_tool_json(text, tool_names)
-        if tool_calls:
-            clean_text = ""
-        elif str(text or "").lstrip().startswith(DEEPSEEK_TOOLCALL_SENTINEL):
-            # Sentinel present but no valid call parsed: never leak the sentinel
-            # or the broken JSON to the client; send a friendly message instead.
-            _deepseek_log.warning(
-                "auto tool sentinel seen but no valid call parsed (non-stream); "
-                "sending fallback message (chars=%d)",
-                len(text),
-            )
-            clean_text = DEEPSEEK_TOOLCALL_FALLBACK_TEXT
-        else:
-            # Genuine plain reply (no sentinel): keep it verbatim.
-            clean_text = text
-    else:
+    if tp is None:
         tool_calls = []
         clean_text = text
+    else:
+        clean_text = "".join(tp.push(text))
+        tool_calls = tp.finish_tool_calls()
+        if not tool_calls:
+            # Preserve the model's ORIGINAL prose on a committed-but-unparsable
+            # tool attempt; the relay hands it to the client (flush_pending has
+            # stripped the internal sentinel) rather than injecting a message.
+            clean_text = clean_text + tp.flush_pending()
     finish_reason = "tool_calls" if tool_calls else "stop"
 
-    if stream_mode:
-
-        async def generate_buffered():
-            if reasoning:
-                yield _chat_sse_data(
-                    {
-                        "id": completion_id,
-                        "object": "chat.completion.chunk",
-                        "created": created,
-                        "model": "LLM:deepseek",
-                        "choices": [
-                            {
-                                "index": 0,
-                                "delta": {
-                                    "role": "assistant",
-                                    "reasoning_content": reasoning,
-                                },
-                                "finish_reason": None,
-                            }
-                        ],
-                    }
-                )
-            if tool_calls:
-                for index, call in enumerate(tool_calls):
-                    yield _chat_sse_data(
-                        {
-                            "id": completion_id,
-                            "object": "chat.completion.chunk",
-                            "created": created,
-                            "model": "LLM:deepseek",
-                            "choices": [
-                                {
-                                    "index": 0,
-                                    "delta": {
-                                        "role": "assistant",
-                                        "tool_calls": [{"index": index, **call}],
-                                    },
-                                    "finish_reason": None,
-                                }
-                            ],
-                        }
-                    )
-            elif clean_text:
-                yield _chat_sse_data(
-                    {
-                        "id": completion_id,
-                        "object": "chat.completion.chunk",
-                        "created": created,
-                        "model": "LLM:deepseek",
-                        "choices": [
-                            {
-                                "index": 0,
-                                "delta": {
-                                    "role": "assistant",
-                                    "content": clean_text,
-                                },
-                                "finish_reason": None,
-                            }
-                        ],
-                    }
-                )
-            yield _chat_sse_data(
-                {
-                    "id": completion_id,
-                    "object": "chat.completion.chunk",
-                    "created": created,
-                    "model": "LLM:deepseek",
-                    "choices": [
-                        {
-                            "index": 0,
-                            "delta": {},
-                            "finish_reason": finish_reason,
-                        }
-                    ],
-                    "conversation_id": session_id,
-                }
-            )
-            yield _SSE_DONE_FRAME
-
-        return StreamingResponse(
-            generate_buffered(),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-        )
-
+    # Non-stream: wrap the visible answer in the Cline envelope when active.
+    # A tool_call turn has content=None and is never wrapped (a call is a
+    # request, not the final result); reasoning_content is never wrapped.
+    _deepseek_ns_env = ClineEnvelope(_deepseek_prepared.client_kind == "cline")
     message = {
         "role": "assistant",
-        "content": None if tool_calls else clean_text,
+        "content": None if tool_calls else _deepseek_ns_env.wrap(clean_text),
     }
     if reasoning:
         message["reasoning_content"] = reasoning
@@ -15496,7 +16806,7 @@ async def _direct_deepseek_chat_response(
             "id": completion_id,
             "object": "chat.completion",
             "created": created,
-            "model": "LLM:deepseek",
+            "model": model_name,
             "choices": [
                 {
                     "index": 0,
@@ -20351,25 +21661,6 @@ class AuthSyncServer:
 AUTH_SYNC_SERVER = AuthSyncServer(FIREFOX_AUTH_SYNC_SOCKET)
 
 
-def _doubao_message_text(content) -> str:
-    if isinstance(content, list):
-        return "\n".join(
-            str(part.get("text", ""))
-            for part in content
-            if isinstance(part, dict) and part.get("type") == "text"
-        ).strip()
-    return str(content or "").strip()
-
-
-def _doubao_prompt_from_messages(messages: list) -> str:
-    parts = []
-    for message in messages:
-        text = _doubao_message_text(message.get("content", ""))
-        if text:
-            parts.append(f"[{message.get('role', 'user')}]\n{text}")
-    return "\n\n".join(parts)
-
-
 _DOUBAO_HTTP_CONVERSATION_LOCK = threading.Lock()
 _DOUBAO_HTTP_LAST_CONVERSATION_ID = ""
 
@@ -20434,14 +21725,30 @@ def _doubao_http_resolve_conversation(body: dict) -> tuple[str, str]:
 
 async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: bool):
     conversation_id, conversation_decision = _doubao_http_resolve_conversation(body)
-    text = next(
-        (
-            _doubao_message_text(m.get("content", ""))
-            for m in reversed(messages)
-            if m.get("role") == "user"
-        ),
-        "",
+    # Seam #1: unified relay. Doubao metadata is relay_prompt=False /
+    # supports_tools=False, so this preserves the current behavior (latest user
+    # turn only). XiaoAI drives this path (source=='xiaoai') and bypasses
+    # explicitly here — it must never receive an injected system prompt or
+    # tools, matching the smart-speaker's current contract.
+    _doubao_prepared = BROWSER_RELAY.prepare(
+        "LLM:doubao", body, messages, bypass=BrowserRelay.should_bypass(body)
     )
+    text = _doubao_prepared.text
+    # Attachment egress hook (upload not yet implemented for Doubao). Relay has
+    # already parsed + stripped inline files from `text`; this makes any drop
+    # explicit and marks where the Doubao upload path will slot in. XiaoAI sends
+    # plain text with no attachments, so the stub stays silent for it.
+    _browser_attachments_egress_stub("LLM:doubao", messages)
+    # Doubao has no upload egress; keep inline file text in the prompt.
+    # (XiaoAI bypass sends plain text -> helper returns "" -> no double-send.)
+    # oversize/unreadable inline files raise ValueError -> family 400.
+    try:
+        text = _browser_append_inline_files(text, messages)
+    except ValueError as exc:
+        return JSONResponse(
+            {"error": {"message": str(exc), "type": "doubao_file_error"}},
+            status_code=400,
+        )
     if not text:
         return JSONResponse(
             {"error": "No user text provided for LLM:doubao"}, status_code=400
@@ -20516,6 +21823,15 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
             nonlocal future, event_queue, conversation_id
             sent_role = False
             visible_output = False
+            # Seam #2 (tool interception). DORMANT while doubao supports_tools is
+            # False (its current default, and the format XiaoAI relies on):
+            # new_transpiler() returns None and every `is not None` guard below is
+            # skipped, so this path is byte-identical to before. Flip doubao's
+            # metadata (supports_tools + tool_format) to activate for IDE clients.
+            _doubao_tool_tp = _doubao_prepared.new_transpiler()
+            # Shared Cline attempt_completion envelope (no-op unless client_kind
+            # == "cline"); same helper every browser family uses.
+            _doubao_env = ClineEnvelope(_doubao_prepared.client_kind == "cline")
             stale_recovery_allowed = bool(
                 conversation_id and conversation_decision == "reuse"
             )
@@ -20604,8 +21920,23 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
                         )
                         continue
                     if kind == "delta":
+                        _content = str(event.get("content") or "")
+                        if _doubao_tool_tp is not None:
+                            _content = "".join(_doubao_tool_tp.push(_content))
+                            if not _content:
+                                continue
+                        # A (defense-in-depth, symmetric with m365): strip any
+                        # model-emitted attempt_completion/result tags before the
+                        # transport adds its own envelope. Byte-exact passthrough
+                        # when not cline. (The image branch below emits our OWN
+                        # generated markdown, which cannot contain these tags, so
+                        # it is not stripped.)
+                        _content = _doubao_env.strip_envelope_tags(_content)
+                        if not _content:
+                            continue
+                        _content = _doubao_env.open_prefix() + _content
                         visible_output = True
-                        delta = {"content": event.get("content", "")}
+                        delta = {"content": _content}
                         if not sent_role:
                             delta["role"] = "assistant"
                             sent_role = True
@@ -20632,7 +21963,12 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
                                     {
                                         "index": 0,
                                         "delta": {
-                                            "content": f"![generated]({event.get('url', '')})"
+                                            # route the image markdown
+                                            # through the Cline envelope too, so
+                                            # a leading image opens <result> and
+                                            # is not emitted outside the envelope.
+                                            "content": _doubao_env.open_prefix()
+                                            + f"![generated]({event.get('url', '')})"
                                         },
                                         "finish_reason": None,
                                     }
@@ -20690,6 +22026,141 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
                         )
                         break
                     elif kind == "done":
+                        if _doubao_tool_tp is not None:
+                            # Seam #2 terminal (dormant while tp is None). Parsed
+                            # tool block -> OpenAI tool_calls; else flush any
+                            # held-back tail as a final content delta.
+                            _db_calls = _doubao_tool_tp.finish_tool_calls()
+                            if _db_calls:
+                                # tool_call turn: no Cline envelope.
+                                _db_close = _doubao_env.suppress()
+                                if _db_close:
+                                    yield _chat_sse_data(
+                                        {
+                                            "id": completion_id,
+                                            "object": "chat.completion.chunk",
+                                            "created": created,
+                                            "model": model_name,
+                                            "choices": [
+                                                {
+                                                    "index": 0,
+                                                    "delta": (
+                                                        {
+                                                            "role": "assistant",
+                                                            "content": _db_close,
+                                                        }
+                                                        if not sent_role
+                                                        else {"content": _db_close}
+                                                    ),
+                                                    "finish_reason": None,
+                                                }
+                                            ],
+                                        }
+                                    )
+                                    sent_role = True
+                                _tc = [
+                                    {
+                                        "index": _i,
+                                        "id": _c["id"],
+                                        "type": "function",
+                                        "function": _c["function"],
+                                    }
+                                    for _i, _c in enumerate(_db_calls)
+                                ]
+                                yield _chat_sse_data(
+                                    {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": model_name,
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": (
+                                                    {
+                                                        "role": "assistant",
+                                                        "tool_calls": _tc,
+                                                    }
+                                                    if not sent_role
+                                                    else {"tool_calls": _tc}
+                                                ),
+                                                "finish_reason": None,
+                                            }
+                                        ],
+                                    }
+                                )
+                                yield _chat_sse_data(
+                                    {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": model_name,
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": {},
+                                                "finish_reason": "tool_calls",
+                                            }
+                                        ],
+                                    }
+                                )
+                                if not SERVER_SHUTTING_DOWN.is_set():
+                                    yield _SSE_DONE_FRAME
+                                break
+                            _resid = _doubao_tool_tp.flush_pending()
+                            # strip model envelope tags from the residual
+                            # (symmetric with deepseek/delta path). Unreachable
+                            # while doubao supports_tools=False; future-proofing.
+                            _resid = _doubao_env.strip_envelope_tags(_resid)
+                            if _resid:
+                                yield _chat_sse_data(
+                                    {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": model_name,
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": (
+                                                    {
+                                                        "role": "assistant",
+                                                        "content": _resid,
+                                                    }
+                                                    if not sent_role
+                                                    else {"content": _resid}
+                                                ),
+                                                "finish_reason": None,
+                                            }
+                                        ],
+                                    }
+                                )
+                                sent_role = True
+                        _doubao_closing = _doubao_env.closing()
+                        if _doubao_closing:
+                            yield _chat_sse_data(
+                                {
+                                    "id": completion_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": model_name,
+                                    "choices": [
+                                        {
+                                            "index": 0,
+                                            "delta": (
+                                                {
+                                                    "role": "assistant",
+                                                    "content": _doubao_closing,
+                                                }
+                                                if not sent_role
+                                                else {"content": _doubao_closing}
+                                            ),
+                                            "finish_reason": None,
+                                        }
+                                    ],
+                                }
+                            )
+                            sent_role = True
                         yield _chat_sse_data(
                             {
                                 "id": completion_id,
@@ -20770,6 +22241,8 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
         content += ("\\n" if content else "") + "\\n".join(
             f"![generated]({url})" for url in result.image_urls
         )
+    # Non-stream: wrap the full answer in the Cline envelope when active.
+    _doubao_ns_env = ClineEnvelope(_doubao_prepared.client_kind == "cline")
     return JSONResponse(
         {
             "id": completion_id,
@@ -20779,7 +22252,10 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
             "choices": [
                 {
                     "index": 0,
-                    "message": {"role": "assistant", "content": content},
+                    "message": {
+                        "role": "assistant",
+                        "content": _doubao_ns_env.wrap(content),
+                    },
                     "finish_reason": "stop",
                 }
             ],
@@ -21141,7 +22617,7 @@ def _m365_strip_inline_files_for_identity(text: str) -> str:
     """
     value = str(text or "")
     # Mirror the opening-tag escape normalization used when the attachment is
-    # actually consumed (_m365_collect_cline_inline_files), so identity spans
+    # actually consumed (_cline_collect_inline_files), so identity spans
     # line up 1:1 with the blocks that were uploaded.
     scan_text = re.sub(
         r'(?m)^([ \t]*<file_content\b[^>\r\n]*?\bpath\s*=\s*)\\(["\'])',
@@ -21149,7 +22625,7 @@ def _m365_strip_inline_files_for_identity(text: str) -> str:
         value,
         flags=re.IGNORECASE,
     )
-    spans = _m365_cline_inline_file_spans(scan_text)
+    spans = _cline_inline_file_spans(scan_text)
     if spans:
         pieces = []
         cursor = 0
@@ -21218,9 +22694,9 @@ def _m365_first_user_and_assistant(messages: list) -> tuple[str, str]:
             continue
         role = str(message.get("role") or "").strip().lower()
         if role == "user" and not first_user:
-            first_user = _m365_identity_normalize(_m365_user_text(message))
+            first_user = _m365_identity_normalize(_client_user_text(message))
         elif role == "assistant" and not first_assistant:
-            first_assistant = _m365_identity_normalize(_m365_user_text(message))
+            first_assistant = _m365_identity_normalize(_client_user_text(message))
         if first_user and first_assistant:
             break
     return first_user, first_assistant
@@ -21373,40 +22849,38 @@ M365_UPLOAD_MAX_BYTES = max(
 # A Cline/Continue client may emit an empty <file_content> wrapper while still
 # including the absolute path selected by the user. In that case, read the
 # selected local file directly. The normal size and regular-file checks remain.
-def _m365_read_local_attachment_fallback(raw_path: str) -> tuple[bytes, Path]:
+def _client_read_local_attachment_fallback(raw_path: str) -> tuple[bytes, Path]:
     candidate = Path(str(raw_path or "")).expanduser()
     if not candidate.is_absolute():
-        raise ValueError("M365 empty inline attachment path is not absolute")
+        raise ValueError("empty inline attachment path is not absolute")
     try:
         resolved = candidate.resolve(strict=True)
     except (FileNotFoundError, OSError) as exc:
-        raise ValueError("M365 empty inline attachment file was not found") from exc
+        raise ValueError("empty inline attachment file was not found") from exc
     if not resolved.is_file():
-        raise ValueError("M365 empty inline attachment path is not a regular file")
+        raise ValueError("empty inline attachment path is not a regular file")
     try:
         size = resolved.stat().st_size
     except OSError as exc:
-        raise ValueError(
-            "M365 empty inline attachment file cannot be inspected"
-        ) from exc
+        raise ValueError("empty inline attachment file cannot be inspected") from exc
     if size > M365_UPLOAD_MAX_BYTES:
-        raise ValueError("M365 attachment exceeds upload limit")
+        raise ValueError("inline attachment exceeds upload limit")
     try:
         data = resolved.read_bytes()
     except OSError as exc:
-        raise ValueError("M365 empty inline attachment file cannot be read") from exc
+        raise ValueError("empty inline attachment file cannot be read") from exc
     if len(data) != size:
-        raise ValueError("M365 local attachment changed while being read")
+        raise ValueError("local attachment changed while being read")
     return data, resolved
 
 
-def _m365_safe_filename(value: str, fallback: str) -> str:
+def _client_safe_filename(value: str, fallback: str) -> str:
     name = Path(str(value or "")).name.strip()
     name = re.sub(r"[^A-Za-z0-9._ -]+", "_", name)
     return name[:180] or fallback
 
 
-def _m365_latest_user_message(messages: list) -> dict:
+def _client_latest_user_message(messages: list) -> dict:
     for message in reversed(messages or []):
         if (
             isinstance(message, dict)
@@ -21416,8 +22890,19 @@ def _m365_latest_user_message(messages: list) -> dict:
     return {}
 
 
+# The opening AND closing protocol markers must EACH occupy their own line
+# (the documented contract of _cline_inline_file_spans). Previously only the
+# closing marker was line-anchored, so a bare "<file_content path=...>" mention
+# appearing MID-LINE in ordinary prose (a user quoting/discussing the marker, or
+# a pasted report containing the text "file_content") started a span that
+# swallowed everything up to the next standalone "</file_content>" line.
+# Anchoring the opening tag to a standalone line makes a real IDE-injected
+# attachment match while an inline prose mention never starts a span. Limiting
+# attrs to [^>\r\n]* stops the opening tag from spanning lines. As a bonus the
+# content group now begins AFTER the opening line's newline, so the extracted
+# payload is byte-exact (no stray leading "\n").
 _CLINE_FILE_CONTENT_RE = re.compile(
-    r"<file_content\b(?P<attrs>[^>]*)>"
+    r"^[ \t]*<file_content\b(?P<attrs>[^>\r\n]*)>[ \t]*\r?\n"
     r"(?P<content>.*?)"
     r"^[ \t]*</file_content\s*>[ \t]*(?:\r?\n|\Z)",
     re.IGNORECASE | re.MULTILINE | re.DOTALL,
@@ -21448,7 +22933,7 @@ _CLINE_TASK_PROGRESS_RE = re.compile(
 )
 
 
-def _m365_user_text_parts(message: dict) -> list[str]:
+def _client_user_text_parts(message: dict) -> list[str]:
     content = message.get("content")
     if isinstance(content, list):
         return [
@@ -21460,7 +22945,7 @@ def _m365_user_text_parts(message: dict) -> list[str]:
     return [str(content or "")]
 
 
-def _m365_user_text(message: dict) -> str:
+def _client_user_text(message: dict) -> str:
     """Reassemble one logical user text stream before parsing wrappers.
 
     OpenAI/Continue clients may split a single Cline wrapper, its payload, and
@@ -21468,10 +22953,10 @@ def _m365_user_text(message: dict) -> str:
     empty separator preserves the original byte-for-byte character stream;
     parsing each part independently can create empty or missing attachments.
     """
-    return "".join(_m365_user_text_parts(message))
+    return "".join(_client_user_text_parts(message))
 
 
-def _m365_cline_inline_file_spans(text: str) -> list[dict]:
+def _cline_inline_file_spans(text: str) -> list[dict]:
     """Return every complete, line-delimited Cline inline-file span.
 
     Opening and closing protocol markers must each occupy their own line.
@@ -21510,9 +22995,9 @@ def _m365_cline_inline_file_spans(text: str) -> list[dict]:
     return spans
 
 
-def _m365_collect_cline_inline_files(message: dict) -> list[dict]:
+def _cline_collect_inline_files(message: dict) -> list[dict]:
     attachments: list[dict] = []
-    text_parts = _m365_user_text_parts(message)
+    text_parts = _client_user_text_parts(message)
     logical_text = "".join(text_parts)
     # Some Cline builds JSON-escape quotes inside the already decoded opening
     # tag (path=\"...\"). Normalize only protocol opening-tag syntax after
@@ -21523,7 +23008,7 @@ def _m365_collect_cline_inline_files(message: dict) -> list[dict]:
         logical_text,
         flags=re.IGNORECASE,
     )
-    spans = _m365_cline_inline_file_spans(scan_text)
+    spans = _cline_inline_file_spans(scan_text)
 
     _m365_attachment_debug(
         "cline-scan",
@@ -21543,7 +23028,7 @@ def _m365_collect_cline_inline_files(message: dict) -> list[dict]:
         source = "inline"
         resolved_path = ""
         if not extracted_text.strip():
-            data, local_path = _m365_read_local_attachment_fallback(span["path"])
+            data, local_path = _client_read_local_attachment_fallback(span["path"])
             source = "local-path-fallback"
             resolved_path = str(local_path)
         _m365_attachment_debug(
@@ -21563,9 +23048,9 @@ def _m365_collect_cline_inline_files(message: dict) -> list[dict]:
             newline_count=extracted_text.count("\n"),
         )
         if len(data) > M365_UPLOAD_MAX_BYTES:
-            raise ValueError("M365 attachment exceeds upload limit")
+            raise ValueError("inline attachment exceeds upload limit")
         fallback = f"cline-attachment-{attachment_index}.txt"
-        name = _m365_safe_filename(span["path"], fallback)
+        name = _client_safe_filename(span["path"], fallback)
         suffix = Path(name).suffix.lower()
         mime = {
             ".py": "text/x-python",
@@ -21596,10 +23081,10 @@ def _m365_collect_cline_inline_files(message: dict) -> list[dict]:
     return attachments
 
 
-def _m365_text_outside_inline_files(text: str) -> str:
+def _cline_text_outside_inline_files(text: str) -> str:
     """Return user-authored text while removing only parsed attachment spans."""
     value = str(text or "")
-    spans = _m365_cline_inline_file_spans(value)
+    spans = _cline_inline_file_spans(value)
     if not spans:
         return value
     pieces = []
@@ -21611,9 +23096,9 @@ def _m365_text_outside_inline_files(text: str) -> str:
     return "".join(pieces)
 
 
-def _m365_cline_prompt(message: dict) -> str:
-    logical_text = _m365_user_text(message)
-    parts = [_m365_text_outside_inline_files(logical_text)]
+def _cline_prompt(message: dict) -> str:
+    logical_text = _client_user_text(message)
+    parts = [_cline_text_outside_inline_files(logical_text)]
     explicit_tasks = []
     for text in parts:
         explicit_tasks.extend(
@@ -21622,11 +23107,7 @@ def _m365_cline_prompt(message: dict) -> str:
             if match.group("task").strip()
         )
     if explicit_tasks:
-        prompt = "\n\n".join(explicit_tasks).strip()
-        _m365_attachment_debug(
-            "prompt", source="task-tag", length=len(prompt), preview=prompt[:160]
-        )
-        return prompt
+        return "\n\n".join(explicit_tasks).strip()
 
     cleaned = []
     for text in parts:
@@ -21641,17 +23122,13 @@ def _m365_cline_prompt(message: dict) -> str:
         text = text.strip()
         if text:
             cleaned.append(text)
-    prompt = "\n\n".join(cleaned).strip()
-    _m365_attachment_debug(
-        "prompt", source="cleaned-text", length=len(prompt), preview=prompt[:160]
-    )
-    return prompt
+    return "\n\n".join(cleaned).strip()
 
 
-async def _m365_collect_attachments(messages: list) -> list[dict]:
-    message = _m365_latest_user_message(messages)
+async def _client_collect_attachments(messages: list) -> list[dict]:
+    message = _client_latest_user_message(messages)
     content = message.get("content")
-    attachments: list[dict] = _m365_collect_cline_inline_files(message)
+    attachments: list[dict] = _cline_collect_inline_files(message)
     _m365_attachment_debug(
         "collect-start",
         message_count=len(messages or []),
@@ -21702,7 +23179,7 @@ async def _m365_collect_attachments(messages: list) -> list[dict]:
             except (ValueError, binascii.Error):
                 continue
         if len(data) > M365_UPLOAD_MAX_BYTES:
-            raise ValueError("M365 attachment exceeds upload limit")
+            raise ValueError("inline attachment exceeds upload limit")
         effective_mime = str(mime or detected_mime or "application/octet-stream")
         if not is_image and effective_mime.startswith("image/"):
             is_image = True
@@ -21727,7 +23204,7 @@ async def _m365_collect_attachments(messages: list) -> list[dict]:
                 # Without this tag the extension cannot tell a pasted image from
                 # a document and silently sends it as a FileUrl link.
                 "kind": "image" if is_image else "file",
-                "name": _m365_safe_filename(str(filename or ""), fallback),
+                "name": _client_safe_filename(str(filename or ""), fallback),
                 "mimeType": effective_mime,
                 "size": len(data),
                 "data": base64.b64encode(data).decode("ascii"),
@@ -21749,7 +23226,7 @@ _CLINE_PROTOCOL_MARKERS = (
 )
 
 
-def _m365_is_cline_request(messages: list) -> bool:
+def _cline_is_request(messages: list) -> bool:
     """Detect the Cline response protocol without misclassifying Continue.
 
     Continue reuses only <file_content> for inline file uploads. That tag is
@@ -21757,9 +23234,10 @@ def _m365_is_cline_request(messages: list) -> bool:
     message and require Cline-specific control structure before enabling the
     attempt_completion response envelope.
     """
-    message = _m365_latest_user_message(messages)
+    message = _client_latest_user_message(messages)
     texts = (
-        _m365_text_outside_inline_files(text) for text in _m365_user_text_parts(message)
+        _cline_text_outside_inline_files(text)
+        for text in _client_user_text_parts(message)
     )
     lowered = "\n".join(texts).lower()
     if "<environment_details>" not in lowered:
@@ -21769,31 +23247,167 @@ def _m365_is_cline_request(messages: list) -> bool:
     )
 
 
-def _m365_cline_result_open() -> str:
+def _cline_result_open() -> str:
     return "<attempt_completion>\n<result>\n"
 
 
-def _m365_cline_result_close() -> str:
+def _cline_result_close() -> str:
     return "\n</result>\n</attempt_completion>"
 
 
-def _m365_wrap_cline_result(text: str) -> str:
+# a MODEL under the relayed classic-Cline system prompt may emit the
+# envelope tags itself. These primitives strip those TAGS (keeping all inner +
+# surrounding text) so the transport can add exactly one envelope. The tag regex
+# is whitespace-tolerant; the marker list drives streaming holdback so a tag
+# split across two chunks is never leaked as content.
+_CLINE_ENVELOPE_TAG_RE = re.compile(
+    r"<\s*/?\s*(?:attempt_completion|result)\s*>",
+    re.IGNORECASE,
+)
+_CLINE_ENVELOPE_TAG_MARKERS = (
+    "<attempt_completion>",
+    "</attempt_completion>",
+    "<result>",
+    "</result>",
+)
+
+
+def _cline_env_tag_holdback(buf: str) -> int:
+    """Longest suffix of buf that could BEGIN one of the envelope tags (so it is
+    held back across a chunk boundary). Complete tags are handled by the regex,
+    so this only inspects proper prefixes."""
+    lo = buf.lower()
+    best = 0
+    for marker in _CLINE_ENVELOPE_TAG_MARKERS:
+        ml = marker.lower()
+        for k in range(min(len(lo), len(ml) - 1), 0, -1):
+            if lo.endswith(ml[:k]):
+                best = max(best, k)
+                break
+    return best
+
+
+def _cline_wrap_result(text: str) -> str:
     value = str(text or "").strip()
-    # The transport owns the Cline envelope. Remove a model-generated envelope
-    # so retries cannot produce nested attempt_completion calls or an empty
-    # outer result parameter.
-    match = re.fullmatch(
-        r"\s*<attempt_completion\s*>\s*<result\s*>(?P<result>.*?)"
-        r"</result\s*>\s*</attempt_completion\s*>\s*",
-        value,
-        re.IGNORECASE | re.DOTALL,
-    )
-    if match:
-        value = match.group("result").strip()
-    return _m365_cline_result_open() + value + _m365_cline_result_close()
+    # The transport owns the Cline envelope. Remove ANY model-emitted envelope
+    # TAGS (keeping all surrounding + inner text) so re-wrapping cannot nest
+    # attempt_completion. Tag-removal (not extracting only <result>…</result>)
+    # is used deliberately: it never DROPS prose the model placed outside its
+    # own envelope, which extraction would.
+    value = _CLINE_ENVELOPE_TAG_RE.sub("", value).strip()
+    return _cline_result_open() + value + _cline_result_close()
 
 
-def _m365_latest_user_prompt(messages: list) -> str:
+class ClineEnvelope:
+    """Cline attempt_completion response envelope, shared by ALL browser handlers.
+
+    The Cline client expects a plain-text final answer wrapped as
+    <attempt_completion><result>…</result></attempt_completion>. That framing is
+    a CLIENT format (not model-specific), so the wrapping lives here and every
+    family (m365 / deepseek / qwen / doubao) applies it identically when
+    prepared.client_kind == "cline".
+
+    Semantics (the agreed default):
+      * plain-text answer -> wrapped (streaming: open tag on the FIRST content
+        chunk, close tag at done; non-stream: wrap the whole text).
+      * tool_calls        -> NOT wrapped: a tool call is a request, not the final
+        result. Call suppress() before emitting tool_calls; the envelope then
+        opens/closes nothing.
+      * reasoning_content -> NEVER wrapped (handlers must not feed reasoning
+        through open_prefix()/wrap()).
+
+    Usage (streaming):
+        env = ClineEnvelope(prepared.client_kind == "cline")
+        # for each answer content piece (m365 also strips model-emitted tags):
+        piece = env.strip_envelope_tags(content)                 # A: drop model envelope tags
+        if not piece:                              #    (held-back partial tag)
+            continue
+        content = env.open_prefix() + piece        # open tag once, else ""
+        # if a tool_call is produced instead (emit any returned close tag first):
+        closing = env.suppress()   # non-"" only if content already opened it
+        # if closing: emit_content(closing)   then emit tool_calls
+        # at stream end, before finish_reason=stop:
+        closing = env.closing()                    # close tag / empty env / ""
+    Usage (non-stream):
+        message_content = env.wrap(full_text)
+    """
+
+    def __init__(self, active: bool) -> None:
+        self.active = bool(active)
+        self._opened = False
+        self._suppressed = False
+        self._strip_buf = ""  # A: streaming model-envelope-tag holdback
+
+    def open_prefix(self) -> str:
+        """Opening tag to prepend to the FIRST content chunk (once). "" after
+        that, or when inactive/suppressed."""
+        if not self.active or self._opened or self._suppressed:
+            return ""
+        self._opened = True
+        return _cline_result_open()
+
+    def strip_envelope_tags(self, text: str) -> str:
+        """A (defense-in-depth): remove MODEL-emitted envelope tags
+        (<attempt_completion>/<result> + closers) from one streamed content
+        chunk, keeping all surrounding + inner text. Holds back a partial tag
+        that spans the chunk boundary (returns it once the next chunk completes
+        or discards it at stream end as protocol noise). Returns "" when the
+        whole chunk was tag(s)/held. No-op byte-passthrough when inactive
+        (non-cline), so callers stay identical for plain clients.
+
+        Call BEFORE open_prefix(): strip_envelope_tags() yields the raw answer
+        open_prefix() adds the transport\'s single opening tag on the first
+        non-empty piece.
+        """
+        text = str(text or "")
+        if not self.active:
+            return text
+        self._strip_buf += text
+        self._strip_buf = _CLINE_ENVELOPE_TAG_RE.sub("", self._strip_buf)
+        hb = _cline_env_tag_holdback(self._strip_buf)
+        safe = self._strip_buf[: len(self._strip_buf) - hb]
+        self._strip_buf = self._strip_buf[len(safe) :]
+        return safe
+
+    def suppress(self) -> str:
+        """Mark this turn as a tool-call turn (a tool call is a request, not the
+        final result): no further envelope opens and closing() stays silent.
+
+        Returns the closing tag ONLY when the streaming envelope was ALREADY
+        opened — i.e. the transpiler streamed pre-fence content (open_prefix
+        fired) before the tool block was detected. REQUIRED / AUTO+fence json
+        modes emit pre-fence text as content, so they can open the envelope
+        before a tool call is seen; AUTO+sentinel buffers until decided and
+        never opens. The handler MUST emit this returned tag BEFORE the
+        tool_calls delta, otherwise the client receives an unclosed <result>
+        followed by tool_calls. Returns "" when nothing was opened (the normal
+        tool-only turn) or when inactive / already suppressed.
+        """
+        if self._suppressed:
+            return ""
+        self._suppressed = True
+        if self.active and self._opened:
+            return _cline_result_close()
+        return ""
+
+    def closing(self) -> str:
+        """Closing text at stream end: close tag if content opened the envelope,
+        an empty <result></result> envelope if cline is active but nothing was
+        streamed, or "" when inactive/suppressed."""
+        if not self.active or self._suppressed:
+            return ""
+        if self._opened:
+            return _cline_result_close()
+        return _cline_wrap_result("")
+
+    def wrap(self, text: str) -> str:
+        """Non-stream: wrap the whole final text, or pass it through."""
+        if not self.active or self._suppressed:
+            return str(text or "")
+        return _cline_wrap_result(text)
+
+
+def _cline_extract_user_prompt(messages: list) -> str:
     """Newest user turn only. Copilot owns history per ConversationId; replaying
     the transcript would duplicate context and leak IDE system prompts into the
     visible chat (mirrors the Qwen/DeepSeek browser backends)."""
@@ -21802,7 +23416,7 @@ def _m365_latest_user_prompt(messages: list) -> str:
             continue
         if str(message.get("role") or "").strip().lower() != "user":
             continue
-        text = _m365_cline_prompt(message)
+        text = _cline_prompt(message)
         if text:
             return text
     return ""
@@ -21838,6 +23452,22 @@ _M365_CITE_COMPLETE_RES = (
     # data-URI，故正文里这类图 markdown 是冗余且坏的，删掉。只删 attachment:/sandbox:
     # 协议，普通 http(s)/data: 图片一律保留。
     re.compile(r"!\[[^\]]*\]\(\s*(?:attachment:|sandbox:)[^)]*\)", re.IGNORECASE),
+    # ⑤ 引用宿主 markdown 链接：[name](…)，其中 URL 指向引用产物宿主——
+    #    asyncgw…/v1/objects/…（AMS 产物）或 *.sharepoint.com…?csf=/web=（SharePoint
+    #    分享链接）。这是引用的“第 5 种编码”：流式 writeAtCursor 把引用渲染成这种
+    #    markdown 链接，而权威 type2-final 把【同一个】引用渲染成 ①\ue200…\ue201。
+    #    ①被本清单删空，故这里也把等价的引用链接删空，两帧归一后前缀相容——否则
+    #    流式残留链接、final 删空 → 在引用处分叉 → 含正文尾巴的 final 被 relay 判
+    #    非前缀丢弃（正文冻结在“文件在这:[name](”，正是本次现象）。真链接仍走
+    #    appendText 带外下发，故正文里这条是冗余。(?<!!) 避免碰图片 ![…]；只删引用
+    #    宿主，普通 http(s) 链接与无 csf/web 的普通 sharepoint 链接一律保留。
+    re.compile(
+        r"(?<!!)\[[^\]\r\n]*\]\(\s*https?://[^)\s]*"
+        r"(?:asyncgw[^)\s]*/v1/objects/[^)\s]*"
+        r"|[^)\s]*\.sharepoint\.com/[^)\s]*(?:[?&](?:csf|web)=)[^)\s]*)"
+        r"\s*\)",
+        re.IGNORECASE,
+    ),
 )
 # —— 结尾“在途”跨度（锚定文末 \Z）：删完整跨度后可能剩半个引用，扣住一帧等下一帧补全，
 #    避免先发半个再回收（破坏 relay 前缀单调、触发丢弃）——
@@ -21860,6 +23490,27 @@ _M365_CITE_TAIL_RES = (
     re.compile(r"!\[[^\]]*\Z"),  # ![alt 还没 ]
     re.compile(r"!\[[^\]]*\]\Z"),  # ![alt] 刚到 ]，还没 (
     re.compile(r"!\[[^\]]*\]\([^)]*\Z"),  # ![alt]( 之后还没 )
+    # ⑤ 未闭合的引用链接(三阶段,镜像上面的图片扣尾,但无前导 "!"，且 (?<!!) 避开
+    #    图片 ![…])：扣住在途的 [name / [name] / [name](… 直到闭合 ")" 出现的那一帧,
+    #    届时若 URL 为引用宿主则被上面 ⑤ 完整跨度删空,若为普通链接则原样补发。必须
+    #    从 "[" 起就扣住(而非等到 "](")：否则会先把 "[name]" 原样发出、下一帧删链接
+    #    时 best 变短 → 触发 relay 非前缀丢弃。扣住只延迟一帧、绝不丢字。[^\]\r\n] 里
+    #    含换行由 [^…] 处理;(?<!!) 确保 ![alt] 图片只走上面的图片扣尾、不被这里重复处理。
+    re.compile(r"(?<!!)\[[^\]\r\n]*\Z"),  # [name 还没 ]
+    re.compile(r"(?<!!)\[[^\]\r\n]*\]\Z"),  # [name] 还没 (
+    re.compile(r"(?<!!)\[[^\]\r\n]*\]\([^)]*\Z"),  # [name]( 之后还没 )
+)
+
+
+# 终态(final=True)专用:删除文末【带 REFID 的未闭合】引用跨度——
+#   <cite …>REFID(</… 半个闭标签，可无)  且锚定 \Z。
+# 语义边界:REFID 为【必需】,故裸 <cite>(用户可能字面写的)不被误删,维持既有
+# “字面 <cite> 不误伤”承诺;而 <cite>turn69file21</c 这类明确是被切断的坏引用
+# (流式永不会再补全,因为已是终态),原样泄漏严格劣于删除,故仅在 final 删它。
+# 中间帧(final=False)仍由 _M365_CITE_TAIL_RES 扣住等待补全,不走这里。
+_M365_CITE_FINAL_UNCLOSED_RE = re.compile(
+    r"<cite\b[^>]*>" + _M365_CITE_REFID + _M365_CITE_CLOSE_PREFIX + r"\Z",
+    re.IGNORECASE,
 )
 
 
@@ -21892,6 +23543,7 @@ def _m365_strip_cite(cumulative: str, final: bool = False) -> str:
         or "\ue200" in cumulative
         or "【" in cumulative
         or "![" in cumulative
+        or "[" in cumulative  # ⑤ 引用链接/在途链接扣尾需要 "[" 触发
     )
     if not _has_trigger and (final or not cumulative.endswith("!")):
         return cumulative
@@ -21899,7 +23551,11 @@ def _m365_strip_cite(cumulative: str, final: bool = False) -> str:
     for rgx in _M365_CITE_COMPLETE_RES:
         text = rgx.sub("", text)
     if final:
-        # 终态：不扣在途尾巴，直接返回（完整跨度已删）。绝不因扣尾在终态丢字。
+        # 终态：不扣“在途尾巴”这类【可能是正文】的歧义尾字符（如结尾 "!"/"<"）——
+        # 那样会永久丢字。但【带 REFID 的未闭合 <cite】不是歧义正文,它形状明确是被
+        # 切断的坏引用、且终态后不会再补全,故此处精准删除它(裸 <cite> 无 REFID 不匹配,
+        # 仍保留)。这修复了权威终态帧上 "<cite>REFID</c" 泄漏成可见文本的缺口。
+        text = _M365_CITE_FINAL_UNCLOSED_RE.sub("", text)
         return text
     cut = len(text)
     for rgx in _M365_CITE_TAIL_RES:
@@ -22370,6 +24026,52 @@ class M365BrowserRuntime:
                                 or conversation_id
                             )
                             _log_producer_summary("weak-terminal-drain")
+                            # OBSERVATION-ONLY (see the authoritative-terminal branch
+                            # for the full rationale): same artifact/appendText
+                            # classification for turns that finish via the WEAK
+                            # terminal drain instead of an authoritative type-3 DONE
+                            # (the "waited a long time for the download link, then the
+                            # turn ended" case). appendText on this pending weak DONE
+                            # was already consumed at the M365_DONE branch, so
+                            # append_emitted tells whether the link tail went out this
+                            # turn; artifact_count is what the extension detected.
+                            try:
+                                _artifact_count = int(
+                                    pending_done.get("artifactCount") or 0
+                                )
+                            except (TypeError, ValueError):
+                                _artifact_count = -1
+                            # artScan summary from the weak DONE payload (same
+                            # routing as the authoritative branch), so this path
+                            # also surfaces the plugin counters in the PYTHON log.
+                            _asum = pending_done.get("artScanSummary")
+                            if not isinstance(_asum, dict):
+                                _asum = {}
+                            _m365_log.debug(
+                                "[relay-artifact] id=%s signal=weak-terminal-drain "
+                                "artifact_count=%s pending_append_len=%d "
+                                "append_emitted=%s best_len=%d artscan_frames=%s "
+                                "strict_urls=%s loose_asyncgw=%s loose_objects=%s "
+                                "missed=%s",
+                                rid,
+                                _artifact_count,
+                                len(str(pending_done.get("appendText") or "")),
+                                append_emitted,
+                                len(best),
+                                _asum.get("frames", "?"),
+                                _asum.get("strictUrls", "?"),
+                                _asum.get("looseAsyncgw", "?"),
+                                _asum.get("looseObjects", "?"),
+                                _asum.get("missed", "?"),
+                            )
+                            _asnips = _asum.get("missedSnippets")
+                            if isinstance(_asnips, list) and _asnips:
+                                _m365_log.debug(
+                                    "[relay-artifact] id=%s signal="
+                                    "weak-terminal-drain missed_snippets=%s",
+                                    rid,
+                                    _asnips[:6],
+                                )
                             emit(
                                 {"type": "done", "conversation_id": cid},
                                 terminal=True,
@@ -22569,6 +24271,73 @@ class M365BrowserRuntime:
                                 str(msg.get("conversationId") or "") or conversation_id
                             )
                             _log_producer_summary("authoritative-terminal")
+                            # OBSERVATION-ONLY (zero behavior change): classify why a
+                            # download/artifact link did or did not reach the client
+                            # THIS turn. The out-of-band tail (SharePoint links /
+                            # inline-image data-URIs) only arrives via appendText, and
+                            # whether it is present is decided upstream (extension
+                            # harvest + background hold), not here. Two extension-set
+                            # fields survive onto this authoritative DONE:
+                            #   * artifactCount — how many asyncgw/objects artifact
+                            #     URLs content-m365.js DETECTED in this turn's frames.
+                            #   * appendText    — the finalized links/images background
+                            #     produced after its bounded artifact-hold, or "".
+                            # The three cases this line lets you tell apart next time
+                            # the link goes missing (no more guessing timeout vs bug):
+                            #   artifact_count>0 & append_len==0
+                            #       -> artifacts WERE detected but the hold/upload did
+                            #          not settle in time (the "卡超时/harvest 未完成"
+                            #          case) — upstream timing, not a relay bug.
+                            #   artifact_count==0 & append_len==0
+                            #       -> the artifact URL never appeared in any frame this
+                            #          turn (upstream M365 did not emit it) — nothing to
+                            #          harvest; also not a relay bug.
+                            #   append_len>0
+                            #       -> link delivered normally (the success case).
+                            # append_emitted distinguishes "this DONE carried the tail"
+                            # from "a weak DONE already emitted it earlier this turn".
+                            try:
+                                _artifact_count = int(msg.get("artifactCount") or 0)
+                            except (TypeError, ValueError):
+                                _artifact_count = -1  # present but non-numeric
+                            # artScan summary rides on the M365_DONE payload
+                            # (extension → background → here) so the plugin's
+                            # per-turn artifact-detection counters land in the
+                            # PYTHON log — no page console needed. Absent/old
+                            # extension -> {} -> the fields simply read as "?".
+                            _asum = msg.get("artScanSummary")
+                            if not isinstance(_asum, dict):
+                                _asum = {}
+                            _m365_log.debug(
+                                "[relay-artifact] id=%s signal=authoritative-terminal "
+                                "artifact_count=%s append_len=%d append_emitted=%s "
+                                "best_len=%d artscan_frames=%s strict_urls=%s "
+                                "loose_asyncgw=%s loose_objects=%s missed=%s",
+                                rid,
+                                _artifact_count,
+                                len(append_text),
+                                append_emitted,
+                                len(best),
+                                _asum.get("frames", "?"),
+                                _asum.get("strictUrls", "?"),
+                                _asum.get("looseAsyncgw", "?"),
+                                _asum.get("looseObjects", "?"),
+                                _asum.get("missed", "?"),
+                            )
+                            # When strict detection missed a frame that carried
+                            # an AMS marker, log the bounded, redacted URL-shape
+                            # snippets the plugin captured so a real regex/
+                            # cleanAmsUrl gap is diagnosable from the PYTHON log
+                            # alone. Only logged when non-empty (no noise on the
+                            # common missed==0 turn).
+                            _asnips = _asum.get("missedSnippets")
+                            if isinstance(_asnips, list) and _asnips:
+                                _m365_log.debug(
+                                    "[relay-artifact] id=%s signal="
+                                    "authoritative-terminal missed_snippets=%s",
+                                    rid,
+                                    _asnips[:6],
+                                )
                             emit(
                                 {"type": "done", "conversation_id": cid},
                                 terminal=True,
@@ -22667,16 +24436,37 @@ async def _direct_m365_chat_response(
             },
             status_code=503,
         )
-    prompt = _m365_latest_user_prompt(messages)
-    cline_mode = _m365_is_cline_request(messages)
-    if cline_mode:
-        prompt += (
-            "\n\nReturn only the final result text. Do not emit XML tool tags, "
-            "attempt_completion, result tags, or tool-call syntax; the transport "
-            "will add the required Cline completion envelope."
-        )
+    # Seam #1: compose this turn via the unified relay. The relay now performs
+    # the client-envelope handling for ALL browser models: prepare() detects the
+    # client format and _client_extract_prompt unwraps <task> / strips inline
+    # <file_content>/<environment_details>, so `prompt` is already clean here
+    # (no more per-handler Cline parsing) and inline files are not duplicated
+    # (once as prose, once as the SharePoint egress below). For m365
+    # relay_prompt is True, so the client system message rides along as
+    # <client_system_prompt> XML each turn; history is still stripped (Copilot
+    # owns it). XiaoAI (source=='xiaoai') bypasses entirely (no prompt/tools).
+    # supports_tools is False today, so no tool instructions are injected and
+    # Seam #2 is dormant.
+    _m365_prepared = BROWSER_RELAY.prepare(
+        model_name, body, messages, bypass=BrowserRelay.should_bypass(body)
+    )
+    prompt = _m365_prepared.text
+    _m365_attachment_debug(
+        "prompt",
+        source=str(body.get("source") or "unknown"),
+        client_kind=_m365_prepared.client_kind,
+        chars=len(prompt),
+    )
+    # cline_mode comes from the UNIFIED relay decision (prepared.client_kind),
+    # not a second, m365-local detection pass. No prompt-side instruction is
+    # appended here: _cline_wrap_result already strips any model-generated
+    # attempt_completion envelope before re-wrapping, so telling the model not
+    # to emit one was redundant defense. The shared ClineEnvelope below applies
+    # the attempt_completion framing the SAME way every browser family does.
+    cline_mode = _m365_prepared.client_kind == "cline"
+    _m365_env = ClineEnvelope(cline_mode)
     try:
-        attachments = await _m365_collect_attachments(messages)
+        attachments = await _client_collect_attachments(messages)
     except Exception as exc:
         return JSONResponse(
             {"error": {"message": str(exc), "type": "m365_file_error"}},
@@ -22791,8 +24581,15 @@ async def _direct_m365_chat_response(
 
     async def events():
         role_sent = False
-        cline_open_sent = False
         thinking_hint_sent = False
+        # Seam #2 (tool interception). DORMANT while m365 supports_tools is False:
+        # new_transpiler() returns None, and every `_m365_tool_tp is not None`
+        # guard below is skipped, so this path is byte-identical to before. When
+        # supports_tools is flipped on, the transpiler holds back a trailing
+        # ```tool``` block and surfaces it as OpenAI tool_calls at done. NOTE:
+        # when active alongside cline_mode the Cline result envelope and the tool
+        # block interact — validate that combination live before shipping tools.
+        _m365_tool_tp = _m365_prepared.new_transpiler()
         deadline = time.monotonic() + M365_FIRST_EVENT_TIMEOUT
         # [consumer trace] running total of answer characters actually yielded
         # into the SSE response toward Continue. Compare against the producer's
@@ -22909,16 +24706,34 @@ async def _direct_m365_chat_response(
                     content = str(event.get("content") or "")
                     if not content:
                         continue
+                    if _m365_tool_tp is not None:
+                        # Seam #2 (dormant unless supports_tools): only the text
+                        # BEFORE a ```tool``` fence passes through as content; the
+                        # fenced block is buffered and surfaced as tool_calls at
+                        # done. No-op path is unreachable while tp is None.
+                        content = "".join(_m365_tool_tp.push(content))
+                        if not content:
+                            continue
+                    # defense-in-depth behind B. If the model ignores
+                    # the no-wrap contract and emits its own attempt_completion/
+                    # result tags, strip_envelope_tags() removes just those tags (holding back
+                    # a tag split across chunks) so the transport still adds
+                    # exactly one envelope. No-op passthrough when not cline.
+                    content = _m365_env.strip_envelope_tags(content)
+                    if not content:
+                        # whole chunk was model envelope tag(s) or a held-back
+                        # partial tag; nothing to yield this frame.
+                        continue
                     if M365_RELAY_TRACE:
-                        # Count the raw answer delta (before any Cline envelope
-                        # wrapping) so this total lines up 1:1 with the producer's
-                        # emitted_chars / best_digest for a direct equality check.
+                        # Count the answer delta actually yielded (raw answer
+                        # text, model envelope tags already stripped; the
+                        # transport's own opening tag is added below and is not
+                        # counted). Equals the producer's emitted_chars whenever
+                        # the model did not self-wrap (the normal case).
                         trace_yielded_chars += len(content)
                         trace_yielded_frames += 1
                         trace_yielded_text.append(content)
-                    if cline_mode and not cline_open_sent:
-                        content = _m365_cline_result_open() + content
-                        cline_open_sent = True
+                    content = _m365_env.open_prefix() + content
                     delta = {"content": content}
                     if not role_sent:
                         delta = {"role": "assistant", "content": content}
@@ -22938,12 +24753,117 @@ async def _direct_m365_chat_response(
                     cid = str(event.get("conversation_id") or "")
                     if cid:
                         _remember_conversation(cid)
-                    if cline_mode:
-                        closing = (
-                            _m365_cline_result_close()
-                            if cline_open_sent
-                            else _m365_wrap_cline_result("")
-                        )
+                    if _m365_tool_tp is not None:
+                        # Seam #2 terminal (dormant while tp is None). A parsed
+                        # ```tool``` block finishes the turn as OpenAI tool_calls
+                        # instead of a normal stop; otherwise any held-back tail
+                        # (no tool block) is flushed as a final content delta.
+                        _m365_calls = _m365_tool_tp.finish_tool_calls()
+                        if _m365_calls:
+                            # tool_call turn: no Cline envelope (future-proof for
+                            # when m365 supports_tools is enabled).
+                            _m365_close = _m365_env.suppress()
+                            if _m365_close:
+                                yield _chat_sse_data(
+                                    {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created,
+                                        "model": model_name,
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": (
+                                                    {
+                                                        "role": "assistant",
+                                                        "content": _m365_close,
+                                                    }
+                                                    if not role_sent
+                                                    else {"content": _m365_close}
+                                                ),
+                                                "finish_reason": None,
+                                            }
+                                        ],
+                                    }
+                                )
+                                role_sent = True
+                            _tc = [
+                                {
+                                    "index": _i,
+                                    "id": _c["id"],
+                                    "type": "function",
+                                    "function": {
+                                        "name": _c["function"]["name"],
+                                        "arguments": _c["function"]["arguments"],
+                                    },
+                                }
+                                for _i, _c in enumerate(_m365_calls)
+                            ]
+                            yield _chat_sse_data(
+                                {
+                                    "id": completion_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": model_name,
+                                    "choices": [
+                                        {
+                                            "index": 0,
+                                            "delta": (
+                                                {"role": "assistant", "tool_calls": _tc}
+                                                if not role_sent
+                                                else {"tool_calls": _tc}
+                                            ),
+                                            "finish_reason": None,
+                                        }
+                                    ],
+                                }
+                            )
+                            yield _chat_sse_data(
+                                {
+                                    "id": completion_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": model_name,
+                                    "choices": [
+                                        {
+                                            "index": 0,
+                                            "delta": {},
+                                            "finish_reason": "tool_calls",
+                                        }
+                                    ],
+                                    "conversation_id": cid,
+                                }
+                            )
+                            yield _SSE_DONE_FRAME
+                            return
+                        _resid = _m365_tool_tp.flush_pending()
+                        # strip model envelope tags from the residual
+                        # (symmetric with deepseek/delta path). Unreachable while
+                        # m365 supports_tools=False; future-proofing.
+                        _resid = _m365_env.strip_envelope_tags(_resid)
+                        if _resid:
+                            yield _chat_sse_data(
+                                {
+                                    "id": completion_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": created,
+                                    "model": model_name,
+                                    "choices": [
+                                        {
+                                            "index": 0,
+                                            "delta": (
+                                                {"role": "assistant", "content": _resid}
+                                                if not role_sent
+                                                else {"content": _resid}
+                                            ),
+                                            "finish_reason": None,
+                                        }
+                                    ],
+                                }
+                            )
+                            role_sent = True
+                    closing = _m365_env.closing()
+                    if closing:
                         yield _chat_sse_data(
                             {
                                 "id": completion_id,
@@ -23082,9 +25002,7 @@ async def _direct_m365_chat_response(
                         "index": 0,
                         "message": {
                             "role": "assistant",
-                            "content": _m365_wrap_cline_result(best)
-                            if cline_mode
-                            else best,
+                            "content": _m365_env.wrap(best),
                             **({"reasoning_content": reasoning} if reasoning else {}),
                         },
                         "finish_reason": "stop",
@@ -40766,12 +42684,14 @@ def test_browser_model_metadata_is_defined_and_consistent():
         "root": "doubao-web",
         "capabilities": ["chat"],
         "supports_tools": False,
+        "relay_prompt": False,
     }
     assert metadata["LLM:qwen"] == {
         "owned_by": "qwen-browser",
         "root": "qwen3.6-plus-web",
         "capabilities": ["chat"],
         "supports_tools": False,
+        "relay_prompt": False,
     }
     assert metadata["LLM:deepseek"]["supports_tools"] is True
     assert "reasoning" in metadata["LLM:deepseek"]["capabilities"]
@@ -41514,162 +43434,116 @@ def test_qwen_stale_redirect_probe_detects_root_landing():
     asyncio.run(scenario())
 
 
-def test_qwen_forwards_only_latest_user_turn():
-    # Qwen web owns its own history per chat_id, so the runtime must forward
-    # ONLY the newest user turn: no system prompt, no assistant/history replay.
-    messages = [
-        {"role": "system", "content": "You are a coding IDE assistant."},
-        {"role": "user", "content": "first question"},
-        {"role": "assistant", "content": "first answer"},
-        {"role": "user", "content": "second question"},
-    ]
-    prompt = _qwen_latest_user_prompt(messages)
-    assert prompt == "second question", prompt
-    assert "system" not in prompt.lower()
-    assert "first" not in prompt
+def test_m365_strip_cite_final_strips_truncated_refid_cite_only():
+    # REGRESSION: a truncated citation tag on the AUTHORITATIVE terminal frame
+    # (final=True) — e.g. "<cite>turn69file21</c" (open complete, REFID present,
+    # partial close) — used to leak verbatim into the visible answer, because
+    # final mode deliberately does not hold back tails. The narrow fix strips a
+    # trailing UNCLOSED cite ONLY when a REFID is present (unambiguously a broken
+    # citation the stream can never complete post-terminal), while still
+    # preserving a bare literal "<cite>" (no REFID) and ambiguous single tail
+    # chars like "!"/"<" so no real answer text is ever eaten.
+    s = _m365_strip_cite
+    # (a) truncated REFID-bearing cite is stripped at terminal, at several
+    # partial-close stages.
+    assert s("正文<cite>turn69file21</c", final=True) == "正文"
+    assert s("正文<cite>turn1file1", final=True) == "正文"
+    assert s("正文<cite>abc</", final=True) == "正文"
+    # (b) a bare literal <cite> (no REFID after) is preserved — the deliberate
+    # "literal <cite> not mis-deleted" guarantee.
+    assert s("看 <cite> 标签", final=True) == "看 <cite> 标签"
+    assert s("这是 <cite>", final=True) == "这是 <cite>"
+    # (c) ambiguous trailing chars that final mode must NOT eat.
+    assert s("完成!", final=True) == "完成!"
+    assert s("a<", final=True) == "a<"
+    # (d) no regression on the three complete citation encodings.
+    assert s("a\ue200x\ue201b", final=True) == "ab"
+    assert s("a<cite>turn1file1</cite>b", final=True) == "ab"
+    assert s("a【1-turn1file1】b", final=True) == "ab"
+    assert s("【重要】提示", final=True) == "【重要】提示"
+    # (e) streaming mode already held back partial cites; unchanged.
+    assert s("正文<cite>turn1</c", final=False) == "正文"
+    assert s("正文<cite>", final=False) == "正文"
 
-    # OpenAI content-parts (text / input_text) are flattened; non-text ignored.
-    parts_message = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "hello"},
-                {"type": "input_text", "text": "world"},
-                {"type": "image_url", "image_url": {"url": "data:x"}},
-            ],
-        }
-    ]
-    assert _qwen_latest_user_prompt(parts_message) == "hello\nworld"
 
-    # No user turn present -> empty (caller returns a 400).
+def test_m365_strip_cite_normalizes_citation_host_links_no_text_loss():
+    # REGRESSION for the "reply frozen at 文件在这:[name](" text-loss bug. The
+    # streaming writeAtCursor frame renders a citation as an inline markdown link
+    # [name](sharepoint-or-asyncgw-url); the authoritative type2-final frame
+    # renders the SAME citation as the private-use \ue200…\ue201 form, which
+    # _m365_strip_cite deletes. If the streaming link is NOT normalized to the
+    # same empty span, the two frames diverge at the citation and the final
+    # snapshot (which carries the answer TAIL) is dropped by the relay as
+    # non-prefix — freezing the reply at the link. This test locks: (a) citation
+    # -host links normalize to empty in BOTH frames so they stay prefix-
+    # compatible; (b) normal links / code brackets are never touched; (c) a
+    # char-by-char stream never drops a frame nor loses the answer tail.
+    def emulate(cumulative_frames, final_text):
+        # Mirror the relay's append-only prefix rule over cumulative snapshots.
+        best = ""
+        dropped = 0
+        for frame in cumulative_frames:
+            norm = _m365_strip_cite(frame, final=False)
+            if len(norm) > len(best) and norm.startswith(best):
+                best = norm
+            elif norm and norm != best and not best.startswith(norm):
+                dropped += 1
+        final_norm = _m365_strip_cite(final_text, final=True)
+        if len(final_norm) > len(best) and final_norm.startswith(best):
+            best = final_norm
+        elif (
+            final_norm
+            and final_norm != best
+            and not final_norm.startswith(best)
+            and not best.startswith(final_norm)
+        ):
+            dropped += 1
+        return best, dropped
+
+    def cumulative(text):
+        return [text[:i] for i in range(1, len(text) + 1)]
+
+    # (a) a citation-host markdown link is deleted (SharePoint share link with
+    # the csf/web params, and the raw AMS asyncgw/v1/objects link).
+    sp_link = "[voice_edge.py](https://x.sharepoint.com/a/voice_edge.py?csf=1&web=1)"
+    assert _m365_strip_cite(sp_link, final=True) == ""
+    ams_link = (
+        "[voice_edge.py](https://us-prod.asyncgw.teams.microsoft.com/v1/objects/"
+        "0-eus-d6-x/views/original/voice_edge.py)"
+    )
+    assert _m365_strip_cite(ams_link, final=True) == ""
+    # (b) a normal link and a plain SharePoint link WITHOUT the share params are
+    # preserved; code brackets are untouched.
+    normal = "见 [示例](https://example.com/page) 说明"
+    assert _m365_strip_cite(normal, final=True) == normal
+    sp_plain = "[site](https://x.sharepoint.com/sites/foo)"
+    assert _m365_strip_cite(sp_plain, final=True) == sp_plain
+    # (c) the exact reproduction: streaming renders two file links (truncated at
+    # the first "(" mid-stream), final renders them as \ue200…\ue201. The answer
+    # tail after the links must survive with ZERO non-prefix drops.
+    stream_full = (
+        "文件在这:[voice_edge.py](https://x.sharepoint.com/a.py?csf=1&web=1) 和 "
+        "[content-m365.js](https://x.sharepoint.com/b.js?csf=1&web=1)。\n\n## 尾巴正文"
+    )
+    final = "文件在这:\ue200c1\ue201 和 \ue200c2\ue201。\n\n## 尾巴正文"
+    best, dropped = emulate(cumulative(stream_full), final)
+    assert dropped == 0, dropped
+    assert "## 尾巴正文" in best
+    # char-by-char: a normal link and code brackets stream losslessly.
+    best_n, dropped_n = emulate(cumulative(normal), normal)
+    assert best_n == normal and dropped_n == 0
+    code = "取 messages[0] 与 arr[i]，列表 [1,2,3]\n结束"
+    best_c, dropped_c = emulate(cumulative(code), code)
+    assert best_c == code and dropped_c == 0
+    # no regression: the existing three citation encodings still delete, and a
+    # literal <cite> / Chinese 【重要】 are never mis-deleted.
+    assert _m365_strip_cite("a\ue200x\ue201b", final=True) == "ab"
+    assert _m365_strip_cite("a<cite>turn1file1</cite>b", final=True) == "ab"
+    assert _m365_strip_cite("a【1-turn1file1】b", final=True) == "ab"
     assert (
-        _qwen_latest_user_prompt([{"role": "system", "content": "only system"}]) == ""
+        _m365_strip_cite("看 <cite> 和 【重要】提示", final=True)
+        == "看 <cite> 和 【重要】提示"
     )
-
-
-def test_deepseek_auto_classify_never_false_triggers_on_code_fence():
-    S = DEEPSEEK_TOOLCALL_SENTINEL
-    # THE key guard: a normal answer that opens with a code fence must stream as
-    # plain text, never be mistaken for a tool call.
-    assert _deepseek_auto_classify("```python\nprint(1)", S) == "plain"
-    assert _deepseek_auto_classify("Sure, here is code:", S) == "plain"
-    assert _deepseek_auto_classify("\u4f60\u597d\uff01", S) == "plain"
-    # A real tool call opens with the sentinel.
-    assert _deepseek_auto_classify(S + '{"calls":[]}', S) == "tool"
-    assert _deepseek_auto_classify("   " + S + "{", S) == "tool"
-    # A proper prefix of the sentinel (arriving char-by-char) stays undecided.
-    assert _deepseek_auto_classify(S[:3], S) == "pending"
-    assert _deepseek_auto_classify("   ", S) == "pending"
-    assert _deepseek_auto_classify("", S) == "pending"
-
-
-def test_deepseek_sentinel_tool_json_parses_and_is_bounded():
-    S = DEEPSEEK_TOOLCALL_SENTINEL
-    allowed = {"get_weather", "search"}
-    # Basic parse.
-    calls = _deepseek_parse_sentinel_tool_json(
-        S + '{"calls":[{"id":"c1","name":"get_weather","input":{"city":"NYC"}}]}',
-        allowed,
-    )
-    assert len(calls) == 1
-    assert calls[0]["function"]["name"] == "get_weather"
-    assert calls[0]["id"] == "c1"
-    # Trailing prose after the JSON object is tolerated (brace-balanced extract).
-    calls = _deepseek_parse_sentinel_tool_json(
-        S + '{"calls":[{"id":"c1","name":"search","input":{}}]}\n\nthanks!',
-        allowed,
-    )
-    assert len(calls) == 1 and calls[0]["function"]["name"] == "search"
-    # A reply that does not start with the sentinel yields no calls.
-    assert _deepseek_parse_sentinel_tool_json("just chatting", allowed) == []
-    assert (
-        _deepseek_parse_sentinel_tool_json("here is code: " + S + "{}", allowed) == []
-    )
-    # Disallowed tool names are filtered out.
-    assert (
-        _deepseek_parse_sentinel_tool_json(
-            S + '{"calls":[{"id":"c1","name":"rm_rf","input":{}}]}', allowed
-        )
-        == []
-    )
-
-
-def test_deepseek_extract_balanced_json_handles_nesting_and_strings():
-    assert _deepseek_extract_balanced_json('{"a":{"b":1}} trailing') == '{"a":{"b":1}}'
-    # A closing brace inside a string must not end the object early.
-    assert _deepseek_extract_balanced_json('{"s":"}"}x') == '{"s":"}"}'
-    assert _deepseek_extract_balanced_json("no json here") == ""
-
-
-def test_deepseek_tool_prompt_auto_is_soft_and_sentinel_based():
-    S = DEEPSEEK_TOOLCALL_SENTINEL
-    messages = [
-        {"role": "system", "content": "IDE assistant"},
-        {"role": "user", "content": "what is the weather"},
-    ]
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "description": "w",
-                "parameters": {"type": "object"},
-            },
-        }
-    ]
-    auto = _deepseek_tool_prompt(messages, tools, "auto")
-    # Auto injects the sentinel-based soft instruction and the latest user turn,
-    # but never the required-mode hard "You must call" fenced directive.
-    assert S in auto
-    assert "what is the weather" in auto
-    assert "You must call one of the tools" not in auto
-    assert "```tool_json" not in auto
-    # Required mode keeps the hard fenced directive.
-    req = _deepseek_tool_prompt(messages, tools, "required")
-    assert "You must call one of the tools" in req
-    assert "```tool_json" in req
-    # tool_choice="none" (tools stripped by caller) injects no manifest.
-    assert _deepseek_tool_prompt(messages, [], "auto") == "what is the weather"
-
-
-def test_deepseek_auto_fallback_never_leaks_sentinel():
-    # when the model emits the sentinel but the following JSON cannot
-    # be parsed, neither the sentinel nor the broken JSON may reach the client.
-    S = DEEPSEEK_TOOLCALL_SENTINEL
-    allowed = {"get_weather"}
-
-    # The friendly fallback text itself must be sentinel-free and non-empty.
-    assert DEEPSEEK_TOOLCALL_FALLBACK_TEXT
-    assert S not in DEEPSEEK_TOOLCALL_FALLBACK_TEXT
-
-    # A sentinel followed by broken JSON reaches the "tool" branch yet parses
-    # to zero calls -> this is exactly the fallback condition (real functions).
-    bad = S + '{"calls":[{"name":"get_weather","input":{'
-    assert _deepseek_auto_classify(bad, S) == "tool"
-    assert _deepseek_parse_sentinel_tool_json(bad, allowed) == []
-
-    # Faithfully mirror the non-stream auto-mode branch and assert its outputs.
-    def non_stream_clean_text(text):
-        tool_calls = _deepseek_parse_sentinel_tool_json(text, allowed)
-        if tool_calls:
-            return ""
-        if str(text or "").lstrip().startswith(S):
-            return DEEPSEEK_TOOLCALL_FALLBACK_TEXT
-        return text
-
-    # bad sentinel JSON -> friendly message, sentinel/broken JSON never leaked.
-    out_bad = non_stream_clean_text(bad)
-    assert out_bad == DEEPSEEK_TOOLCALL_FALLBACK_TEXT
-    assert S not in out_bad and "calls" not in out_bad
-
-    # A genuine plain reply (no sentinel) must be kept verbatim.
-    plain = "这是普通回答，不含任何标记。"
-    assert non_stream_clean_text(plain) == plain
-
-    # A valid sentinel tool call yields calls and empty visible content.
-    good = S + '{"calls":[{"id":"c1","name":"get_weather","input":{"city":"NYC"}}]}'
-    assert non_stream_clean_text(good) == ""
-    assert _deepseek_parse_sentinel_tool_json(good, allowed)
 
 
 def test_m365_done_requires_authoritative_completion_signal():
@@ -41704,11 +43578,11 @@ def test_m365_inline_files_match_standalone_literal_markers():
         '<file_content path="voice_edge.py">\n' + payload + "</file_content>\n"
         "正文之后"
     )
-    files = _m365_collect_cline_inline_files({"content": message_text})
+    files = _cline_collect_inline_files({"content": message_text})
     assert len(files) == 1
     assert files[0]["name"] == "voice_edge.py"
     assert base64.b64decode(files[0]["data"]).decode("utf-8") == payload
-    assert _m365_text_outside_inline_files(message_text) == "正文之前\n正文之后"
+    assert _cline_text_outside_inline_files(message_text) == "正文之前\n正文之后"
 
 
 def test_m365_inline_files_match_consecutive_attachments():
@@ -41724,14 +43598,14 @@ def test_m365_inline_files_match_consecutive_attachments():
         "</file_content>\n"
         "正文"
     )
-    files = _m365_collect_cline_inline_files({"content": message_text})
+    files = _cline_collect_inline_files({"content": message_text})
     assert [item["name"] for item in files] == ["a.py", "b.txt", "c.json"]
     assert [base64.b64decode(item["data"]).decode("utf-8") for item in files] == [
         "A body\n",
         "B body\n",
         '{"ok": true}\n',
     ]
-    assert _m365_text_outside_inline_files(message_text) == "正文"
+    assert _cline_text_outside_inline_files(message_text) == "正文"
 
 
 def test_m365_inline_files_ignore_non_standalone_and_html_entity_markers():
@@ -41742,14 +43616,14 @@ def test_m365_inline_files_ignore_non_standalone_and_html_entity_markers():
         "entity body\n"
         "&lt;/file_content&gt;\n"
     )
-    assert _m365_collect_cline_inline_files({"content": text}) == []
-    assert _m365_text_outside_inline_files(text) == text
+    assert _cline_collect_inline_files({"content": text}) == []
+    assert _cline_text_outside_inline_files(text) == text
 
 
 def test_m365_inline_file_without_standalone_closing_marker_fails_closed():
     text = '正文\n<file_content path="broken.py">\nprint("</file_content>")\n'
-    assert _m365_collect_cline_inline_files({"content": text}) == []
-    assert _m365_text_outside_inline_files(text) == text
+    assert _cline_collect_inline_files({"content": text}) == []
+    assert _cline_text_outside_inline_files(text) == text
 
 
 def _m365_harness_message_from_cuts(text: str, cuts: list[int]) -> dict:
@@ -41775,11 +43649,11 @@ def test_m365_inline_file_survives_every_single_split_boundary():
     expected = payload.encode("utf-8")
     for cut in range(1, len(wire)):
         message = _m365_harness_message_from_cuts(wire, [cut])
-        files = _m365_collect_cline_inline_files(message)
+        files = _cline_collect_inline_files(message)
         assert len(files) == 1, (cut, files)
         assert files[0]["name"] == "large.py", cut
         assert base64.b64decode(files[0]["data"]) == expected, cut
-        assert _m365_cline_prompt(message) == "before\nafter", cut
+        assert _cline_prompt(message) == "before\nafter", cut
 
 
 def test_m365_inline_files_survive_all_line_boundary_splits():
@@ -41795,13 +43669,13 @@ def test_m365_inline_files_survive_all_line_boundary_splits():
     )
     cuts = [i + 1 for i, char in enumerate(wire) if char == "\n"]
     message = _m365_harness_message_from_cuts(wire, cuts)
-    files = _m365_collect_cline_inline_files(message)
+    files = _cline_collect_inline_files(message)
     assert [item["name"] for item in files] == ["a.txt", "b.txt"]
     assert [base64.b64decode(item["data"]) for item in files] == [
         payload_a.encode(),
         payload_b.encode() + b"\n",
     ]
-    assert _m365_cline_prompt(message) == "lead\ntail"
+    assert _cline_prompt(message) == "lead\ntail"
 
 
 def test_m365_inline_large_payload_random_fragment_harness():
@@ -41814,9 +43688,7 @@ def test_m365_inline_large_payload_random_fragment_harness():
     for _case in range(100):
         cut_count = rng.randint(1, 80)
         cuts = sorted(rng.sample(range(1, len(wire)), cut_count))
-        files = _m365_collect_cline_inline_files(
-            _m365_harness_message_from_cuts(wire, cuts)
-        )
+        files = _cline_collect_inline_files(_m365_harness_message_from_cuts(wire, cuts))
         assert len(files) == 1
         assert files[0]["size"] == len(expected)
         assert base64.b64decode(files[0]["data"]) == expected
@@ -41826,11 +43698,298 @@ def test_m365_inline_final_attachment_without_trailing_newline_fragmented():
     payload = "final body without wrapper newline"
     wire = '<file_content path="final.txt">\n' + payload + "\n</file_content>"
     cuts = [1, 7, 19, 31, len(wire) - 1]
-    files = _m365_collect_cline_inline_files(
-        _m365_harness_message_from_cuts(wire, cuts)
-    )
+    files = _cline_collect_inline_files(_m365_harness_message_from_cuts(wire, cuts))
     assert len(files) == 1
     assert base64.b64decode(files[0]["data"]).decode() == payload + "\n"
+
+
+def test_parse_json_tool_block_recovers_truncated_missing_closers_safely():
+    # local models routinely emit a tool_json call that is only missing a
+    # trailing "}" or "]}". parse_json_tool_block must recover those by
+    # completing structural closers, WITHOUT ever forging a call whose string
+    # argument was cut mid-value (an unterminated string must fail and return
+    # []). This locks the "complete it if we safely can, otherwise return
+    # verbatim" contract so a future edit cannot re-introduce either the loss
+    # (dropping recoverable calls) or the danger (fabricating truncated args).
+    def names(result):
+        return [call["function"]["name"] for call in result]
+
+    def args(result, i=0):
+        return json.loads(result[i]["function"]["arguments"])
+
+    # complete input is unchanged.
+    complete = '{"calls":[{"id":"c1","name":"read_file","input":{"path":"a.py"}}]}'
+    assert names(parse_json_tool_block(complete)) == ["read_file"]
+    assert args(parse_json_tool_block(complete)) == {"path": "a.py"}
+    # missing the final "]}" (the most common local-model truncation) recovers.
+    miss_close = '{"calls":[{"id":"c1","name":"read_file","input":{"path":"a.py"}}'
+    assert names(parse_json_tool_block(miss_close)) == ["read_file"]
+    assert args(parse_json_tool_block(miss_close)) == {"path": "a.py"}
+    # missing just the outer "}" recovers.
+    miss_one = '{"calls":[{"name":"list_dir","input":{"path":"/tmp"}}]'
+    assert names(parse_json_tool_block(miss_one)) == ["list_dir"]
+    # a numeric arg with the object truncated (strings all closed) recovers.
+    miss_num = '{"calls":[{"name":"sleep","input":{"seconds":5}}'
+    assert names(parse_json_tool_block(miss_num)) == ["sleep"]
+    assert args(parse_json_tool_block(miss_num)) == {"seconds": 5}
+    # SAFETY: a string argument cut mid-value (unterminated) must NOT be forged
+    # into a valid call — closers-only completion raises, so the result is [].
+    cut_string = '{"calls":[{"name":"delete_file","input":{"path":"/very/import'
+    assert parse_json_tool_block(cut_string) == []
+    # tolerant JSON (unquoted keys / trailing commas) still parses even when
+    # combined with a missing closer.
+    tol_trunc = '{"calls":[{name:"read_file",input:{path:"x"}}'
+    assert names(parse_json_tool_block(tol_trunc)) == ["read_file"]
+    # allowed-name filtering still applies on the recovery path.
+    assert parse_json_tool_block(miss_close, allowed_names={"other"}) == []
+    assert names(parse_json_tool_block(miss_close, allowed_names={"read_file"})) == [
+        "read_file"
+    ]
+    # a payload needing too many closers (severely truncated) is refused, not
+    # force-completed.
+    deeply_truncated = "{" * 12 + '"calls":[]'
+    assert parse_json_tool_block(deeply_truncated) == []
+    # no object at all -> [].
+    assert parse_json_tool_block("just prose, no json") == []
+
+
+def test_extract_balanced_json_handles_nesting_strings_and_escapes():
+    # _extract_balanced_json underlies parse_json_tool_block (the JSON
+    # tool dialect). It must return the FIRST brace-balanced {...} object,
+    # counting braces only OUTSIDE strings, honoring backslash escapes, and
+    # returning "" when no complete object exists. These are the exact edge
+    # cases the removed deepseek test used to guard; the behavior lives on in
+    # the unified relay, so the coverage does too.
+    # nested objects/arrays -> the whole outer object.
+    assert (
+        _extract_balanced_json('{"a":{"b":[1,2,{"c":3}]},"d":4}')
+        == '{"a":{"b":[1,2,{"c":3}]},"d":4}'
+    )
+    # a "}" INSIDE a string must not close the object early.
+    assert _extract_balanced_json('{"s":"a}b{c"}') == '{"s":"a}b{c"}'
+    # an escaped quote inside a string must not end the string early.
+    assert _extract_balanced_json('{"s":"he said \\"hi}\\""}') == (
+        '{"s":"he said \\"hi}\\""}'
+    )
+    # leading prose (e.g. a sentinel or fence line) before the first "{" is
+    # skipped; extraction starts at the first brace.
+    assert _extract_balanced_json('noise ⟦TOOLCALL⟧ {"x":1} trailing') == '{"x":1}'
+    # trailing text AFTER the first balanced object is not included.
+    assert _extract_balanced_json('{"x":1}{"y":2}') == '{"x":1}'
+    # no "{" at all, and a truncated (never-closed) object, both yield "".
+    assert _extract_balanced_json("just text") == ""
+    assert _extract_balanced_json('{"calls":[{"name":"read_file"') == ""
+    # a real tool_json body round-trips through balanced extraction + json.loads.
+    body = '{"calls":[{"id":"c1","name":"read_file","input":{"path":"a}b.py"}}]}'
+    assert _extract_balanced_json(body) == body
+    assert json.loads(_extract_balanced_json(body))["calls"][0]["name"] == "read_file"
+
+
+def test_cline_envelope_strips_model_emitted_envelope_stream_and_nonstream():
+    # if the model self-wraps its answer in
+    # <attempt_completion><result>…</result></attempt_completion> (because the
+    # relayed classic-Cline system prompt told it to), the transport must strip
+    # those tags and add exactly ONE envelope — never double-wrap, never drop.
+    opening = _cline_result_open()
+    closing = _cline_result_close()
+    # streaming: the self-wrap arrives split across chunks (holdback across the
+    # boundary); strip() removes only the tags, open_prefix() adds ours once.
+    env = ClineEnvelope(True)
+    out = []
+    for chunk in [
+        "<attempt",
+        "_completion><result>",
+        "ANS",
+        "WER</result></attempt_completion>",
+    ]:
+        safe = env.strip_envelope_tags(chunk)
+        if safe:
+            out.append(env.open_prefix() + safe)
+    assert "".join(out) + env.closing() == opening + "ANSWER" + closing
+    # a truncated closing tag at stream end is protocol noise -> dropped, not
+    # leaked into the answer.
+    env = ClineEnvelope(True)
+    first = env.open_prefix() + env.strip_envelope_tags("done")
+    assert env.strip_envelope_tags("</resu") == ""  # held partial tag
+    assert first == opening + "done"
+    assert env.closing() == closing  # residual dropped, close emitted
+    # inactive (non-cline) streaming is a byte-exact passthrough.
+    assert (
+        ClineEnvelope(False).strip_envelope_tags("<result>x</result>")
+        == "<result>x</result>"
+    )
+    # non-stream wrap removes the model envelope by TAG removal (keeps prose the
+    # model placed OUTSIDE its own envelope; never drops, never nests).
+    env = ClineEnvelope(True)
+    assert (
+        env.wrap("<attempt_completion><result>A</result></attempt_completion>")
+        == opening + "A" + closing
+    )
+    assert (
+        ClineEnvelope(True).wrap(
+            "pre <attempt_completion><result>A</result></attempt_completion> post"
+        )
+        == opening + "pre A post" + closing
+    )
+    # a plain answer with no model tags round-trips byte-exact through strip.
+    answer = "Sure. x = 1\ndone"
+    for cut in range(1, len(answer)):
+        env = ClineEnvelope(True)
+        assert (
+            env.strip_envelope_tags(answer[:cut])
+            + env.strip_envelope_tags(answer[cut:])
+            == answer
+        ), cut
+
+
+def test_m365_stream_classic_cline_self_wrap_yields_single_envelope():
+    # END-TO-END (streaming) regression. Scenario: a CLASSIC Cline VSCode
+    # client (client_kind == "cline") makes m365 relay a system prompt that
+    # tells the model to answer inside
+    # <attempt_completion><result>…</result></attempt_completion>. m365 is
+    # relay_prompt=True, so the model sees that instruction and STREAMS its own
+    # envelope. Before the A fix the m365 streaming path did only
+    # `content = env.open_prefix() + content` (no strip), so the client received
+    # the model's envelope nested inside the transport's envelope (double-wrap /
+    # unclosed <result>). This test reproduces the EXACT per-delta wiring the
+    # m365 handler now uses (mirrors _direct_m365_chat_response's stream loop):
+    #   for each content delta:  piece = env.strip_envelope_tags(delta)
+    #                            if piece: emit(env.open_prefix() + piece)
+    #   at done:                 emit(env.closing())
+    # and asserts the client always receives exactly ONE clean envelope wrapping
+    # the answer text — never nested, never unclosed — no matter how the model's
+    # tags are split across streamed chunks.
+    opening = _cline_result_open()
+    closing = _cline_result_close()
+
+    def run_stream(chunks):
+        env = ClineEnvelope(True)  # cline active == classic extension
+        out = []
+        for delta in chunks:
+            piece = env.strip_envelope_tags(delta)
+            if piece:
+                out.append(env.open_prefix() + piece)
+        out.append(env.closing())
+        return "".join(out)
+
+    # model self-wraps its answer; the transport must emit ONE clean envelope.
+    wire = (
+        "<attempt_completion><result>Here is the fix:\n"
+        "x = 1\n"
+        "</result></attempt_completion>"
+    )
+    answer = "Here is the fix:\nx = 1\n"
+    assert run_stream([wire]) == opening + answer + closing
+    # split at EVERY boundary: the strip() tag-holdback must keep it correct and
+    # never leak a half tag as content nor drop answer text.
+    for cut in range(1, len(wire)):
+        assert run_stream([wire[:cut], wire[cut:]]) == opening + answer + closing, cut
+    # char-by-char streaming (worst-case fragmentation).
+    assert run_stream(list(wire)) == opening + answer + closing
+    # a model that IGNORES the wrap instruction (plain answer) still gets exactly
+    # one transport envelope — the strip path is a no-op on tag-free text.
+    plain = "just the answer, no tags"
+    assert run_stream([plain]) == opening + plain + closing
+    # a model that DOUBLE-wraps (nested envelope) collapses to a single clean
+    # envelope: strip removes every tag occurrence, wrap adds exactly one.
+    nested = (
+        "<attempt_completion><result>"
+        "<attempt_completion><result>A</result></attempt_completion>"
+        "</result></attempt_completion>"
+    )
+    assert run_stream([nested]) == opening + "A" + closing
+    # answer prose placed OUTSIDE the model's own envelope is preserved (never
+    # dropped) and still ends up inside the single transport envelope.
+    around = "pre <attempt_completion><result>mid</result></attempt_completion> post"
+    assert run_stream([around]) == opening + "pre mid post" + closing
+
+
+def test_compose_turn_text_no_wrap_instruction_only_for_relayed_cline():
+    # the no-wrap counter-instruction is appended ONLY when
+    # we actually relay a Cline system prompt (relay_prompt True + a non-empty
+    # system message + client_kind == "cline"). It must never leak to Continue /
+    # plain clients, and never appear without a relayed prompt.
+    relay = RelayPolicy(relay_prompt=True, supports_tools=False)
+    no_relay = RelayPolicy(relay_prompt=False, supports_tools=False)
+    marker = _CLINE_NO_WRAP_INSTRUCTION
+
+    def turn(system="SYS", user="hi", kind="plain"):
+        return ClientTurn(system_text=system, user_text=user, client_kind=kind)
+
+    # plain client -> no counter-instruction
+    plain = compose_turn_text(relay, turn(kind="plain"))
+    assert marker not in plain
+    assert plain.startswith("<client_system_prompt>") and plain.rstrip().endswith("hi")
+    # cline client -> counter-instruction, ordered sys < instruction < body
+    cline = compose_turn_text(relay, turn(kind="cline"))
+    assert marker in cline
+    assert (
+        cline.index("<client_system_prompt>") < cline.index(marker) < cline.index("hi")
+    )
+    # cline but relay_prompt False -> not added (no system prompt relayed)
+    assert marker not in compose_turn_text(no_relay, turn(kind="cline"))
+    # cline + relay_prompt but EMPTY system -> not added (nothing relayed)
+    assert marker not in compose_turn_text(relay, turn(system="", kind="cline"))
+
+
+def test_cline_envelope_suppress_returns_close_when_opened():
+    # in REQUIRED / AUTO+fence tool modes the transpiler
+    # streams pre-fence content, which opens the Cline envelope BEFORE the tool
+    # block is seen. suppress() must then return the closing tag so the handler
+    # emits it before tool_calls; otherwise the client gets an unclosed
+    # <result> followed by tool_calls.
+    opening = _cline_result_open()
+    closing = _cline_result_close()
+    # opened by content -> suppress returns the close tag exactly once
+    env = ClineEnvelope(True)
+    assert env.open_prefix() == opening
+    assert env.open_prefix() == ""
+    assert env.suppress() == closing
+    assert env.closing() == ""  # already closed by suppress
+    assert env.suppress() == ""  # idempotent
+    # tool-only turn (nothing ever streamed) -> suppress emits nothing
+    assert ClineEnvelope(True).suppress() == ""
+    # inactive envelope -> suppress emits nothing even after a (no-op) open
+    env = ClineEnvelope(False)
+    env.open_prefix()
+    assert env.suppress() == ""
+    # plain streaming (no tool) still closes normally at stream end
+    env = ClineEnvelope(True)
+    assert env.open_prefix() == opening
+    assert env.closing() == closing
+
+
+def test_browser_inline_files_reappended_for_no_egress_families():
+    # the relay strips inline <file_content> from the prompt,
+    # but qwen/doubao/deepseek have no upload egress, so the file content would
+    # be lost. _browser_inline_files_as_text / _browser_append_inline_files must
+    # re-append the stripped file text (byte-exact) so the model still sees it.
+    message_text = (
+        "\u8bf7\u6539\u8fdb\u811a\u672c\n"
+        '<file_content path="foo.py">\n'
+        'print("hi")\nx = 1\n'
+        "</file_content>\n"
+        "\u8c22\u8c22"
+    )
+    messages = [{"role": "user", "content": message_text}]
+    inline = _browser_inline_files_as_text(messages)
+    assert '<file_content path="foo.py">' in inline
+    assert 'print("hi")\nx = 1' in inline
+    # the re-appended body is byte-exact (relies on the fixed content regex)
+    files = _cline_collect_inline_files({"content": message_text})
+    assert base64.b64decode(files[0]["data"]).decode("utf-8") == 'print("hi")\nx = 1\n'
+    # append helper: prompt then a blank line then the file block
+    appended = _browser_append_inline_files("PROMPT", messages)
+    assert appended.startswith("PROMPT\n\n")
+    assert 'print("hi")' in appended
+    # no inline files (e.g. XiaoAI plain text) -> nothing re-appended, no double
+    assert _browser_inline_files_as_text([{"role": "user", "content": "hi"}]) == ""
+    assert (
+        _browser_append_inline_files("PROMPT", [{"role": "user", "content": "hi"}])
+        == "PROMPT"
+    )
+    # empty prompt + files -> just the file block
+    assert _browser_append_inline_files("", messages).startswith("<file_content")
 
 
 def test_m365_conversation_key_ignores_file_body_and_whitespace():
@@ -41975,6 +44134,365 @@ def test_m365_conversation_key_ignores_file_body_and_whitespace():
     assert m_subset != m1
 
 
+def test_browser_relay() -> None:
+    reg = {
+        "LLM:m365-claude-opus": {"relay_prompt": True, "supports_tools": True},
+        "LLM:doubao": {"relay_prompt": False, "supports_tools": False},
+    }
+    relay = BrowserRelay(reg)
+
+    # -- policy ------------------------------------------------------------
+    p = relay.policy_for("LLM:m365-claude-opus")
+    assert p.relay_prompt and p.supports_tools
+    p2 = relay.policy_for("LLM:doubao")
+    assert not p2.relay_prompt and not p2.supports_tools
+    p3 = relay.policy_for("LLM:unknown")  # missing -> safe defaults
+    assert not p3.relay_prompt and not p3.supports_tools
+
+    # -- relay OFF: plain latest-user passthrough --------------------------
+    body = {"messages": []}
+    msgs = [
+        {"role": "system", "content": "SECRET IDE PROMPT"},
+        {"role": "user", "content": "old"},
+        {"role": "assistant", "content": "..."},
+        {"role": "user", "content": "hello world"},
+    ]
+    prep = relay.prepare("LLM:doubao", body, msgs)
+    assert prep.text == "hello world", prep.text
+    assert "SECRET" not in prep.text  # system not relayed when relay_prompt off
+    assert not prep.tools_active
+
+    # -- relay ON: system as XML prepended, history stripped ---------------
+    prep = relay.prepare("LLM:m365-claude-opus", body, msgs)
+    assert prep.text.startswith("<client_system_prompt>")
+    assert "SECRET IDE PROMPT" in prep.text
+    assert prep.text.rstrip().endswith("hello world")
+    assert "old" not in prep.text  # prior user turn stripped
+
+    # -- tools -> instructions + native tool_calls out ---------------------
+    tool_body = {
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "read_file",
+                    "description": "Read a file",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "path": {"type": "string", "description": "the path"},
+                            "max_lines": {"type": "number"},
+                        },
+                        "required": ["path"],
+                    },
+                },
+            }
+        ]
+    }
+    tmsgs = [
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "read config.py"},
+    ]
+    prep = relay.prepare("LLM:m365-claude-opus", tool_body, tmsgs)
+    assert prep.tools_active
+    assert "<tool_use_instructions>" in prep.text
+    assert "```tool_definition" in prep.text
+    assert "TOOL_NAME: read_file" in prep.text
+    assert prep.arg_types["read_file"]["path"] == "string"
+
+    # transpiler: passthrough text then a fenced tool call
+    tp = prep.new_transpiler()
+    assert tp is not None
+    out = []
+    for ch in [
+        "Sure, let me read it.\n",
+        "```tool\n",
+        "TOOL_NAME: read_file\n",
+        "BEGIN_ARG: path\n",
+        "config.py\n",
+        "END_ARG\n",
+        "BEGIN_ARG: max_lines\n",
+        "50\n",
+        "END_ARG\n",
+        "```",
+    ]:
+        out.extend(tp.push(ch))
+    _calls = tp.finish_tool_calls()
+    call = _calls[0] if _calls else None
+    content = "".join(out)
+    assert content.strip() == "Sure, let me read it.", repr(content)
+    assert call and call["function"]["name"] == "read_file"
+    parsed = json.loads(call["function"]["arguments"])
+    assert parsed == {"path": "config.py", "max_lines": 50}, parsed
+    # declared-string protected; untyped number coerced (Continue-faithful)
+    assert isinstance(parsed["path"], str) and isinstance(parsed["max_lines"], int)
+
+    # -- bare (fence-less) opener ------------------------------------------
+    tp = prep.new_transpiler()
+    assert tp is not None
+    out = []
+    for ch in [
+        "answer preface\n",
+        "TOOL_NAME: read_file\n",
+        "BEGIN_ARG: path\n",
+        "a.py\n",
+        "END_ARG\n",
+    ]:
+        out.extend(tp.push(ch))
+    _calls = tp.finish_tool_calls()
+    call = _calls[0] if _calls else None
+    assert call and json.loads(call["function"]["arguments"]) == {"path": "a.py"}
+    assert "".join(out).strip() == "answer preface"
+
+    # -- no tool call: pure content, nothing held hostage ------------------
+    tp = prep.new_transpiler()
+    assert tp is not None
+    out = []
+    for ch in ["just a normal answer, no tools here."]:
+        out.extend(tp.push(ch))
+    assert tp.finish_tool_calls() == []
+    out.append(tp.flush_pending())
+    assert "".join(out) == "just a normal answer, no tools here."
+
+    # -- agent loop: tool RESULT continuation ------------------------------
+    loop_msgs = [
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "read config.py"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "read_file", "arguments": "{}"},
+                }
+            ],
+        },
+        {"role": "tool", "tool_call_id": "call_1", "content": "port=8080"},
+    ]
+    prep = relay.prepare("LLM:m365-claude-opus", tool_body, loop_msgs)
+    assert "<tool_results>" in prep.text
+    assert 'name="read_file"' in prep.text
+    assert "port=8080" in prep.text
+    # user text not duplicated as a fresh turn when it's a continuation echo
+    assert prep.text.count("read config.py") == 0
+
+    # -- array/object arg coercion (Continue json.loads path) --------------
+    call = parse_tool_block(
+        "TOOL_NAME: t\nBEGIN_ARG: items\n[1, 2, 3]\nEND_ARG\n",
+        {"items": "array"},
+    )
+    assert call is not None
+    assert json.loads(call["function"]["arguments"])["items"] == [1, 2, 3]
+
+    # ---- JSON (```tool_json```) format ----------------------------------
+    reg_json = {
+        "LLM:deepseek": {
+            "relay_prompt": True,
+            "supports_tools": True,
+            "tool_format": "json",
+        }
+    }
+    relay_j = BrowserRelay(reg_json)
+    pj = relay_j.policy_for("LLM:deepseek")
+    assert pj.tool_format == "json"
+    prep_j = relay_j.prepare("LLM:deepseek", tool_body, tmsgs)
+    assert prep_j.tools_active
+    # JSON dialect instructions, not the codeblock BEGIN_ARG grammar
+    assert "```tool_json" in prep_j.text
+    assert '"calls"' in prep_j.text
+    assert "BEGIN_ARG" not in prep_j.text
+    assert prep_j.allowed_names == {"read_file"}
+
+    # JSON transpiler: passthrough then a fenced tool_json with MULTIPLE calls
+    tp = prep_j.new_transpiler()
+    assert tp is not None
+    out = []
+    for ch in [
+        "Let me read both.\n",
+        "```tool_json\n",
+        '{"calls":[',
+        '{"id":"c1","name":"read_file","input":{"path":"a.py","max_lines":10}},',
+        '{"id":"c2","name":"read_file","input":{"path":"b.py"}}',
+        "]}\n",
+        "```",
+    ]:
+        out.extend(tp.push(ch))
+    calls = tp.finish_tool_calls()
+    assert "".join(out).strip() == "Let me read both.", repr("".join(out))
+    assert [c["function"]["name"] for c in calls] == ["read_file", "read_file"]
+    a0 = json.loads(calls[0]["function"]["arguments"])
+    assert a0 == {"path": "a.py", "max_lines": 10}, a0
+    assert json.loads(calls[1]["function"]["arguments"]) == {"path": "b.py"}
+    # disallowed tool filtered out
+    tp = prep_j.new_transpiler()
+    assert tp is not None
+    for ch in ["```tool_json\n", '{"calls":[{"name":"rm_rf","input":{}}]}\n', "```"]:
+        tp.push(ch)
+    assert tp.finish_tool_calls() == []
+    # tolerant JSON: unquoted keys + trailing comma repaired
+    calls = parse_json_tool_block(
+        '{"calls":[{name:"read_file",input:{path:"x",}},]}', {"read_file"}
+    )
+    assert calls and json.loads(calls[0]["function"]["arguments"]) == {"path": "x"}
+    # no tool block -> pure content passthrough
+    tp = prep_j.new_transpiler()
+    assert tp is not None
+    out = []
+    for ch in ["just chatting, no tools"]:
+        out.extend(tp.push(ch))
+    assert tp.finish_tool_calls() == []
+    out.append(tp.flush_pending())
+    assert "".join(out) == "just chatting, no tools"
+
+    # unified interface: codeblock transpiler also yields a list
+    prep_cb = relay.prepare("LLM:m365-claude-opus", tool_body, tmsgs)
+    tp = prep_cb.new_transpiler()
+    assert tp is not None
+    for ch in [
+        "```tool\n",
+        "TOOL_NAME: read_file\n",
+        "BEGIN_ARG: path\n",
+        "z.py\n",
+        "END_ARG\n",
+        "```",
+    ]:
+        tp.push(ch)
+    cb_calls = tp.finish_tool_calls()
+    assert len(cb_calls) == 1 and cb_calls[0]["function"]["name"] == "read_file"
+
+    # ---- XiaoAI bypass: no prompt, no tools, just the user turn ----------
+    xiao_body = {"source": "xiaoai", "tools": tool_body["tools"]}
+    xiao_msgs = [
+        {"role": "system", "content": "请简洁回答，只输出适合语音朗读的文字。"},
+        {"role": "user", "content": "北京今天天气"},
+    ]
+    assert BrowserRelay.should_bypass(xiao_body) is True
+    assert BrowserRelay.should_bypass({"source": "continue"}) is False
+    # bypass on a tool+prompt-enabled model still degrades to pure passthrough
+    prep_x = relay_j.prepare("LLM:deepseek", xiao_body, xiao_msgs, bypass=True)
+    assert prep_x.text == "北京今天天气"
+    assert "请简洁回答" not in prep_x.text  # system NOT relayed
+    assert "<tool_use_instructions>" not in prep_x.text
+    assert "tool_json" not in prep_x.text  # tools NOT injected
+    assert prep_x.tools_active is False  # no interception
+    assert prep_x.new_transpiler() is None
+
+    # ---- FIELD-SELECTABLE tool strategy (the "both, by field" capability) ---
+    # A model can pick, purely from metadata: body format (json/codeblock) AND
+    # auto-mode detection (fence/sentinel). Verify all combinations resolve and
+    # the factory returns the right transpiler.
+    reg_mix = {
+        # sentinel auto-detect + json body (DeepSeek-faithful)
+        "M:sentinel-json": {
+            "supports_tools": True,
+            "tool_format": "json",
+            "tool_auto_detect": "sentinel",
+            "tool_sentinel": "\u27e6TOOLCALL\u27e7",
+        },
+        # fence auto-detect + codeblock body (Continue-faithful)
+        "M:fence-codeblock": {
+            "supports_tools": True,
+            "tool_format": "codeblock",
+            "tool_auto_detect": "fence",
+        },
+    }
+    relay_mix = BrowserRelay(reg_mix)
+    ps = relay_mix.policy_for("M:sentinel-json")
+    assert ps.tool_auto_detect == "sentinel" and ps.tool_format == "json"
+    pf = relay_mix.policy_for("M:fence-codeblock")
+    assert pf.tool_auto_detect == "fence" and pf.tool_format == "codeblock"
+
+    tool_body_req: dict = dict(tool_body)
+    tool_body_req["tool_choice"] = "required"
+    tool_body_auto: dict = dict(tool_body)  # no tool_choice -> auto
+
+    # required mode -> body transpiler (json), regardless of auto_detect
+    prep = relay_mix.prepare("M:sentinel-json", tool_body_req, tmsgs)
+    assert prep.tool_choice_mode == "required"
+    assert type(prep.new_transpiler()).__name__ == "JsonToolCallTranspiler"
+
+    # auto + sentinel -> SentinelToolTranspiler (speculative)
+    prep = relay_mix.prepare("M:sentinel-json", tool_body_auto, tmsgs)
+    assert prep.tool_choice_mode == "auto"
+    tp = prep.new_transpiler()
+    assert tp is not None
+    assert type(tp).__name__ == "SentinelToolTranspiler"
+
+    # sentinel speculative: PLAIN reply streams live (no sentinel at head)
+    tp = relay_mix.prepare("M:sentinel-json", tool_body_auto, tmsgs).new_transpiler()
+    assert tp is not None
+    out = []
+    for ch in ["Here is ", "a normal ", "answer."]:
+        out.extend(tp.push(ch))
+    assert tp.finish_tool_calls() == []
+    out.append(tp.flush_pending())
+    assert "".join(out) == "Here is a normal answer."
+
+    # sentinel speculative: reply that OPENS with the sentinel -> tool call,
+    # and the sentinel/JSON is NEVER leaked as content
+    tp = relay_mix.prepare("M:sentinel-json", tool_body_auto, tmsgs).new_transpiler()
+    assert tp is not None
+    out = []
+    for ch in [
+        "\u27e6TOOLCALL\u27e7",
+        '{"calls":[{"name":"read_file","input":{"path":"a.py"}}]}',
+    ]:
+        out.extend(tp.push(ch))
+    calls = tp.finish_tool_calls()
+    assert "".join(out) == "", repr("".join(out))  # nothing leaked
+    assert calls and json.loads(calls[0]["function"]["arguments"]) == {"path": "a.py"}
+
+    # sentinel committed but BROKEN json -> preserve ORIGINAL prose, with the
+    # internal sentinel STRIPPED (never leaked); no canned message injected.
+    tp = relay_mix.prepare("M:sentinel-json", tool_body_auto, tmsgs).new_transpiler()
+    assert tp is not None
+    for ch in ["\u27e6TOOLCALL\u27e7", '{"calls":[{"name":"read_file",  BROKEN']:
+        tp.push(ch)
+    assert tp.finish_tool_calls() == []
+    _resid = tp.flush_pending()
+    assert "\u27e6TOOLCALL\u27e7" not in _resid  # internal marker never leaked
+    assert _resid == '{"calls":[{"name":"read_file",  BROKEN'  # original prose kept
+    assert "抱歉" not in _resid  # relay injects NO canned message
+
+    # fence auto-detect on the other model: fence transpiler streams pre-fence
+    tp = relay_mix.prepare("M:fence-codeblock", tool_body_auto, tmsgs).new_transpiler()
+    assert tp is not None
+    assert type(tp).__name__ == "ToolCallTranspiler"
+
+    # fence committed but broken body -> preserve the ORIGINAL prose verbatim
+    # (the fenced block, including fences) so the client can decide; no message.
+    reg_fb = {
+        "M:fb": {
+            "supports_tools": True,
+            "tool_format": "json",
+        }
+    }
+    tp = BrowserRelay(reg_fb).prepare("M:fb", tool_body_req, tmsgs).new_transpiler()
+    assert tp is not None
+    for ch in ["```tool_json\n", "{not valid json\n", "```"]:
+        tp.push(ch)
+    assert tp.finish_tool_calls() == []
+    _resid = tp.flush_pending()
+    assert "not valid json" in _resid  # original body preserved for the client
+    assert "```tool_json" in _resid  # fence kept verbatim (faithful prose)
+
+    # successful parse -> flush_pending yields nothing (block consumed as a call)
+    tp = BrowserRelay(reg_fb).prepare("M:fb", tool_body_req, tmsgs).new_transpiler()
+    assert tp is not None
+    for ch in [
+        "```tool_json\n",
+        '{"calls":[{"name":"read_file","input":{}}]}\n',
+        "```",
+    ]:
+        tp.push(ch)
+    assert len(tp.finish_tool_calls()) == 1
+    assert tp.flush_pending() == ""  # consumed, nothing preserved
+
+    print("browser relay: ALL SELF-TESTS PASSED")
+
+
 def run_self_tests():
     tests = [
         test_m365_done_requires_authoritative_completion_signal,
@@ -41995,12 +44513,6 @@ def run_self_tests():
         test_browser_nav_landed_on_root_is_reliable,
         test_browser_stale_conversation_error_carries_context,
         test_qwen_stale_redirect_probe_detects_root_landing,
-        test_qwen_forwards_only_latest_user_turn,
-        test_deepseek_auto_classify_never_false_triggers_on_code_fence,
-        test_deepseek_sentinel_tool_json_parses_and_is_bounded,
-        test_deepseek_extract_balanced_json_handles_nesting_and_strings,
-        test_deepseek_tool_prompt_auto_is_soft_and_sentinel_based,
-        test_deepseek_auto_fallback_never_leaks_sentinel,
         test_doubao_runtime_exception_emits_only_error_terminal,
         test_doubao_retry_closes_previous_stream_before_retry,
         test_doubao_committed_stream_end_returns_partial_error,
@@ -42068,6 +44580,16 @@ def run_self_tests():
         test_end_item_requires_playback_fence,
         test_audio_shutdown_requires_all_resources_closed,
         test_prequeue_partial_downgrades_only_completed,
+        test_browser_relay,
+        test_extract_balanced_json_handles_nesting_strings_and_escapes,
+        test_parse_json_tool_block_recovers_truncated_missing_closers_safely,
+        test_m365_strip_cite_normalizes_citation_host_links_no_text_loss,
+        test_m365_strip_cite_final_strips_truncated_refid_cite_only,
+        test_cline_envelope_suppress_returns_close_when_opened,
+        test_cline_envelope_strips_model_emitted_envelope_stream_and_nonstream,
+        test_m365_stream_classic_cline_self_wrap_yields_single_envelope,
+        test_compose_turn_text_no_wrap_instruction_only_for_relayed_cline,
+        test_browser_inline_files_reappended_for_no_egress_families,
     ]
 
     passed = 0

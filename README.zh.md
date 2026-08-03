@@ -1,6 +1,6 @@
-# Voice Edge AI
+# Voice Edge
 
-Voice Edge AI 是一个面向 macOS 的本地语音与 AI 平台，集成本地 MLX 语言与视觉模型、faster-whisper/apple 语音识别、Edge-TTS 流式语音合成、OpenAI 兼容 HTTP API、MCP 工具、macOS 原生听写、小米小爱同学集成，以及基于浏览器的 AI 模型。
+Voice Edge 是一个面向 macOS 的本地语音与 AI 平台，集成本地 MLX 语言与视觉模型、faster-whisper/apple 语音识别、Edge-TTS 流式语音合成、OpenAI 兼容 HTTP API、MCP 工具、macOS 原生听写、小米小爱同学集成，以及基于浏览器的 AI 模型。
 
 ## 主要能力
 
@@ -15,7 +15,7 @@ Voice Edge AI 是一个面向 macOS 的本地语音与 AI 平台，集成本地 
 - Firefox 辅助的本地认证同步
 - 面向 Microsoft 365 Copilot 附件的可选 SharePoint 上传能力
 
-Voice Edge AI 可作为本地语音助手、推理网关、MCP 服务器、转写服务、流式 TTS 网关或小爱同学后端使用。
+Voice Edge 可作为本地语音助手、推理网关、MCP 服务器、转写服务、流式 TTS 网关或小爱同学后端使用。
 
 ## 系统要求
 
@@ -280,7 +280,7 @@ export XIAOAI_TAVILY_TOOL_TIMEOUT=30
      小爱同学 / OpenAI / MCP / 快捷键
                   |
                   v
-          Voice Edge AI 核心
+          Voice Edge 核心
                   |
        +----------+----------+
        |          |          |
