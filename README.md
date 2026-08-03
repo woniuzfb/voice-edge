@@ -1,6 +1,6 @@
-# Voice Edge AI
+# Voice Edge
 
-Voice Edge AI is a macOS-focused local voice and AI platform. It combines local MLX language and vision models, faster-whisper/apple speech recognition, streaming Edge-TTS synthesis, OpenAI-compatible HTTP APIs, MCP tools, native macOS dictation, Xiaomi XiaoAI integration, and browser-backed AI providers.
+Voice Edge is a macOS-focused local voice and AI platform. It combines local MLX language and vision models, faster-whisper/apple speech recognition, streaming Edge-TTS synthesis, OpenAI-compatible HTTP APIs, MCP tools, native macOS dictation, Xiaomi XiaoAI integration, and browser-backed AI providers.
 
 ## Highlights
 
@@ -15,7 +15,7 @@ Voice Edge AI is a macOS-focused local voice and AI platform. It combines local 
 - Firefox-assisted local authentication synchronization
 - Optional SharePoint uploads for Microsoft 365 Copilot attachments
 
-Voice Edge AI can be used as a local voice assistant, inference gateway, MCP server, transcription service, streaming TTS gateway, or Xiaomi XiaoAI backend.
+Voice Edge can be used as a local voice assistant, inference gateway, MCP server, transcription service, streaming TTS gateway, or Xiaomi XiaoAI backend.
 
 ## Requirements
 
@@ -279,7 +279,7 @@ export XIAOAI_TAVILY_TOOL_TIMEOUT=30
    XiaoAI / OpenAI / MCP / Hotkeys
                 |
                 v
-        Voice Edge AI Core
+        Voice Edge Core
                 |
      +----------+----------+
      |          |          |
