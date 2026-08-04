@@ -1511,8 +1511,8 @@ wheels = [
 
 [[package]]
 name = "mlx-vlm"
-version = "0.6.7"
-source = { git = "https://github.com/Blaizzy/mlx-vlm.git#6c2f66009b69c1b4b3c6d1ef146125bb6eba5fe8" }
+version = "0.6.11"
+source = { git = "https://github.com/Blaizzy/mlx-vlm.git#162e7af8acd163ed5950932ed859dcdce8041e59" }
 dependencies = [
     { name = "fastapi" },
     { name = "llguidance" },
