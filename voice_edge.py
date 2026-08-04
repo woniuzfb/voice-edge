@@ -213,28 +213,28 @@ BROWSER_MODEL_METADATA = {
         "owned_by": "m365-copilot-browser",
         "root": "Claude_Opus",
         "capabilities": ["chat", "reasoning", "web", "work"],
-        "supports_tools": False,
+        "supports_tools": True,
         "relay_prompt": True,
     },
     "LLM:m365-claude-sonnet": {
         "owned_by": "m365-copilot-browser",
         "root": "Claude_Sonnet",
         "capabilities": ["chat", "reasoning", "web", "work"],
-        "supports_tools": False,
+        "supports_tools": True,
         "relay_prompt": True,
     },
     "LLM:m365-chatgpt-5.6": {
         "owned_by": "m365-copilot-browser",
         "root": "Gpt_5_6_Reasoning",
         "capabilities": ["chat", "reasoning", "web", "work"],
-        "supports_tools": False,
+        "supports_tools": True,
         "relay_prompt": True,
     },
     "LLM:m365-chatgpt-5.5": {
         "owned_by": "m365-copilot-browser",
         "root": "Gpt_5_5_Chat",
         "capabilities": ["chat", "web", "work"],
-        "supports_tools": False,
+        "supports_tools": True,
         "relay_prompt": True,
     },
     "LLM:doubao": {
@@ -976,13 +976,24 @@ def _content_to_text(content: Any) -> str:
 # makes the relay "unified": one place decides client_kind and one place turns
 # the raw IDE envelope into a clean prompt.
 #
-# The two entries delegate to the canonical Cline parsers (_cline_is_request /
-# _cline_extract_user_prompt). Those parsers are defined further down, physically
-# next to the m365 conversation-identity code that shares their primitives
-# (_client_user_text / _cline_inline_file_spans), but they carry neutral
-# _cline_/_client_ names because the logic is client-format specific and
-# model-agnostic. Name resolution happens at call time, so forward-referencing
-# them from here is valid.
+# Naming convention (职责三分):
+#   * _client_  — logic shared by ALL OpenAI-style clients, including the inline
+#                 <file_content> attachment format that BOTH Cline and Continue
+#                 reuse (spans/collect/text_outside), latest-user-message helpers,
+#                 kind detection, and the unified prompt extractor
+#                 (_client_extract_prompt -> _client_prompt_from_message).
+#   * _cline_   — the Cline-SPECIFIC response protocol only: the
+#                 <attempt_completion>/<result> envelope, <task>/<environment_
+#                 details>/task_progress control structure, and its detector
+#                 (_cline_is_request). Continue never triggers these.
+#   * _continue_ — Continue-SPECIFIC quirks only: the "Files attached by the
+#                 user:" notice line Continue injects before attachments
+#                 (_continue_strip_attachment_notice), deleted outright since
+#                 m365 owns file context via ConversationId.
+# The <file_content> parsers live physically further down, next to the m365
+# conversation-identity code that shares their primitives (_client_user_text /
+# _client_inline_file_spans); Python resolves names at call time so forward-
+# referencing them from here is valid.
 def _client_detect_kind(messages: list) -> str:
     """Return the client format: "cline" when the request carries the Cline
     response protocol (needs the attempt_completion envelope), else "plain".
@@ -991,18 +1002,10 @@ def _client_detect_kind(messages: list) -> str:
     return "cline" if _cline_is_request(messages) else "plain"
 
 
-def _client_extract_prompt(messages: list) -> str:
-    """Envelope-aware user-text extraction for ALL browser models: unwrap
-    <task>…</task> and strip inline <file_content>/<environment_details>/
-    task_progress so (a) the raw IDE envelope is never sent as the prompt and
-    (b) inline files are not duplicated once as prose and again as each family's
-    attachment egress. A no-op for plain chat with no envelope markers."""
-    return _cline_extract_user_prompt(messages)
-
-
 def _client_count_attachments(messages: list) -> int:
-    """Cheap attachment presence count for the latest user turn — inline Cline
-    <file_content> blocks plus OpenAI content-part file/image parts. Does NOT
+    """Cheap attachment presence count for the latest user turn — inline
+    <file_content> blocks (the shared client attachment format) plus OpenAI
+    content-part file/image parts. Does NOT
     download URLs or read local files; it only detects that attachments WERE
     sent, so a family without an upload egress can log the gap instead of
     dropping them silently. The definitions it calls live in the m365 section
@@ -1014,7 +1017,7 @@ def _client_count_attachments(messages: list) -> int:
     # Inline Cline <file_content> spans (path-bearing blocks).
     try:
         logical = "".join(_client_user_text_parts(message))
-        count += len(_cline_inline_file_spans(logical))
+        count += len(_client_inline_file_spans(logical))
     except Exception:
         pass
     # OpenAI content-part file/image attachments.
@@ -1052,7 +1055,7 @@ def _browser_inline_files_as_text(messages: list) -> str:
     # Let collection errors PROPAGATE (oversize / unreadable local file), exactly
     # as m365 does via _client_collect_attachments. Swallowing them here would
     # silently DROP the file — the very data-loss class this fix prevents.
-    files = _cline_collect_inline_files(message)
+    files = _client_collect_inline_files(message)
     blocks: list[str] = []
     for item in files:
         # item["data"] is our own base64 of UTF-8 bytes; decode is total.
@@ -22617,7 +22620,7 @@ def _m365_strip_inline_files_for_identity(text: str) -> str:
     """
     value = str(text or "")
     # Mirror the opening-tag escape normalization used when the attachment is
-    # actually consumed (_cline_collect_inline_files), so identity spans
+    # actually consumed (_client_collect_inline_files), so identity spans
     # line up 1:1 with the blocks that were uploaded.
     scan_text = re.sub(
         r'(?m)^([ \t]*<file_content\b[^>\r\n]*?\bpath\s*=\s*)\\(["\'])',
@@ -22625,7 +22628,7 @@ def _m365_strip_inline_files_for_identity(text: str) -> str:
         value,
         flags=re.IGNORECASE,
     )
-    spans = _cline_inline_file_spans(scan_text)
+    spans = _client_inline_file_spans(scan_text)
     if spans:
         pieces = []
         cursor = 0
@@ -22891,7 +22894,7 @@ def _client_latest_user_message(messages: list) -> dict:
 
 
 # The opening AND closing protocol markers must EACH occupy their own line
-# (the documented contract of _cline_inline_file_spans). Previously only the
+# (the documented contract of _client_inline_file_spans). Previously only the
 # closing marker was line-anchored, so a bare "<file_content path=...>" mention
 # appearing MID-LINE in ordinary prose (a user quoting/discussing the marker, or
 # a pasted report containing the text "file_content") started a span that
@@ -22901,14 +22904,14 @@ def _client_latest_user_message(messages: list) -> dict:
 # attrs to [^>\r\n]* stops the opening tag from spanning lines. As a bonus the
 # content group now begins AFTER the opening line's newline, so the extracted
 # payload is byte-exact (no stray leading "\n").
-_CLINE_FILE_CONTENT_RE = re.compile(
+_CLIENT_FILE_CONTENT_RE = re.compile(
     r"^[ \t]*<file_content\b(?P<attrs>[^>\r\n]*)>[ \t]*\r?\n"
     r"(?P<content>.*?)"
     r"^[ \t]*</file_content\s*>[ \t]*(?:\r?\n|\Z)",
     re.IGNORECASE | re.MULTILINE | re.DOTALL,
 )
 
-_CLINE_FILE_PATH_RE = re.compile(
+_CLIENT_FILE_PATH_RE = re.compile(
     r"\bpath\s*=\s*(?:"
     r'"(?P<double>[^"]+)"|'
     r"'(?P<single>[^']+)'|"
@@ -22956,7 +22959,7 @@ def _client_user_text(message: dict) -> str:
     return "".join(_client_user_text_parts(message))
 
 
-def _cline_inline_file_spans(text: str) -> list[dict]:
+def _client_inline_file_spans(text: str) -> list[dict]:
     """Return every complete, line-delimited Cline inline-file span.
 
     Opening and closing protocol markers must each occupy their own line.
@@ -22966,9 +22969,9 @@ def _cline_inline_file_spans(text: str) -> list[dict]:
     value = str(text or "")
     spans: list[dict] = []
 
-    for match in _CLINE_FILE_CONTENT_RE.finditer(value):
+    for match in _CLIENT_FILE_CONTENT_RE.finditer(value):
         attrs = match.group("attrs") or ""
-        path_match = _CLINE_FILE_PATH_RE.search(attrs)
+        path_match = _CLIENT_FILE_PATH_RE.search(attrs)
         if path_match is None:
             _m365_attachment_debug(
                 "cline-file-skip",
@@ -22995,7 +22998,7 @@ def _cline_inline_file_spans(text: str) -> list[dict]:
     return spans
 
 
-def _cline_collect_inline_files(message: dict) -> list[dict]:
+def _client_collect_inline_files(message: dict) -> list[dict]:
     attachments: list[dict] = []
     text_parts = _client_user_text_parts(message)
     logical_text = "".join(text_parts)
@@ -23008,7 +23011,7 @@ def _cline_collect_inline_files(message: dict) -> list[dict]:
         logical_text,
         flags=re.IGNORECASE,
     )
-    spans = _cline_inline_file_spans(scan_text)
+    spans = _client_inline_file_spans(scan_text)
 
     _m365_attachment_debug(
         "cline-scan",
@@ -23049,7 +23052,7 @@ def _cline_collect_inline_files(message: dict) -> list[dict]:
         )
         if len(data) > M365_UPLOAD_MAX_BYTES:
             raise ValueError("inline attachment exceeds upload limit")
-        fallback = f"cline-attachment-{attachment_index}.txt"
+        fallback = f"attachment-{attachment_index}.txt"
         name = _client_safe_filename(span["path"], fallback)
         suffix = Path(name).suffix.lower()
         mime = {
@@ -23081,10 +23084,10 @@ def _cline_collect_inline_files(message: dict) -> list[dict]:
     return attachments
 
 
-def _cline_text_outside_inline_files(text: str) -> str:
+def _client_text_outside_inline_files(text: str) -> str:
     """Return user-authored text while removing only parsed attachment spans."""
     value = str(text or "")
-    spans = _cline_inline_file_spans(value)
+    spans = _client_inline_file_spans(value)
     if not spans:
         return value
     pieces = []
@@ -23096,9 +23099,36 @@ def _cline_text_outside_inline_files(text: str) -> str:
     return "".join(pieces)
 
 
-def _cline_prompt(message: dict) -> str:
+# Continue 专属：Continue（streamResponse.ts 的 buildAttachedFilesText）在附件
+# 前注入一行 "Files attached by the user:"，与 <file_content> 块一同作为【独立
+# text part】发送。_client_user_text 用空串合并多 part 时，这行可能【紧贴用户正文
+# 末尾且不换行】。这行对模型没有信息量（真正的文件上下文由 m365 的 ConversationId
+# 承载，见 _m365_first_user_and_assistant 的跨轮 identity 归一），故整段【干净删除】、
+# 不留占位符。剥离不做行首锚定（否则粘连时漏剥）；但要求 marker 后紧跟换行或字符串
+# 结尾，避免误删用户正文里句中随口提到的同名文字。这是 Continue 客户端格式的一部分
+# （Cline 不发此行），故独立成 _continue_ 函数。
+_CONTINUE_ATTACHMENT_NOTICE_RE = re.compile(
+    r"[ \t]*Files attached by the user:[ \t]*(?:\r?\n+|\Z)",
+    re.IGNORECASE,
+)
+
+
+def _continue_strip_attachment_notice(text: str) -> str:
+    """Delete Continue's injected "Files attached by the user:" notice line.
+
+    The notice carries no signal for the model (attachment context is owned by
+    m365's ConversationId across turns), so it is removed outright rather than
+    replaced with a placeholder. Stripping is position-tolerant (no line anchor,
+    since _client_user_text may glue the notice mid-line) but still requires a
+    newline/EOF after the marker so a literal same-text mention the user typed in
+    prose is never over-stripped.
+    """
+    return _CONTINUE_ATTACHMENT_NOTICE_RE.sub("", text)
+
+
+def _client_prompt_from_message(message: dict) -> str:
     logical_text = _client_user_text(message)
-    parts = [_cline_text_outside_inline_files(logical_text)]
+    parts = [_client_text_outside_inline_files(logical_text)]
     explicit_tasks = []
     for text in parts:
         explicit_tasks.extend(
@@ -23113,12 +23143,7 @@ def _cline_prompt(message: dict) -> str:
     for text in parts:
         text = _CLINE_ENVIRONMENT_RE.sub("", text)
         text = _CLINE_TASK_PROGRESS_RE.sub("", text)
-        text = re.sub(
-            r"(?:^|\n)\s*Files attached by the user:\s*",
-            "\n",
-            text,
-            flags=re.IGNORECASE,
-        )
+        text = _continue_strip_attachment_notice(text)
         text = text.strip()
         if text:
             cleaned.append(text)
@@ -23128,7 +23153,7 @@ def _cline_prompt(message: dict) -> str:
 async def _client_collect_attachments(messages: list) -> list[dict]:
     message = _client_latest_user_message(messages)
     content = message.get("content")
-    attachments: list[dict] = _cline_collect_inline_files(message)
+    attachments: list[dict] = _client_collect_inline_files(message)
     _m365_attachment_debug(
         "collect-start",
         message_count=len(messages or []),
@@ -23236,7 +23261,7 @@ def _cline_is_request(messages: list) -> bool:
     """
     message = _client_latest_user_message(messages)
     texts = (
-        _cline_text_outside_inline_files(text)
+        _client_text_outside_inline_files(text)
         for text in _client_user_text_parts(message)
     )
     lowered = "\n".join(texts).lower()
@@ -23407,22 +23432,30 @@ class ClineEnvelope:
         return _cline_wrap_result(text)
 
 
-def _cline_extract_user_prompt(messages: list) -> str:
-    """Newest user turn only. Copilot owns history per ConversationId; replaying
-    the transcript would duplicate context and leak IDE system prompts into the
-    visible chat (mirrors the Qwen/DeepSeek browser backends)."""
+def _client_extract_prompt(messages: list) -> str:
+    """Envelope-aware user-text extraction for ALL browser models.
+
+    Takes ONLY the newest user turn (Copilot owns history per ConversationId;
+    replaying the transcript would duplicate context and leak IDE system prompts
+    into the visible chat — mirrors the Qwen/DeepSeek browser backends), unwraps
+    <task>…</task> and strips inline <file_content>/<environment_details>/
+    task_progress plus Continue's "Files attached by the user:" notice, so
+    (a) the raw IDE envelope is never sent as the prompt and (b) inline files are
+    not duplicated once as prose and again as each family's attachment egress.
+    A no-op for plain chat with no envelope markers.
+    """
     for message in reversed(messages or []):
         if not isinstance(message, dict):
             continue
         if str(message.get("role") or "").strip().lower() != "user":
             continue
-        text = _cline_prompt(message)
+        text = _client_prompt_from_message(message)
         if text:
             return text
     return ""
 
 
-# M365 引用（citation）在不同帧里以【三种不同编码】出现——这是本次“正文冻结在首个引用处 +
+# M365 引用（citation）在不同帧里以【三种不同编码】出现——这是“正文冻结在首个引用处 +
 # 占位符残留”的根因（有 content-m365.js 的 stripCites 为证，非推测）：
 #   ① 已解析·私有区形式   \ue200cite\ue202…\ue201   —— 权威 type2-final result.message 用此形
 #   ② 未解析·占位符       【N-xxx】(如 【1-turn1file1】) —— 流式帧先出现、之后被原地重写为 ①
@@ -23448,7 +23481,7 @@ _M365_CITE_COMPLETE_RES = (
     ),  # ② 未解析占位符 【N-xxx】（要求“数字-”，不误伤中文【重要】等）
     # ④ 宿主协议内联图 markdown：![alt](attachment://…) / ![alt](sandbox:…)。
     # 这是模型在正文里手写的“内联图预览”，attachment:// 是 Copilot 宿主内部协议，
-    # Continue 加载不了（显示成占位符/坏图，正是本次现象）。真图走 appendText 的
+    # Continue 加载不了（显示成占位符/坏图）。真图走 appendText 的
     # data-URI，故正文里这类图 markdown 是冗余且坏的，删掉。只删 attachment:/sandbox:
     # 协议，普通 http(s)/data: 图片一律保留。
     re.compile(r"!\[[^\]]*\]\(\s*(?:attachment:|sandbox:)[^)]*\)", re.IGNORECASE),
@@ -23458,7 +23491,7 @@ _M365_CITE_COMPLETE_RES = (
     #    markdown 链接，而权威 type2-final 把【同一个】引用渲染成 ①\ue200…\ue201。
     #    ①被本清单删空，故这里也把等价的引用链接删空，两帧归一后前缀相容——否则
     #    流式残留链接、final 删空 → 在引用处分叉 → 含正文尾巴的 final 被 relay 判
-    #    非前缀丢弃（正文冻结在“文件在这:[name](”，正是本次现象）。真链接仍走
+    #    非前缀丢弃（正文冻结在“文件在这:[name](”）。真链接仍走
     #    appendText 带外下发，故正文里这条是冗余。(?<!!) 避免碰图片 ![…]；只删引用
     #    宿主，普通 http(s) 链接与无 csf/web 的普通 sharepoint 链接一律保留。
     re.compile(
@@ -24445,8 +24478,8 @@ async def _direct_m365_chat_response(
     # relay_prompt is True, so the client system message rides along as
     # <client_system_prompt> XML each turn; history is still stripped (Copilot
     # owns it). XiaoAI (source=='xiaoai') bypasses entirely (no prompt/tools).
-    # supports_tools is False today, so no tool instructions are injected and
-    # Seam #2 is dormant.
+    # supports_tools is True for the tool-capable m365 models,
+    # so <tool_use_instructions> ARE injected and Seam #2 (below) is live;
     _m365_prepared = BROWSER_RELAY.prepare(
         model_name, body, messages, bypass=BrowserRelay.should_bypass(body)
     )
@@ -24582,13 +24615,14 @@ async def _direct_m365_chat_response(
     async def events():
         role_sent = False
         thinking_hint_sent = False
-        # Seam #2 (tool interception). DORMANT while m365 supports_tools is False:
-        # new_transpiler() returns None, and every `_m365_tool_tp is not None`
-        # guard below is skipped, so this path is byte-identical to before. When
-        # supports_tools is flipped on, the transpiler holds back a trailing
-        # ```tool``` block and surfaces it as OpenAI tool_calls at done. NOTE:
-        # when active alongside cline_mode the Cline result envelope and the tool
-        # block interact — validate that combination live before shipping tools.
+        # Seam #2 (tool interception). ACTIVE for supports_tools=True models:
+        # new_transpiler() returns a transpiler, so the `_m365_tool_tp is not None`
+        # guards below engage — the transpiler holds back a trailing ```tool```
+        # block and surfaces it as OpenAI tool_calls at done. For supports_tools=
+        # False models new_transpiler() returns None and every guard is skipped,
+        # so that path is byte-identical to a plain chat turn. NOTE: when active
+        # alongside cline_mode the Cline result envelope and the tool block
+        # interact — the tool_call branch below intentionally emits NO envelope.
         _m365_tool_tp = _m365_prepared.new_transpiler()
         deadline = time.monotonic() + M365_FIRST_EVENT_TIMEOUT
         # [consumer trace] running total of answer characters actually yielded
@@ -24838,8 +24872,8 @@ async def _direct_m365_chat_response(
                             return
                         _resid = _m365_tool_tp.flush_pending()
                         # strip model envelope tags from the residual
-                        # (symmetric with deepseek/delta path). Unreachable while
-                        # m365 supports_tools=False; future-proofing.
+                        # (symmetric with deepseek/delta path). Reachable now that
+                        # supports_tools=True models run the transpiler.
                         _resid = _m365_env.strip_envelope_tags(_resid)
                         if _resid:
                             yield _chat_sse_data(
@@ -40137,7 +40171,10 @@ async def chat_api(request):
         # OpenAI tool validation/instruction injection, stripping tool protocol
         # fields instead of rejecting an otherwise valid chat request.
         if requested_model in BROWSER_MODEL_ALIASES:
-            if requested_model in DEEPSEEK_BROWSER_MODEL_TYPES:
+            # Keep the OpenAI tool-call fields for ANY browser model whose relay
+            # policy advertises tool support (supports_tools=True), so the unified
+            # relay can inject <tool_use_instructions> and intercept tool calls.
+            if BROWSER_RELAY.policy_for(requested_model).supports_tools:
                 browser_body, browser_messages = (
                     dict(body),
                     list(browser_source_messages),
@@ -43578,11 +43615,11 @@ def test_m365_inline_files_match_standalone_literal_markers():
         '<file_content path="voice_edge.py">\n' + payload + "</file_content>\n"
         "正文之后"
     )
-    files = _cline_collect_inline_files({"content": message_text})
+    files = _client_collect_inline_files({"content": message_text})
     assert len(files) == 1
     assert files[0]["name"] == "voice_edge.py"
     assert base64.b64decode(files[0]["data"]).decode("utf-8") == payload
-    assert _cline_text_outside_inline_files(message_text) == "正文之前\n正文之后"
+    assert _client_text_outside_inline_files(message_text) == "正文之前\n正文之后"
 
 
 def test_m365_inline_files_match_consecutive_attachments():
@@ -43598,14 +43635,14 @@ def test_m365_inline_files_match_consecutive_attachments():
         "</file_content>\n"
         "正文"
     )
-    files = _cline_collect_inline_files({"content": message_text})
+    files = _client_collect_inline_files({"content": message_text})
     assert [item["name"] for item in files] == ["a.py", "b.txt", "c.json"]
     assert [base64.b64decode(item["data"]).decode("utf-8") for item in files] == [
         "A body\n",
         "B body\n",
         '{"ok": true}\n',
     ]
-    assert _cline_text_outside_inline_files(message_text) == "正文"
+    assert _client_text_outside_inline_files(message_text) == "正文"
 
 
 def test_m365_inline_files_ignore_non_standalone_and_html_entity_markers():
@@ -43616,14 +43653,14 @@ def test_m365_inline_files_ignore_non_standalone_and_html_entity_markers():
         "entity body\n"
         "&lt;/file_content&gt;\n"
     )
-    assert _cline_collect_inline_files({"content": text}) == []
-    assert _cline_text_outside_inline_files(text) == text
+    assert _client_collect_inline_files({"content": text}) == []
+    assert _client_text_outside_inline_files(text) == text
 
 
 def test_m365_inline_file_without_standalone_closing_marker_fails_closed():
     text = '正文\n<file_content path="broken.py">\nprint("</file_content>")\n'
-    assert _cline_collect_inline_files({"content": text}) == []
-    assert _cline_text_outside_inline_files(text) == text
+    assert _client_collect_inline_files({"content": text}) == []
+    assert _client_text_outside_inline_files(text) == text
 
 
 def _m365_harness_message_from_cuts(text: str, cuts: list[int]) -> dict:
@@ -43649,11 +43686,11 @@ def test_m365_inline_file_survives_every_single_split_boundary():
     expected = payload.encode("utf-8")
     for cut in range(1, len(wire)):
         message = _m365_harness_message_from_cuts(wire, [cut])
-        files = _cline_collect_inline_files(message)
+        files = _client_collect_inline_files(message)
         assert len(files) == 1, (cut, files)
         assert files[0]["name"] == "large.py", cut
         assert base64.b64decode(files[0]["data"]) == expected, cut
-        assert _cline_prompt(message) == "before\nafter", cut
+        assert _client_prompt_from_message(message) == "before\nafter", cut
 
 
 def test_m365_inline_files_survive_all_line_boundary_splits():
@@ -43669,13 +43706,75 @@ def test_m365_inline_files_survive_all_line_boundary_splits():
     )
     cuts = [i + 1 for i, char in enumerate(wire) if char == "\n"]
     message = _m365_harness_message_from_cuts(wire, cuts)
-    files = _cline_collect_inline_files(message)
+    files = _client_collect_inline_files(message)
     assert [item["name"] for item in files] == ["a.txt", "b.txt"]
     assert [base64.b64decode(item["data"]) for item in files] == [
         payload_a.encode(),
         payload_b.encode() + b"\n",
     ]
-    assert _cline_prompt(message) == "lead\ntail"
+    assert _client_prompt_from_message(message) == "lead\ntail"
+
+
+def test_continue_attachment_notice_deleted_when_glued():
+    # 回归：Continue 把 "Files attached by the user:" 作为【独立 text part】
+    # 发送，_client_user_text 空串合并后它紧贴用户正文末尾且不换行。旧行锚定正则
+    # 漏剥 → 泄漏进 prompt。修复后应【干净删除】、不留占位符（m365 靠 ConversationId
+    # 承载文件上下文，无需 prompt 内锚点）。
+    message = {
+        "content": [
+            {"type": "text", "text": "帮我审查下代码, 脚本也给你了"},
+            {
+                "type": "input_text",
+                "text": (
+                    "Files attached by the user:\n\n"
+                    '<file_content path="a.py">\nprint(1)\n</file_content>\n'
+                ),
+            },
+        ]
+    }
+    result = _client_prompt_from_message(message)
+    assert result == "帮我审查下代码, 脚本也给你了", result
+    assert "Files attached by the user:" not in result, result
+    # 干净删除：不留 [file:] 之类占位符
+    assert "[file:" not in result, result
+
+
+def test_continue_attachment_notice_deleted_with_leading_newline():
+    message = {
+        "content": (
+            "问题\n"
+            "Files attached by the user:\n\n"
+            '<file_content path="b.py">\nX\n</file_content>\n'
+        )
+    }
+    assert _client_prompt_from_message(message) == "问题", _client_prompt_from_message(
+        message
+    )
+
+
+def test_continue_attachment_notice_literal_mention_not_overstripped():
+    # 不误删：用户正文里句中随口提到（marker 后不是换行/结尾）应保留。
+    text = "我把 Files attached by the user: 这句留着"
+    assert _client_prompt_from_message({"content": text}) == text
+
+
+def test_continue_attachment_notice_deleted_multi_files():
+    message = {
+        "content": [
+            {"type": "text", "text": "改这两个文件"},
+            {
+                "type": "input_text",
+                "text": (
+                    "Files attached by the user:\n\n"
+                    '<file_content path="a.py">\nA\n</file_content>\n\n'
+                    '<file_content path="b.py">\nB\n</file_content>\n'
+                ),
+            },
+        ]
+    }
+    result = _client_prompt_from_message(message)
+    assert result == "改这两个文件", result
+    assert "Files attached by the user:" not in result, result
 
 
 def test_m365_inline_large_payload_random_fragment_harness():
@@ -43688,7 +43787,9 @@ def test_m365_inline_large_payload_random_fragment_harness():
     for _case in range(100):
         cut_count = rng.randint(1, 80)
         cuts = sorted(rng.sample(range(1, len(wire)), cut_count))
-        files = _cline_collect_inline_files(_m365_harness_message_from_cuts(wire, cuts))
+        files = _client_collect_inline_files(
+            _m365_harness_message_from_cuts(wire, cuts)
+        )
         assert len(files) == 1
         assert files[0]["size"] == len(expected)
         assert base64.b64decode(files[0]["data"]) == expected
@@ -43698,7 +43799,7 @@ def test_m365_inline_final_attachment_without_trailing_newline_fragmented():
     payload = "final body without wrapper newline"
     wire = '<file_content path="final.txt">\n' + payload + "\n</file_content>"
     cuts = [1, 7, 19, 31, len(wire) - 1]
-    files = _cline_collect_inline_files(_m365_harness_message_from_cuts(wire, cuts))
+    files = _client_collect_inline_files(_m365_harness_message_from_cuts(wire, cuts))
     assert len(files) == 1
     assert base64.b64decode(files[0]["data"]).decode() == payload + "\n"
 
@@ -43976,7 +44077,7 @@ def test_browser_inline_files_reappended_for_no_egress_families():
     assert '<file_content path="foo.py">' in inline
     assert 'print("hi")\nx = 1' in inline
     # the re-appended body is byte-exact (relies on the fixed content regex)
-    files = _cline_collect_inline_files({"content": message_text})
+    files = _client_collect_inline_files({"content": message_text})
     assert base64.b64decode(files[0]["data"]).decode("utf-8") == 'print("hi")\nx = 1\n'
     # append helper: prompt then a blank line then the file block
     appended = _browser_append_inline_files("PROMPT", messages)
@@ -44499,6 +44600,10 @@ def run_self_tests():
         test_m365_conversation_key_ignores_file_body_and_whitespace,
         test_m365_inline_file_survives_every_single_split_boundary,
         test_m365_inline_files_survive_all_line_boundary_splits,
+        test_continue_attachment_notice_deleted_when_glued,
+        test_continue_attachment_notice_deleted_with_leading_newline,
+        test_continue_attachment_notice_literal_mention_not_overstripped,
+        test_continue_attachment_notice_deleted_multi_files,
         test_m365_inline_large_payload_random_fragment_harness,
         test_m365_inline_final_attachment_without_trailing_newline_fragmented,
         test_m365_inline_files_match_standalone_literal_markers,
