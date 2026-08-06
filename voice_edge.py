@@ -33533,6 +33533,10 @@ def _handle_escape_during_dictation():
 
 
 def _handle_modifier_flags_changed(event):
+    # Right-cmd double-tap toggles the local wake-word voice chat. It uses its
+    # own state (not _MODIFIER_STATE_LOCK) and ignores non-keycode-54 events, so
+    # run it first, outside the lock, without disturbing Ctrl/Opt dictation.
+    _voice_chat_on_flags_changed(event)
     with _MODIFIER_STATE_LOCK:
         return _handle_modifier_flags_changed_locked(event)
 
@@ -37990,6 +37994,514 @@ def start_xiaoai_bridge():
 
 def stop_xiaoai_bridge():
     XIAOAI_BRIDGE_THREAD.stop()
+
+
+# ==================== Local Voice Chat (Wake-Word) Subsystem ====================
+# grep anchor: VE_VOICE_CHAT
+#
+# 纯新增本机语音助手闭环:
+#   sherpa-onnx zero-shot KWS(常驻监听) -> 唤醒词 -> Apple Speech 采集一句 ->
+#   本机 /v1/chat/completions 流式(source=xiaoai 旁路) -> SpeechChunkCoalescer
+#   断句 -> Edge-TTS 朗读 -> 等播报结束 -> 恢复监听。
+# 双击右⌘(keycode 54)切换监听开/关,独立于听写。
+# 复用(不重造): SpeechChunkCoalescer / _run_apple_speech_dictation /
+#              speak_local_async / HTTP_PORT chat endpoint / clean_text_for_tts / hud。
+
+VE_VOICE_CHAT_ENABLED = os.getenv("VE_VOICE_CHAT_ENABLED", "0").strip() == "1"
+VE_VOICE_CHAT_MODEL_DIR = os.path.realpath(
+    os.path.expanduser(
+        os.getenv(
+            "VE_VOICE_CHAT_MODEL_DIR",
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "models",
+                "sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01",
+            ),
+        )
+    )
+)
+# 唤醒词定义 -> keywords_file 落地方式:
+# sherpa-onnx Python KeywordSpotter.__init__ 只接受 keywords_file, 不存在
+# keywords= 构造参数(字符串形式仅存在于 create_stream)。因此"用 keywords 不用静态
+# keywords_file"的正确落地 = 运行时生成字符串 -> 临时文件 -> keywords_file。
+# 唯一事实源: 纯汉字关键词 (词, boost_score|None, threshold|None)。
+# 拼音 token 由 pypinyin 运行时生成 (声母 INITIALS + 韵母 FINALS_TONE), 与
+# tokens.txt 的 ppinyin 切分一致 —— 不再手写, 杜绝声调/轻声写错 (如"个" g e vs g è)
+# 导致漏检。display 用汉字本身, 命中结果直接回汉字。
+VE_VOICE_CHAT_KEYWORDS = (
+    ("你好小助手", None, None),
+    ("你好豆包", None, None),
+    ("换个话题", None, None),
+)
+
+
+def _ve_voice_chat_hanzi_to_tokens(word: str) -> str:
+    """用 pypinyin 把汉字词转成 sherpa-onnx KWS 需要的拼音 token 串。
+
+    每字拆成 "<声母> <带调韵母>"; 无声母 (如"啊") 只保留韵母。strict=False
+    以兼容 tokens.txt 的 ppinyin 约定。手写拼音易把声调/轻声写错, 交给 pypinyin
+    才能和 tokens.txt 精确对齐。
+    """
+    from pypinyin import lazy_pinyin, Style  # lazy: 仅本机语音闭环需要
+
+    initials = lazy_pinyin(word, style=Style.INITIALS, strict=False)
+    finals = lazy_pinyin(word, style=Style.FINALS_TONE, strict=False)
+    tokens = []
+    for initial, final in zip(initials, finals, strict=True):
+        tokens.append((initial + " " + final).strip() if initial else final)
+    return " ".join(tokens)
+
+
+def _ve_voice_chat_build_keywords_string(items=VE_VOICE_CHAT_KEYWORDS) -> str:
+    """把纯汉字关键词表动态拼成 keywords_file 格式字符串(每行一个)。
+
+    每行: <pypinyin 生成的 tokens> [:score] [#threshold] @<汉字>
+    """
+    lines = []
+    for word, score, threshold in items:
+        parts = [_ve_voice_chat_hanzi_to_tokens(word)]
+        if score is not None:
+            parts.append(f":{score}")
+        if threshold is not None:
+            parts.append(f"#{threshold}")
+        parts.append(f"@{word}")
+        lines.append(" ".join(parts))
+    return "\n".join(lines)
+
+
+# 动态关键词字符串 -> 临时 keywords_file 缓存。
+# key = 关键词内容字符串; 内容不变命中缓存, 变了才重写文件。
+_ve_voice_chat_keywords_file_cache: dict[str, str] = {}
+_ve_voice_chat_keywords_file_lock = threading.Lock()
+
+
+def _ve_voice_chat_keywords_file(content: Optional[str] = None) -> str:
+    """把动态关键词字符串写入临时文件并缓存路径, 供 keywords_file= 使用。"""
+    if content is None:
+        content = _ve_voice_chat_build_keywords_string()
+    with _ve_voice_chat_keywords_file_lock:
+        cached = _ve_voice_chat_keywords_file_cache.get(content)
+        if cached and os.path.exists(cached):
+            return cached
+        handle = tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".txt",
+            prefix="ve_voice_chat_kws_",
+            delete=False,
+            encoding="utf-8",
+        )
+        try:
+            handle.write(content + "\n")
+            handle.flush()
+        finally:
+            handle.close()
+        atexit.register(
+            lambda path=handle.name: os.path.exists(path) and os.remove(path)
+        )
+        _ve_voice_chat_keywords_file_cache[content] = handle.name
+        return handle.name
+
+
+# 全局 KeywordSpotter 缓存: 按 (关键词内容, 模型参数) 为 key。
+# 方案 A 的核心: Trie 计算图只在首次 __init__ 编译一次, 关键词/分数/阈值
+# 文本不变则命中内存单例, 变了才重建。跨实例共享, 不挂在 subsystem 实例上。
+_ve_voice_chat_spotter_cache: dict = {}
+_ve_voice_chat_spotter_lock = threading.Lock()
+
+
+def _ve_voice_chat_get_spotter():
+    """返回按关键词内容缓存的全局 KeywordSpotter 单例。
+
+    key 覆盖所有影响 Trie 编译的输入: 关键词内容 + 模型四件套路径 +
+    num_threads/score/threshold/provider。任一变化才重新编译, 否则 0 开销复用。
+    """
+    keywords_content = _ve_voice_chat_build_keywords_string()
+    cache_key = (
+        keywords_content,
+        VE_VOICE_CHAT_TOKENS,
+        VE_VOICE_CHAT_ENCODER,
+        VE_VOICE_CHAT_DECODER,
+        VE_VOICE_CHAT_JOINER,
+        2,
+        VE_VOICE_CHAT_KWS_SCORE,
+        VE_VOICE_CHAT_KWS_THRESHOLD,
+        "cpu",
+    )
+    with _ve_voice_chat_spotter_lock:
+        cached = _ve_voice_chat_spotter_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        import sherpa_onnx  # lazy
+
+        spotter = sherpa_onnx.KeywordSpotter(
+            tokens=VE_VOICE_CHAT_TOKENS,
+            encoder=VE_VOICE_CHAT_ENCODER,
+            decoder=VE_VOICE_CHAT_DECODER,
+            joiner=VE_VOICE_CHAT_JOINER,
+            keywords_file=_ve_voice_chat_keywords_file(keywords_content),
+            num_threads=2,
+            keywords_score=VE_VOICE_CHAT_KWS_SCORE,
+            keywords_threshold=VE_VOICE_CHAT_KWS_THRESHOLD,
+            provider="cpu",
+        )
+        _ve_voice_chat_spotter_cache[cache_key] = spotter
+        return spotter
+
+
+# fp32 chunk-16 编码器(epoch-12-avg-2),已在本机验证。
+VE_VOICE_CHAT_ENCODER = os.path.join(
+    VE_VOICE_CHAT_MODEL_DIR, "encoder-epoch-12-avg-2-chunk-16-left-64.onnx"
+)
+VE_VOICE_CHAT_DECODER = os.path.join(
+    VE_VOICE_CHAT_MODEL_DIR, "decoder-epoch-12-avg-2-chunk-16-left-64.onnx"
+)
+VE_VOICE_CHAT_JOINER = os.path.join(
+    VE_VOICE_CHAT_MODEL_DIR, "joiner-epoch-12-avg-2-chunk-16-left-64.onnx"
+)
+VE_VOICE_CHAT_TOKENS = os.path.join(VE_VOICE_CHAT_MODEL_DIR, "tokens.txt")
+# 灵敏度:默认 0.25 太严(实测全漏),这里 0.20 起步、可配。
+VE_VOICE_CHAT_KWS_THRESHOLD = max(
+    0.01, float(os.getenv("VE_VOICE_CHAT_KWS_THRESHOLD", "0.20"))
+)
+VE_VOICE_CHAT_KWS_SCORE = max(0.0, float(os.getenv("VE_VOICE_CHAT_KWS_SCORE", "2.0")))
+VE_VOICE_CHAT_SAMPLE_RATE = 16000
+VE_VOICE_CHAT_CAPTURE_LOCALE = os.getenv("VE_VOICE_CHAT_CAPTURE_LOCALE", "zh-CN").strip()
+VE_VOICE_CHAT_TTS_VOICE = os.getenv("VE_VOICE_CHAT_TTS_VOICE", "zh").strip()
+VE_VOICE_CHAT_TTS_SPEED = float(os.getenv("VE_VOICE_CHAT_TTS_SPEED", "1.0"))
+# Quartz keycode: 54 = 右⌘(不碰 dictation);如需左⌘可加 55。
+VE_VOICE_CHAT_RIGHT_CMD_KEYCODES = frozenset({54})
+VE_VOICE_CHAT_DOUBLE_TAP_WINDOW = 0.45
+
+# 唤醒词 -> 虚拟会话动作。model 路由维护各自 browser conversation_id;
+# "换个话题" 是控制指令,清空全部虚拟会话。
+VE_VOICE_CHAT_WAKE_ROUTES = {
+    "你好小助手": ("model", "LLM:m365-claude-opus"),
+    "你好豆包": ("model", "LLM:doubao"),
+    "换个话题": ("command", "new_session"),
+}
+VE_VOICE_CHAT_CONCISE_HINT = (
+    "（请用简洁、口语化的中文回答，适合语音朗读，不要使用 markdown 或代码块）\n"
+)
+
+_voice_chat_subsystem = None
+_voice_chat_lock = threading.Lock()
+
+
+class VoiceChatSubsystem:
+    """唤醒词驱动的本机语音助手。单 owner 线程 + 一条 KWS 麦克风流。"""
+
+    def __init__(self):
+        self._spotter = None
+        self._thread = None
+        self._stop = threading.Event()
+        self._enabled = threading.Event()  # 常驻监听开关
+        self._enabled.set()
+        self._conversations = {}  # model 别名 -> browser conversation_id
+        self._conversations_lock = threading.Lock()
+        self._last_model = "LLM:m365-claude-opus"
+        self._rcmd_down_since = 0.0
+        self._last_rcmd_tap_at = 0.0
+
+    def start(self):
+        if self._thread is not None and self._thread.is_alive():
+            return
+        self._stop.clear()
+        self._thread = threading.Thread(
+            target=self._run, name="VoiceChatWakeWord", daemon=True
+        )
+        self._thread.start()
+        logger.info(
+            "Voice chat subsystem started: keywords=%s threshold=%.3f score=%.2f",
+            _ve_voice_chat_keywords_file(),
+            VE_VOICE_CHAT_KWS_THRESHOLD,
+            VE_VOICE_CHAT_KWS_SCORE,
+        )
+
+    def stop(self):
+        self._stop.set()
+        thread = self._thread
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(timeout=3.0)
+        self._thread = None
+
+    # ---- 右⌘ 双击(由 Quartz flagsChanged seam 调用)----
+    def on_flags_changed(self, event):
+        try:
+            keycode = int(
+                Quartz.CGEventGetIntegerValueField(  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
+                    event,
+                    Quartz.kCGKeyboardEventKeycode,  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
+                )
+            )
+        except Exception:
+            return
+        if keycode not in VE_VOICE_CHAT_RIGHT_CMD_KEYCODES:
+            return
+        try:
+            flags = Quartz.CGEventGetFlags(event)  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
+            cmd_down = bool(flags & Quartz.kCGEventFlagMaskCommand)  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
+        except Exception:
+            return
+        now = time.monotonic()
+        if cmd_down:
+            self._rcmd_down_since = now
+            return
+        down_at = self._rcmd_down_since
+        self._rcmd_down_since = 0.0
+        if down_at <= 0 or (now - down_at) > MAX_MODIFIER_TAP_DURATION:
+            return
+        if now - self._last_rcmd_tap_at <= VE_VOICE_CHAT_DOUBLE_TAP_WINDOW:
+            self._last_rcmd_tap_at = 0.0
+            self._toggle_enabled()
+        else:
+            self._last_rcmd_tap_at = now
+
+    def _toggle_enabled(self):
+        if self._enabled.is_set():
+            self._enabled.clear()
+            logger.info("Voice chat listening PAUSED (double-tap right cmd)")
+            self._flash_hud("dictation_cancelled", "监听已暂停")
+        else:
+            self._enabled.set()
+            logger.info("Voice chat listening RESUMED (double-tap right cmd)")
+            self._flash_hud("recording", "监听已开启，说出唤醒词")
+
+    def _flash_hud(self, status, text):
+        try:
+            hud.show(status, "语音助手", text)
+            threading.Timer(0.8, hud.hide_visual_only).start()
+        except Exception:
+            pass
+
+    # ---- KWS ----
+    def _ensure_spotter(self):
+        # 复用全局按内容缓存的 spotter: Trie 只编译一次, 多实例共享同一图。
+        if self._spotter is None:
+            self._spotter = _ve_voice_chat_get_spotter()
+        return self._spotter
+
+    def _run(self):
+        try:
+            spotter = self._ensure_spotter()
+        except Exception:
+            logger.exception("Voice chat KWS init failed; subsystem disabled")
+            return
+        while not self._stop.is_set():
+            if not self._enabled.is_set():
+                self._enabled.wait(timeout=0.25)
+                continue
+            if IS_DICTATION_ACTIVE or IS_SPEAKING:
+                time.sleep(0.2)  # 避免与听写/播报抢麦克风
+                continue
+            try:
+                keyword = self._listen_for_keyword(spotter)
+            except Exception:
+                logger.exception("Voice chat KWS listen error; retrying")
+                time.sleep(0.5)
+                continue
+            if not keyword or self._stop.is_set():
+                continue
+            try:
+                self._handle_wake(keyword)
+            except Exception:
+                logger.exception("Voice chat turn failed: keyword=%r", keyword)
+
+    def _listen_for_keyword(self, spotter):
+        stream = spotter.create_stream()
+        blocksize = int(VE_VOICE_CHAT_SAMPLE_RATE * 0.1)
+        with sd.InputStream(
+            channels=1,
+            samplerate=VE_VOICE_CHAT_SAMPLE_RATE,
+            dtype="float32",
+            blocksize=blocksize,
+        ) as mic:
+            while not self._stop.is_set() and self._enabled.is_set():
+                if IS_DICTATION_ACTIVE or IS_SPEAKING:
+                    return None
+                samples, _overflowed = mic.read(blocksize)
+                stream.accept_waveform(
+                    VE_VOICE_CHAT_SAMPLE_RATE, samples.reshape(-1)
+                )
+                while spotter.is_ready(stream):
+                    spotter.decode_stream(stream)
+                    result = spotter.get_result(stream)
+                    if result:
+                        spotter.reset_stream(stream)
+                        return result
+        return None
+
+    # ---- 一轮对话 ----
+    def _handle_wake(self, keyword):
+        route = VE_VOICE_CHAT_WAKE_ROUTES.get(keyword)
+        if route is None:
+            logger.warning("Voice chat wake without route: %r", keyword)
+            return
+        kind, value = route
+        if kind == "command" and value == "new_session":
+            with self._conversations_lock:
+                self._conversations.clear()
+            logger.info("Voice chat: virtual sessions cleared (new topic)")
+            speak_local_async(
+                "好的，我们换个话题。",
+                voice=VE_VOICE_CHAT_TTS_VOICE,
+                speed=VE_VOICE_CHAT_TTS_SPEED,
+            )
+            self._wait_playback_idle(timeout=30.0)
+            return
+
+        model = value
+        self._last_model = model
+        logger.info("Voice chat wake: keyword=%r -> model=%s", keyword, model)
+        self._flash_hud("dictation_recording", f"[{model}] 请说")
+
+        query = _run_apple_speech_dictation(
+            VE_VOICE_CHAT_CAPTURE_LOCALE, generation=None
+        )
+        query = strip_llm_artifacts(query or "", remove_reasoning=True).strip()
+        if not query:
+            self._flash_hud("dictation_nospeech", "没有听清")
+            return
+
+        logger.info("Voice chat query: %s", query[:120])
+        self._stream_and_speak(model, query)
+        self._wait_playback_idle(timeout=180.0)
+
+    def _get_conversation_id(self, model):
+        with self._conversations_lock:
+            return self._conversations.get(model, "")
+
+    def _set_conversation_id(self, model, conversation_id):
+        conversation_id = str(conversation_id or "").strip()
+        if not conversation_id:
+            return
+        with self._conversations_lock:
+            self._conversations[model] = conversation_id
+
+    def _stream_and_speak(self, model, query):
+        import urllib.request  # lazy;全局只 import 了 urllib.parse
+
+        coalescer = SpeechChunkCoalescer(
+            first_chars=int(os.getenv("VE_VOICE_CHAT_FIRST_CHARS", "18")),
+            target_chars=int(os.getenv("VE_VOICE_CHAT_TARGET_CHARS", "42")),
+            max_chars=int(os.getenv("VE_VOICE_CHAT_MAX_CHARS", "96")),
+        )
+        body = {
+            "model": model,
+            "messages": [
+                {"role": "user", "content": VE_VOICE_CHAT_CONCISE_HINT + query}
+            ],
+            "stream": True,
+            "enable_thinking": False,
+            "source": "xiaoai",  # 走 relay 旁路:无系统提示/工具注入
+        }
+        conversation_id = self._get_conversation_id(model)
+        if conversation_id:
+            body["conversation_id"] = conversation_id
+        payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
+        endpoint = f"http://127.0.0.1:{HTTP_PORT}/v1/chat/completions"
+        request = urllib.request.Request(
+            endpoint,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        spoken_any = False
+        answer_chars = 0
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response:
+                for raw_line in response:
+                    if self._stop.is_set():
+                        break
+                    line = raw_line.decode("utf-8", errors="replace").strip()
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    if not data:
+                        continue
+                    try:
+                        event = json.loads(data)
+                    except (TypeError, ValueError):
+                        continue
+                    if event.get("error"):
+                        logger.warning(
+                            "Voice chat upstream error: %s", event["error"]
+                        )
+                        break
+                    conv = str(event.get("conversation_id") or "").strip()
+                    if conv:
+                        self._set_conversation_id(model, conv)
+                    choices = event.get("choices") or []
+                    delta = choices[0].get("delta", {}) if choices else {}
+                    content = delta.get("content")
+                    if isinstance(content, str) and content:
+                        answer_chars += len(content)
+                        for chunk in coalescer.feed(content):
+                            cleaned = clean_text_for_tts(chunk)
+                            if cleaned:
+                                spoken_any = True
+                                speak_local_async(
+                                    cleaned,
+                                    voice=VE_VOICE_CHAT_TTS_VOICE,
+                                    speed=VE_VOICE_CHAT_TTS_SPEED,
+                                )
+            for chunk in coalescer.finish():
+                cleaned = clean_text_for_tts(chunk)
+                if cleaned:
+                    spoken_any = True
+                    speak_local_async(
+                        cleaned,
+                        voice=VE_VOICE_CHAT_TTS_VOICE,
+                        speed=VE_VOICE_CHAT_TTS_SPEED,
+                    )
+        except Exception:
+            logger.exception("Voice chat streaming request failed")
+
+        try:
+            hud.hide_visual_only()
+        except Exception:
+            pass
+        logger.info(
+            "Voice chat answer done: model=%s chars=%d spoken=%s",
+            model,
+            answer_chars,
+            spoken_any,
+        )
+
+    def _wait_playback_idle(self, *, timeout):
+        # 等播报结束再恢复监听,避免麦克风听到自己的回答造成回环。
+        deadline = time.monotonic() + max(0.0, timeout)
+        time.sleep(0.3)  # 给合并缓冲/队列进入播放态
+        while time.monotonic() < deadline and not self._stop.is_set():
+            if TTS_TEXT_QUEUE.empty() and not IS_SPEAKING:
+                return
+            time.sleep(0.1)
+
+
+def start_voice_chat_subsystem():
+    global _voice_chat_subsystem
+    if not VE_VOICE_CHAT_ENABLED:
+        logger.info("Voice chat subsystem disabled (set VE_VOICE_CHAT_ENABLED=1)")
+        return
+    with _voice_chat_lock:
+        if _voice_chat_subsystem is None:
+            _voice_chat_subsystem = VoiceChatSubsystem()
+        _voice_chat_subsystem.start()
+
+
+def stop_voice_chat_subsystem():
+    with _voice_chat_lock:
+        subsystem = _voice_chat_subsystem
+    if subsystem is not None:
+        subsystem.stop()
+
+
+def _voice_chat_on_flags_changed(event):
+    subsystem = _voice_chat_subsystem
+    if subsystem is not None:
+        subsystem.on_flags_changed(event)
 
 
 # ==================== FastMCP Server Tools ====================
@@ -44794,6 +45306,9 @@ def main():
     # Optional Xiaomi bridge; disabled unless XIAOAI_ENABLED=1.
     start_xiaoai_bridge()
 
+    # Optional local wake-word voice chat; disabled unless VE_VOICE_CHAT_ENABLED=1.
+    start_voice_chat_subsystem()
+
     # 2. Keyboard listener / TTS consumer
     _start_quartz_keyboard_event_tap()
     _start_appkit_media_monitor()
@@ -44875,6 +45390,12 @@ def main():
             stop_xiaoai_bridge()
         except Exception as e:
             logger.debug(f"stop_xiaoai_bridge ignored error: {e}")
+
+        # Stop the local wake-word voice chat subsystem (no-op if disabled).
+        try:
+            stop_voice_chat_subsystem()
+        except Exception as e:
+            logger.debug(f"stop_voice_chat_subsystem ignored error: {e}")
 
         # 1. 进入 shutdown 状态：拒绝新的 tool call / stream
         SERVER_SHUTTING_DOWN.set()
