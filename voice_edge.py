@@ -22849,6 +22849,24 @@ M365_UPLOAD_MAX_BYTES = max(
 )
 
 
+# A client tool result (the output of an MCP / IDE tool call — e.g. a large
+# read_file) is normally inlined verbatim into this turn's prompt via
+# compose_turn_text -> build_tool_results_block. Those bytes then count against
+# M365 Copilot's context window; two big results (a few thousand tokens each)
+# crowd out the user's actual request and Copilot "forgets" what was asked.
+# Above this many UTF-8 bytes a single tool result is OFFLOADED: its body is
+# uploaded to SharePoint as a text attachment (the same FileUrl document-link
+# egress inline files already use) and only a short pointer stays inline, so the
+# model pulls the full result from the attachment on demand instead of paying
+# for it in-context every turn. 0 disables offloading (always inline). Only the
+# m365 family has a SharePoint upload egress, so only _direct_m365_chat_response
+# applies this; qwen/doubao/deepseek keep inlining.
+M365_TOOL_RESULT_INLINE_MAX_BYTES = max(
+    0,
+    int(os.getenv("M365_TOOL_RESULT_INLINE_MAX_BYTES", str(6 * 1024))),
+)
+
+
 # A Cline/Continue client may emit an empty <file_content> wrapper while still
 # including the absolute path selected by the user. In that case, read the
 # selected local file directly. The normal size and regular-file checks remain.
@@ -24456,6 +24474,128 @@ class M365BrowserRuntime:
 M365_BROWSER_RUNTIME = M365BrowserRuntime()
 
 
+def _m365_offload_large_tool_results(messages: list) -> tuple[list, list[dict]]:
+    """Move oversized client tool results out of the inline prompt.
+
+    A client tool result (the output of an MCP / IDE tool call such as a large
+    read_file) is normally inlined verbatim into this turn's prompt via
+    compose_turn_text -> build_tool_results_block, so its bytes count against
+    M365 Copilot's context window. A couple of big results crowd out the user's
+    actual request. When a result's flattened text exceeds
+    M365_TOOL_RESULT_INLINE_MAX_BYTES it is OFFLOADED: the body becomes a text
+    attachment (uploaded to SharePoint by the browser egress — the same FileUrl
+    document-link path inline files use) and the tool message keeps only a short
+    pointer telling Copilot to open that attachment for the full result.
+
+    Returns (messages, attachments):
+      * messages    — a shallow copy with ONLY the offloaded tool messages
+                      rewritten (the caller's list and dicts are never mutated);
+                      pass it to BOTH prepare() and _client_collect_attachments
+                      so the pointer — not the body — is what gets composed.
+      * attachments — kind=="file" attachment dicts (same shape as
+                      _client_collect_attachments) for every offloaded result.
+
+    Disabled (returns the input unchanged, empty attachments) when the threshold
+    is 0. Results larger than M365_UPLOAD_MAX_BYTES cannot be uploaded, so they
+    are left inline rather than silently dropped.
+    """
+    threshold = M365_TOOL_RESULT_INLINE_MAX_BYTES
+    if threshold <= 0 or not messages:
+        return messages, []
+
+    # Only results AFTER the last user turn are this turn's pending continuation
+    # (mirrors ClientTurn.from_openai); earlier tool messages are history the
+    # browser already owns and prepare() discards, so offloading them would
+    # upload attachments no prompt ever references.
+    last_user_idx = -1
+    for i in range(len(messages) - 1, -1, -1):
+        m = messages[i]
+        if isinstance(m, dict) and str(m.get("role") or "").strip().lower() == "user":
+            last_user_idx = i
+            break
+
+    # call_id -> function name, so a bare tool message (name omitted) can still
+    # be labeled in the pointer / attachment filename.
+    name_by_call_id: dict = {}
+    for m in messages:
+        if (
+            isinstance(m, dict)
+            and str(m.get("role") or "").strip().lower() == "assistant"
+        ):
+            for tc in m.get("tool_calls") or []:
+                if isinstance(tc, dict):
+                    cid = str(tc.get("id") or "").strip()
+                    _tcfn = tc.get("function")
+                    fn = _tcfn if isinstance(_tcfn, dict) else {}
+                    nm = str(fn.get("name") or "").strip()
+                    if cid and nm:
+                        name_by_call_id[cid] = nm
+
+    out = list(messages)
+    attachments: list[dict] = []
+    offloaded = 0
+    for i in range(last_user_idx + 1, len(out)):
+        m = out[i]
+        if not isinstance(m, dict):
+            continue
+        if str(m.get("role") or "").strip().lower() not in ("tool", "function"):
+            continue
+        body = _content_to_text(m.get("content")).strip()
+        if not body:
+            continue
+        size = len(body.encode("utf-8"))
+        if size <= threshold:
+            continue
+        if size > M365_UPLOAD_MAX_BYTES:
+            # Too big for the upload egress; keep it inline rather than drop it.
+            _m365_attachment_debug(
+                "tool-result-offload-skip",
+                reason="exceeds_upload_limit",
+                size=size,
+            )
+            continue
+        cid = str(m.get("tool_call_id") or "").strip()
+        name = str(m.get("name") or name_by_call_id.get(cid) or "").strip()
+        offloaded += 1
+        stub_id = (cid or uuid.uuid4().hex)[:12]
+        base = _client_safe_filename(
+            f"tool-result-{name or 'tool'}-{stub_id}",
+            f"tool-result-{offloaded}",
+        )
+        filename = f"{base}.txt"
+        data = body.encode("utf-8")
+        attachments.append(
+            {
+                "kind": "file",
+                "name": filename,
+                "mimeType": "text/plain; charset=utf-8",
+                "size": len(data),
+                "data": base64.b64encode(data).decode("ascii"),
+            }
+        )
+        pointer = (
+            "[The full result of this tool call "
+            + (f"({name}) " if name else "")
+            + f"was {size} bytes — over the inline limit — so it was uploaded as "
+            + f'the attachment "{filename}". Open that attached file to read the '
+            + "complete result.]"
+        )
+        # Never mutate the caller's dict; rewrite only the copy held in `out`.
+        rewritten = dict(m)
+        rewritten["content"] = pointer
+        out[i] = rewritten
+
+    if not offloaded:
+        return messages, []
+    _m365_attachment_debug(
+        "tool-result-offload",
+        offloaded=offloaded,
+        threshold=threshold,
+        names=[a["name"] for a in attachments],
+    )
+    return out, attachments
+
+
 async def _direct_m365_chat_response(
     model_name: str, body: dict, messages: list, stream_mode: bool
 ):
@@ -24480,8 +24620,21 @@ async def _direct_m365_chat_response(
     # owns it). XiaoAI (source=='xiaoai') bypasses entirely (no prompt/tools).
     # supports_tools is True for the tool-capable m365 models,
     # so <tool_use_instructions> ARE injected and Seam #2 (below) is live;
+    _m365_bypass = BrowserRelay.should_bypass(body)
+    # Offload oversized client tool results (big MCP read_file outputs, etc.) to
+    # SharePoint attachments BEFORE composing the prompt, so a couple of large
+    # results don't crowd the user's request out of Copilot's context window.
+    # Runs on the same `messages` prepare() and _client_collect_attachments read,
+    # so the inline prompt carries only a pointer while the body rides the
+    # attachment egress. Skipped for bypass (XiaoAI) passthrough, which has no
+    # tool results.
+    _offloaded_tool_attachments: list[dict] = []
+    if not _m365_bypass:
+        messages, _offloaded_tool_attachments = _m365_offload_large_tool_results(
+            messages
+        )
     _m365_prepared = BROWSER_RELAY.prepare(
-        model_name, body, messages, bypass=BrowserRelay.should_bypass(body)
+        model_name, body, messages, bypass=_m365_bypass
     )
     prompt = _m365_prepared.text
     _m365_attachment_debug(
@@ -24505,6 +24658,11 @@ async def _direct_m365_chat_response(
             {"error": {"message": str(exc), "type": "m365_file_error"}},
             status_code=400,
         )
+    # Append the offloaded tool-result attachments (built above from oversized
+    # MCP results) so they upload alongside the user's inline files and the
+    # longer request-idle allowance below accounts for their bytes too.
+    if _offloaded_tool_attachments:
+        attachments = attachments + _offloaded_tool_attachments
     if not prompt and attachments:
         prompt = "Please analyze the attached content."
     if not prompt:
@@ -44227,6 +44385,86 @@ def test_m365_inline_files_survive_all_line_boundary_splits():
     assert _client_prompt_from_message(message) == "lead\ntail"
 
 
+def test_m365_offload_large_tool_result_replaces_body_with_pointer():
+    global M365_TOOL_RESULT_INLINE_MAX_BYTES
+    saved = M365_TOOL_RESULT_INLINE_MAX_BYTES
+    M365_TOOL_RESULT_INLINE_MAX_BYTES = 1024
+    try:
+        big = "X" * 20000
+        messages = [
+            {"role": "user", "content": "read both files"},
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "id": "call_a",
+                        "type": "function",
+                        "function": {"name": "read_file", "arguments": "{}"},
+                    }
+                ],
+            },
+            {"role": "tool", "tool_call_id": "call_a", "content": big},
+            {
+                "role": "tool",
+                "tool_call_id": "call_b",
+                "name": "status",
+                "content": "ok",
+            },
+        ]
+        new_messages, attachments = _m365_offload_large_tool_results(messages)
+        # Exactly the oversized result is offloaded to a text attachment whose
+        # bytes are the verbatim body; the small result is never touched.
+        assert len(attachments) == 1
+        att = attachments[0]
+        assert att["kind"] == "file"
+        assert att["name"].endswith(".txt")
+        assert "read_file" in att["name"]
+        assert base64.b64decode(att["data"]).decode("utf-8") == big
+        # The big tool message now carries ONLY a short pointer that names the
+        # attachment — the body no longer counts against the context window.
+        pointer = new_messages[2]["content"]
+        assert att["name"] in pointer
+        assert big not in pointer
+        assert len(pointer.encode("utf-8")) < 512
+        # The under-threshold result stays inline verbatim.
+        assert new_messages[3]["content"] == "ok"
+        # The caller's list and dicts are never mutated (a fresh copy is made).
+        assert new_messages is not messages
+        assert messages[2]["content"] == big
+    finally:
+        M365_TOOL_RESULT_INLINE_MAX_BYTES = saved
+
+
+def test_m365_offload_disabled_and_scoped_to_pending_results():
+    global M365_TOOL_RESULT_INLINE_MAX_BYTES
+    saved = M365_TOOL_RESULT_INLINE_MAX_BYTES
+    big = "Y" * 20000
+    try:
+        # A large tool result BEFORE the last user turn is history the browser
+        # already owns; prepare() discards it, so it must NOT be offloaded (no
+        # composed prompt would ever reference the attachment).
+        history = [
+            {"role": "tool", "tool_call_id": "old", "content": big},
+            {"role": "user", "content": "hello"},
+        ]
+        M365_TOOL_RESULT_INLINE_MAX_BYTES = 1024
+        new_history, history_att = _m365_offload_large_tool_results(history)
+        assert history_att == []
+        assert new_history is history  # untouched -> same object returned
+
+        # Threshold 0 disables offloading even for a genuine pending result.
+        pending = [
+            {"role": "user", "content": "go"},
+            {"role": "tool", "tool_call_id": "c", "content": big},
+        ]
+        M365_TOOL_RESULT_INLINE_MAX_BYTES = 0
+        new_pending, pending_att = _m365_offload_large_tool_results(pending)
+        assert pending_att == []
+        assert new_pending is pending
+    finally:
+        M365_TOOL_RESULT_INLINE_MAX_BYTES = saved
+
+
 def test_continue_attachment_notice_deleted_when_glued():
     # 回归：Continue 把 "Files attached by the user:" 作为【独立 text part】
     # 发送，_client_user_text 空串合并后它紧贴用户正文末尾且不换行。旧行锚定正则
@@ -45207,6 +45445,8 @@ def run_self_tests():
         test_m365_stream_classic_cline_self_wrap_yields_single_envelope,
         test_compose_turn_text_no_wrap_instruction_only_for_relayed_cline,
         test_browser_inline_files_reappended_for_no_egress_families,
+        test_m365_offload_large_tool_result_replaces_body_with_pointer,
+        test_m365_offload_disabled_and_scoped_to_pending_results,
     ]
 
     passed = 0
