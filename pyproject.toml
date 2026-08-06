@@ -18,10 +18,18 @@ dependencies = [
     "pyobjc-framework-quartz>=12.2.1",
     "pyperclip>=1.11.0",
     "scipy>=1.17.1",
+    # DO NOT bump to sherpa-onnx 1.13.4 / onnxruntime 1.27.0: that combo ships an
+    # onnxruntime KleidiAI SME conv kernel that computes wrong results on Apple
+    # Silicon with FEAT_SME=1 (M4), making KeywordSpotter silently return empty
+    # (verified 0/7 vs 4/7 on the official KWS test_wavs; upstream k2-fsa/sherpa-onnx#3791).
+    # Pin to the last known-good pair; revisit only when 1.13.5 + onnxruntime>=1.27.1 lands.
+    "onnxruntime==1.24.4",
+    "sherpa-onnx==1.13.3",
     "sounddevice>=0.5.5",
     "starlette>=1.3.1",
     "tavily-python>=0.7.26",
     "uvicorn>=0.51.0",
+    "pypinyin>=0.55.0",
 ]
 
 [project.scripts]
