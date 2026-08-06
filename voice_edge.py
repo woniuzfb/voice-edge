@@ -26066,6 +26066,18 @@ class HUDWindow: NSObject {
         } else if status == "dictation_nospeech" {
             statusLabel.textColor = NSColor.systemOrange
             hintLabel.stringValue = "⚠️ No speech detected"
+        } else if status == "voice_listen" {
+            statusLabel.textColor = NSColor.systemBlue
+            hintLabel.stringValue = "🎙️ 语音助手待命… 说出唤醒词"
+        } else if status == "voice_paused" {
+            statusLabel.textColor = NSColor.systemGray
+            hintLabel.stringValue = "⏸️ 语音助手已暂停（双击右⌘恢复）"
+        } else if status == "voice_wake" {
+            statusLabel.textColor = NSColor.systemGreen
+            hintLabel.stringValue = "🟢 已唤醒，请说话…"
+        } else if status == "voice_nospeech" {
+            statusLabel.textColor = NSColor.systemOrange
+            hintLabel.stringValue = "⚠️ 没有听清"
         }
 
         window.orderFrontRegardless()
@@ -32085,6 +32097,7 @@ def _run_apple_speech_dictation(
     generation: Optional[int] = None,
     *,
     question_generation: Optional[int] = None,
+    show_hud: bool = True,
 ) -> Optional[str]:
     """
     Run Apple Speech helper.
@@ -32103,11 +32116,12 @@ def _run_apple_speech_dictation(
 
     if not os.path.exists(helper_path):
         logger.error(f"Apple speech helper not found: {helper_path}")
-        hud.show(
-            "dictation_error",
-            "Apple Dictation",
-            "apple_speech_helper.swift not found",
-        )
+        if show_hud:
+            hud.show(
+                "dictation_error",
+                "Apple Dictation",
+                "apple_speech_helper.swift not found",
+            )
         time.sleep(1.0)
         return None
 
@@ -32156,11 +32170,12 @@ def _run_apple_speech_dictation(
             )
         except OSError as e:
             logger.exception("Failed to start Apple Speech helper: %s", e)
-            hud.show(
-                "dictation_error",
-                "Apple Dictation",
-                f"Could not start speech helper: {e}",
-            )
+            if show_hud:
+                hud.show(
+                    "dictation_error",
+                    "Apple Dictation",
+                    f"Could not start speech helper: {e}",
+                )
             time.sleep(1.0)
             return None
         try:
@@ -32283,7 +32298,7 @@ def _run_apple_speech_dictation(
     final_received_at = 0.0
 
     try:
-        if question_generation is None:
+        if question_generation is None and show_hud:
             hud.show(
                 "dictation_recording",
                 f"Apple Dictation [{locale}]",
@@ -32462,7 +32477,7 @@ def _run_apple_speech_dictation(
                 text = (event.get("text") or "").strip()
                 if text and text != last_partial:
                     last_partial = text
-                    if question_generation is None:
+                    if question_generation is None and show_hud:
                         hud.show(
                             "dictation_recording",
                             f"Apple Dictation [{locale}]",
@@ -32497,7 +32512,8 @@ def _run_apple_speech_dictation(
             if typ == "error":
                 err = str(event.get("error", ""))
                 logger.error(f"Apple Speech error: {err}")
-                hud.show("dictation_error", "Apple Dictation", err[:300])
+                if show_hud:
+                    hud.show("dictation_error", "Apple Dictation", err[:300])
                 time.sleep(1.0)
                 final_text = None
                 break
@@ -38187,7 +38203,7 @@ VE_VOICE_CHAT_MODEL_DIR = os.path.realpath(
 # tokens.txt 的 ppinyin 切分一致 —— 不再手写, 杜绝声调/轻声写错 (如"个" g e vs g è)
 # 导致漏检。display 用汉字本身, 命中结果直接回汉字。
 VE_VOICE_CHAT_KEYWORDS = (
-    ("你好小助手", None, None),
+    ("你好丁丁", None, None),
     ("你好豆包", None, None),
     ("换个话题", None, None),
 )
@@ -38323,17 +38339,38 @@ VE_VOICE_CHAT_KWS_THRESHOLD = max(
 )
 VE_VOICE_CHAT_KWS_SCORE = max(0.0, float(os.getenv("VE_VOICE_CHAT_KWS_SCORE", "2.0")))
 VE_VOICE_CHAT_SAMPLE_RATE = 16000
-VE_VOICE_CHAT_CAPTURE_LOCALE = os.getenv("VE_VOICE_CHAT_CAPTURE_LOCALE", "zh-CN").strip()
+VE_VOICE_CHAT_CAPTURE_LOCALE = os.getenv(
+    "VE_VOICE_CHAT_CAPTURE_LOCALE", "zh-CN"
+).strip()
 VE_VOICE_CHAT_TTS_VOICE = os.getenv("VE_VOICE_CHAT_TTS_VOICE", "zh").strip()
 VE_VOICE_CHAT_TTS_SPEED = float(os.getenv("VE_VOICE_CHAT_TTS_SPEED", "1.0"))
 # Quartz keycode: 54 = 右⌘(不碰 dictation);如需左⌘可加 55。
 VE_VOICE_CHAT_RIGHT_CMD_KEYCODES = frozenset({54})
 VE_VOICE_CHAT_DOUBLE_TAP_WINDOW = 0.45
+# 唤醒后单句听写的硬墙钟上限:helper 靠静音自停,但"唤醒后一句不说"会永久阻塞
+# owner 线程并让 KWS 停摆。超时即 SIGTERM helper 放麦、返回 None。可配。
+VE_VOICE_CHAT_DICTATION_TIMEOUT = max(
+    3.0, float(os.getenv("VE_VOICE_CHAT_DICTATION_TIMEOUT", "15.0"))
+)
+# wake 语音助手是否显示 HUD。默认关:唤醒采集/播报走后台, 不弹任何 HUD 窗口。
+# Apple Speech 仅作采集后端, 与"听写(光标插入)"功能无关, 故这里独立开关。
+# 置 1 才显示(采集"Listening…"、partial、以及暂停/没听清等提示)。
+VE_VOICE_CHAT_SHOW_HUD = os.getenv("VE_VOICE_CHAT_SHOW_HUD", "0").strip() == "1"
+# 一轮回答播报的等待上限(原 180s 偏长)。可配。
+VE_VOICE_CHAT_ANSWER_TIMEOUT = max(
+    5.0, float(os.getenv("VE_VOICE_CHAT_ANSWER_TIMEOUT", "90.0"))
+)
+# 流式读的 socket 超时(替掉写死的 180s)。这是单次读的静默上限:上游卡住不发数据
+# 超过它即抛 socket timeout 跳出, 避免 pause/stop 后最长卡 180s、与 answer timeout
+# 不匹配。正常 chunk 间隔远小于此值; abort 仍在行间即时检查。可配。
+VE_VOICE_CHAT_STREAM_READ_TIMEOUT = max(
+    3.0, float(os.getenv("VE_VOICE_CHAT_STREAM_READ_TIMEOUT", "30.0"))
+)
 
 # 唤醒词 -> 虚拟会话动作。model 路由维护各自 browser conversation_id;
 # "换个话题" 是控制指令,清空全部虚拟会话。
 VE_VOICE_CHAT_WAKE_ROUTES = {
-    "你好小助手": ("model", "LLM:m365-claude-opus"),
+    "你好丁丁": ("model", "LLM:deepseek"),
     "你好豆包": ("model", "LLM:doubao"),
     "换个话题": ("command", "new_session"),
 }
@@ -38343,6 +38380,33 @@ VE_VOICE_CHAT_CONCISE_HINT = (
 
 _voice_chat_subsystem = None
 _voice_chat_lock = threading.Lock()
+
+
+def _voice_chat_force_stop_apple_speech(reason: str) -> bool:
+    """SIGTERM 当前已注册的 Apple Speech helper 以立即释放麦克风。
+
+    与 stop_helper_gracefully 一致:只发 SIGTERM(proc.terminate()), 绝不 SIGKILL,
+    避免在 CoreAudio teardown 期间杀进程把音频服务打坏。返回 True 表示已无存活
+    helper(已退出或本就没有)。
+    """
+    with CURRENT_APPLE_SPEECH_PROCESS_LOCK:
+        proc = CURRENT_APPLE_SPEECH_PROCESS
+    if proc is None or proc.poll() is not None:
+        return True
+    try:
+        logger.info(
+            "Voice chat force-stopping Apple Speech helper: %s pid=%s",
+            reason,
+            proc.pid,
+        )
+        proc.terminate()
+    except Exception:
+        logger.debug("Voice chat force-stop terminate failed", exc_info=True)
+    try:
+        proc.wait(timeout=3.0)
+        return True
+    except Exception:
+        return proc.poll() is not None
 
 
 class VoiceChatSubsystem:
@@ -38356,9 +38420,20 @@ class VoiceChatSubsystem:
         self._enabled.set()
         self._conversations = {}  # model 别名 -> browser conversation_id
         self._conversations_lock = threading.Lock()
-        self._last_model = "LLM:m365-claude-opus"
         self._rcmd_down_since = 0.0
         self._last_rcmd_tap_at = 0.0
+        # 中止进行中的一轮对话(暂停/关闭时置位): 打断听写/流式/播报等待。
+        self._turn_abort = threading.Event()
+        # HUD 一次性隐藏定时器句柄: 每次 flash 前取消上一个, 避免 Timer 堆积。
+        self._hud_timer = None
+        self._hud_timer_lock = threading.Lock()
+        # 麦克风打开失败的连续错误计数, 用于退避 + 日志节流。
+        self._listen_error_count = 0
+        # ---- owner 守卫: 只中断 wake 自己发起的听写/播报, 绝不误伤 ----
+        # Ctrl 听写或其他功能的 TTS。wake 与 Ctrl 听写经 IS_DICTATION_ACTIVE 互斥,
+        # 故 _wake_dictation_active 为真 <=> 当前 Apple Speech helper 是 wake 启动的。
+        self._wake_dictation_active = threading.Event()  # wake 听写进行中
+        self._wake_speaking_active = threading.Event()  # wake 回答播报进行中
 
     def start(self):
         if self._thread is not None and self._thread.is_alive():
@@ -38377,10 +38452,19 @@ class VoiceChatSubsystem:
 
     def stop(self):
         self._stop.set()
+        self._turn_abort.set()
+        # 只中断 wake 自己发起的听写/播报, 绝不误杀 Ctrl 听写或他人 TTS。
+        self._abort_own_turn("subsystem stop")
         thread = self._thread
         if thread is not None and thread is not threading.current_thread():
-            thread.join(timeout=3.0)
+            thread.join(timeout=6.0)
+            if thread.is_alive():
+                logger.warning(
+                    "Voice chat thread did not exit within join timeout; "
+                    "mic already released via helper SIGTERM"
+                )
         self._thread = None
+        self._cancel_hud_timer()
 
     # ---- 右⌘ 双击(由 Quartz flagsChanged seam 调用)----
     def on_flags_changed(self, event):
@@ -38417,19 +38501,74 @@ class VoiceChatSubsystem:
     def _toggle_enabled(self):
         if self._enabled.is_set():
             self._enabled.clear()
+            # 暂停要能打断"正在进行的一轮":置中止标志, 并只中断 wake 自己发起的
+            # 听写/播报, 让其尽快退出, 而不是只影响下一次监听、也不误伤他人。
+            self._turn_abort.set()
+            self._abort_own_turn("voice chat paused")
             logger.info("Voice chat listening PAUSED (double-tap right cmd)")
-            self._flash_hud("dictation_cancelled", "监听已暂停")
+            self._flash_hud("voice_paused", "监听已暂停")
         else:
+            self._turn_abort.clear()
             self._enabled.set()
             logger.info("Voice chat listening RESUMED (double-tap right cmd)")
-            self._flash_hud("recording", "监听已开启，说出唤醒词")
+            self._flash_hud("voice_listen", "监听已开启，说出唤醒词")
+
+    def _abort_own_turn(self, reason: str):
+        """中断 wake 自己发起的一轮, 严格避免误伤其他麦克风/TTS 消费者。
+
+        - 仅当 _wake_dictation_active 为真才 SIGTERM Apple Speech helper: 此时该
+          helper 必是 wake 启动的(wake 与 Ctrl 听写经 IS_DICTATION_ACTIVE 互斥),
+          绝不会掐断用户正在进行的 Ctrl 听写。
+        - 仅当 _wake_speaking_active 为真才切 TTS: 避免暂停语音助手时误切其他功能
+          (如 MCP ask_user_dictation 读题)正在播放的语音。
+        """
+        if self._wake_dictation_active.is_set():
+            try:
+                exited = _voice_chat_force_stop_apple_speech(reason)
+                if not exited:
+                    # helper 在 CoreAudio teardown 中拒绝 SIGTERM, 受
+                    # "绝不 SIGKILL"策略约束, 可能短暂继续占麦、与 KWS 新流并存。
+                    logger.warning(
+                        "Voice chat: wake dictation helper refused SIGTERM (%s); "
+                        "mic may stay busy briefly until CoreAudio teardown completes",
+                        reason,
+                    )
+            except Exception:
+                logger.debug("abort: force-stop apple speech failed", exc_info=True)
+        if self._wake_speaking_active.is_set():
+            try:
+                stop_tts_immediately(reason)
+            except Exception:
+                logger.debug("abort: stop_tts_immediately failed", exc_info=True)
 
     def _flash_hud(self, status, text):
+        # 默认无 HUD:唤醒助手走后台, 不弹任何提示窗。置 VE_VOICE_CHAT_SHOW_HUD=1 才显示。
+        if not VE_VOICE_CHAT_SHOW_HUD:
+            return
         try:
             hud.show(status, "语音助手", text)
-            threading.Timer(0.8, hud.hide_visual_only).start()
+        except Exception:
+            return
+        # 取消上一个隐藏定时器再排新的, 否则快速连续 flash 会堆积 Timer。
+        self._cancel_hud_timer()
+        try:
+            timer = threading.Timer(0.8, hud.hide_visual_only)
+            timer.daemon = True
+            with self._hud_timer_lock:
+                self._hud_timer = timer
+            timer.start()
         except Exception:
             pass
+
+    def _cancel_hud_timer(self):
+        with self._hud_timer_lock:
+            timer = self._hud_timer
+            self._hud_timer = None
+        if timer is not None:
+            try:
+                timer.cancel()
+            except Exception:
+                pass
 
     # ---- KWS ----
     def _ensure_spotter(self):
@@ -38453,10 +38592,25 @@ class VoiceChatSubsystem:
                 continue
             try:
                 keyword = self._listen_for_keyword(spotter)
-            except Exception:
-                logger.exception("Voice chat KWS listen error; retrying")
-                time.sleep(0.5)
+            except Exception as exc:
+                # 退避 + 日志节流:麦克风持续打不开时不要每 0.5s 刷一条 traceback。
+                self._listen_error_count += 1
+                delay = min(5.0, 0.5 * (2 ** min(self._listen_error_count - 1, 4)))
+                if self._listen_error_count == 1 or self._listen_error_count % 10 == 0:
+                    logger.exception(
+                        "Voice chat KWS listen error (#%d); backing off %.1fs",
+                        self._listen_error_count,
+                        delay,
+                    )
+                else:
+                    logger.debug(
+                        "Voice chat KWS listen error (#%d): %r",
+                        self._listen_error_count,
+                        exc,
+                    )
+                self._stop.wait(timeout=delay)
                 continue
+            self._listen_error_count = 0
             if not keyword or self._stop.is_set():
                 continue
             try:
@@ -38477,9 +38631,7 @@ class VoiceChatSubsystem:
                 if IS_DICTATION_ACTIVE or IS_SPEAKING:
                     return None
                 samples, _overflowed = mic.read(blocksize)
-                stream.accept_waveform(
-                    VE_VOICE_CHAT_SAMPLE_RATE, samples.reshape(-1)
-                )
+                stream.accept_waveform(VE_VOICE_CHAT_SAMPLE_RATE, samples.reshape(-1))
                 while spotter.is_ready(stream):
                     spotter.decode_stream(stream)
                     result = spotter.get_result(stream)
@@ -38499,30 +38651,118 @@ class VoiceChatSubsystem:
             with self._conversations_lock:
                 self._conversations.clear()
             logger.info("Voice chat: virtual sessions cleared (new topic)")
-            speak_local_async(
-                "好的，我们换个话题。",
-                voice=VE_VOICE_CHAT_TTS_VOICE,
-                speed=VE_VOICE_CHAT_TTS_SPEED,
-            )
-            self._wait_playback_idle(timeout=30.0)
+            self._wake_speaking_active.set()
+            try:
+                speak_local_async(
+                    "好的，我们换个话题。",
+                    voice=VE_VOICE_CHAT_TTS_VOICE,
+                    speed=VE_VOICE_CHAT_TTS_SPEED,
+                )
+                self._wait_playback_idle(timeout=30.0)
+            finally:
+                self._wake_speaking_active.clear()
             return
 
-        model = value
-        self._last_model = model
-        logger.info("Voice chat wake: keyword=%r -> model=%s", keyword, model)
-        self._flash_hud("dictation_recording", f"[{model}] 请说")
+        global IS_DICTATION_ACTIVE
 
-        query = _run_apple_speech_dictation(
-            VE_VOICE_CHAT_CAPTURE_LOCALE, generation=None
-        )
+        model = value
+        logger.info("Voice chat wake: keyword=%r -> model=%s", keyword, model)
+
+        # 竞态守卫:绝不在 Ctrl 听写已在录音时再开第二个麦克风消费者。
+        # 置位 IS_DICTATION_ACTIVE 让 wake 听写成为一等公民, 与既有互斥体系
+        # (IS_DICTATION_ACTIVE + Apple Speech 进程单例) 对齐, 关掉竞态窗口。
+        with DICTATION_LOCK:
+            if IS_DICTATION_ACTIVE:
+                logger.info("Voice chat wake ignored: dictation already active")
+                return
+            IS_DICTATION_ACTIVE = True
+
+        self._turn_abort.clear()
+        # 不再预闪 voice_wake HUD —— _run_apple_speech_dictation 内部会立刻用
+        # "Apple Dictation [locale] Listening..." 覆盖它, 预闪只会一闪即逝造成误导。
+        # 让内部听写 HUD(含 partial 实时反馈)直接接管, 反而更真实。
+        try:
+            query = self._run_wake_dictation(VE_VOICE_CHAT_CAPTURE_LOCALE)
+        finally:
+            with DICTATION_LOCK:
+                IS_DICTATION_ACTIVE = False
+
         query = strip_llm_artifacts(query or "", remove_reasoning=True).strip()
+        if self._turn_abort.is_set() or self._stop.is_set():
+            return
         if not query:
-            self._flash_hud("dictation_nospeech", "没有听清")
+            self._flash_hud("voice_nospeech", "没有听清")
             return
 
         logger.info("Voice chat query: %s", query[:120])
-        self._stream_and_speak(model, query)
-        self._wait_playback_idle(timeout=180.0)
+        # 标记 wake 正在播报: 覆盖流式+播报等待整个生命周期, 使暂停/关闭的 owner
+        # 守卫只切 wake 自己的 TTS, 不误伤其他功能正在播放的语音。
+        self._wake_speaking_active.set()
+        try:
+            self._stream_and_speak(model, query)
+            self._wait_playback_idle(timeout=VE_VOICE_CHAT_ANSWER_TIMEOUT)
+        finally:
+            self._wake_speaking_active.clear()
+
+    def _run_wake_dictation(self, locale):
+        """跑一次 Apple Speech 采集, 带硬墙钟上限。
+
+        helper 会因静音自停, 但"唤醒后完全不说话"会让本线程(以及 KWS)永久阻塞。
+        超时即 SIGTERM helper 放麦并返回 None。不触碰 Ctrl 听写的共享 generation/
+        cancel 全局, 避免跨路径干扰。
+        """
+        # 防御性清零:若上一次会话(Ctrl 或 wake)异常结束遗留了 stop/cancel
+        # 标志, 新的 helper 会秒被这些残留请求关掉 -> 立刻返回 None -> 莫名"没听清"。
+        # Ctrl 路径在会话开始也会清; wake 之前漏了这步。
+        global _dictation_cancel, _dictation_stop
+        with _dictation_state_lock:
+            _dictation_cancel = False
+            _dictation_stop = False
+
+        result: dict[str, Optional[str]] = {"text": None}
+        done = threading.Event()
+
+        def worker():
+            try:
+                result["text"] = _run_apple_speech_dictation(
+                    locale, generation=None, show_hud=VE_VOICE_CHAT_SHOW_HUD
+                )
+            except Exception:
+                logger.exception("Voice chat wake dictation failed")
+            finally:
+                done.set()
+
+        thread = threading.Thread(
+            target=worker, name="VoiceChatWakeDictation", daemon=True
+        )
+        # 标记 wake 拥有麦克风: 使暂停/关闭的 owner 守卫只中断本次 wake 听写。
+        # 关竞态窗口: set 之后、start 之前再查一次 _turn_abort。若这瞬间恰好
+        # 暂停/关闭, abort 会因 helper 尚未启动而空过, 麦会白占到静音自停/超时。
+        # 这里直接放弃本次采集, 避免那几秒占麦。
+        self._wake_dictation_active.set()
+        if self._turn_abort.is_set() or self._stop.is_set():
+            self._wake_dictation_active.clear()
+            logger.info("Voice chat wake dictation aborted before start")
+            return None
+        thread.start()
+        try:
+            if not done.wait(timeout=VE_VOICE_CHAT_DICTATION_TIMEOUT):
+                logger.warning(
+                    "Voice chat wake dictation timed out after %.1fs; releasing mic",
+                    VE_VOICE_CHAT_DICTATION_TIMEOUT,
+                )
+                exited = _voice_chat_force_stop_apple_speech("wake dictation timeout")
+                if not exited:
+                    # SIGTERM 被拒(CoreAudio teardown 中), 受"绝不 SIGKILL"
+                    # 约束, 该听写线程可能继续占麦、与 KWS 新流短暂并存。
+                    logger.warning(
+                        "Voice chat wake dictation helper refused SIGTERM; mic may "
+                        "stay busy briefly and coexist with KWS until it exits"
+                    )
+                done.wait(timeout=3.0)
+        finally:
+            self._wake_dictation_active.clear()
+        return result["text"]
 
     def _get_conversation_id(self, model):
         with self._conversations_lock:
@@ -38567,9 +38807,11 @@ class VoiceChatSubsystem:
         spoken_any = False
         answer_chars = 0
         try:
-            with urllib.request.urlopen(request, timeout=180) as response:
+            with urllib.request.urlopen(
+                request, timeout=VE_VOICE_CHAT_STREAM_READ_TIMEOUT
+            ) as response:
                 for raw_line in response:
-                    if self._stop.is_set():
+                    if self._stop.is_set() or self._turn_abort.is_set():
                         break
                     line = raw_line.decode("utf-8", errors="replace").strip()
                     if not line.startswith("data:"):
@@ -38584,9 +38826,7 @@ class VoiceChatSubsystem:
                     except (TypeError, ValueError):
                         continue
                     if event.get("error"):
-                        logger.warning(
-                            "Voice chat upstream error: %s", event["error"]
-                        )
+                        logger.warning("Voice chat upstream error: %s", event["error"])
                         break
                     conv = str(event.get("conversation_id") or "").strip()
                     if conv:
@@ -38605,17 +38845,27 @@ class VoiceChatSubsystem:
                                     voice=VE_VOICE_CHAT_TTS_VOICE,
                                     speed=VE_VOICE_CHAT_TTS_SPEED,
                                 )
-            for chunk in coalescer.finish():
-                cleaned = clean_text_for_tts(chunk)
-                if cleaned:
-                    spoken_any = True
-                    speak_local_async(
-                        cleaned,
-                        voice=VE_VOICE_CHAT_TTS_VOICE,
-                        speed=VE_VOICE_CHAT_TTS_SPEED,
-                    )
+            # abort 后不再朗读尾段缓冲(≤max_chars), 否则 stop_tts 之后又冒出
+            # 一句, 暂停/停止不彻底。coalescer 为局部变量, 跳过即随方法返回销毁。
+            if self._stop.is_set() or self._turn_abort.is_set():
+                logger.info("Voice chat aborted; skipping coalescer tail flush")
+            else:
+                for chunk in coalescer.finish():
+                    cleaned = clean_text_for_tts(chunk)
+                    if cleaned:
+                        spoken_any = True
+                        speak_local_async(
+                            cleaned,
+                            voice=VE_VOICE_CHAT_TTS_VOICE,
+                            speed=VE_VOICE_CHAT_TTS_SPEED,
+                        )
         except Exception:
-            logger.exception("Voice chat streaming request failed")
+            # 正常暂停/关闭:abort 置位时读超时(默认 30s)会抛异常, 属预期打断,
+            # 降级为 info, 不刷 traceback。非 abort 的真实故障仍按 exception 记录。
+            if self._turn_abort.is_set() or self._stop.is_set():
+                logger.info("Voice chat streaming interrupted by pause/stop")
+            else:
+                logger.exception("Voice chat streaming request failed")
 
         try:
             hud.hide_visual_only()
@@ -38633,6 +38883,8 @@ class VoiceChatSubsystem:
         deadline = time.monotonic() + max(0.0, timeout)
         time.sleep(0.3)  # 给合并缓冲/队列进入播放态
         while time.monotonic() < deadline and not self._stop.is_set():
+            if self._turn_abort.is_set():  # 暂停/关闭:立即停止等待
+                return
             if TTS_TEXT_QUEUE.empty() and not IS_SPEAKING:
                 return
             time.sleep(0.1)
