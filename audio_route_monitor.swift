@@ -406,6 +406,101 @@ final class AudioRouteMonitor {
         return snapshot
     }
 
+    // 判断某设备是否带输入流(input scope 的 streams 数据大小 > 0)。
+    // 内置麦/蓝牙耳机麦等有输入; 纯输出设备(USB 音箱等)无输入 -> 用于把它们排除在
+    // input_device_ids 之外, 让 Python 侧精确区分"标记的输入设备是否还在表中"。
+    private func deviceHasInput(
+        deviceID: AudioDeviceID
+    ) -> Bool {
+        var address =
+            AudioObjectPropertyAddress(
+                mSelector:
+                    kAudioDevicePropertyStreams,
+                mScope:
+                    kAudioObjectPropertyScopeInput,
+                mElement:
+                    kAudioObjectPropertyElementMain
+            )
+
+        var dataSize: UInt32 = 0
+
+        let status =
+            AudioObjectGetPropertyDataSize(
+                deviceID,
+                &address,
+                0,
+                nil,
+                &dataSize
+            )
+
+        return status == noErr
+            && dataSize > 0
+    }
+
+    // 枚举 kAudioHardwarePropertyDevices, 过滤出带输入流的设备 id。
+    // 随每个事件带给 Python 侧, 用于判定"上次刷新过的输入设备是否仍在表中"。任何一步
+    // 失败都返回 []; Python 侧只在字段为非空 list 时才动作, 故空/缺失都安全回退。
+    private func inputDeviceIDs() -> [AudioDeviceID] {
+        var address =
+            AudioObjectPropertyAddress(
+                mSelector:
+                    kAudioHardwarePropertyDevices,
+                mScope:
+                    kAudioObjectPropertyScopeGlobal,
+                mElement:
+                    kAudioObjectPropertyElementMain
+            )
+
+        var dataSize: UInt32 = 0
+
+        var status =
+            AudioObjectGetPropertyDataSize(
+                systemObjectID,
+                &address,
+                0,
+                nil,
+                &dataSize
+            )
+
+        guard
+            status == noErr,
+            dataSize > 0
+        else {
+            return []
+        }
+
+        let count =
+            Int(dataSize)
+            / MemoryLayout<AudioDeviceID>.size
+
+        var deviceIDs =
+            [AudioDeviceID](
+                repeating:
+                    AudioDeviceID(
+                        kAudioObjectUnknown
+                    ),
+                count: count
+            )
+
+        status =
+            AudioObjectGetPropertyData(
+                systemObjectID,
+                &address,
+                0,
+                nil,
+                &dataSize,
+                &deviceIDs
+            )
+
+        guard status == noErr else {
+            return []
+        }
+
+        return deviceIDs.filter {
+            deviceHasInput(deviceID: $0)
+        }
+    }
+
     private func emitEvent(
         type: String,
         selector: String,
@@ -426,6 +521,11 @@ final class AudioRouteMonitor {
         ) in outputSnapshot() {
             payload[key] = value
         }
+
+        // 每个事件都带上当前"带输入流"的设备 id 列表, 供 Python 侧判定
+        // 标记设备是否仍在表中(started 初始化 + devices 变化时更新)。
+        payload["input_device_ids"] =
+            inputDeviceIDs()
 
         emitJSON(
             payload

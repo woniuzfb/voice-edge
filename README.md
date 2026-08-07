@@ -254,6 +254,108 @@ export XIAOAI_TAVILY_TOOL_MAX_RESULTS=3
 export XIAOAI_TAVILY_TOOL_TIMEOUT=30
 ```
 
+## Local Voice Chat
+
+```bash
+export VE_VOICE_CHAT_ENABLED=1
+export VE_VOICE_CHAT_MODEL_DIR='/path/to/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01'
+export VE_VOICE_CHAT_ALIAS_DEEPSEEK='DeepSeek'
+export VE_VOICE_CHAT_ALIAS_DOUBAO='豆包'
+export VE_VOICE_CHAT_HISTORY_CHAR_BUDGET=6000
+export VE_VOICE_CHAT_SHOW_HUD=0
+```
+
+```python
+VE_VOICE_CHAT_KEYWORDS = (
+    ("你好丁丁", None, None),
+    ("你好豆包", None, "0.10"),
+    ("换个话题", None, None),
+)
+
+VE_VOICE_CHAT_WAKE_ROUTES = {
+    "你好丁丁": ("model", "LLM:deepseek"),
+    "你好豆包": ("model", "LLM:doubao"),
+    "换个话题": ("command", "new_session"),
+}
+
+VE_VOICE_CHAT_MODEL_ALIAS = {
+    "LLM:deepseek": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
+    "LLM:doubao": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
+}
+```
+
+## VSCode Configuration
+
+```yaml
+experimental:
+  readResponseTTSServer:
+    mcpId: "local-tts"
+    toolName: "speak"
+models:
+  - name: Local
+    provider: Local
+    model: AUTODETECT
+    apiBase: http://localhost:5000/v1/
+    roles:
+      - chat
+    capabilities:
+      - tool_use
+  - name: LLM:m365-claude-opus
+    provider: Local
+    model: LLM:m365-claude-opus
+    apiBase: http://localhost:5000/v1/
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 1000000
+      maxTokens: 128000
+    capabilities:
+      - tool_use
+      - image_input
+    excludeToolOutputsFromTokenCount: true
+  - name: LLM:m365-chatgpt-5.6
+    provider: Local
+    model: LLM:m365-chatgpt-5.6
+    apiBase: http://localhost:5000/v1/
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 1050000
+      maxTokens: 128000
+    capabilities:
+      - tool_use
+      - image_input
+    excludeToolOutputsFromTokenCount: true
+  - name: embed:jina-v5
+    provider: Local
+    model: embed:jina-v5
+    apiBase: http://localhost:5000/v1/
+    roles:
+      - embed
+  - name: rerank:jina-v3
+    provider: Local
+    model: embed:jina-v3
+    apiBase: http://localhost:5000/v1/
+    roles:
+      - rerank
+  - name: FIM:qwen-2.5-coder-1.5B
+    provider: Local
+    model: FIM:qwen-2.5-coder-1.5B
+    apiBase: http://localhost:5000/v1/
+    roles:
+      - edit
+      - apply
+      - autocomplete
+  - name: FIM:qwen-2.5-coder-7B
+    provider: Local
+    model: FIM:qwen-2.5-coder-7B
+    apiBase: http://localhost:5000/v1/
+    roles:
+      - edit
+      - apply
+      - autocomplete
+```
+
 ## Keyboard Shortcuts
 
 | Shortcut             | Action                          |
