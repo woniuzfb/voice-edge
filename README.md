@@ -197,7 +197,7 @@ export XIAOAI_TEMPERATURE=0.3
 export XIAOAI_TRIGGER_WITHOUT_KEYWORD=1
 export XIAOAI_KEYWORDS='help me,please'
 export XIAOAI_STOP_PHRASES='stop answering,stop,hold on'
-export XIAOAI_NEW_CONVERSATION='new conversation,new chat,clear context,change topic,start over'
+export XIAOAI_NEW_CONVERSATION='Change the subject,new conversation,new chat,clear context,change the topic,start over'
 ```
 
 Queries matching native keywords bypass the AI model and are handled by the native Xiaomi assistant:
@@ -258,29 +258,32 @@ export XIAOAI_TAVILY_TOOL_TIMEOUT=30
 
 ```bash
 export VE_VOICE_CHAT_ENABLED=1
-export VE_VOICE_CHAT_MODEL_DIR='/path/to/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01'
+export VE_VOICE_CHAT_MODEL_DIR='/path/to/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20'
 export VE_VOICE_CHAT_ALIAS_DEEPSEEK='DeepSeek'
-export VE_VOICE_CHAT_ALIAS_DOUBAO='豆包'
+export VE_VOICE_CHAT_ALIAS_DOUBAO='Doubao'
 export VE_VOICE_CHAT_HISTORY_CHAR_BUDGET=6000
 export VE_VOICE_CHAT_SHOW_HUD=0
+export VE_VOICE_CHAT_KWS_ENGINE='apple'
+export SPEECH_HELPER_ON_DEVICE=1
+export VE_VOICE_CHAT_CAPTURE_LOCALES='zh-CN,en-US'
 ```
 
 ```python
 VE_VOICE_CHAT_KEYWORDS = (
-    ("你好丁丁", None, None),
-    ("你好豆包", None, "0.10"),
-    ("换个话题", None, None),
+    ("Hello DingDing", None, None),
+    ("Hello Baozi", None, None),
+    ("Change the subject", None, None),
 )
 
 VE_VOICE_CHAT_WAKE_ROUTES = {
-    "你好丁丁": ("model", "LLM:deepseek"),
-    "你好豆包": ("model", "LLM:doubao"),
-    "换个话题": ("command", "new_session"),
+    "Hello DingDing": ("model", "LLM:deepseek"),
+    "Hello Baozi": ("model", "LLM:doubao"),
+    "Change the subject": ("command", "new_session"),
 }
 
 VE_VOICE_CHAT_MODEL_ALIAS = {
     "LLM:deepseek": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
-    "LLM:doubao": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
+    "LLM:doubao": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "Doubao"),
 }
 ```
 
@@ -365,6 +368,7 @@ models:
 | Enter                | Stop active dictation           |
 | Esc                  | Skip the current speech item    |
 | Double Esc           | Cancel active playback          |
+| Double Right CMD     | Start or stop voice chat        |
 
 ## Browser Authentication Security
 

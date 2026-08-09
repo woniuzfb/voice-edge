@@ -259,23 +259,26 @@ export XIAOAI_TAVILY_TOOL_TIMEOUT=30
 
 ```bash
 export VE_VOICE_CHAT_ENABLED=1
-export VE_VOICE_CHAT_MODEL_DIR='/path/to/sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01'
+export VE_VOICE_CHAT_MODEL_DIR='/path/to/sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20'
 export VE_VOICE_CHAT_ALIAS_DEEPSEEK='DeepSeek'
 export VE_VOICE_CHAT_ALIAS_DOUBAO='豆包'
 export VE_VOICE_CHAT_HISTORY_CHAR_BUDGET=6000
 export VE_VOICE_CHAT_SHOW_HUD=0
+export VE_VOICE_CHAT_KWS_ENGINE='apple'
+export SPEECH_HELPER_ON_DEVICE=1
+export VE_VOICE_CHAT_CAPTURE_LOCALES='zh-CN,en-US'
 ```
 
 ```python
 VE_VOICE_CHAT_KEYWORDS = (
     ("你好丁丁", None, None),
-    ("你好豆包", None, "0.10"),
+    ("你好包子", None, "0.10"),
     ("换个话题", None, None),
 )
 
 VE_VOICE_CHAT_WAKE_ROUTES = {
     "你好丁丁": ("model", "LLM:deepseek"),
-    "你好豆包": ("model", "LLM:doubao"),
+    "你好包子": ("model", "LLM:doubao"),
     "换个话题": ("command", "new_session"),
 }
 
@@ -366,6 +369,7 @@ models:
 | Enter              | 停止当前听写         |
 | Esc                | 跳过当前语音项       |
 | 双击 Esc           | 取消当前播放         |
+| 双击右 CMD         | 开始或停止 聊天      |
 
 ## 浏览器认证安全
 
