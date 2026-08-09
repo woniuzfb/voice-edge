@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Voice Edge STT/TTS MCP Server
+Voice Edge
 
 - MCP tools: voice dictation, file transcription, and speech synthesis
 - OpenAI-compatible chat, transcription, TTS, embedding, rerank, and FIM APIs
@@ -75,6 +75,7 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    TYPE_CHECKING,
     TypedDict,
     Union,
     cast,
@@ -83,20 +84,74 @@ from typing import (
 import aiohttp
 import edge_tts
 import numpy as np
-import sounddevice as sd
-import uvicorn
-from aiohttp import web as aiohttp_web
-from mcp.server.fastmcp import FastMCP
-from mlx_lm.sample_utils import make_sampler
-from pydantic import Field
-from starlette.applications import Starlette
-from starlette.background import BackgroundTask
-from starlette.middleware import Middleware
-from starlette.middleware.cors import CORSMiddleware
-from starlette.requests import ClientDisconnect
-from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
-from starlette.routing import Route
-from tavily import TavilyClient
+
+# sounddevice 是在下面的看门狗线程里运行时导入并赋值给模块级变量 `sd` 的，静态类型
+# 检查器因此把 `sd` 看成普通变量，`-> sd.InputStream` 之类注解会报
+# reportInvalidTypeForm。给类型检查器一个【独立、绝不在运行时被重新赋值】的模块别名
+# `_sd_typing`(不能复用 `sd`，否则与下面的运行时 `sd = ...` 赋值同名冲突，静态检查器仍
+# 把它判成变量)。因文件顶部有 `from __future__ import annotations`，注解是惰性字符串，
+# 运行时永不求值，故 `-> _sd_typing.InputStream` 在运行时零副作用、也不需要真正导入。
+if TYPE_CHECKING:
+    import sounddevice as _sd_typing
+
+# sounddevice 导入时会立即调用 Pa_Initialize(触碰 CoreAudio)。若 HAL 因异常退出残留
+# 而卡死(典型: 旧实例在清理中途被杀), 该导入会无限挂起且没有任何日志 —— 表现为
+# “应用启动后无输出、0% CPU、杀不掉也查不到原因”。
+# 用看门狗线程限时: 超时则向 stderr 打出明确修复指引并退出, launchd KeepAlive 会
+# 自动重试; HAL 恢复(如 sudo killall coreaudiod)后即正常启动。
+_VE_SOUNDDEVICE_IMPORT_TIMEOUT = float(
+    os.environ.get("VE_SOUNDDEVICE_IMPORT_TIMEOUT", "25")
+)
+_sd_import_result: dict = {}
+
+
+def _ve_sd_import_worker() -> None:
+    try:
+        import sounddevice as _sd
+
+        _sd_import_result["sd"] = _sd
+    except BaseException as exc:  # 导入失败要原样上抛
+        _sd_import_result["error"] = exc
+
+
+_sd_import_thread = threading.Thread(
+    target=_ve_sd_import_worker,
+    name="sounddevice-import",
+    daemon=True,
+)
+_sd_import_thread.start()
+_sd_import_thread.join(timeout=_VE_SOUNDDEVICE_IMPORT_TIMEOUT)
+if "sd" in _sd_import_result:
+    sd = _sd_import_result["sd"]
+elif "error" in _sd_import_result:
+    raise _sd_import_result["error"]
+else:
+    # 导入卡死 = CoreAudio HAL 大概率已挂。直接打印到 stderr(此时日志系统未就绪),
+    # 然后退出让 launchd 重试; 不要留一个半死的进程等着被人强杀(强杀才会把 HAL 搞挂)。
+    sys.stderr.write(
+        "\n[voice_edge] FATAL: sounddevice 导入超过 %.0fs(CoreAudio HAL 可能已卡死).\n"
+        "  修复: sudo killall coreaudiod, launchd 会自动重试启动.\n\n"
+        % _VE_SOUNDDEVICE_IMPORT_TIMEOUT
+    )
+    sys.stderr.flush()
+    os._exit(1)
+
+# 这些三方库不依赖 sounddevice，故意排在上面的 sounddevice 看门狗导入之后：先在
+# 看门狗内导入触碰 CoreAudio 的 sounddevice，HAL 卡死时能在超时内被检测到，而不必
+# 先花时间加载 uvicorn/starlette/mlx 等重模块。此顺序是有意为之，用 noqa 抑制 E402。
+import uvicorn  # noqa: E402
+from aiohttp import web as aiohttp_web  # noqa: E402
+from mcp.server.fastmcp import FastMCP  # noqa: E402
+from mlx_lm.sample_utils import make_sampler  # noqa: E402
+from pydantic import Field  # noqa: E402
+from starlette.applications import Starlette  # noqa: E402
+from starlette.background import BackgroundTask  # noqa: E402
+from starlette.middleware import Middleware  # noqa: E402
+from starlette.middleware.cors import CORSMiddleware  # noqa: E402
+from starlette.requests import ClientDisconnect  # noqa: E402
+from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse  # noqa: E402
+from starlette.routing import Route  # noqa: E402
+from tavily import TavilyClient  # noqa: E402
 
 # ==================== Configuration ====================
 
@@ -441,6 +496,12 @@ rerank_processor = None
 rerank_model_id_loaded = None
 
 
+# Strong references retained only during process shutdown. Moving MLX-backed objects here
+# lets the worker clear its business-visible model state without synchronously triggering
+# native destructors, gc.collect(), or Metal cache cleanup on the shutdown path.
+_LLM_PROCESS_EXIT_MODEL_RETENTION = []
+
+
 DEFAULT_VOICE = "zh-CN-XiaoxiaoNeural"
 MAX_CHUNK_LENGTH = 200
 
@@ -504,6 +565,39 @@ AUDIO_PROBATION_SECONDS = 0.75
 AUDIO_PROBATION_POLL_INTERVAL = 0.025
 AUDIO_CALLBACK_MAX_AGE = 1.5
 
+# TTS 首句预缓冲(毫秒): 在开始【入队/播放】前, 先攒够这么多【真实解码音频】再放。
+# 这是脚本原生机制(旧代码硬编码 ENABLE_PREBUFFER, 此处提升为 env 开关, 便于免改代码 A/B)。
+# 与已移除的 "fresh-stream lead-in" 的本质区别:
+#   - lead-in(已删): 在真实音频【前面塞】一段极低电平 dither/静音 —— 实测把"连续弱信号窗口"
+#     从 ~190ms(TTS 前导)拉长到 ~310ms, 反而更易让蓝牙 A2DP 掉电、首句被 ramp 削头 = 负优化。
+#   - prebuffer(本项): 【不前置任何弱信号】, 只是先攒 N ms 真实音频再一次性喂出, 防网络抖动/
+#     欠载导致的开头断续。默认 0 = 关闭(与旧 ENABLE_PREBUFFER=False 行为一致), 追求极限低延迟。
+# 冷启动首句吞字若源于蓝牙功放 ramp, prebuffer 不保证根治(内容开头仍是 TTS 前导静音), 但它是
+# 更干净的原生手段, 且绝不制造额外弱信号窗口。可先试 150 观察。
+VE_TTS_PREBUFFER_MS = max(0.0, float(os.getenv("VE_TTS_PREBUFFER_MS", "0")))
+
+# 冷启动输出 prime: 空闲 callback 写零并不能证明蓝牙功放已经打开。首次真实语音前发送一段
+# 有淡入淡出的低电平双音并等待 callback 确认消费，作为可牺牲的硬件 ramp 载荷。只在冷启动
+# consumer 时执行；热流不重复。幅度 0 可禁用，便于 A/B。
+VE_TTS_OUTPUT_PRIME_MS = max(0.0, float(os.getenv("VE_TTS_OUTPUT_PRIME_MS", "280")))
+VE_TTS_OUTPUT_PRIME_AMPLITUDE = min(
+    0.05,
+    max(0.0, float(os.getenv("VE_TTS_OUTPUT_PRIME_AMPLITUDE", "0.012"))),
+)
+VE_TTS_OUTPUT_PRIME_TIMEOUT = max(
+    0.5,
+    float(os.getenv("VE_TTS_OUTPUT_PRIME_TIMEOUT", "3.0")),
+)
+
+# 【诊断】首句 PCM dump: 设为文件路径时, 把本进程【第一条】utterance【实际入队的 PCM】
+# (即 20ms 淡入后的真实音频, 逐字节 = 回调会播的内容)一次性写成 WAV。
+# 用途: 一刀切分"丢字"病因 —— 打开 WAV 听/看波形:
+#   开头"收到了"在   -> 数据完整, 吞字是蓝牙硬件 ramp 削的(内容层无法根治, 只能 warmup);
+#   开头就缺        -> 数据丢失(上游 Edge-TTS/ffmpeg 启动丢帧或淡入吃多), 可精确定位修。
+# 默认空 = 关闭, 零热路径开销; 每进程只 dump 一次。
+VE_TTS_DUMP_FIRST_PCM = os.getenv("VE_TTS_DUMP_FIRST_PCM", "").strip()
+_VE_FIRST_PCM_DUMPED = False
+
 AUDIO_FAULT_HISTORY_SIZE = 32
 LOCAL_PLAYBACK_FENCE_TIMEOUT = 180.0
 
@@ -554,9 +648,18 @@ _APPLE_SPEECH_REAPER_LOCK = threading.Lock()
 _APPLE_SPEECH_REAPER_KEYS = set()
 
 _LAST_APPLE_SPEECH_EXIT_AT = 0.0
+_APPLE_KWS_RESUME_NOT_BEFORE = 0.0
+_APPLE_KWS_RESUME_LOCK = threading.Lock()
 APPLE_SPEECH_RESTART_GAP = 1.2
 
 APPLE_SPEECH_FINAL_EXIT_TIMEOUT = 8.0
+
+# 听写静音自停: 收到过识别内容后, 连续多久没有新 partial 即视为"说完了", 走优雅收尾
+# (SIGUSR1 -> helper 出 final)。仅用于 wake 单句听写(generation 与 question_generation
+# 均为 None); Ctrl 听写/问答录音保持原行为, 不因停顿被截断。没说过话时仍由硬墙钟兜底。
+APPLE_SPEECH_SILENCE_STOP_SECONDS = max(
+    1.0, float(os.getenv("APPLE_SPEECH_SILENCE_STOP_SECONDS", "2.5"))
+)
 APPLE_SPEECH_REAPER_LOG_INTERVAL = 15.0
 
 DICTATION_LOCALE_EN = "en-US"
@@ -603,6 +706,18 @@ ESC_CANCEL_CONTEXT = "tts_global"
 TTS_TEXT_QUEUE = queue.Queue(maxsize=200)
 IS_SPEAKING = False
 
+# 【KWS 抢占预热】TTS 即将播放时, 请 apple KWS 提前让麦(terminate helper -> 释放 HFP)的信号。
+# 目的: MCP speak / 任意 TTS 入口触发时, apple KWS 的 helper 可能仍占着 HFP 麦。若此
+# 刻建 A2DP 输出流, 会先建在 HFP、之后 helper 释麦切 A2DP 再 recreate = 两次建流。置此信号让 KWS
+# 先让麦, 等切到 A2DP 稳定后【一次】把输出流建在 A2DP 上, 消除第二次 recreate。
+# 生命周期: 由 speak 入口在建流前置位, 由 TTS consumer 在播放全部结束(队列空、IS_SPEAKING 落
+# False)时清除 —— 与 IS_SPEAKING 无缝衔接, 覆盖"请求->首次 IS_SPEAKING"空窗, 无竞态。
+# 仅在 VE_TTS_KWS_PREEMPT_PREWARM 开启且 voice chat 模式下才会被置位; 否则恒 clear, 让麦门不受影响。
+_TTS_PREEMPT_KWS = threading.Event()
+# 串行化 KWS 让麦、route settle、建流和 prime。所有 TTS 入口共用同一提交边界，避免两套
+# prewarm 同时建流或其中一套只看 consumer thread 存活就误判“已热”。
+_TTS_OUTPUT_PREPARE_LOCK = threading.Lock()
+
 GLOBAL_AUDIO_QUEUE = queue.Queue(maxsize=256)
 
 OUTPUT_STREAM = None
@@ -647,9 +762,9 @@ AUDIO_ROUTE_LAST_INPUT_ID = None
 AUDIO_ROUTE_LAST_INPUT_NAME = None
 # 语音助手静音恢复: 上次为哪个 CoreAudio 输入设备 id 做过强制 PortAudio 刷新。用于区分
 # "新输入设备接入(需强制刷新露出新麦)"与"同一设备 A2DP<->HFP profile 抖动(输入 id 不变,
-# 绝不能重复 terminate/reinit, 否则与 KWS 反复对撞)"。名字判据不可靠(同一 Bose:
-# CoreAudio 叫 'Bose QC35 II', PortAudio 叫 '外置耳机'); check_audio_input_device 也不行
-# (内置麦恒可用 -> 恒 True)。CoreAudio 输入 id 是唯一可靠的设备身份判据。
+# 绝不能重复 terminate/reinit, 否则与 KWS 反复对撞)"。
+# 名字判据不可靠, check_audio_input_device 也不行
+# (内置麦恒可用 -> 恒 True)。
 _VE_LAST_REFRESHED_INPUT_ID = None
 
 # 当前 CoreAudio 设备表里"带输入流"的设备 id 集合, 由 route-monitor 的
@@ -658,6 +773,20 @@ _VE_LAST_REFRESHED_INPUT_ID = None
 # input id 不变、设备仍在表), 于是失效去重标记让重连必刷新一次露出新麦。相比在 devices
 # 事件里"盲目重置", 这里不会因拔一个纯输出设备(如 USB 音箱)而误刷、无谓打断 KWS/播报。
 _AUDIO_INPUT_DEVICE_IDS = frozenset()
+
+# route monitor 是否至少上报过一次 input_device_ids 字段。只有确认新版 Swift 二进制在
+# 发这个字段时, 才可用"空集 = 无麦"当权威闸门; 旧二进制不发该字段(集合恒空), 若据此拦截
+# 会把有麦也误判为无麦而永不启动 helper。此标志置真前, apple 路径回退到"让 helper 去探"。
+_AUDIO_INPUT_DEVICE_IDS_SEEN = False
+
+# 忠实镜像 CoreAudio【当前默认输入设备 id】: 每个 route 事件(started + 所有 audio_route_
+# changed)都按 event["default_input_id"] 刷新, 字段缺失即 None。emitEvent 每个事件都并入
+# outputSnapshot(), 无默认输入时该字段直接不出现 -> 本变量严格反映"当下有无默认输入"。
+# 【与 AUDIO_ROUTE_LAST_INPUT_ID 的关键区别】: 后者在移除(input_id=None)时【故意保留旧值】
+# (如关耳机后仍为 165), 供静音恢复的 force_refresh 去重复用(见 _ve_note_input_device_
+# removed), 因此【不能】用来判"当前无麦"—— 正是"连了再关"仍 loop 的根因。本变量无此包袱,
+# None 严格等价于 helper 打开默认输入报 code=10 的条件, 专供无麦闸门判据 (b)。
+_AUDIO_DEFAULT_INPUT_ID = None
 
 
 def _ve_update_input_device_ids(event):
@@ -670,6 +799,7 @@ def _ve_update_input_device_ids(event):
     过度失效反而更糟, 故必须以字段存在为前提。)
     """
     global _AUDIO_INPUT_DEVICE_IDS
+    global _AUDIO_INPUT_DEVICE_IDS_SEEN
     raw = event.get("input_device_ids")
     if not isinstance(raw, list):
         return
@@ -679,6 +809,8 @@ def _ve_update_input_device_ids(event):
         logger.debug("route-monitor input_device_ids not all ints: %r", raw)
         return
     _AUDIO_INPUT_DEVICE_IDS = ids
+    # 二进制确实在发该字段 -> 允许把"空集"当权威"无麦"信号(sticky, 进程内不回退)。
+    _AUDIO_INPUT_DEVICE_IDS_SEEN = True
     if (
         _VE_LAST_REFRESHED_INPUT_ID is not None
         and _VE_LAST_REFRESHED_INPUT_ID not in ids
@@ -6894,6 +7026,7 @@ def _audio_route_monitor_reader():
     global AUDIO_ROUTE_LAST_OUTPUT_NAME
     global AUDIO_ROUTE_LAST_INPUT_ID
     global AUDIO_ROUTE_LAST_INPUT_NAME
+    global _AUDIO_DEFAULT_INPUT_ID
 
     helper_swift = AUDIO_ROUTE_MONITOR_SWIFT
     helper_bin = AUDIO_ROUTE_MONITOR_BIN
@@ -6986,6 +7119,10 @@ def _audio_route_monitor_reader():
 
                 AUDIO_ROUTE_LAST_INPUT_NAME = event.get("default_input_name")
 
+                # 忠实镜像当前默认输入 id(缺失即 None), 供无麦闸门判据 (b)。started 快照
+                # 无默认输入时字段缺失 -> None, 与 helper code=10 条件一致。
+                _AUDIO_DEFAULT_INPUT_ID = event.get("default_input_id")
+
                 # 用 started 快照初始化已知输入设备集合(旧二进制无此字段则
                 # 不动作, 见 helper)。
                 _ve_update_input_device_ids(event)
@@ -7009,6 +7146,12 @@ def _audio_route_monitor_reader():
 
             if event_type == "audio_route_changed":
                 selector = event.get("selector")
+
+                # 忠实镜像当前默认输入 id(供无麦闸门判据 (b)), 在 selector 分派【之前】统一刷新:
+                # emitEvent 每个事件都并入 outputSnapshot(), 无默认输入时 default_input_id 字段
+                # 缺失 -> None。关键: 这样"关耳机"的 default_input 移除事件(input_id 缺失)会把镜像
+                # 归零, 而不像 AUDIO_ROUTE_LAST_INPUT_ID 那样被"保留旧值"守卫钉在 165 上。
+                _AUDIO_DEFAULT_INPUT_ID = event.get("default_input_id")
 
                 if selector in (
                     "devices",
@@ -7133,6 +7276,7 @@ def start_audio_route_monitor() -> bool:
     global AUDIO_ROUTE_LAST_INPUT_ID
     global AUDIO_ROUTE_LAST_INPUT_NAME
     global _AUDIO_INPUT_DEVICE_IDS
+    global _AUDIO_DEFAULT_INPUT_ID
 
     if not os.path.isfile(AUDIO_ROUTE_MONITOR_SWIFT):
         AUDIO_ROUTE_MONITOR_READY.set()
@@ -7163,6 +7307,9 @@ def start_audio_route_monitor() -> bool:
     AUDIO_ROUTE_LAST_INPUT_NAME = None
     # 一并清空已知输入设备集合, 待新 helper 的 started 事件重新填充。
     _AUDIO_INPUT_DEVICE_IDS = frozenset()
+    # 清空默认输入镜像, 待新 helper 的 started 事件重新填充(SNAPSHOT 守卫保证在此之前
+    # 无麦闸门判据 (b) 不会误触发)。
+    _AUDIO_DEFAULT_INPUT_ID = None
 
     thread = threading.Thread(
         target=_audio_route_monitor_reader,
@@ -8043,10 +8190,16 @@ def start_persistent_audio_output(
     *,
     override_device_index: Optional[int] = None,
     force_recreate: bool = False,
+    recoverable_context: bool = False,
 ) -> bool:
     """
     Create and start a persistent PortAudio OutputStream using the
     selected output device's reported default sample rate.
+
+    recoverable_context: True 表示【本次建流失败还有后续 fallback 兜底】(由恢复阶梯的
+    非最后一级传入)。此时 candidate 创建失败只记 WARNING(下一级会救), 避免设备热插拔期间
+    第一级 recreate 的瞬时 PaError(如 -9986)刷 ERROR 误导。默认 False: 无 fallback 的直接
+    建流(startup / 阶梯最后一级)失败仍记 ERROR。仅影响日志级别, 不改任何控制流。
     """
     global OUTPUT_STREAM
     global OUTPUT_STREAM_DEVICE_SIGNATURE
@@ -8327,10 +8480,14 @@ def start_persistent_audio_output(
                             close_error=close_error,
                         )
 
-                logger.error(
-                    "Failed to create persistent audio output candidate: "
-                    "stream_epoch=%d device=%r sample_rate=%d "
+                # 分级: 有 fallback 兜底(recoverable_context)时降为 WARNING(下一级会救,
+                # 典型: 热插拔期第一级 recreate 的瞬时 PaError -9986); 否则保持 ERROR(真失败)。
+                _cand_fail_log = logger.warning if recoverable_context else logger.error
+                _cand_fail_log(
+                    "Failed to create persistent audio output candidate "
+                    "(recoverable=%s): stream_epoch=%d device=%r sample_rate=%d "
                     "error_type=%s error=%s",
+                    recoverable_context,
                     stream_epoch,
                     current_device_index,
                     selected_sample_rate,
@@ -8547,32 +8704,37 @@ def stop_persistent_audio_output(
     global CURRENT_OUTPUT_SAMPLE_RATE
     global OUTPUT_STREAM_PENDING_CLOSE
 
-    with OUTPUT_STREAM_LOCK:
+    # shutdown/route churn 时，旧 PortAudio worker 可能永久持有此锁。锁获取本身也必须
+    # 有边界，否则外层 _run_shutdown_call_bounded 超时后留下 daemon，而真正 cleanup
+    # 仍可能在下一次调用再次卡死。拿不到锁就放弃本轮 close，让进程退出回收 native 资源。
+    lock_timeout = min(0.5, max(0.05, _PA_CLOSE_TIMEOUT))
+    if not OUTPUT_STREAM_LOCK.acquire(timeout=lock_timeout):
+        logger.error(
+            "Timed out acquiring OUTPUT_STREAM_LOCK before persistent output detach; "
+            "skipping native close to preserve shutdown progress"
+        )
+        return False
+    try:
         if OUTPUT_STREAM_PENDING_CLOSE is not None:
             logger.error(
-                "Cannot stop a newly published stream "
-                "while another OutputStream remains "
-                "pending close"
+                "Cannot stop a newly published stream while another OutputStream "
+                "remains pending close"
             )
             return False
 
         stream = OUTPUT_STREAM
         context = OUTPUT_CALLBACK_CONTEXT
-
         OUTPUT_STREAM = None
         OUTPUT_CALLBACK_CONTEXT = None
         OUTPUT_STREAM_DEVICE_SIGNATURE = None
-
         pending = (
-            PendingOutputClose(
-                stream=stream,
-                context=context,
-            )
+            PendingOutputClose(stream=stream, context=context)
             if stream is not None
             else None
         )
-
         OUTPUT_STREAM_PENDING_CLOSE = pending
+    finally:
+        OUTPUT_STREAM_LOCK.release()
 
     if invalidate_playback:
         clear_global_audio_queue(
@@ -8590,9 +8752,17 @@ def stop_persistent_audio_output(
     )
 
     if stream_closed:
-        with OUTPUT_STREAM_LOCK:
-            if OUTPUT_STREAM_PENDING_CLOSE is pending:
-                OUTPUT_STREAM_PENDING_CLOSE = None
+        if OUTPUT_STREAM_LOCK.acquire(timeout=min(0.5, max(0.05, _PA_CLOSE_TIMEOUT))):
+            try:
+                if OUTPUT_STREAM_PENDING_CLOSE is pending:
+                    OUTPUT_STREAM_PENDING_CLOSE = None
+            finally:
+                OUTPUT_STREAM_LOCK.release()
+        else:
+            logger.error(
+                "Timed out acquiring OUTPUT_STREAM_LOCK after confirmed stream close; "
+                "leaving pending-close marker for process teardown"
+            )
 
         CURRENT_OUTPUT_SAMPLE_RATE = DEFAULT_OUTPUT_SAMPLE_RATE
 
@@ -8674,6 +8844,7 @@ def restart_persistent_audio_output(
     *,
     refresh_portaudio: bool = False,
     target_output_name: Optional[str] = None,
+    recoverable_context: bool = False,
 ) -> bool:
     logger.warning(
         "Restarting persistent audio output: "
@@ -8749,6 +8920,7 @@ def restart_persistent_audio_output(
     started = start_persistent_audio_output(
         override_device_index=(output_device_index),
         force_recreate=True,
+        recoverable_context=recoverable_context,
     )
 
     if not started:
@@ -8932,16 +9104,24 @@ def ensure_tts_output_ready(
         )
 
     stage_errors = []
+    _stage_count = len(stages)
 
     try:
         for (
-            stage_name,
-            refresh_portaudio,
-        ) in stages:
+            _stage_index,
+            (
+                stage_name,
+                refresh_portaudio,
+            ),
+        ) in enumerate(stages):
             if SERVER_SHUTTING_DOWN.is_set():
                 stage_errors.append("server shutdown during recovery")
                 break
 
+            # 非最后一级 = 建流失败后还有下一级兜底 -> recoverable_context=True, 让底层把
+            # candidate 失败日志降为 WARNING(热插拔期第一级 recreate 的瞬时 PaError 不再刷
+            # ERROR)。最后一级失败才是"恢复彻底失败", 保持 ERROR。
+            _is_last_stage = _stage_index == (_stage_count - 1)
             try:
                 candidate_started = restart_persistent_audio_output(
                     reason=(f"{reason}; stage={stage_name}"),
@@ -8949,6 +9129,7 @@ def ensure_tts_output_ready(
                     target_output_name=(
                         recovery_target_output_name if refresh_portaudio else None
                     ),
+                    recoverable_context=(not _is_last_stage),
                 )
             except Exception as exc:
                 candidate_started = False
@@ -10065,7 +10246,7 @@ def _open_audio_input_stream(
     *,
     retries: int = 3,
     retry_delay: float = 0.35,
-) -> sd.InputStream:
+) -> _sd_typing.InputStream:
     """
     Open a PortAudio input stream.
 
@@ -10181,15 +10362,25 @@ def check_audio_input_device() -> bool:
     try:
         device_index = _find_usable_input_device()
 
+        # 用设备原生采样率探测: 蓝牙 HFP 输入原生 16k, 硬开 48k 会 -9986 失败,
+        # 导致 KWS 在 HFP 模式翻动后永远等不到设备(48k 只是老麦克风时代的假设)。
+        try:
+            probe_info = sd.query_devices(device_index)
+            probe_rate = int(_device_value(probe_info, "default_samplerate", 0) or 0)
+        except Exception:
+            probe_rate = 0
+        if probe_rate <= 0:
+            probe_rate = AUDIO_INPUT_SAMPLE_RATE
+
         with PORTAUDIO_LIFECYCLE_LOCK:
             stream = sd.InputStream(
                 device=device_index,
-                samplerate=AUDIO_INPUT_SAMPLE_RATE,
+                samplerate=probe_rate,
                 channels=1,
                 dtype=np.float32,
                 blocksize=max(
                     1,
-                    int(AUDIO_INPUT_SAMPLE_RATE * 0.03),
+                    int(probe_rate * 0.03),
                 ),
             )
 
@@ -10228,6 +10419,7 @@ def stop_tts_immediately(
     """
     global IS_SPEAKING
     global CURRENT_CANCEL_EVENT
+    global _APPLE_KWS_RESUME_NOT_BEFORE
 
     logger.info(
         "🛑 立即停止 TTS: %s",
@@ -10269,6 +10461,24 @@ def stop_tts_immediately(
         pcm_cleared,
     )
 
+    if reason in {"double_esc", "TTS playback cancelled"}:
+        if _apple_speech_process_is_running():
+            logger.info(
+                "Apple KWS remains on persistent AVAudioEngine after TTS cancellation: "
+                "reason=%s; recognition events stay suppressed until soft reset",
+                reason,
+            )
+        else:
+            with _APPLE_KWS_RESUME_LOCK:
+                _APPLE_KWS_RESUME_NOT_BEFORE = max(
+                    _APPLE_KWS_RESUME_NOT_BEFORE, time.monotonic() + 3.0
+                )
+            logger.info(
+                "Apple KWS cold-start deferred after TTS cancellation: "
+                "reason=%s delay=3.0s",
+                reason,
+            )
+
     reset_tts_reasoning_state()
 
     try:
@@ -10301,6 +10511,12 @@ def speak_edge_tts_stream(
     This function does not create, start, stop, abort, or close a
     PortAudio stream.
     """
+    # 模块级诊断去重标志: 在函数内被赋值, 且【在函数前部被读取】(dump_active 初始化读
+    # _VE_FIRST_PCM_DUMPED)。Python 要求 global 声明【先于任何读取】出现, 否则
+    # SyntaxError(name used prior to global declaration) —— 该错误只在 compile 期暴露,
+    # ast.parse 抓不到。故提到函数顶部。
+    global _VE_FIRST_PCM_DUMPED
+
     if global_token is None:
         global_token = cancel_manager.get_token()
 
@@ -10777,14 +10993,21 @@ def speak_edge_tts_stream(
         is_prebuffering = True
         eof_reached = False
 
-        # 🎛️ 新增控制开关：
-        # True = 开启 150ms 预缓冲 (防网络抖动) + 20ms 淡入
-        # False = 关闭预缓冲 (追求极限低延迟)，只保留 20ms 淡入防爆音
-        ENABLE_PREBUFFER = False
+        # 【诊断】首句 PCM dump: 仅当配置了路径且本进程尚未 dump 过时激活。累积【入队的】
+        # audio_np(20ms 淡入后的真实音频), EOF 时写 WAV 一次。dump_active 为局部快照, 避免竞争。
+        dump_active = bool(VE_TTS_DUMP_FIRST_PCM) and not _VE_FIRST_PCM_DUMPED
+        dump_buf = bytearray() if dump_active else None
 
-        # 根据开关动态设定阈值
+        # 🎛️ 预缓冲开关(由 env VE_TTS_PREBUFFER_MS 驱动, 见模块配置区):
+        # >0 = 开启预缓冲(先攒 N ms 真实音频再入队, 防网络抖动/欠载导致开头断续) + 20ms 淡入
+        #  0 = 关闭预缓冲(追求极限低延迟), 只保留 20ms 淡入防爆音。默认 0, 与旧行为一致。
+        ENABLE_PREBUFFER = VE_TTS_PREBUFFER_MS > 0
+
+        # 阈值 = N ms 的 float32 字节数(每样本 4 字节)。关闭时为 0(立即入队)。
         PREBUFFER_THRESHOLD = (
-            int(utterance_sample_rate * 0.15) * 4 if ENABLE_PREBUFFER else 0
+            int(utterance_sample_rate * (VE_TTS_PREBUFFER_MS / 1000.0)) * 4
+            if ENABLE_PREBUFFER
+            else 0
         )
 
         if process is None or process.stdout is None:
@@ -10860,6 +11083,13 @@ def speak_edge_tts_stream(
             first_audio_received = True
             producer_enqueue_failed = False
 
+            # 【诊断】累积本次入队的 audio_np(与下方切块入队逐字节一致)。
+            # 用 `dump_buf is not None` 而非 `dump_active` 作守卫: 二者逻辑等价(dump_buf 仅在
+            # dump_active 时被建为 bytearray, 否则为 None), 但显式 None 检查能让静态类型检查器
+            # 收窄 dump_buf 的类型 bytearray|None -> bytearray, 消除 "extend 不是 None 属性" 告警。
+            if dump_buf is not None and len(audio_np) > 0:
+                dump_buf.extend(audio_np.tobytes())
+
             # 4. 切块投递至全局队列
             for start in range(
                 0,
@@ -10923,6 +11153,36 @@ def speak_edge_tts_stream(
                     "Unexpectedly large PCM remainder: %d bytes",
                     len(remainder),
                 )
+
+        # 【诊断】首句 PCM dump: 放在 while 循环【之后】—— 上面有多个 break 出口(EOF 在
+        # valid_len<=0 分支就 break、优雅退出 break 等), 挂在单一 break 上会漏。循环结束后
+        # 所有正常完成路径都汇聚到这里, 保证首句一定被 dump。仅在本进程首条 utterance 且配置
+        # 了路径时执行一次; 累积的 dump_buf 逐字节 = 实际入队(回调会播)的 PCM。
+        if dump_active and dump_buf is not None and len(dump_buf) >= 4:
+            try:
+                import wave
+
+                samples = np.frombuffer(bytes(dump_buf), dtype=np.float32)
+                clipped = np.clip(samples, -1.0, 1.0)
+                pcm16 = (clipped * 32767.0).astype("<i2")
+                with wave.open(VE_TTS_DUMP_FIRST_PCM, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(int(utterance_sample_rate))
+                    wf.writeframes(pcm16.tobytes())
+                _VE_FIRST_PCM_DUMPED = True
+                logger.info(
+                    "TTS first-utterance PCM dumped: path=%r frames=%d "
+                    "sample_rate=%d (open it: head present => BT ramp; "
+                    "head missing => upstream data loss)",
+                    VE_TTS_DUMP_FIRST_PCM,
+                    len(pcm16),
+                    int(utterance_sample_rate),
+                )
+            except Exception as exc:
+                logger.warning("TTS first-utterance PCM dump failed: %s", exc)
+            finally:
+                dump_active = False
 
         if fetch_future is not None and not is_cancelled():
             try:
@@ -11380,8 +11640,35 @@ def tts_queue_consumer_worker():
             if isinstance(item, dict) and item.get("__ve_audio_recovery__"):
                 done_results = item.get("done_results", []) or []
                 marker_route_pending = AUDIO_ROUTE_CHANGE_PENDING.is_set()
+                cold_started = bool(item.get("cold_started"))
                 try:
+                    # 冷启动短路: 本标记由一次【冷启动 consumer】的 nudge 触发(见
+                    # _nudge_audio_recovery)。冷启动已在稳定后的【当前路由】上建好健康流, 此时
+                    # 再 recreate 只会白建第二条流 = "关耳机刷新 2 次"。故严格在【冷启动 + 输出确
+                    # 已健康(READY + 近期回调)】时, 只在 owner 线程清 PENDING、跳过 recreate。
+                    # 【不触碰"已运行时 recovery"路径】: 已运行的 consumer 其输出流可能仍绑在旧设备
+                    # 上(输出切换场景), 必须走下面的 recreate 切到新路由; 那条路 cold_started=False,
+                    # 本分支不会命中, 行为与改动前逐字一致。
                     if (
+                        cold_started
+                        and audio_runtime.phase is AudioRuntimePhase.READY
+                        and is_persistent_audio_output_healthy(
+                            require_recent_callback=True,
+                            callback_max_age=(AUDIO_CALLBACK_MAX_AGE),
+                        )
+                    ):
+                        with AUDIO_ROUTE_CHANGE_LOCK:
+                            AUDIO_ROUTE_CHANGE_PENDING.clear()
+                            TTS_OUTPUT_RECOVERY_REQUIRED.clear()
+                        logger.info(
+                            "Silent audio-recovery marker: consumer cold-started with a "
+                            "fresh healthy output on the current route; cleared PENDING "
+                            "without a redundant recreate (route_pending=%s)",
+                            marker_route_pending,
+                        )
+                        item_success = True
+                        item_status = TTSPlaybackStatus.COMPLETED.value
+                    elif (
                         marker_route_pending
                         or TTS_OUTPUT_RECOVERY_REQUIRED.is_set()
                         or audio_runtime.phase is not AudioRuntimePhase.READY
@@ -11394,18 +11681,18 @@ def tts_queue_consumer_worker():
                         # 当前默认输入 id 与"上次已为它刷新过的 id"是否不同:
                         #  - 新输入设备接入(蓝牙刚连, 输入 id 从 built-in/None -> 165): id 变了
                         #    -> 强制刷新, 让新麦进 PortAudio 设备表(连接场景修复)。
-                        #  - 同一 Bose 的 A2DP<->HFP profile 抖动(翻的是*输出*profile, *输入*
+                        #  - A2DP<->HFP profile 抖动(翻的是*输出*profile, *输入*
                         #    id 不变): id 相同 -> 不强制, 走普通 recreate 恢复; 绝不重复
                         #    terminate/reinit, 否则扰动拓扑再触发 route change, 与 KWS 反复
                         #    对撞 = "TTS 播放后 KWS 停止监听"。
-                        # 为何不用 check_audio_input_device: 内置麦恒可用 -> 恒 True, 区分不了
-                        # "Bose 麦已进表"与"没进表但内置麦兜底"。为何不用名字: 同一设备
-                        # CoreAudio/PortAudio 命名不同('Bose QC35 II' vs '外置耳机')。
-                        # CoreAudio 输入 id 是唯一可靠的设备身份判据。
+                        # 为何不用 check_audio_input_device: 内置麦恒可用 -> 恒 True,
+                        # 区分不了 "麦已进表"与"没进表但内置麦兜底"。
                         global _VE_LAST_REFRESHED_INPUT_ID
-                        cur_input_id = AUDIO_ROUTE_LAST_INPUT_ID
-                        force_refresh = bool(marker_route_pending) and (
-                            cur_input_id != _VE_LAST_REFRESHED_INPUT_ID
+                        cur_input_id = _AUDIO_DEFAULT_INPUT_ID  # 忠实镜像: 断开即 None
+                        force_refresh = (
+                            bool(marker_route_pending)
+                            and cur_input_id is not None  # 无麦不强刷(断开路径)
+                            and cur_input_id != _VE_LAST_REFRESHED_INPUT_ID
                         )
                         logger.info(
                             "TTS consumer: silent audio recovery "
@@ -11824,6 +12111,11 @@ def tts_queue_consumer_worker():
                 IS_SPEAKING = not queue_is_empty
 
             if queue_is_empty:
+                # 播放全部结束(队列空 -> IS_SPEAKING 落 False): 一并清 KWS 抢占信号, 让 apple
+                # KWS 恢复监听。与 IS_SPEAKING 生命周期对齐: 抢占覆盖"请求->首次 IS_SPEAKING"空窗,
+                # 播放期由 IS_SPEAKING 让麦, 播放结束两者同落 -> 无 KWS 抢回 HFP 的空窗。clear 幂等,
+                # 开关关时 preempt 从未置位, 此处无副作用。
+                _TTS_PREEMPT_KWS.clear()
                 _schedule_tts_hud_hide(1.2)
 
         except Exception as exc:
@@ -11940,11 +12232,165 @@ def speak_local_sync_and_wait(
     return result.success
 
 
+def _ensure_tts_consumer_started() -> bool:
+    """幂等启动 TTS consumer；返回本次调用是否执行了冷启动。"""
+    thread = TTS_CONSUMER_THREAD
+    if thread is not None and thread.is_alive():
+        return False
+    start_tts_consumer_worker()
+    thread = TTS_CONSUMER_THREAD
+    if thread is None or not thread.is_alive():
+        raise RuntimeError("TTS consumer did not start")
+    return True
+
+
+def _prime_tts_output(*, route_sequence: int, allow_route_retry: bool = True) -> bool:
+    """发送可牺牲的非语音载荷并等待 callback 消费，之后才允许真实首句入队。"""
+    if VE_TTS_OUTPUT_PRIME_MS <= 0 or VE_TTS_OUTPUT_PRIME_AMPLITUDE <= 0:
+        return True
+    sample_rate = get_current_output_sample_rate()
+    frame_count = max(1, int(sample_rate * VE_TTS_OUTPUT_PRIME_MS / 1000.0))
+    t = np.arange(frame_count, dtype=np.float32) / np.float32(sample_rate)
+    # 双音比直流/全零更可靠地唤醒蓝牙功放；两端 25ms 包络避免 click。
+    pcm = (
+        np.sin(2.0 * np.pi * 220.0 * t) + 0.5 * np.sin(2.0 * np.pi * 330.0 * t)
+    ).astype(np.float32)
+    pcm *= np.float32(VE_TTS_OUTPUT_PRIME_AMPLITUDE / 1.5)
+    fade_frames = min(frame_count // 2, max(1, int(sample_rate * 0.025)))
+    envelope = np.ones(frame_count, dtype=np.float32)
+    ramp = np.linspace(0.0, 1.0, fade_frames, endpoint=False, dtype=np.float32)
+    envelope[:fade_frames] = ramp
+    envelope[-fade_frames:] = ramp[::-1]
+    pcm *= envelope
+
+    generation = _get_audio_generation()
+    fence = AudioPlaybackFence()
+
+    def cancelled() -> bool:
+        return SERVER_SHUTTING_DOWN.is_set()
+
+    if not _put_global_audio_item(
+        AudioItem(AudioItemKind.AUDIO, generation, pcm),
+        generation=generation,
+        is_cancelled=cancelled,
+    ):
+        return False
+    if not _put_global_audio_item(
+        AudioItem(AudioItemKind.END, generation, fence),
+        generation=generation,
+        is_cancelled=cancelled,
+    ):
+        return False
+    if not fence.event.wait(VE_TTS_OUTPUT_PRIME_TIMEOUT):
+        logger.warning("TTS output prime timed out before callback fence")
+        # 使超时 prime 的 queued/callback remainder 全部因 epoch 失效，不能晚到真实首句前。
+        cleared = clear_global_audio_queue(
+            "TTS output prime timed out",
+            fence_status=TTSPlaybackStatus.FAILED,
+        )
+        logger.warning(
+            "TTS output prime timeout invalidated generation=%d cleared_items=%d",
+            generation,
+            cleared,
+        )
+        TTS_OUTPUT_RECOVERY_REQUIRED.set()
+        return False
+    with AUDIO_ROUTE_CHANGE_LOCK:
+        route_unchanged = AUDIO_ROUTE_CHANGE_SEQUENCE == route_sequence
+    ready = fence.status is TTSPlaybackStatus.COMPLETED and route_unchanged
+    if ready:
+        return True
+    logger.warning(
+        "TTS output prime invalidated: status=%s route_unchanged=%s",
+        fence.status.value,
+        route_unchanged,
+    )
+    TTS_OUTPUT_RECOVERY_REQUIRED.set()
+    if (
+        allow_route_retry
+        and fence.status is TTSPlaybackStatus.COMPLETED
+        and not route_unchanged
+        and not SERVER_SHUTTING_DOWN.is_set()
+    ):
+        wait_for_audio_route_stability(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT)
+        with AUDIO_ROUTE_CHANGE_LOCK:
+            retry_route_sequence = AUDIO_ROUTE_CHANGE_SEQUENCE
+        logger.warning(
+            "TTS output route changed during prime; retrying once on route_sequence=%d",
+            retry_route_sequence,
+        )
+        return _prime_tts_output(
+            route_sequence=retry_route_sequence,
+            allow_route_retry=False,
+        )
+    if not route_unchanged:
+        logger.warning(
+            "TTS output prime route remained unstable after retry; first speech may be attenuated"
+        )
+    return False
+
+
+def _prepare_tts_output(*, preempt_kws: bool) -> bool:
+    """唯一的 TTS 冷启动入口：让麦 -> 路由稳定 -> 建流 -> 非语音 prime -> READY。"""
+    should_preempt = (
+        preempt_kws and VE_TTS_KWS_PREEMPT_PREWARM and VE_VOICE_CHAT_ENABLED
+    )
+    with _TTS_OUTPUT_PREPARE_LOCK:
+        committed = False
+        thread = TTS_CONSUMER_THREAD
+        if thread is not None and thread.is_alive():
+            # 已有 consumer 代表输出链路已就绪；不得撤销上游持有的 KWS preempt lease。
+            committed = True
+            return True
+        if should_preempt:
+            _TTS_PREEMPT_KWS.set()
+            logger.info("TTS prepare: requesting apple KWS to yield microphone")
+        try:
+            wait_for_audio_route_stability(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT)
+            with AUDIO_ROUTE_CHANGE_LOCK:
+                route_sequence = AUDIO_ROUTE_CHANGE_SEQUENCE
+            cold_started = _ensure_tts_consumer_started()
+            if not cold_started:
+                # 可能由并发调用完成启动；语义仍是“已就绪”，保留 preempt lease。
+                committed = True
+                return True
+            ready = _prime_tts_output(route_sequence=route_sequence)
+            if ready:
+                with AUDIO_ROUTE_CHANGE_LOCK:
+                    if AUDIO_ROUTE_CHANGE_SEQUENCE == route_sequence:
+                        AUDIO_ROUTE_CHANGE_PENDING.clear()
+                        TTS_OUTPUT_RECOVERY_REQUIRED.clear()
+                committed = True
+                logger.info(
+                    "TTS prepare committed: route_sequence=%d prime_ms=%.0f",
+                    route_sequence,
+                    VE_TTS_OUTPUT_PRIME_MS,
+                )
+            return ready
+        except Exception:
+            logger.exception("TTS output preparation failed")
+            TTS_OUTPUT_RECOVERY_REQUIRED.set()
+            return False
+        finally:
+            # 成功后由 consumer 在整批 TTS 播完时清除，覆盖返回到 IS_SPEAKING 置位的空窗。
+            # 仅失败时立即释放，避免 KWS 永久让麦。
+            if should_preempt and not committed:
+                _TTS_PREEMPT_KWS.clear()
+
+
+def _prewarm_output_via_kws_preempt():
+    """兼容旧调用点；实际工作统一交给 _prepare_tts_output。"""
+    _prepare_tts_output(preempt_kws=True)
+
+
 def speak_local_async(text: str, voice: str = "zh", speed: float = 1.0):
     """异步推入 TTS 合并缓冲区"""
     if not text or not text.strip():
         return
 
+    # 唯一准备入口同步完成 KWS 让麦、route settle、建流和 callback-confirmed prime。
+    # 即使准备失败仍入队，consumer/recovery 会保留既有降级路径。
+    _prepare_tts_output(preempt_kws=True)
     tts_merge_buffer.add(text, voice, speed)
 
 
@@ -11965,6 +12411,10 @@ def speak_local_sync_and_wait_result(
             },
         )
         return result
+
+    # 懒启动 TTS consumer(幂等, 已运行则零开销返回)。同步等待路径必须先有
+    # consumer 消费队列, 否则 done_result.event 永远等不到完成回调而超时。
+    _ensure_tts_consumer_started()
 
     tts_merge_buffer.flush_immediate()
 
@@ -21882,7 +22332,8 @@ class AuthSyncServer:
             except Exception:
                 logger.debug("Failed sending DeepSeek auth notification", exc_info=True)
 
-    def stop(self) -> None:
+    def request_stop(self) -> None:
+        """Non-blocking shutdown signal safe for the main teardown path."""
         self._stop.set()
         sock = self._sock
         self._sock = None
@@ -21891,6 +22342,9 @@ class AuthSyncServer:
                 sock.close()
             except OSError:
                 pass
+
+    def stop(self) -> None:
+        self.request_stop()
         with self._clients_lock:
             clients = list(self._clients)
             self._clients.clear()
@@ -24188,6 +24642,70 @@ class M365BrowserRuntime:
             raise RuntimeError("M365 extension not connected (open the Copilot tab)")
         await ws.send_str(json.dumps(obj, ensure_ascii=False))
 
+    async def _safe_send_to_ext(self, obj: dict) -> None:
+        """Best-effort send that never raises.
+
+        Used for the fire-and-forget M365_STOP abort, which runs while a request
+        is being torn down (client disconnect / cancellation): a failed or racing
+        send there must never surface as an unhandled task exception.
+        """
+        try:
+            await self._send_to_ext(obj)
+        except Exception:
+            _m365_log.debug(
+                "M365 best-effort send failed type=%s id=%s",
+                obj.get("type"),
+                obj.get("id"),
+                exc_info=True,
+            )
+
+    def _schedule_ext_stop(self, rid: str, reason: str = "client-abort") -> None:
+        """Fire-and-forget: ask the extension to abort the in-flight browser turn.
+
+        When an OpenAI client (e.g. Continue) interrupts a request, the SSE
+        consumer's finally sets consumer_stopped and cancels the driver, but
+        nothing tells the browser to stop generating. The extension then keeps
+        streaming frames for a request id whose relay queue has already been
+        removed (surfaced as [relay-inbound-drop] no pending queue for id=...)
+        and, worse, the browser silently completes a turn the user never saw — so
+        the NEXT message is out of sync with the model. Emitting an M365_STOP lets
+        the extension cancel that turn's Chathub/SignalR generation so the browser
+        conversation reflects the interruption.
+
+        Safe to call from any thread and from the driver's finally (including while
+        the driver task itself is being cancelled): it only schedules work on the
+        bridge loop and never awaits, so cancellation of the caller cannot abort
+        the send.
+        """
+        if not rid:
+            return
+        loop = self._loop
+        if loop is None or not loop.is_running():
+            return
+
+        def _dispatch() -> None:
+            ws = self._ext_ws
+            if ws is None or getattr(ws, "closed", True):
+                logger.warning(
+                    "M365_STOP not sent because extension websocket is unavailable: id=%s reason=%s",
+                    rid,
+                    reason,
+                )
+                return
+            self._track(
+                loop.create_task(
+                    self._safe_send_to_ext(
+                        {"type": "M365_STOP", "id": rid, "reason": reason}
+                    )
+                )
+            )
+
+        try:
+            loop.call_soon_threadsafe(_dispatch)
+        except RuntimeError:
+            # The loop stopped between the is_running() check and scheduling.
+            pass
+
     def _track(self, future):
         with self._active_lock:
             self._active_futures.add(future)
@@ -24236,6 +24754,14 @@ class M365BrowserRuntime:
             self._pending[rid] = relay_queue
 
         async def driver():
+            # Tracks whether the browser reached its OWN terminal for this turn
+            # (an authoritative or weak M365_DONE, or an M365_ERROR). When this is
+            # still False in the finally below, the turn ended abnormally (client
+            # disconnect, first-event/idle timeout, shutdown, or an internal
+            # error) and the extension is told to abort the in-flight browser
+            # generation. Initialized before the try so the finally can always
+            # read it even if the very first M365_ASK send raises.
+            browser_terminated = False
             try:
                 outbound_attachments = list(attachments or [])
                 _m365_attachment_debug(
@@ -24384,6 +24910,7 @@ class M365BrowserRuntime:
                                     rid,
                                     _asnips[:6],
                                 )
+                            browser_terminated = True
                             emit(
                                 {"type": "done", "conversation_id": cid},
                                 terminal=True,
@@ -24650,6 +25177,7 @@ class M365BrowserRuntime:
                                     rid,
                                     _asnips[:6],
                                 )
+                            browser_terminated = True
                             emit(
                                 {"type": "done", "conversation_id": cid},
                                 terminal=True,
@@ -24666,6 +25194,9 @@ class M365BrowserRuntime:
                             rid,
                         )
                     elif mtype == "M365_ERROR":
+                        # The browser reported its own error and has already
+                        # stopped this turn, so no abort signal is needed.
+                        browser_terminated = True
                         _log_producer_summary("extension-error")
                         emit(
                             {
@@ -24679,6 +25210,17 @@ class M365BrowserRuntime:
             finally:
                 with self._pending_lock:
                     self._pending.pop(rid, None)
+                # The turn ended without the browser reaching its own terminal
+                # (client disconnect, first-event/idle timeout, shutdown, or an
+                # internal error): ask the extension to abort the in-flight
+                # generation for this id. Without this the browser keeps emitting
+                # frames for an id whose relay queue is already gone (logged as
+                # [relay-inbound-drop] no pending queue for id=...) and silently
+                # finishes an answer the user never saw, desyncing the model from
+                # the next message. Fire-and-forget, so it is safe even while this
+                # driver task is being cancelled.
+                if not browser_terminated:
+                    self._schedule_ext_stop(rid, reason="aborted")
 
         loop = self._loop
         if loop is None:
@@ -25751,24 +26293,78 @@ def _run_shutdown_call_bounded(label: str, func, timeout: float | None = None):
     return True, result["value"]
 
 
+def _snapshot_pending_output_close_bounded(*, timeout: float = 0.25):
+    """Best-effort shutdown snapshot without allowing OUTPUT_STREAM_LOCK to hang exit."""
+    acquired = OUTPUT_STREAM_LOCK.acquire(timeout=max(0.05, float(timeout)))
+    if not acquired:
+        logger.error(
+            "Timed out acquiring OUTPUT_STREAM_LOCK during shutdown snapshot; "
+            "treating persistent output as unresolved"
+        )
+        return None
+    try:
+        return OUTPUT_STREAM_PENDING_CLOSE is not None
+    finally:
+        OUTPUT_STREAM_LOCK.release()
+
+
+def _log_shutdown_thread_snapshot(label: str):
+    threads = [
+        f"{thread.name}(daemon={thread.daemon},alive={thread.is_alive()})"
+        for thread in threading.enumerate()
+    ]
+    logger.info(
+        "Shutdown debug thread snapshot [%s]: count=%d threads=%s",
+        label,
+        len(threads),
+        ", ".join(threads),
+    )
+
+
 def cleanup_service():
     """彻底关闭所有硬件占用和常驻线程"""
     if _cleanup_started.is_set():
         return
 
     _cleanup_started.set()
+    cleanup_started_at = time.monotonic()
+    logger.info("Shutdown debug: cleanup_service begin")
+    _log_shutdown_thread_snapshot("cleanup-start")
+
+    # Signal the listening socket synchronously, then detach all lock acquisition and joins.
+    # Auth client threads may own the logging or clients lock during interpreter shutdown;
+    # neither may delay the main teardown transaction.
+    logger.info("Shutdown debug stage begin: auth-sync-stop-request")
+    try:
+        AUTH_SYNC_SERVER.request_stop()
+    except BaseException:
+        pass
+
+    def finish_auth_sync_stop_detached() -> None:
+        try:
+            AUTH_SYNC_SERVER.stop()
+        except BaseException:
+            pass
 
     try:
-        AUTH_SYNC_SERVER.stop()
-    except Exception:
-        logger.warning(
-            "Failed stopping Firefox authentication sync server", exc_info=True
-        )
+        threading.Thread(
+            target=finish_auth_sync_stop_detached,
+            name="ShutdownAuthSyncStop",
+            daemon=True,
+        ).start()
+        logger.info("Shutdown debug stage end: auth-sync-stop-request dispatched=True")
+    except BaseException:
+        # Do not enter logging.exception here; a logging handler may be held by the auth thread.
+        pass
 
     logger.info("Shutdown stage: stopping M365 browser bridge")
+
+    def stop_m365_browser_for_shutdown():
+        return M365_BROWSER_RUNTIME.begin_shutdown(timeout=3.0)
+
     m365_call_completed, m365_result = _run_shutdown_call_bounded(
         "m365-browser-stop",
-        lambda: M365_BROWSER_RUNTIME.begin_shutdown(timeout=3.0),
+        stop_m365_browser_for_shutdown,
         timeout=4.0,
     )
     if not (m365_call_completed and m365_result):
@@ -25779,9 +26375,13 @@ def cleanup_service():
         logger.info("Shutdown stage complete: M365 browser bridge stopped")
 
     logger.info("Shutdown stage: stopping Doubao browser backend")
+
+    def stop_doubao_runtime_for_shutdown():
+        return DOUBAO_RUNTIME.stop(timeout=4.0)
+
     doubao_call_completed, doubao_result = _run_shutdown_call_bounded(
         "doubao-runtime-stop",
-        lambda: DOUBAO_RUNTIME.stop(timeout=4.0),
+        stop_doubao_runtime_for_shutdown,
         timeout=5.0,
     )
     doubao_stopped = bool(doubao_call_completed and doubao_result)
@@ -25957,20 +26557,34 @@ def cleanup_service():
     )
     current_stream_closed = bool(completed and close_result)
 
-    # Capture whether the initial close failure created or preserved
-    # a pending-close owner.
-    with OUTPUT_STREAM_LOCK:
-        had_pending_close = OUTPUT_STREAM_PENDING_CLOSE is not None
+    # The detached close worker may have timed out while owning OUTPUT_STREAM_LOCK.
+    # Never reacquire that lock without a deadline on the main cleanup thread.
+    pending_snapshot = _snapshot_pending_output_close_bounded()
+    had_pending_close = pending_snapshot is True
+    if pending_snapshot is None:
+        logger.warning(
+            "Persistent output pending-close state is unknown; closure cannot be confirmed"
+        )
 
     if completed and had_pending_close:
-        for _ in range(AUDIO_OUTPUT_CLOSE_MAX_ATTEMPTS):
-            if retry_pending_output_close():
+        for attempt in range(AUDIO_OUTPUT_CLOSE_MAX_ATTEMPTS):
+            retry_completed, retry_result = _run_shutdown_call_bounded(
+                f"pending-output-close-{attempt + 1}",
+                retry_pending_output_close,
+                timeout=min(_PA_CLOSE_TIMEOUT * 2.0 + 1.5, AUDIO_SHUTDOWN_CALL_TIMEOUT),
+            )
+            if retry_completed and retry_result:
                 break
-
+            if not retry_completed:
+                break
             time.sleep(0.1)
 
-    with OUTPUT_STREAM_LOCK:
-        pending_close_resolved = OUTPUT_STREAM_PENDING_CLOSE is None
+    resolved_snapshot = _snapshot_pending_output_close_bounded()
+    pending_close_resolved = resolved_snapshot is False
+    if resolved_snapshot is None:
+        logger.warning(
+            "Persistent output close resolution is unknown; treating stream as unresolved"
+        )
 
     # Closure is confirmed in either of two ways:
     #
@@ -25986,10 +26600,12 @@ def cleanup_service():
         "initial_closed=%s "
         "had_pending_close=%s "
         "pending_close_resolved=%s "
+        "snapshot_available=%s "
         "stream_closed=%s",
         current_stream_closed,
         had_pending_close,
         pending_close_resolved,
+        resolved_snapshot is not None,
         stream_closed,
     )
 
@@ -26038,6 +26654,11 @@ def cleanup_service():
                 stream_closed,
             )
 
+    logger.info(
+        "Shutdown debug: audio subsystem closure evaluated closed=%s", shutdown_closed
+    )
+    _log_shutdown_thread_snapshot("after-audio-runtime-stop")
+
     with CURRENT_CANCEL_LOCK:
         if CURRENT_CANCEL_EVENT and not CURRENT_CANCEL_EVENT.is_set():
             CURRENT_CANCEL_EVENT.set()
@@ -26045,24 +26666,55 @@ def cleanup_service():
     # Application shutdown may stop all remaining PortAudio
     # streams globally after the dedicated TTS consumer and
     # persistent output stream have already been stopped.
-    _run_shutdown_call_bounded(
+    logger.info("Shutdown debug stage begin: sounddevice-stop")
+    stage_started_at = time.monotonic()
+    sd_completed, _ = _run_shutdown_call_bounded(
         "sounddevice-stop",
         sd.stop,
         timeout=min(2.0, AUDIO_SHUTDOWN_CALL_TIMEOUT),
     )
+    logger.info(
+        "Shutdown debug stage end: sounddevice-stop completed=%s elapsed=%.3fs",
+        sd_completed,
+        time.monotonic() - stage_started_at,
+    )
+
+    # AppKit/Quartz teardown can block inside NativeHUD._lock or process IPC. HUD is
+    # non-essential during shutdown, so request close on a detached daemon and never wait.
+    # Avoid logging from the worker: logging handlers may also be tearing down.
+    logger.info("Shutdown debug stage begin: hud-close-request")
+
+    def close_hud_detached() -> None:
+        try:
+            hud.close()
+        except BaseException:
+            pass
 
     try:
-        hud.close()
+        threading.Thread(
+            target=close_hud_detached,
+            name="ShutdownHUDClose",
+            daemon=True,
+        ).start()
+        logger.info("Shutdown debug stage end: hud-close-request dispatched=True")
     except Exception:
-        logger.exception("Failed closing HUD during shutdown")
+        logger.exception("Failed dispatching detached HUD close during shutdown")
 
+    logger.info("Shutdown debug stage begin: reset-question-recording")
+    stage_started_at = time.monotonic()
     try:
         reset_question_recording_state()
+        logger.info(
+            "Shutdown debug stage end: reset-question-recording elapsed=%.3fs",
+            time.monotonic() - stage_started_at,
+        )
     except Exception:
         logger.exception("Failed to reset question recording state during shutdown")
 
     async_cleanup_future = None
 
+    logger.info("Shutdown debug stage begin: async-resource-cleanup")
+    async_stage_started_at = time.monotonic()
     loop = _main_event_loop
 
     if loop is None:
@@ -26108,6 +26760,13 @@ def cleanup_service():
                 pass
         except Exception:
             logger.exception("异步资源清理执行失败")
+
+    logger.info(
+        "Shutdown debug stage end: async-resource-cleanup elapsed=%.3fs future=%s",
+        time.monotonic() - async_stage_started_at,
+        async_cleanup_future is not None,
+    )
+    _log_shutdown_thread_snapshot("before-apple-helper-stop")
 
     with CURRENT_APPLE_SPEECH_PROCESS_LOCK:
         apple_proc = CURRENT_APPLE_SPEECH_PROCESS
@@ -26236,9 +26895,11 @@ def cleanup_service():
             apple_proc.pid,
         )
 
-    time.sleep(0.3)
+    _log_shutdown_thread_snapshot("cleanup-end")
     logger.info(
-        "✨ 资源清理完毕。 doubao_stopped=%s audio_closed=%s",
+        "Shutdown debug: cleanup_service end elapsed=%.3fs "
+        "doubao_stopped=%s audio_closed=%s",
+        time.monotonic() - cleanup_started_at,
         doubao_stopped,
         shutdown_closed,
     )
@@ -26879,7 +27540,30 @@ class NativeHUD:
 
 
 hud = NativeHUD()
-atexit.register(cleanup_service)
+
+
+def _atexit_minimal_cleanup() -> None:
+    """Non-blocking last resort only; normal shutdown owns the full cleanup transaction."""
+    try:
+        SERVER_SHUTTING_DOWN.set()
+    except BaseException:
+        pass
+    try:
+        with CURRENT_APPLE_SPEECH_PROCESS_LOCK:
+            apple_proc = CURRENT_APPLE_SPEECH_PROCESS
+        if apple_proc is not None and apple_proc.poll() is None:
+            apple_proc.terminate()
+    except BaseException:
+        pass
+    try:
+        process = getattr(hud, "process", None)
+        if process is not None and process.poll() is None:
+            process.terminate()
+    except BaseException:
+        pass
+
+
+atexit.register(_atexit_minimal_cleanup)
 
 
 def _llm_stop_markers() -> List[str]:
@@ -28039,16 +28723,74 @@ def cut_at_suffix_overlap(
 
 
 def _release_llm_worker_models():
+    """Fully unload worker models during normal runtime, including MLX cache cleanup."""
     logger.info("Releasing LLM worker models...")
 
-    _release_llm_model(reason="worker_shutdown")
-    _release_embed_model(reason="worker_shutdown")
-    _release_rerank_model(reason="worker_shutdown")
-    _release_vlm_model(reason="worker_shutdown")
+    _release_llm_model(reason="worker_release")
+    _release_embed_model(reason="worker_release")
+    _release_rerank_model(reason="worker_release")
+    _release_vlm_model(reason="worker_release")
 
-    _best_effort_memory_cleanup("worker_shutdown")
+    _best_effort_memory_cleanup("worker_release")
 
     logger.info("LLM worker models released")
+
+
+def _detach_llm_worker_models_for_process_exit():
+    """Detach worker model ownership without invoking native MLX teardown.
+
+    The process is already exiting. Keep strong references in a process-lifetime retention
+    container, clear all business-visible globals and identifiers, and return immediately.
+    This deliberately skips model release helpers, APC close, gc.collect(), and MLX/Metal
+    cache cleanup because those native paths can block indefinitely during shutdown.
+    """
+    global mlx_llm_model, mlx_llm_tokenizer, LLM_CURRENT_MODEL_ID
+    global embed_model, embed_processor, embed_model_id_loaded
+    global rerank_model, rerank_processor, rerank_model_id_loaded
+    global mlx_vlm_model, mlx_vlm_processor, MLX_VLM_CURRENT_MODEL_ID
+    global mlx_vlm_apc_manager, MLX_VLM_APC_MODEL_ID
+    global MLX_VLM_DRAFT_MODEL, MLX_VLM_DRAFT_KIND
+    global MLX_VLM_DRAFTER_ID, MLX_VLM_DRAFTER_TARGET_ID
+
+    retained = (
+        mlx_llm_model,
+        mlx_llm_tokenizer,
+        embed_model,
+        embed_processor,
+        rerank_model,
+        rerank_processor,
+        mlx_vlm_model,
+        mlx_vlm_processor,
+        mlx_vlm_apc_manager,
+        MLX_VLM_DRAFT_MODEL,
+    )
+    _LLM_PROCESS_EXIT_MODEL_RETENTION.extend(
+        value for value in retained if value is not None
+    )
+
+    mlx_llm_model = None
+    mlx_llm_tokenizer = None
+    LLM_CURRENT_MODEL_ID = None
+    embed_model = None
+    embed_processor = None
+    embed_model_id_loaded = None
+    rerank_model = None
+    rerank_processor = None
+    rerank_model_id_loaded = None
+    mlx_vlm_model = None
+    mlx_vlm_processor = None
+    MLX_VLM_CURRENT_MODEL_ID = None
+    mlx_vlm_apc_manager = None
+    MLX_VLM_APC_MODEL_ID = None
+    MLX_VLM_DRAFT_MODEL = None
+    MLX_VLM_DRAFT_KIND = None
+    MLX_VLM_DRAFTER_ID = None
+    MLX_VLM_DRAFTER_TARGET_ID = None
+
+    logger.info(
+        "Detached LLM worker models for process exit: retained_objects=%d",
+        len(_LLM_PROCESS_EXIT_MODEL_RETENTION),
+    )
 
 
 def _load_jina_official_mlx_reranker_in_worker(model_id: str):
@@ -30102,7 +30844,7 @@ def _llm_worker_loop():
         try:
             if job is None:
                 logger.info("LLM worker received shutdown signal")
-                _release_llm_worker_models()
+                _detach_llm_worker_models_for_process_exit()
                 break
 
             job_type = job.get("type")
@@ -30700,7 +31442,7 @@ def stop_llm_worker(
     1. Try to enqueue a sentinel without disturbing queued jobs.
     2. If the queue remains full, cancel pending jobs.
     3. Enqueue the sentinel after space is available.
-    4. Wait for the active worker job to finish and consume it.
+    4. Wait briefly; never block process exit on native MLX teardown or inference.
     """
     thread = LLM_WORKER_THREAD
 
@@ -32353,6 +33095,43 @@ def _ensure_apple_speech_helper_binary(
         return False
 
 
+def _handoff_apple_speech_to_dictation() -> bool:
+    """Acquire the single Apple Speech/CoreAudio owner before starting Dictation."""
+    global _LAST_APPLE_SPEECH_EXIT_AT
+    with CURRENT_APPLE_SPEECH_PROCESS_LOCK:
+        previous = CURRENT_APPLE_SPEECH_PROCESS
+    if previous is not None and previous.poll() is None:
+        logger.info(
+            "Dictation requesting Apple KWS helper handoff: pid=%s", previous.pid
+        )
+        try:
+            previous.terminate()
+            previous.wait(timeout=5.0)
+        except subprocess.TimeoutExpired:
+            logger.error(
+                "Dictation handoff failed: Apple Speech helper still alive after SIGTERM: pid=%s",
+                previous.pid,
+            )
+            return False
+        except ProcessLookupError:
+            pass
+        except Exception:
+            logger.exception(
+                "Dictation handoff failed while stopping Apple Speech helper"
+            )
+            return False
+        _clear_apple_speech_process_if_exited(previous)
+    if _apple_speech_process_is_running():
+        return False
+    last_exit = _LAST_APPLE_SPEECH_EXIT_AT
+    gap = APPLE_SPEECH_RESTART_GAP - (time.monotonic() - last_exit)
+    if last_exit > 0 and gap > 0:
+        time.sleep(gap)
+    stable = wait_for_audio_route_stability(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT)
+    logger.info("Dictation Apple Speech handoff route stability: stable=%s", stable)
+    return bool(stable)
+
+
 def _run_apple_speech_dictation(
     locale: str = "zh-CN",
     generation: Optional[int] = None,
@@ -32396,6 +33175,14 @@ def _run_apple_speech_dictation(
         logger.warning("Using Swift interpreter because helper compilation failed")
         cmd = ["/usr/bin/swift", helper_swift, locale]
 
+    if not _handoff_apple_speech_to_dictation():
+        logger.error("Apple Dictation could not acquire microphone ownership")
+        if show_hud:
+            hud.show(
+                "dictation_error", "Apple Dictation", "Microphone route is still busy"
+            )
+        return None
+
     with CURRENT_APPLE_SPEECH_PROCESS_LOCK:
         last_exit_at = _LAST_APPLE_SPEECH_EXIT_AT
 
@@ -32416,8 +33203,8 @@ def _run_apple_speech_dictation(
 
     with APPLE_SPEECH_START_LOCK:
         if _apple_speech_process_is_running():
-            logger.info(
-                "Apple Speech helper is already running; skipping duplicate start"
+            logger.error(
+                "Apple Dictation ownership invariant failed: helper still running after handoff"
             )
             return None
         try:
@@ -32428,6 +33215,12 @@ def _run_apple_speech_dictation(
                 text=True,
                 encoding="utf-8",
                 bufsize=1,
+                env=dict(
+                    os.environ,
+                    SPEECH_HELPER_ON_DEVICE=(
+                        "1" if VE_VOICE_CHAT_APPLE_ON_DEVICE else "0"
+                    ),
+                ),
             )
         except OSError as e:
             logger.exception("Failed to start Apple Speech helper: %s", e)
@@ -32543,6 +33336,7 @@ def _run_apple_speech_dictation(
 
     final_text = None
     last_partial = ""
+    last_partial_at = 0.0
 
     cancel_requested = False
     stop_requested = False
@@ -32612,6 +33406,25 @@ def _run_apple_speech_dictation(
                     timeout=3.0,
                 )
                 break
+
+            # 静音自停(仅 wake 单句听写): 有内容后连续 N 秒无新 partial => 说完了,
+            # 复用优雅收尾链路(SIGUSR1 -> helper 出 final + stopped), 不再干等硬墙钟。
+            if (
+                generation is None
+                and question_generation is None
+                and last_partial
+                and not graceful_finish_requested
+                and last_partial_at > 0.0
+                and (time.monotonic() - last_partial_at)
+                >= APPLE_SPEECH_SILENCE_STOP_SECONDS
+            ):
+                logger.info(
+                    "Apple Speech silence stop: no new partial for %.1fs "
+                    "(last_partial=%r)",
+                    APPLE_SPEECH_SILENCE_STOP_SECONDS,
+                    last_partial[-60:],
+                )
+                should_stop = True
 
             if should_stop and not graceful_finish_requested:
                 logger.info(
@@ -32738,6 +33551,7 @@ def _run_apple_speech_dictation(
                 text = (event.get("text") or "").strip()
                 if text and text != last_partial:
                     last_partial = text
+                    last_partial_at = time.monotonic()
                     if question_generation is None and show_hud:
                         hud.show(
                             "dictation_recording",
@@ -38450,58 +39264,210 @@ VE_VOICE_CHAT_MODEL_DIR = os.path.realpath(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "models",
-                "sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01",
+                "sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20",
             ),
         )
     )
 )
 # 唤醒词定义 -> keywords_file 落地方式:
-# sherpa-onnx Python KeywordSpotter.__init__ 只接受 keywords_file, 不存在
-# keywords= 构造参数(字符串形式仅存在于 create_stream)。因此"用 keywords 不用静态
-# keywords_file"的正确落地 = 运行时生成字符串 -> 临时文件 -> keywords_file。
-# 唯一事实源: 纯汉字关键词 (词, boost_score|None, threshold|None)。
-# 拼音 token 由 pypinyin 运行时生成 (声母 INITIALS + 韵母 FINALS_TONE), 与
-# tokens.txt 的 ppinyin 切分一致 —— 不再手写, 杜绝声调/轻声写错 (如"个" g e vs g è)
-# 导致漏检。display 用汉字本身, 命中结果直接回汉字。
+# sherpa-onnx Python KeywordSpotter.__init__ 只接受 keywords_file。因此"用 keywords
+# 不用静态文件" = 运行时把纯文本词表转成 keywords 字符串 -> 临时文件 -> keywords_file。
+# 转换走官方流程: sherpa-onnx-cli text2token --tokens-type phone+ppinyin
+# --lexicon en.phone(模型自带词典, 训练用的发音标注), 不手写任何 token。
+# 词条格式: (文本词, boost_score|None, threshold|None)。显示名由文本词派生,
+# 空格转下划线(官方要求 @ 后不能有空格), 命中结果回显该显示名。
 VE_VOICE_CHAT_KEYWORDS = (
     ("你好丁丁", None, None),
-    ("你好豆包", None, "0.10"),
+    ("你好deepseek", None, None),
+    ("hello deepseek", None, None),
+    ("你好小豆", None, None),
+    ("你好包子", None, None),
     ("换个话题", None, None),
+    ("Change the subject", None, None),
 )
 
+# en.phone 之外的英文词(OOV): 官方 text2token 对词典外单词会整行跳过, 需扩充词典。
+# 按官方机制把发音追加进 en.phone 副本即可(不是手写 keywords token)。
+VE_VOICE_CHAT_EN_PHONE_EXTRA = {
+    "DEEPSEEK": "D IY1 P S IY1 K",
+}
 
-def _ve_voice_chat_hanzi_to_tokens(word: str) -> str:
-    """用 pypinyin 把汉字词转成 sherpa-onnx KWS 需要的拼音 token 串。
+# 唤醒词识别引擎:
+#   apple  = Apple Speech 常驻听写 + 文本匹配(默认)。识别率远高于本地小模型,
+#            中文/英文/混合通吃, 可离线(SPEECH_HELPER_ON_DEVICE=1)。
+#   sherpa = 本地 3M KWS(原方案, 保留作回退)。
+VE_VOICE_CHAT_KWS_ENGINE = (
+    os.getenv("VE_VOICE_CHAT_KWS_ENGINE", "apple").strip().lower()
+)
 
-    每字拆成 "<声母> <带调韵母>"; 无声母 (如"啊") 只保留韵母。strict=False
-    以兼容 tokens.txt 的 ppinyin 约定。手写拼音易把声调/轻声写错, 交给 pypinyin
-    才能和 tokens.txt 精确对齐。
-    """
-    from pypinyin import lazy_pinyin, Style  # lazy: 仅本机语音闭环需要
+# Apple Speech 是否用设备端(离线)识别。默认在线(与既有听写路径一致,
+# 已验证稳定); 置 1 走 on-device, 但该路径未充分验证, 需另行确认。
+VE_VOICE_CHAT_APPLE_ON_DEVICE = os.getenv("SPEECH_HELPER_ON_DEVICE", "0").strip() == "1"
 
-    initials = lazy_pinyin(word, style=Style.INITIALS, strict=False)
-    finals = lazy_pinyin(word, style=Style.FINALS_TONE, strict=False)
-    tokens = []
-    for initial, final in zip(initials, finals, strict=True):
-        tokens.append((initial + " " + final).strip() if initial else final)
-    return " ".join(tokens)
+
+_VE_VOICE_CHAT_APPLE_ALIASES = {
+    "你好钉钉": "你好丁丁",
+    "你好丁丁丁": "你好丁丁",
+    "你好deepseek": "你好deepseek",
+    "hellodeepseek": "hello deepseek",
+    "changethesubject": "Change the subject",
+}
+
+
+def _ve_voice_chat_norm_text(s: str) -> str:
+    """唤醒词文本匹配用归一化: 去空格/下划线/连字符并小写。"""
+    return re.sub(r"[\s\-_]+", "", s or "").lower()
+
+
+def _ve_voice_chat_match_keyword(partial_text: str):
+    """在听写 partial 文本里找唤醒词, 返回命中的原词(取最早出现者); 无则 None。"""
+    norm = _ve_voice_chat_norm_text(partial_text)
+    canonical_alias = _VE_VOICE_CHAT_APPLE_ALIASES.get(norm)
+    if canonical_alias is not None:
+        return canonical_alias
+    best, best_pos = None, -1
+    for word, _score, _th in VE_VOICE_CHAT_KEYWORDS:
+        nw = _ve_voice_chat_norm_text(word)
+        if not nw:
+            continue
+        pos = norm.find(nw)
+        if pos >= 0 and (best_pos < 0 or pos < best_pos):
+            best_pos, best = pos, word
+    return best
 
 
 def _ve_voice_chat_build_keywords_string(items=VE_VOICE_CHAT_KEYWORDS) -> str:
-    """把纯汉字关键词表动态拼成 keywords_file 格式字符串(每行一个)。
+    """纯文本词表 -> 官方 text2token -> keywords 内容(每行 <tokens> [score] [#th] @显示名)。
 
-    每行: <pypinyin 生成的 tokens> [:score] [#threshold] @<汉字>
+    官方 raw 格式: 英文段大写、中英文段之间留空格(否则 "你好DEEPSEEK" 会被当成
+    一个词整行跳过)、@显示名用下划线。返回前校验所有 token 都在 tokens.txt 中,
+    不合法直接抛 ValueError —— sherpa 拿到坏 keywords 会 C++ 侧硬退出。
     """
-    lines = []
-    for word, score, threshold in items:
-        parts = [_ve_voice_chat_hanzi_to_tokens(word)]
+    raw_lines = []
+    meta = []  # (display, score, threshold)
+    for item in items:
+        word, score, threshold = item[0], item[1], item[2]
+        segs = re.findall(r"[\u4e00-\u9fff]+|[A-Za-z']+", word)
+        raw_word = " ".join(seg.upper() if seg[0].isascii() else seg for seg in segs)
+        display = word.replace(" ", "_")
+        raw_lines.append(f"{raw_word} @{display}")
+        meta.append((display, score, threshold))
+
+    lines = _ve_voice_chat_text2token(raw_lines)
+    if len(lines) != len(meta):
+        raise ValueError(f"text2token 输出行数({len(lines)}) != 词表行数({len(meta)})")
+
+    out = []
+    for line, (display, score, threshold) in zip(lines, meta, strict=True):
+        parts = [line.split("@")[0].strip()]
         if score is not None:
             parts.append(f":{score}")
         if threshold is not None:
             parts.append(f"#{threshold}")
-        parts.append(f"@{word}")
-        lines.append(" ".join(parts))
-    return "\n".join(lines)
+        parts.append(f"@{display}")
+        out.append(" ".join(parts))
+    content = "\n".join(out)
+    _ve_voice_chat_validate_keywords(content)
+    return content
+
+
+def _ve_voice_chat_text2token(raw_lines: list[str]) -> list[str]:
+    """调用官方 sherpa-onnx-cli text2token, 把文本词表转成 token 行。
+
+    命令与官方文档一致: text2token --tokens <模型>/tokens.txt
+    --tokens-type phone+ppinyin --lexicon <en.phone + OOV 扩充> raw out。
+    返回按序排列的输出行(每行 <tokens> @<显示名>)。
+    """
+    import subprocess as _sp
+
+    cli = os.path.join(os.path.dirname(sys.executable), "sherpa-onnx-cli")
+    if not os.path.isfile(cli):
+        raise FileNotFoundError(f"找不到 sherpa-onnx-cli: {cli}")
+    model_dir = VE_VOICE_CHAT_MODEL_DIR
+    raw_path = out_path = lex_path = None
+    try:
+        fd, raw_path = tempfile.mkstemp(suffix="_keywords_raw.txt", text=True)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("\n".join(raw_lines) + "\n")
+        out_path = raw_path + ".out"
+        lex_path = raw_path + ".phone"
+        with open(lex_path, "w", encoding="utf-8") as lf:
+            with open(os.path.join(model_dir, "en.phone"), encoding="utf-8") as ef:
+                lf.write(ef.read())
+            for word, phones in VE_VOICE_CHAT_EN_PHONE_EXTRA.items():
+                lf.write(f"{word} {phones}\n")
+        proc = _sp.run(
+            [
+                cli,
+                "text2token",
+                "--tokens",
+                os.path.join(model_dir, "tokens.txt"),
+                "--tokens-type",
+                "phone+ppinyin",
+                "--lexicon",
+                lex_path,
+                raw_path,
+                out_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if proc.returncode != 0 or not os.path.isfile(out_path):
+            raise RuntimeError(
+                f"text2token 失败 rc={proc.returncode}: {proc.stderr[-300:]}"
+            )
+        with open(out_path, encoding="utf-8") as f:
+            content = f.read().strip()
+        if not content:
+            raise RuntimeError("text2token 输出为空")
+        return content.splitlines()
+    finally:
+        for p in (raw_path, out_path, lex_path):
+            if p:
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
+
+
+_ve_voice_chat_tokens_set_cache = None
+
+
+def _ve_voice_chat_tokens_set() -> set:
+    """模型 tokens.txt 的 token 集合(进程内缓存)。"""
+    global _ve_voice_chat_tokens_set_cache
+    if _ve_voice_chat_tokens_set_cache is None:
+        tokens_path = os.path.join(VE_VOICE_CHAT_MODEL_DIR, "tokens.txt")
+        with open(tokens_path, encoding="utf-8") as f:
+            _ve_voice_chat_tokens_set_cache = {
+                line.split()[0] for line in f if line.strip()
+            }
+    return _ve_voice_chat_tokens_set_cache
+
+
+def _ve_voice_chat_validate_keywords(content: str) -> None:
+    """校验 keywords 文本的每个 token 都在 tokens.txt 中, 未知 token 抛 ValueError。
+
+    sherpa-onnx 对未知 token 是 C++ 侧硬退出(Encode keywords failed), 会拖垮整个
+    应用; 必须在写文件前拦住, 转成可捕获的 Python 异常。
+    """
+    if not content.strip():
+        return
+    token_set = _ve_voice_chat_tokens_set()
+    unknown = []
+    for line in content.splitlines():
+        tokens = []
+        for seg in line.split():
+            if seg.startswith(":") or seg.startswith("#") or seg.startswith("@"):
+                break
+            tokens.append(seg)
+        for tok in tokens:
+            if tok not in token_set:
+                unknown.append((tok, line))
+    if unknown:
+        bad = "; ".join(f"{tok!r}(行: {line})" for tok, line in unknown[:5])
+        raise ValueError(f"关键词含 tokens.txt 之外的 token: {bad}")
 
 
 # 动态关键词字符串 -> 临时 keywords_file 缓存。
@@ -38551,12 +39517,13 @@ def _ve_voice_chat_get_spotter():
     num_threads/score/threshold/provider。任一变化才重新编译, 否则 0 开销复用。
     """
     keywords_content = _ve_voice_chat_build_keywords_string()
+    encoder, decoder, joiner, tokens_path = _ve_voice_chat_model_files()
     cache_key = (
         keywords_content,
-        VE_VOICE_CHAT_TOKENS,
-        VE_VOICE_CHAT_ENCODER,
-        VE_VOICE_CHAT_DECODER,
-        VE_VOICE_CHAT_JOINER,
+        tokens_path,
+        encoder,
+        decoder,
+        joiner,
         2,
         VE_VOICE_CHAT_KWS_SCORE,
         VE_VOICE_CHAT_KWS_THRESHOLD,
@@ -38569,10 +39536,10 @@ def _ve_voice_chat_get_spotter():
         import sherpa_onnx  # lazy
 
         spotter = sherpa_onnx.KeywordSpotter(
-            tokens=VE_VOICE_CHAT_TOKENS,
-            encoder=VE_VOICE_CHAT_ENCODER,
-            decoder=VE_VOICE_CHAT_DECODER,
-            joiner=VE_VOICE_CHAT_JOINER,
+            tokens=tokens_path,
+            encoder=encoder,
+            decoder=decoder,
+            joiner=joiner,
             keywords_file=_ve_voice_chat_keywords_file(keywords_content),
             num_threads=2,
             keywords_score=VE_VOICE_CHAT_KWS_SCORE,
@@ -38583,20 +39550,36 @@ def _ve_voice_chat_get_spotter():
         return spotter
 
 
-# fp32 chunk-16 编码器(epoch-12-avg-2),已在本机验证。
-VE_VOICE_CHAT_ENCODER = os.path.join(
-    VE_VOICE_CHAT_MODEL_DIR, "encoder-epoch-12-avg-2-chunk-16-left-64.onnx"
-)
+# 模型三件套不再硬编码文件名: 按"非 int8 + chunk-16-left-64"优先在模型目录里自动挑。
+# 旧(wenetspeech epoch-12)和新(zh-en epoch-13)模型都能直接用, 换模型只需改目录。
+# 懒解析(真正创建 spotter 时才调用), 避免缺模型时拖垮整个应用启动。
+def _ve_voice_chat_model_files() -> tuple[str, str, str, str]:
+    import glob as _glob
 
-VE_VOICE_CHAT_DECODER = os.path.join(
-    VE_VOICE_CHAT_MODEL_DIR, "decoder-epoch-12-avg-2-chunk-16-left-64.onnx"
-)
+    def pick(kind: str) -> str:
+        base = os.path.join(VE_VOICE_CHAT_MODEL_DIR, kind + "-")
+        for pattern in (
+            f"{base}*-chunk-16-left-64.onnx",  # 首选: 非 int8 + chunk-16
+            f"{base}*-left-64.onnx",  # 其次: 非 int8 任意 chunk
+            f"{base}*.onnx",  # 再其次: 任意非 int8
+        ):
+            hits = sorted(p for p in _glob.glob(pattern) if ".int8." not in p)
+            if hits:
+                return hits[0]
+        hits = sorted(_glob.glob(f"{base}*.int8.onnx"))  # 兜底: int8
+        if hits:
+            return hits[0]
+        raise FileNotFoundError(
+            f"模型目录 {VE_VOICE_CHAT_MODEL_DIR} 里找不到 {kind}-*.onnx"
+        )
 
-VE_VOICE_CHAT_JOINER = os.path.join(
-    VE_VOICE_CHAT_MODEL_DIR, "joiner-epoch-12-avg-2-chunk-16-left-64.onnx"
-)
+    return (
+        pick("encoder"),
+        pick("decoder"),
+        pick("joiner"),
+        os.path.join(VE_VOICE_CHAT_MODEL_DIR, "tokens.txt"),
+    )
 
-VE_VOICE_CHAT_TOKENS = os.path.join(VE_VOICE_CHAT_MODEL_DIR, "tokens.txt")
 
 # 灵敏度:默认 0.25 太严(实测全漏),这里 0.20 起步、可配。
 VE_VOICE_CHAT_KWS_THRESHOLD = max(
@@ -38607,9 +39590,21 @@ VE_VOICE_CHAT_KWS_SCORE = max(0.0, float(os.getenv("VE_VOICE_CHAT_KWS_SCORE", "2
 
 VE_VOICE_CHAT_SAMPLE_RATE = 16000
 
-VE_VOICE_CHAT_CAPTURE_LOCALE = os.getenv(
-    "VE_VOICE_CHAT_CAPTURE_LOCALE", "zh-CN"
-).strip()
+# Apple KWS 识别语言列表。默认同时启用中文 primary 和英文 secondary。
+# 如需单语，只需设 VE_VOICE_CHAT_CAPTURE_LOCALES=zh-CN 或 en-US。
+VE_VOICE_CHAT_CAPTURE_LOCALES = tuple(
+    locale.strip()
+    for locale in os.getenv("VE_VOICE_CHAT_CAPTURE_LOCALES", "zh-CN,en-US").split(",")
+    if locale.strip()
+) or ("zh-CN", "en-US")
+
+# helper 命令行 locale 实参: 单 locale 时就是原来的字符串(逐字兼容), 多 locale 时为
+# "primary,secondary,...", 由 helper 解析为一 primary + N secondary 被动流。
+VE_VOICE_CHAT_CAPTURE_LOCALE_ARG = ",".join(VE_VOICE_CHAT_CAPTURE_LOCALES)
+
+# 指令文本以哪个流为准: primary(第一个)。secondary 只负责更稳地命中唤醒词;
+# 命中后指令累计/final 归属为"命中唤醒词的那个流", 未命中过时回退到 primary。
+VE_VOICE_CHAT_PRIMARY_LOCALE = VE_VOICE_CHAT_CAPTURE_LOCALES[0]
 
 VE_VOICE_CHAT_TTS_VOICE = os.getenv("VE_VOICE_CHAT_TTS_VOICE", "zh").strip()
 
@@ -38625,6 +39620,12 @@ VE_VOICE_CHAT_DICTATION_TIMEOUT = max(
     3.0, float(os.getenv("VE_VOICE_CHAT_DICTATION_TIMEOUT", "15.0"))
 )
 
+# 同一 Apple KWS 会话在已经捕获命令后，连续静音多久提交给模型。唤醒词本身不启动
+# 此计时；只有 _make_turn() 得到非空命令后才生效。
+VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS = max(
+    0.5, float(os.getenv("VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS", "2.0"))
+)
+
 # wake 语音助手是否显示 HUD。默认关:唤醒采集/播报走后台, 不弹任何 HUD 窗口。
 # Apple Speech 仅作采集后端, 与"听写(光标插入)"功能无关, 故这里独立开关。
 # 置 1 才显示(采集"Listening…"、partial、以及暂停/没听清等提示)。
@@ -38636,6 +39637,16 @@ VE_VOICE_CHAT_SHOW_HUD = os.getenv("VE_VOICE_CHAT_SHOW_HUD", "0").strip() == "1"
 # 设备探测复用既有 check_audio_input_device(); PortAudio 生命周期(热插拔/route change
 # 的 terminate/reinit)完全交给既有 CoreAudio route-change 链路, 本子系统不自行触碰。
 _VE_VOICE_CHAT_DEVICE_WAIT_FALLBACK = 10.0
+
+# fast-fail(helper spawn 了却从没 emit "started", 如无麦时 CoreAudio 秒退 code=10)
+# 之后两次 spawn 之间的【最小间隔】。设计: 事件优先(蓝牙重连由 CoreAudio route monitor
+# 置位 AUDIO_INPUT_DEVICE_CHANGED, 立即唤醒), 之后仅补足"距本次 spawn 不足此间隔"的那点
+# 剩余时间。这既防住无麦时 macOS 反复重选缺失默认输入 -> 事件被秒唤醒 -> 紧密重生的 flood
+# (每次至少隔 MIN_INTERVAL), 又不把蓝牙重连拖慢(最坏只等 ~MIN_INTERVAL, 不是几十秒)。
+# 取代之前那个不可被事件打断、把重连拖到 30s 的指数地板。
+_VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL = max(
+    0.3, float(os.getenv("VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL", "2.0"))
+)
 
 # 一轮回答播报的等待上限(原 180s 偏长)。可配。
 VE_VOICE_CHAT_ANSWER_TIMEOUT = max(
@@ -38672,12 +39683,56 @@ VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT = max(
     2.0, float(os.getenv("VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT", "8.0"))
 )
 
+# 回答前预热 TTS 输出流开关(【默认开】: 默认值 "1")。
+# 病因: voice chat 懒启动 consumer -> A2DP 输出流在【首句 TTS 前一刻】才建 -> 蓝牙冷启动
+# ramp 削掉首句开头("冷启动首句吞字")。原先"开机预启动"无此问题(流一直热), 但 voice chat
+# 不能开机建流(会抢占 HFP 麦, 触发 no-mic loop), 故改懒启动才引入本回归。
+# 在 KWS 停麦【之后】、进入 _handle_wake(LLM+TTS)【之前】——此刻麦(HFP)已释放、
+# 正切 A2DP、且尚未开始 LLM——【同步】等 route 稳 + cold-start consumer 建好 A2DP 输出流。
+# 等 LLM 跑完首句 TTS 到达时, 流已热, 开头不再被 ramp 削。串行代价: 首句前多 ~route稳+probation
+# (约 <1s), 但不与 HFP 麦冲突、逻辑最简。
+# 注: 默认开启会给【每轮首句】加上述 <1s 串行预热(consumer 已在运行时零开销早退, 故仅每次
+# 冷启动付出一次); 若想恢复"极限低延迟、允许首句吞字"的旧行为, 设 VE_TTS_PREWARM_BEFORE_ANSWER=0。
+VE_TTS_PREWARM_BEFORE_ANSWER = (
+    os.getenv("VE_TTS_PREWARM_BEFORE_ANSWER", "1").strip() == "1"
+)
+
+# 【KWS 抢占预热】开关(【默认开】: 默认值 "1"; 设 0 关闭退回旧行为)。
+# 覆盖 _run_apple_session.finally 覆盖不到的路径(典型: M365 -> MCP speak 工具 -> speak_local_async,
+# 不经唤醒->回答, apple KWS 只是被动让麦)。开启后: 任意 TTS 入口(speak_local_async)在建输出流前,
+# 先置 _TTS_PREEMPT_KWS 让 apple KWS 主动让麦释放 HFP、等切 A2DP 稳定, 再把流一次建在 A2DP,
+# 消除"HFP 建流 + 释麦切 A2DP recreate"的两次建流。已实测(2026-08): MCP speak 触发仅 1 次建流、
+# 内容零丢失、播完 KWS 正常恢复监听(session listening), 故转为默认开。
+# 代价: 首次 TTS(冷启动)会多等 KWS 让麦 + route 稳(~<1s); 且此期间 KWS 让麦短暂不监听唤醒词。热流
+# (consumer 已运行)零开销。动到 KWS 让麦体系, 若发现唤醒被吞/恢复慢, 设 VE_TTS_KWS_PREEMPT_PREWARM=0
+# 关闭退回。
+VE_TTS_KWS_PREEMPT_PREWARM = os.getenv("VE_TTS_KWS_PREEMPT_PREWARM", "1").strip() == "1"
+
+# 【日志降噪】apple KWS helper 的 stderr 生命周期日志分级白名单: 只有包含这些子串的行才以
+# INFO 打(诊断关键: 无麦/致命启动/重启上限/引擎重启失败等); 其余每次会话必刷的常规生命周期
+# (停麦、取消识别、cleanup、RunLoop 退出、no-speech、装 tap、引擎起停、配置变化等)降到 DEBUG,
+# 默认 INFO 级别下不再刷屏, 需要排障时开 DEBUG 仍可见。大小写不敏感匹配。
+_APPLE_KWS_KEEP_INFO_MARKERS = (
+    "fatal startup error",
+    "code=10",
+    "no default microphone",
+    "microphone input is unavailable",
+    "restart limit reached",
+    "audio engine restart failed",
+    "repeatedly stopped",
+    "helper start failed",
+)
+
 # 唤醒词 -> 虚拟会话动作。model 路由维护各自 browser conversation_id;
 # "换个话题" 是控制指令,清空全部虚拟会话。
 VE_VOICE_CHAT_WAKE_ROUTES = {
     "你好丁丁": ("model", "LLM:deepseek"),
-    "你好豆包": ("model", "LLM:doubao"),
+    "你好deepseek": ("model", "LLM:deepseek"),
+    "hello_deepseek": ("model", "LLM:deepseek"),
+    "你好小豆": ("model", "LLM:doubao"),
+    "你好包子": ("model", "LLM:doubao"),
     "换个话题": ("command", "new_session"),
+    "Change_the_subject": ("command", "new_session"),
 }
 
 VE_VOICE_CHAT_CONCISE_HINT = (
@@ -38715,6 +39770,58 @@ def _ve_voice_chat_is_browser_model(model):
         return model not in LLM_MODEL_BACKENDS
     except NameError:
         return True
+
+
+def _ve_voice_chat_notify(text, *, title="语音助手", subtitle="", sound=""):
+    """后台发一条 macOS 通知(osascript), best-effort, 绝不阻塞调用线程。
+
+    唤醒助手默认 HUD 关闭(VE_VOICE_CHAT_SHOW_HUD=0)时, 唤醒后是静默进入聆听、无任何
+    可见提示 —— 用户不知道助手已经在听。这条通知补上"已唤醒、正在聆听"的视觉反馈。
+    仅 macOS; osascript 不可用或失败都静默跳过。放到一次性 daemon 线程执行, 使
+    osascript 调用(即使偶发几百毫秒)绝不拖慢"唤醒 -> 开始聆听"这条关键路径。
+    """
+    if sys.platform != "darwin":
+        return
+    osascript = "/usr/bin/osascript"
+    if not (os.path.isfile(osascript) and os.access(osascript, os.X_OK)):
+        return
+
+    def _applescript_quote(value):
+        # AppleScript 字符串字面量: 转义反斜杠与双引号, 并去掉换行, 避免语法破坏/注入。
+        return (
+            str(value or "")
+            .replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace("\r", " ")
+            .replace("\n", " ")
+        )
+
+    script = 'display notification "%s" with title "%s"' % (
+        _applescript_quote(text),
+        _applescript_quote(title),
+    )
+    if subtitle:
+        script += ' subtitle "%s"' % _applescript_quote(subtitle)
+    if sound:
+        script += ' sound name "%s"' % _applescript_quote(sound)
+
+    def _run():
+        try:
+            subprocess.run(
+                [osascript, "-e", script],
+                check=False,
+                timeout=5.0,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except Exception:
+            logger.debug("Voice chat notification failed", exc_info=True)
+
+    try:
+        threading.Thread(target=_run, name="voice-chat-notify", daemon=True).start()
+    except Exception:
+        logger.debug("Voice chat notification thread failed to start", exc_info=True)
 
 
 _voice_chat_subsystem = None
@@ -38782,8 +39889,14 @@ class VoiceChatSubsystem:
         # 个模型时, 新模型没有自己的 browser conversation_id, 就把这份历史重放给它,
         # 让它继承此前对话的上下文(既有 conversation_id 路径的服务端历史由 relay 侧
         # 维护, 无需重放)。"换个话题"时连同 _conversations 一并清空。
-        self._history = []  # list[dict{"role","content"}]
+        self._history = []  # list[dict{"role","content"[,"model"][,"seq"]}]
         self._history_lock = threading.Lock()
+        # 切回旧模型不丢中途对话: 给每条历史轮打单调 seq, 并记录每个模型的服务端
+        # 会话"已覆盖到的最高 seq"(水位线)。切回某个已有 conversation_id 的模型时, 只补它
+        # 未覆盖(其间在别的模型上产生)的 delta, 既不只发当前句(会丢中途对话)、也不重发它
+        # 服务端已有的历史。
+        self._history_seq = 0
+        self._history_covered = {}  # model -> 已覆盖的最高历史 seq
         # 上次发"恢复提示 TTS"的单调时刻, 用于节流(见 _nudge_audio_recovery)。
         self._last_recovery_nudge_at = 0.0
         self._rcmd_down_since = 0.0
@@ -38795,11 +39908,29 @@ class VoiceChatSubsystem:
         self._hud_timer_lock = threading.Lock()
         # 麦克风打开失败的连续错误计数, 用于退避 + 日志节流。
         self._listen_error_count = 0
+        # apple 单会话 helper 本轮是否真正进入过聆听(emit "started")。用于外层循环
+        # 区分"正常会话结束"与"无麦致命 fast-fail", 后者需退避而非立即重生。
+        self._apple_session_started = False
+        # 本轮是否真的 spawn 了 helper 进程。用于区分"已 spawn 但未 started"(真 fast-fail,
+        # 需事件驱动等待重试)与"restart-gap 后状态变脏、根本没 spawn 的干净退出"(外层直接
+        # 回顶重判, 不可误计为 fast-fail)。
+        self._apple_spawned = False
+        # 本轮 helper 进程被 spawn 的单调时间戳。fast-fail 退避按"距本次 spawn"计, 会话已
+        # 耗时则只补剩余, 故重连不被额外拖慢。
+        self._apple_spawn_at = 0.0
+        self._apple_route_start_failures = 0
+        self._apple_route_start_cooldown_until = 0.0
+        self._apple_last_start_error = None
+        # 连续 -10868 达阈值后不再定时 spawn。只等 CoreAudio 权威输入事件，事件后
+        # settle，再放行一次 probe；失败则重新 parking。
+        self._apple_route_quarantined = False
         # 无麦克风时的"等待"状态标志: 用于状态转移只记一条日志(等待/恢复), 不忙等刷屏。
         self._mic_waiting = False
         # 上次真开流探测的单调时间戳: 无设备且被高频事件唤醒时限速, 避免密集抢
         # PORTAUDIO_LIFECYCLE_LOCK 与音频恢复路径争用(典型: 蓝牙麦反复重选默认输入)。
         self._last_probe_at = 0.0
+        # apple 会话 partial 节流日志用的上一条文本。
+        self._last_partial_logged = None
         # ---- owner 守卫: 只中断 wake 自己发起的听写/播报, 绝不误伤 ----
         # Ctrl 听写或其他功能的 TTS。wake 与 Ctrl 听写经 IS_DICTATION_ACTIVE 互斥,
         # 故 _wake_dictation_active 为真 <=> 当前 Apple Speech helper 是 wake 启动的。
@@ -38809,6 +39940,18 @@ class VoiceChatSubsystem:
     def start(self):
         if self._thread is not None and self._thread.is_alive():
             return
+        # sherpa 引擎先校验关键词配置: 坏 keywords 会让 sherpa C++ 侧硬退出
+        # (Encode keywords failed), 表现为 launchd 无限重启循环。apple 引擎是
+        # 纯文本匹配, 不需要 keywords 文件。
+        if VE_VOICE_CHAT_KWS_ENGINE == "sherpa":
+            try:
+                kw_path = _ve_voice_chat_keywords_file()
+                _ve_voice_chat_build_keywords_string()
+            except Exception:
+                logger.exception("Voice chat keywords invalid; subsystem disabled")
+                return
+        else:
+            kw_path = "apple engine (文本匹配, 无需 keywords 文件)"
         self._stop.clear()
         self._thread = threading.Thread(
             target=self._run, name="VoiceChatWakeWord", daemon=True
@@ -38816,19 +39959,25 @@ class VoiceChatSubsystem:
         self._thread.start()
         logger.info(
             "Voice chat subsystem started: keywords=%s threshold=%.3f score=%.2f",
-            _ve_voice_chat_keywords_file(),
+            kw_path,
             VE_VOICE_CHAT_KWS_THRESHOLD,
             VE_VOICE_CHAT_KWS_SCORE,
         )
         # 诊断: 打印实际喂给 sherpa 的 keywords 内容(pypinyin 生成的 token 串)。
         # 若这里的拼音与 tokens.txt 约定不一致, 唤醒词永远匹配不到, 再调阈值也没用。
-        try:
+        if VE_VOICE_CHAT_KWS_ENGINE == "sherpa":
+            try:
+                logger.info(
+                    "Voice chat KWS keywords content:\n%s",
+                    _ve_voice_chat_build_keywords_string(),
+                )
+            except Exception:
+                logger.exception("Voice chat KWS keywords dump failed")
+        else:
             logger.info(
-                "Voice chat KWS keywords content:\n%s",
-                _ve_voice_chat_build_keywords_string(),
+                "Voice chat apple KWS keywords: %s",
+                [w for w, _s, _t in VE_VOICE_CHAT_KEYWORDS],
             )
-        except Exception:
-            logger.exception("Voice chat KWS keywords dump failed")
 
     def stop(self):
         self._stop.set()
@@ -38961,6 +40110,9 @@ class VoiceChatSubsystem:
         return self._spotter
 
     def _run(self):
+        if VE_VOICE_CHAT_KWS_ENGINE == "apple":
+            self._run_apple()
+            return
         try:
             spotter = self._ensure_spotter()
         except Exception:
@@ -39111,16 +40263,706 @@ class VoiceChatSubsystem:
         if self._stop.is_set():
             return
         logger.info("Voice chat: driving silent audio recovery (%s)", reason)
+        # 懒启动 TTS consumer(幂等, 已运行则零开销返回): recovery 标记需要
+        # consumer 线程处理, voice chat 模式启动时不预启动 consumer。
+        # 记录本次 nudge 是否【冷启动】了 consumer(启动前它未在运行): 若是, 冷启动会在
+        # 上面 wait_for_audio_route_stability 稳定后的【当前路由】上建好一条健康流, 后续
+        # recovery 标记只需清 PENDING、无需再 recreate(否则每次冷启动必建 2 次流: 冷启动 1
+        # 次 + 标记 recreate 1 次, 正是"关耳机刷新 2 次"的来源)。已运行时不改变既有行为。
+        _cold_started = not (
+            TTS_CONSUMER_THREAD is not None and TTS_CONSUMER_THREAD.is_alive()
+        )
+        _ensure_tts_consumer_started()
         try:
             done_result = TTSCompletionResult()
             TTS_TEXT_QUEUE.put(
-                {"__ve_audio_recovery__": True, "done_results": [done_result]},
+                {
+                    "__ve_audio_recovery__": True,
+                    "cold_started": _cold_started,
+                    "done_results": [done_result],
+                },
                 timeout=5.0,
             )
             # 等 owner 线程处理完标记(恢复跑完)再返回, 下一轮 PENDING 已清即可推进。
             done_result.event.wait(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT + 5.0)
         except Exception:
             logger.debug("Voice chat: silent audio recovery failed", exc_info=True)
+
+    def _prewarm_output_before_answer(self):
+        """Voice chat 回答前使用统一 TTS 准备事务。"""
+        if self._stop.is_set():
+            return
+        ready = _prepare_tts_output(preempt_kws=False)
+        logger.info("Voice chat: TTS output preparation before answer ready=%s", ready)
+
+    def _run_apple(self):
+        """Apple Speech 单会话唤醒引擎: 一个常驻听写会话干到底。
+
+        同一会话持续输出 partial 文本: 未唤醒时匹配唤醒词; 命中后同一会话继续
+        收集指令(partial 是累计全文, 取最新一条), 静音自停结束; 然后停麦走回答
+        (LLM+TTS), 播报完重启会话。Ctrl 听写/其他功能要麦时让出。
+        """
+        logger.info("Voice chat KWS engine: apple (single continuous session)")
+        while not self._stop.is_set():
+            if not self._enabled.is_set():
+                self._enabled.wait(timeout=0.25)
+                continue
+            # 让麦: 播报/听写期间不起会话。_TTS_PREEMPT_KWS: TTS 即将播放, 提前让麦释放 HFP,
+            # 使输出流一次建在 A2DP(见 _prewarm_output_via_kws_preempt)。开关关时该信号恒 clear。
+            if IS_DICTATION_ACTIVE or IS_SPEAKING or _TTS_PREEMPT_KWS.is_set():
+                self._stop.wait(timeout=0.2)
+                continue
+
+            if self._apple_route_quarantined:
+                logger.info(
+                    "Voice chat apple KWS parked after repeated CoreAudio -10868; "
+                    "waiting for an input-device event"
+                )
+                changed = self._wait_input_device_event()
+                if not changed or self._stop.is_set():
+                    continue
+                stable = wait_for_audio_route_stability(
+                    timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT
+                )
+                logger.info(
+                    "Voice chat apple KWS quarantine probe gate: route_stable=%s",
+                    stable,
+                )
+                if not stable:
+                    continue
+                # 只放行一次 probe。若仍为 -10868，下面 fast-fail 分支会再次 quarantine。
+                self._apple_route_quarantined = False
+                self._apple_route_start_cooldown_until = 0.0
+                self._apple_last_start_error = None
+
+            # route change 待处理: 与 sherpa 引擎(_run)同构 —— 既有链路即将 terminate/
+            # reinit PortAudio 时不开 helper。AUDIO_ROUTE_CHANGE_PENDING 只由 TTS 输出恢复
+            # 清除, 连蓝牙耳机后若无 TTS 流过则永不清; 顺架构主动 nudge 一次恢复(节流)驱动
+            # owner 线程跑恢复并清标志, 下一轮即可推进。不在 teardown 窗口里起 helper, 避免
+            # 与 CoreAudio 重配相撞再次触发 route change。
+            if AUDIO_ROUTE_CHANGE_PENDING.is_set():
+                self._nudge_audio_recovery("route change pending")
+                self._stop.wait(timeout=0.2)
+                continue
+
+            # CoreAudio 权威麦克风闸门(与 helper 同一子系统, 不是 PortAudio)。
+            # audio_route_monitor.swift 每个事件都带 input_device_ids = 当前【带输入流】的
+            # 设备 id 集合(内置麦/蓝牙耳机麦有, 纯输出设备无)。空集 = CoreAudio 视角下【根本
+            # 没有麦克风】——正是 helper 打开 CoreAudio 默认输入会 code=10 的同源原因。无麦时
+            # 【一个 helper 都不 spawn】, 事件驱动等蓝牙重连(route monitor 在设备变化时置位
+            # AUDIO_INPUT_DEVICE_CHANGED 立即唤醒)。这从源头消灭"每 2s spawn 一个必死 helper"
+            # 的刷屏(下方 fast-fail 的最小间隔只是限速、并不停; 这里才真正停)。仅在 monitor
+            # 就绪且确认发过该字段时才据此拦截, 旧 Swift 二进制(不发该字段)回退到让 helper 去探。
+            # 无麦闸门(两条判据 OR, 任一成立即判定无麦: 不 spawn 必死 helper, 改事件驱动等麦)。
+            # (a) input_device_ids 空集 —— 判的是【设备表里带输入流的设备数为 0】。
+            # (b) _AUDIO_DEFAULT_INPUT_ID 为 None —— 判的是【CoreAudio 当前默认输入设备缺失】,
+            #     与 helper code=10 的条件逐字对齐(start()->validateDefaultInputHardware()->
+            #     currentDefaultInputDeviceID(), 默认输入 == kAudioObjectUnknown 时抛错)。
+            # 为何 (a) 不够: audio_route_monitor 的 inputDeviceIDs() 用 deviceHasInput(input
+            #   scope streams>0)枚举【设备表】, 蓝牙耳机登记一条 HFP 输入流 -> 集合非空 -> (a) 恒
+            #   假。且 default_input 移除事件【不刷新】该集合, 关耳机后集合仍残留 -> (a) 永不拦。
+            # 为何 (b) 用【专用镜像 _AUDIO_DEFAULT_INPUT_ID】而非 AUDIO_ROUTE_LAST_INPUT_ID:
+            #   后者在移除(input_id=None)时【故意保留旧值】(实测关耳机后仍为 165, 见日志
+            #   "input_id=165"), 给静音恢复 force_refresh 去重复用 -> 用它判 (b) 对"连了再关"
+            #   永远为假, 正是二次 loop 的真因。_AUDIO_DEFAULT_INPUT_ID 由每个 route 事件按
+            #   event["default_input_id"] 忠实刷新(缺失即 None), 关耳机即归零 -> (b) 命中。
+            # SNAPSHOT 非空守卫: 排除 monitor 崩溃却置 READY(无快照)时误判有麦机器。
+            # 有麦时 (a)(b) 均为假, 正常放行。
+            if AUDIO_ROUTE_MONITOR_READY.is_set() and (
+                (_AUDIO_INPUT_DEVICE_IDS_SEEN and not _AUDIO_INPUT_DEVICE_IDS)
+                or (
+                    AUDIO_ROUTE_LAST_SWIFT_SNAPSHOT is not None
+                    and _AUDIO_DEFAULT_INPUT_ID is None
+                )
+            ):
+                if not self._mic_waiting:
+                    logger.info(
+                        "Voice chat apple: CoreAudio reports no input device; not "
+                        "spawning helper (event-driven wait for a microphone)"
+                    )
+                    self._mic_waiting = True
+                # 蓝牙重连即时醒; 无变化时兜底超时后重探。不 spawn, 不刷屏。
+                self._wait_input_device_event()
+                continue
+            if self._mic_waiting:
+                logger.info("Voice chat apple: microphone present; resuming listening")
+                self._mic_waiting = False
+                self._listen_error_count = 0
+
+            # 【不再查 PortAudio】。apple 路径的麦克风探针就是 helper 本身: 它用 CoreAudio
+            # AVAudioEngine 的默认输入, 起不来就 emit code=10(权威)。而 check_audio_input_
+            # device() 走 PortAudio, 两个子系统视角会打架 —— 这台机器上蓝牙拔掉后 PortAudio
+            # 仍报"有输入"(假阳性), 顶部闸门被放行、照样 spawn -> code=10, 查它毫无意义还每轮
+            # 白开一次 InputStream 抢锁。故这里【直接让 helper 去探】: spawn 成功 = 有麦、正常
+            # 长会话; spawn 后秒退(未 emit started)= 无麦, 由下方 fast-fail 分支【事件优先 +
+            # 最小间隔】处理: 蓝牙重连时 CoreAudio route monitor 置位 AUDIO_INPUT_DEVICE_CHANGED
+            # 立即唤醒(重连 <= 一个最小间隔即恢复), churn 被最小间隔钳住不 flood。
+            # 注: sherpa 引擎(_run)仍用 _wait_for_input_device —— 它的 KWS 直接读 PortAudio
+            # 流, 用 PortAudio 探针才对口径; 只有 apple(CoreAudio helper)路径不该问 PortAudio。
+            try:
+                self._run_apple_session()
+            except Exception:
+                self._listen_error_count += 1
+                delay = min(5.0, 0.5 * (2 ** min(self._listen_error_count - 1, 4)))
+                if self._listen_error_count == 1 or self._listen_error_count % 10 == 0:
+                    logger.exception(
+                        "Voice chat apple session error (#%d); backing off %.1fs",
+                        self._listen_error_count,
+                        delay,
+                    )
+                self._stop.wait(timeout=delay)
+                continue
+
+            # helper 是否真正进入过聆听(emit 了 "started")? started 只在引擎起、tap 装好后
+            # 才发, code=10 无麦致命启动路径【绝不会】发。据此区分:
+            #  - 起来过(productive): 清零错误计数, 立刻重启下一会话(旧行为)。
+            #  - 从未起来(fast-fail): helper spawn 了却从没 emit "started"。以 helper 回传
+            #    为准(code=10 = CoreAudio 无默认麦克风), 不再问 PortAudio。处理 =【事件优先
+            #    + 最小间隔】: 先在 AUDIO_INPUT_DEVICE_CHANGED 上等(蓝牙重连由 CoreAudio route
+            #    monitor 置位 -> 立即唤醒, 重连快), 再补足"距本次 spawn 不足 MIN_INTERVAL"的
+            #    剩余时间(只按时间, 不可被设备 churn 缩短 -> 无麦时反复重选缺失默认输入的 churn
+            #    被钳住, 每次至少隔 MIN_INTERVAL, 不 flood)。不再用 30s 指数地板, 故重连最坏
+            #    只等 ~MIN_INTERVAL(默认 2s)。
+            if self._apple_session_started:
+                self._listen_error_count = 0
+            elif not self._apple_spawned:
+                # gap 后状态变脏、根本没 spawn helper 的干净退出: 不是故障, 不计数、不退避。
+                # 外层回顶重判(暂停/停止/route-pending)各自的闸门自会处理。
+                self._listen_error_count = 0
+            else:
+                self._listen_error_count += 1
+                if self._apple_last_start_error == "-10868":
+                    self._apple_route_start_failures += 1
+                    cooldown = min(
+                        12.0, 2.0 * (2 ** min(self._apple_route_start_failures - 1, 3))
+                    )
+                    self._apple_route_start_cooldown_until = max(
+                        self._apple_route_start_cooldown_until,
+                        time.monotonic() + cooldown,
+                    )
+                    logger.warning(
+                        "Voice chat apple KWS CoreAudio -10868 cooldown: failures=%d delay=%.1fs",
+                        self._apple_route_start_failures,
+                        cooldown,
+                    )
+                    if self._apple_route_start_failures >= 3:
+                        self._apple_route_quarantined = True
+                        logger.error(
+                            "Voice chat apple KWS entering CoreAudio route quarantine "
+                            "after %d consecutive -10868 failures; periodic helper spawn disabled",
+                            self._apple_route_start_failures,
+                        )
+                if self._listen_error_count == 1 or self._listen_error_count % 5 == 0:
+                    logger.warning(
+                        "Voice chat apple session did not start (#%d; helper cannot "
+                        "open the mic); waiting for a device change (min %.1fs between "
+                        "retries)",
+                        self._listen_error_count,
+                        _VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL,
+                    )
+                # 事件优先: 蓝牙重连 -> AUDIO_INPUT_DEVICE_CHANGED 置位 -> 立即唤醒;
+                # 无变化时兜底超时(_VE_VOICE_CHAT_DEVICE_WAIT_FALLBACK)后重试。
+                if self._apple_route_quarantined:
+                    # 外层回顶后进入纯事件 parking；这里不再等 fallback timeout 后重试。
+                    continue
+                self._wait_input_device_event()
+                cooldown_remaining = (
+                    self._apple_route_start_cooldown_until - time.monotonic()
+                )
+                if cooldown_remaining > 0 and not self._stop.is_set():
+                    self._stop.wait(timeout=cooldown_remaining)
+                # 最小间隔: 只补足"距本次 spawn"不足的剩余(会话已耗时则更短或为 0),
+                # 仅可被 stop 打断, 不可被设备 churn 缩短 -> 钳住 flood, 又不额外拖慢重连。
+                remaining = _VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL - (
+                    time.monotonic() - self._apple_spawn_at
+                )
+                if remaining > 0 and not self._stop.is_set():
+                    self._stop.wait(timeout=remaining)
+
+    def _run_apple_session(self):
+        """一次常驻会话: 直接跑 helper 持续听 -> 唤醒匹配 -> 收集指令 -> 回答。
+
+        与 Ctrl 听写(_run_apple_speech_dictation)同构: 不搞 HFP 占位流、不锁
+        采样率、不动持久输出流, 让 helper 按设备原生格式工作。唤醒词匹配靠
+        helper 的 partial 文本, 命中后同一会话继续收指令, 静音自停结束。
+        """
+        # 本会话 helper 是否 emit 过 "started"(引擎起+tap 装好才发)。外层循环据此区分
+        # "起来过的正常会话" vs "无麦致命 fast-fail", 决定是否退避。默认 False。
+        self._apple_session_started = False
+        # 本会话是否真的 spawn 了 helper。restart-gap 后若状态变脏会在 spawn 前干净退出,
+        # 届时此标志仍为 False, 外层据此不误计 fast-fail。
+        self._apple_spawned = False
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        helper_bin = os.path.join(base_dir, "apple_speech_helper")
+        helper_swift = os.path.join(base_dir, "apple_speech_helper.swift")
+        helper_plist = os.path.join(base_dir, "Info.plist")
+        # 多 locale: 传 "primary,secondary,..." 给 helper(单 locale 时就是原字符串)。
+        # helper 内 primary 驱动生命周期, 每个 secondary 起一条被动流并行识别唤醒词。
+        if _ensure_apple_speech_helper_binary(helper_bin, helper_swift, helper_plist):
+            cmd = [helper_bin, VE_VOICE_CHAT_CAPTURE_LOCALE_ARG]
+        else:
+            cmd = ["/usr/bin/swift", helper_swift, VE_VOICE_CHAT_CAPTURE_LOCALE_ARG]
+
+        global _APPLE_KWS_RESUME_NOT_BEFORE
+        with _APPLE_KWS_RESUME_LOCK:
+            resume_not_before = _APPLE_KWS_RESUME_NOT_BEFORE
+        resume_wait = resume_not_before - time.monotonic()
+        if resume_wait > 0:
+            logger.info(
+                "Voice chat apple KWS waiting %.2fs for post-TTS route recovery",
+                resume_wait,
+            )
+            self._stop.wait(timeout=resume_wait)
+            if self._stop.is_set():
+                return
+            route_stable = wait_for_audio_route_stability(
+                timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT
+            )
+            logger.info(
+                "Voice chat apple KWS post-TTS route stability: stable=%s",
+                route_stable,
+            )
+            if not route_stable:
+                return
+            with _APPLE_KWS_RESUME_LOCK:
+                if _APPLE_KWS_RESUME_NOT_BEFORE <= time.monotonic():
+                    _APPLE_KWS_RESUME_NOT_BEFORE = 0.0
+
+        route_cooldown = self._apple_route_start_cooldown_until - time.monotonic()
+        if route_cooldown > 0:
+            logger.info(
+                "Voice chat apple KWS spawn held by -10868 cooldown: %.2fs",
+                route_cooldown,
+            )
+            self._stop.wait(timeout=route_cooldown)
+            if self._stop.is_set():
+                return
+
+        # 与上次 helper 退出拉开间隔(CoreAudio teardown 保护)。这段【必须】等满 —— 它的
+        # 目的就是给音频栈留拆解时间; 绝不能因为 route-change 就缩短它去抢那零点几秒, 因为
+        # route-change 正是 CoreAudio churn 高峰, 提前 spawn 会撞进半拆状态再次触发失败 loop。
+        # 但等满之后要重新校验: 这 1.2s 里若状态变脏(停止/暂停/被听写抢麦/route-change 变
+        # pending), 就【不 spawn】干净退出, 让外层回顶走事件驱动闸门。_apple_spawned 仍为
+        # False, 外层据此不把这次干净退出误计为 fast-fail。
+        global _LAST_APPLE_SPEECH_EXIT_AT
+        last_exit = _LAST_APPLE_SPEECH_EXIT_AT
+        if last_exit > 0:
+            gap = APPLE_SPEECH_RESTART_GAP - (time.monotonic() - last_exit)
+            if gap > 0:
+                self._stop.wait(timeout=gap)
+        # gap 后重新校验: 状态变脏则 spawn 前干净退出(不撞 CoreAudio churn, 不占麦)。
+        if (
+            self._stop.is_set()
+            or not self._enabled.is_set()
+            or IS_DICTATION_ACTIVE
+            or IS_SPEAKING
+            or _TTS_PREEMPT_KWS.is_set()
+            or AUDIO_ROUTE_CHANGE_PENDING.is_set()
+        ):
+            logger.debug(
+                "Voice chat apple KWS: state changed during restart gap; "
+                "skipping helper spawn this round"
+            )
+            return
+
+        env = dict(os.environ)
+        env["SPEECH_HELPER_ON_DEVICE"] = "1" if VE_VOICE_CHAT_APPLE_ON_DEVICE else "0"
+        env["SPEECH_HELPER_CONTEXTUAL_STRINGS"] = json.dumps(
+            [word for word, _score, _threshold in VE_VOICE_CHAT_KEYWORDS],
+            ensure_ascii=False,
+        )
+        proc = None
+        try:
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",
+                    bufsize=1,
+                    env=env,
+                )
+            except Exception as exc:
+                logger.warning("Voice chat apple KWS: helper start failed: %s", exc)
+                return
+
+            # helper 进程已起(不代表已进入聆听 —— 那要等 "started" 事件)。标记本轮确实
+            # spawn 过, 使外层能把"spawn 了但没 started"(真 fast-fail)与"gap 后干净退出"
+            # (未 spawn)区分开。同时记录 spawn 时刻, 供 fast-fail 的最小间隔退避按此计。
+            self._apple_spawned = True
+            self._apple_spawn_at = time.monotonic()
+
+            def _stderr_relay():
+                try:
+                    if proc.stderr:
+                        for line in proc.stderr:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            # 分级: 关键诊断行(无麦/致命/重启上限等)保持 INFO; 其余每次会话必刷
+                            # 的常规生命周期降 DEBUG, 默认级别下不刷屏, 排障开 DEBUG 仍可见。
+                            _low = line.lower()
+                            if any(m in _low for m in _APPLE_KWS_KEEP_INFO_MARKERS):
+                                logger.info("Apple KWS helper: %s", line)
+                            else:
+                                logger.debug("Apple KWS helper: %s", line)
+                except Exception:
+                    pass
+
+            threading.Thread(
+                target=_stderr_relay, daemon=True, name="AppleKWSStderr"
+            ).start()
+
+            logger.info("Voice chat apple KWS: session listening (pid=%d)", proc.pid)
+
+            q: queue.Queue = queue.Queue()
+            eof = threading.Event()
+
+            def _reader():
+                try:
+                    if proc.stdout:
+                        for line in proc.stdout:
+                            q.put(line)
+                except Exception:
+                    pass
+                finally:
+                    eof.set()
+
+            threading.Thread(target=_reader, daemon=True, name="AppleKWSRead").start()
+
+            def _make_turn(kw, text):
+                """从当前命中流文本中去掉唤醒词；空值表示继续在本会话等待命令。"""
+                query = text or ""
+                idx = query.find(kw)
+                if idx >= 0:
+                    query = query[idx + len(kw) :]
+                return query.strip(" ，,。.!！?？") or None
+
+            wake_keyword = None
+            wake_matched_at = 0.0
+            # 命中唤醒词的流的 locale。多 locale 下每条流各发【本流累计全文】的 partial,
+            # 若不区分流"取最新一条"会在两种语言转写间反复横跳、互相覆盖。故命中唤醒词后
+            # 把指令累计【钉】在命中那条流上(唤醒词与后续指令天然同语言同流), 使
+            # _make_turn 的字面去唤醒词有效。单 locale 时 helper 不发 locale 字段 -> None,
+            # 一切退化为旧行为。
+            matched_locale = None
+            command_locale = None
+            query_text = ""
+            stream_texts = {}
+            stream_text_updated_at = {}
+            recognizer_states = {
+                locale: "pending" for locale in VE_VOICE_CHAT_CAPTURE_LOCALES
+            }
+            wake_stream_snapshot = {}
+            last_partial_at = 0.0
+            final_text = None
+            # SIGUSR2 是异步软重置；收到 recognition_reset 前丢弃旧 generation 事件。
+            resetting_recognition = False
+
+            def _same_stream(ev_locale):
+                # 已命中: 只认命中那条流; 未命中: 认 primary(或单 locale 的无标签流),
+                # 使唤醒前的 last_partial_at/日志仍以主流为节拍。
+                if matched_locale is not None:
+                    return ev_locale == matched_locale
+                return ev_locale is None or ev_locale == VE_VOICE_CHAT_PRIMARY_LOCALE
+
+            def _notification_model(kw):
+                route = VE_VOICE_CHAT_WAKE_ROUTES.get(kw)
+                if route and route[0] == "model":
+                    return route[1]
+                return None
+
+            while not self._stop.is_set() and self._enabled.is_set():
+                if IS_DICTATION_ACTIVE:
+                    # Ctrl Dictation remains the only path that takes CoreAudio ownership.
+                    return
+                try:
+                    line = q.get(timeout=0.05)
+                except queue.Empty:
+                    if wake_keyword:
+                        now = time.monotonic()
+                        command = _make_turn(wake_keyword, query_text)
+                        # 只说唤醒词时保持当前双语 helper 与麦克风流，继续等后续命令。
+                        # 只有已经识别到非空命令，之后的静音才请求 final 并结束本会话。
+                        if (
+                            command
+                            and last_partial_at > 0
+                            and (now - last_partial_at)
+                            >= VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS
+                        ):
+                            logger.info(
+                                "Voice chat apple KWS: command complete in persistent session, query=%r",
+                                command[:80],
+                            )
+                            try:
+                                self._handle_wake(wake_keyword, captured_query=command)
+                            except Exception:
+                                logger.exception(
+                                    "Voice chat turn failed in persistent Apple session: keyword=%r",
+                                    wake_keyword,
+                                )
+                            # Drop all recognition events accumulated while LLM/TTS was active.
+                            while True:
+                                try:
+                                    q.get_nowait()
+                                except queue.Empty:
+                                    break
+                            try:
+                                proc.send_signal(signal.SIGUSR2)
+                                resetting_recognition = True
+                            except Exception as exc:
+                                logger.error(
+                                    "Voice chat apple KWS: SIGUSR2 soft reset failed: %s",
+                                    exc,
+                                )
+                                return
+                            wake_keyword = None
+                            wake_matched_at = 0.0
+                            matched_locale = None
+                            command_locale = None
+                            query_text = ""
+                            final_text = None
+                            stream_texts.clear()
+                            stream_text_updated_at.clear()
+                            wake_stream_snapshot.clear()
+                            last_partial_at = 0.0
+                            recognizer_states = {
+                                locale: "resetting"
+                                for locale in VE_VOICE_CHAT_CAPTURE_LOCALES
+                            }
+                            logger.info(
+                                "Voice chat apple KWS resumed on persistent AVAudioEngine after TTS"
+                            )
+                        elif (
+                            not command
+                            and wake_matched_at > 0
+                            and (now - wake_matched_at)
+                            >= VE_VOICE_CHAT_DICTATION_TIMEOUT
+                        ):
+                            logger.info(
+                                "Voice chat apple KWS: command wait timed out after %.1fs; soft resetting",
+                                VE_VOICE_CHAT_DICTATION_TIMEOUT,
+                            )
+                            try:
+                                proc.send_signal(signal.SIGUSR2)
+                                resetting_recognition = True
+                            except Exception:
+                                return
+                            wake_keyword = None
+                            wake_matched_at = 0.0
+                            matched_locale = None
+                            command_locale = None
+                            query_text = ""
+                            final_text = None
+                            stream_texts.clear()
+                            stream_text_updated_at.clear()
+                            wake_stream_snapshot.clear()
+                            last_partial_at = 0.0
+                            continue
+                    continue
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except Exception:
+                    continue
+                typ = event.get("type")
+                if typ == "recognition_reset":
+                    resetting_recognition = False
+                    stream_texts.clear()
+                    stream_text_updated_at.clear()
+                    wake_stream_snapshot.clear()
+                    for locale in VE_VOICE_CHAT_CAPTURE_LOCALES:
+                        recognizer_states[locale] = "resetting"
+                    continue
+                if resetting_recognition and typ in {"partial", "final"}:
+                    logger.debug(
+                        "Voice chat apple KWS: ignoring %s while recognition reset is pending",
+                        typ,
+                    )
+                    continue
+                if typ == "started":
+                    # helper 已真正进入聆听(引擎起+tap 装好)。标记本会话为 productive。
+                    self._apple_session_started = True
+                    self._apple_route_start_failures = 0
+                    self._apple_route_start_cooldown_until = 0.0
+                    self._apple_last_start_error = None
+                    self._apple_route_quarantined = False
+                    primary = event.get("locale") or VE_VOICE_CHAT_PRIMARY_LOCALE
+                    recognizer_states[primary] = "armed"
+                    for locale in event.get("secondary_locales") or ():
+                        recognizer_states.setdefault(locale, "starting")
+                elif typ == "recognizer_state":
+                    locale = event.get("locale")
+                    state = event.get("state") or "unknown"
+                    if locale:
+                        recognizer_states[locale] = state
+                    debug = event.get("secondary_debug") or {}
+                    logger.info(
+                        "Voice chat apple KWS recognizer state: locale=%s state=%s "
+                        "failures=%s retry_after=%s error=%r generation=%s "
+                        "buffers=%s frames=%s results=%s lifetime=%.3fs "
+                        "first_audio_delay=%.3fs last_audio_age=%.3fs",
+                        locale,
+                        state,
+                        event.get("failures"),
+                        event.get("retry_after"),
+                        event.get("error"),
+                        debug.get("generation", event.get("generation")),
+                        debug.get("audio_buffers"),
+                        debug.get("audio_frames"),
+                        debug.get("results"),
+                        float(debug.get("task_lifetime", 0.0)),
+                        float(debug.get("first_audio_delay", -1.0)),
+                        float(debug.get("last_audio_age", -1.0)),
+                    )
+                    continue
+                if typ == "partial":
+                    text = (event.get("text") or "").strip()
+                    if not text:
+                        continue
+                    ev_locale = event.get("locale") or VE_VOICE_CHAT_PRIMARY_LOCALE
+                    now = time.monotonic()
+                    stream_texts[ev_locale] = text
+                    stream_text_updated_at[ev_locale] = now
+                    recognizer_states[ev_locale] = "active"
+                    secondary_debug = event.get("secondary_debug")
+                    if secondary_debug:
+                        logger.info(
+                            "Voice chat apple KWS recognizer result debug: locale=%s "
+                            "generation=%s buffers=%s frames=%s results=%s lifetime=%.3fs "
+                            "first_audio_delay=%.3fs last_audio_age=%.3fs",
+                            ev_locale,
+                            secondary_debug.get("generation"),
+                            secondary_debug.get("audio_buffers"),
+                            secondary_debug.get("audio_frames"),
+                            secondary_debug.get("results"),
+                            float(secondary_debug.get("task_lifetime", 0.0)),
+                            float(secondary_debug.get("first_audio_delay", -1.0)),
+                            float(secondary_debug.get("last_audio_age", -1.0)),
+                        )
+                    # 任一 recognizer 更新时，同时打印全部配置流的最新快照。没有新回调的
+                    # 一侧保留旧值并显示 age，明确它不是与本次事件同步产生的结果。
+                    snapshot = []
+                    for locale in VE_VOICE_CHAT_CAPTURE_LOCALES:
+                        latest = stream_texts.get(locale)
+                        updated_at = stream_text_updated_at.get(locale)
+                        if latest is None or updated_at is None:
+                            snapshot.append(
+                                f"{locale}=<{recognizer_states.get(locale, 'pending')}>"
+                            )
+                        else:
+                            snapshot.append(
+                                f"{locale}={latest[:80]!r} age={max(0.0, now - updated_at):.2f}s"
+                            )
+                    log_key = tuple(
+                        (locale, stream_texts.get(locale))
+                        for locale in VE_VOICE_CHAT_CAPTURE_LOCALES
+                    )
+                    if log_key != self._last_partial_logged:
+                        self._last_partial_logged = log_key
+                        logger.info(
+                            "Voice chat apple KWS bilingual[%s updated]: %s",
+                            ev_locale,
+                            " | ".join(snapshot),
+                        )
+                    if wake_keyword is None:
+                        # 唤醒前: 任一 locale 流的 partial 都参与唤醒词匹配(多 locale
+                        # 的意义就在这里 —— 中英文唤醒词各由本语言流更可靠地命中)。
+                        hit = _ve_voice_chat_match_keyword(text)
+                        if hit:
+                            wake_keyword = hit
+                            matched_locale = ev_locale
+                            command_locale = ev_locale
+                            query_text = text
+                            wake_stream_snapshot = dict(stream_texts)
+                            wake_matched_at = time.monotonic()
+                            last_partial_at = wake_matched_at
+                            logger.info(
+                                "Voice chat apple KWS matched: %r "
+                                "(locale=%s partial=%r)",
+                                hit,
+                                ev_locale or VE_VOICE_CHAT_PRIMARY_LOCALE,
+                                text[:60],
+                            )
+                            # 已经在当前双语 helper 中持续收音，不需要启动第二个听写 helper。
+                            # HUD 关闭时用现有 osascript 通知给出明确反馈；HUD 开启时由 HUD
+                            # 自己承担可见反馈，避免重复弹窗。
+                            if not VE_VOICE_CHAT_SHOW_HUD:
+                                _ve_voice_chat_notify(
+                                    "正在聆听，请继续说话…",
+                                    subtitle=(
+                                        "已唤醒 "
+                                        + _ve_voice_chat_model_alias(
+                                            _notification_model(hit)
+                                        )
+                                    ),
+                                )
+                        elif _same_stream(ev_locale):
+                            # 未命中: 仅主流刷新静音节拍, secondary 不扰动。
+                            last_partial_at = time.monotonic()
+                    else:
+                        # 命中后不再钉死 recognizer。两条 recognizer 共享音频，实际中文可能
+                        # 由 en-US 先给出可用文本，英文也可能由 zh-CN 先给出。任一流在唤醒后
+                        # 产生了新文本且能提取出命令，就允许它接管本轮。
+                        previous = wake_stream_snapshot.get(ev_locale)
+                        candidate = _make_turn(wake_keyword, text)
+                        nested_wake = _ve_voice_chat_match_keyword(text)
+                        if (
+                            text != previous
+                            and candidate
+                            and not (nested_wake and candidate == text)
+                        ):
+                            command_locale = ev_locale
+                            query_text = text
+                            final_text = None
+                            last_partial_at = time.monotonic()
+                elif typ == "final":
+                    ev_locale = event.get("locale") or VE_VOICE_CHAT_PRIMARY_LOCALE
+                    text = (event.get("text") or "").strip()
+                    # 只让当前提供命令的 recognizer 更新 final，其他流的端点不能覆盖命令。
+                    if text and (command_locale is None or ev_locale == command_locale):
+                        candidate = (
+                            _make_turn(wake_keyword, text) if wake_keyword else None
+                        )
+                        if candidate:
+                            final_text = text
+                    logger.info(
+                        "Voice chat apple KWS final[recognizer=%s]: %r",
+                        ev_locale,
+                        (final_text or "")[:80],
+                    )
+                elif typ == "error":
+                    error_text = str(event.get("error") or "")
+                    self._apple_last_start_error = (
+                        "-10868" if "-10868" in error_text else "other"
+                    )
+                    logger.warning(
+                        "Voice chat apple KWS helper error: %s",
+                        error_text,
+                    )
+                    return
+                elif typ == "stopped":
+                    return
+                if eof.is_set() and q.empty():
+                    return
+                # 持久会话只用 SIGUSR2 软重置，由 recognition_reset 作为完成屏障；
+                # SIGUSR1/final 超时兜底仅属于一次性 Ctrl 听写路径。
+            return
+        finally:
+            # This function exits only for subsystem stop, Ctrl Dictation ownership handoff,
+            # or a terminal helper failure. Normal TTS turns never reach this teardown.
+            if proc is not None and proc.poll() is None:
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=5.0)
+                except Exception:
+                    pass
+            if proc is not None and proc.poll() is not None:
+                _clear_apple_speech_process_if_exited(proc)
 
     def _listen_for_keyword(self, spotter):
         stream = spotter.create_stream()
@@ -39152,6 +40994,14 @@ class VoiceChatSubsystem:
         # "无设备"进入等待, 而该流从未释放)。
         try:
             mic.start()
+            logger.info(
+                "Voice chat KWS: input stream opened (device=%r rate=%d blocksize=%d)",
+                device_index,
+                VE_VOICE_CHAT_SAMPLE_RATE,
+                blocksize,
+            )
+            _kws_dead_since = 0.0
+            _kws_stream_started_at = time.monotonic()
             while not self._stop.is_set() and self._enabled.is_set():
                 # 让麦: 听写/播报要用麦, 或 route change 待处理(既有链路即将 terminate/
                 # reinit PortAudio)时, 立即关流退出, 让既有机制安全刷新, 之后再重开。
@@ -39178,11 +41028,36 @@ class VoiceChatSubsystem:
                         "releasing mic"
                     )
                     return None
-                if available < blocksize:
+                if available < 160:  # 至少 ~10ms 数据才读; 纯防空转
                     self._stop.wait(timeout=0.02)
                     continue
-                samples, _overflowed = mic.read(blocksize)
-                stream.accept_waveform(VE_VOICE_CHAT_SAMPLE_RATE, samples.reshape(-1))
+                # HFP 麦按设备周期投递(实测每次最多 ~1024 帧), 永远凑不满 blocksize
+                # (1600) -> 旧门控会把 KWS 饿死: 流正常打开但永远不读, 无报错无命中。
+                # 改为有多少读多少(sherpa 流式模型接受任意块长), 上限仍按 blocksize
+                # 封顶防积压; 设备消失时 read_available 仍会先抛错/归零, 防阻塞不丢。
+                samples, _overflowed = mic.read(min(available, blocksize))
+                block = samples.reshape(-1)
+                # 仅把持续数字静音视为死流：RMS 判定 + 5s 启动宽限 + 8s 连续窗口，
+                # 避免噪声门控设备在正常思考停顿时过早触发 recovery。
+                now = time.monotonic()
+                block_rms = float(np.sqrt(np.mean(np.square(block, dtype=np.float64))))
+                dead_stream_detection_armed = now - _kws_stream_started_at >= 5.0
+                if dead_stream_detection_armed and block_rms <= 1e-7:
+                    if _kws_dead_since == 0.0:
+                        _kws_dead_since = now
+                    elif now - _kws_dead_since >= 8.0:
+                        logger.warning(
+                            "Voice chat KWS: input stream RMS remained near zero "
+                            "for %.1fs after startup grace; forcing audio recovery",
+                            now - _kws_dead_since,
+                        )
+                        AUDIO_ROUTE_CHANGE_PENDING.set()
+                        TTS_OUTPUT_RECOVERY_REQUIRED.set()
+                        return None
+                else:
+                    _kws_dead_since = 0.0
+                # 原样喂给模型(不叠加任何增益处理: 实测增益会丢英文词命中)。
+                stream.accept_waveform(VE_VOICE_CHAT_SAMPLE_RATE, block)
                 while spotter.is_ready(stream):
                     spotter.decode_stream(stream)
                     result = spotter.get_result(stream)
@@ -39206,7 +41081,7 @@ class VoiceChatSubsystem:
             )
 
     # ---- 一轮对话 ----
-    def _handle_wake(self, keyword):
+    def _handle_wake(self, keyword, captured_query: Optional[str] = None):
         route = VE_VOICE_CHAT_WAKE_ROUTES.get(keyword)
         if route is None:
             logger.warning("Voice chat wake without route: %r", keyword)
@@ -39243,13 +41118,32 @@ class VoiceChatSubsystem:
                 return
             IS_DICTATION_ACTIVE = True
 
+        # HUD 关闭时唤醒后是静默进入聆听、无可见反馈。补一条系统通知告知"已唤醒、请说话",
+        # 让用户知道助手已在聆听。放在竞态守卫通过之后(真正要开始聆听这一句), 唤醒被忽略
+        # 时不会误报。HUD 开启时内部听写 HUD 已有可见提示, 故不重复通知。
+        # (apple 单会话引擎的指令已在同一会话捕获, 不再需要"请说话"提示。)
+        if captured_query is None and not VE_VOICE_CHAT_SHOW_HUD:
+            _ve_voice_chat_notify(
+                "正在聆听，请说话…",
+                subtitle=f"已唤醒 {_ve_voice_chat_model_alias(model)}",
+            )
+
         self._turn_abort.clear()
         # 不再预闪 voice_wake HUD —— _run_apple_speech_dictation 内部会立刻用
         # "Apple Dictation [locale] Listening..." 覆盖它, 预闪只会一闪即逝造成误导。
         # 让内部听写 HUD(含 partial 实时反馈)直接接管, 反而更真实。
-        try:
-            query = self._run_wake_dictation(VE_VOICE_CHAT_CAPTURE_LOCALE)
-        finally:
+        if captured_query is None:
+            try:
+                # sherpa 引擎: 唤醒由 KWS 自己完成, 这里只采集一句指令。
+                # _run_apple_speech_dictation 不做 locale 区分(会"取最新 partial"),
+                # 故只用 primary 单 locale, 不传多 locale 实参。
+                query = self._run_wake_dictation(VE_VOICE_CHAT_PRIMARY_LOCALE)
+            finally:
+                with DICTATION_LOCK:
+                    IS_DICTATION_ACTIVE = False
+        else:
+            # apple 单会话引擎: 指令已在同一听写会话里捕获, 不再开新 helper。
+            query = captured_query
             with DICTATION_LOCK:
                 IS_DICTATION_ACTIVE = False
 
@@ -39264,10 +41158,19 @@ class VoiceChatSubsystem:
         # 标记 wake 正在播报: 覆盖流式+播报等待整个生命周期, 使暂停/关闭的 owner
         # 守卫只切 wake 自己的 TTS, 不误伤其他功能正在播放的语音。
         self._wake_speaking_active.set()
+        # 覆盖“模型流式响应 -> 首个 TTS 入队 -> IS_SPEAKING 置位”的空窗。否则 answer
+        # 已生成但合并缓冲尚未 flush 时，Apple KWS 会提前重启并抢回蓝牙 HFP。
+        _TTS_PREEMPT_KWS.set()
         try:
-            self._stream_and_speak(model, query)
-            self._wait_playback_idle(timeout=VE_VOICE_CHAT_ANSWER_TIMEOUT)
+            spoken_any = self._stream_and_speak(model, query)
+            if spoken_any:
+                self._wait_playback_idle(timeout=VE_VOICE_CHAT_ANSWER_TIMEOUT)
+            else:
+                _TTS_PREEMPT_KWS.clear()
         finally:
+            # 正常播放由 consumer 在队列完全排空时清；异常/无语音路径在这里兜底释放。
+            if not IS_SPEAKING and TTS_TEXT_QUEUE.empty():
+                _TTS_PREEMPT_KWS.clear()
             self._wake_speaking_active.clear()
 
     def _run_wake_dictation(self, locale):
@@ -39339,7 +41242,8 @@ class VoiceChatSubsystem:
         if not content:
             return
         with self._history_lock:
-            entry = {"role": role, "content": content}
+            self._history_seq += 1
+            entry = {"role": role, "content": content, "seq": self._history_seq}
             if model:
                 # 记录产出该(助手)轮的模型, 供之后唤醒词切模型重放时按"各轮自己的模型
                 # 别名"标注; 否则会误用当前目标模型别名, 把旧模型(如豆包)的回答挂到新模型
@@ -39358,6 +41262,28 @@ class VoiceChatSubsystem:
     def _history_clear(self):
         with self._history_lock:
             self._history.clear()
+            # "换个话题"清空虚拟历史时一并清水位线(此时 _conversations 也被清空, 全部模型
+            # 回到无服务端会话状态)。seq 保持单调不重置即可。
+            self._history_covered.clear()
+
+    def _get_history_covered(self, model):
+        with self._history_lock:
+            return int(self._history_covered.get(model, 0))
+
+    def _mark_history_covered(self, model):
+        """标记该模型服务端会话已覆盖到"当前历史里的最高 seq"。
+
+        本轮已把缺口 delta 折进请求、当前问答也进入了该模型的服务端会话, 故它现已
+        看过截至此刻的全部虚拟历史轮次。下次切回它时, 只需再补此刻之后(其它模型产生)的
+        新增 delta。
+        """
+        with self._history_lock:
+            max_seq = 0
+            for m in self._history:
+                seq = int(m.get("seq", 0))
+                if seq > max_seq:
+                    max_seq = seq
+            self._history_covered[model] = max_seq
 
     def _get_conversation_id(self, model):
         with self._conversations_lock:
@@ -39379,11 +41305,19 @@ class VoiceChatSubsystem:
             max_chars=int(os.getenv("VE_VOICE_CHAT_MAX_CHARS", "96")),
         )
         conversation_id = self._get_conversation_id(model)
-        # messages 组装: 目标模型已有自己的 browser conversation_id 时, 服务端历史由
-        # relay 侧维护, 只发当前这一句即可; 若无(首次 / 唤醒词刚切到该模型), 则把累积
-        # 的虚拟会话历史重放进去, 让新模型继承此前对话的上下文。历史里存的是不带 hint
-        # 前缀的干净文本; 仅当前这一轮加简洁口语 hint。
-        history = [] if conversation_id else self._history_snapshot()
+        # messages 组装(切回旧模型不丢中途对话)。历史里存的是不带 hint 前缀的
+        # 干净文本; 仅当前这一轮加简洁口语 hint。
+        full_history = self._history_snapshot()
+        if conversation_id:
+            # 目标模型已有服务端会话(relay 侧维护其自身历史)。不再"只发当前句"——那会丢掉
+            # 自本模型上次作答后、在其它模型上发生、它服务端还没见过的那些轮次。改为只补
+            # "缺口 delta"(按 seq > 水位线判定): 已在其服务端的历史不重发, delta 为空则只发
+            # 当前句, delta 非空则把这段折进当前轮文本。
+            covered = self._get_history_covered(model)
+            history = [m for m in full_history if int(m.get("seq", 0)) > covered]
+        else:
+            # 首次切到该模型(或"换个话题"后): 无服务端会话, 重放全部虚拟历史让它继承上下文。
+            history = full_history
         if not history:
             messages = [{"role": "user", "content": VE_VOICE_CHAT_CONCISE_HINT + query}]
         elif _ve_voice_chat_is_browser_model(model):
@@ -39516,17 +41450,37 @@ class VoiceChatSubsystem:
         # (如本轮被打断)时只记 user 轮, 由 _history_append 自行忽略空串。
         self._history_append("user", query)
         self._history_append("assistant", "".join(answer_parts), model=model)
+        # 若该模型确有服务端 conversation_id(本轮已把缺口 delta 折进请求、当前问答
+        # 也已进入其服务端会话), 则推进它的水位线到当前最高 seq —— 它现已覆盖截至此刻的
+        # 全部虚拟历史, 下次切回只需再补此刻之后(其它模型产生)的新增 delta。本地模型无服务端
+        # 记忆(conversation_id 恒空)、恒走全量重放, 故不标记水位线。
+        if self._get_conversation_id(model) and answer_chars > 0:
+            self._mark_history_covered(model)
+        elif self._get_conversation_id(model):
+            logger.warning(
+                "Voice chat history watermark not advanced: model=%s returned no answer delta",
+                model,
+            )
+
+        return spoken_any
 
     def _wait_playback_idle(self, *, timeout):
-        # 等播报结束再恢复监听,避免麦克风听到自己的回答造成回环。
+        # 以 KWS-preempt lease 为提交边界，而不是在固定 300ms 后瞬时检查队列。
+        # speak_local_async 在第一段入队前保持该 lease，consumer 仅在整批播放排空后清除，
+        # 因此覆盖合并缓冲、输出恢复和 IS_SPEAKING 尚未置位的全部空窗。
         deadline = time.monotonic() + max(0.0, timeout)
-        time.sleep(0.3)  # 给合并缓冲/队列进入播放态
         while time.monotonic() < deadline and not self._stop.is_set():
-            if self._turn_abort.is_set():  # 暂停/关闭:立即停止等待
+            if self._turn_abort.is_set():
+                _TTS_PREEMPT_KWS.clear()
                 return
-            if TTS_TEXT_QUEUE.empty() and not IS_SPEAKING:
+            if not _TTS_PREEMPT_KWS.is_set():
                 return
             time.sleep(0.1)
+        if _TTS_PREEMPT_KWS.is_set():
+            logger.warning(
+                "Voice chat TTS lifecycle wait timed out; releasing KWS preempt"
+            )
+            _TTS_PREEMPT_KWS.clear()
 
 
 def start_voice_chat_subsystem():
@@ -46455,7 +48409,14 @@ def main():
     if not start_tts_async_loop():
         raise RuntimeError("Unable to start process-wide Edge-TTS asyncio loop")
 
-    start_tts_consumer_worker()
+    # voice chat 开启时不在启动阶段预启动 TTS consumer: consumer 启动会立即建
+    # 44.1k 输出流, 而 voice chat 监听需要耳机停在 HFP(无输出流), 预启动只会
+    # 造成"建了又被 stop"的竞态(启动日志里的 Cannot stop ... pending close)。
+    # 改懒启动: speak_local_async / speak_local_sync_and_wait_result /
+    # _nudge_audio_recovery 入口幂等调用 start_tts_consumer_worker()(已运行则直接
+    # 返回), 首次播报前 consumer 启动并复用 voice chat 会话结束已恢复的输出流。
+    if not VE_VOICE_CHAT_ENABLED:
+        start_tts_consumer_worker()
 
     use_http = "--http" in sys.argv
 
@@ -46608,15 +48569,37 @@ def main():
             logger.debug(f"HTTP gateway shutdown ignored error: {e}")
 
         # 3. 清理应用资源
+        logger.info("Main shutdown debug stage begin: cleanup_service")
+        stage_started_at = time.monotonic()
         try:
             cleanup_service()
         except Exception as e:
-            logger.debug(f"cleanup_service ignored error: {e}")
+            logger.exception("cleanup_service failed during main shutdown: %s", e)
+        finally:
+            logger.info(
+                "Main shutdown debug stage end: cleanup_service elapsed=%.3fs",
+                time.monotonic() - stage_started_at,
+            )
 
+        logger.info("Main shutdown debug stage begin: stop_llm_worker")
+        stage_started_at = time.monotonic()
         try:
-            stop_llm_worker(timeout=10.0)
+
+            def stop_llm_worker_for_shutdown() -> None:
+                stop_llm_worker(timeout=1.0)
+
+            completed, _ = _run_shutdown_call_bounded(
+                "stop-llm-worker",
+                stop_llm_worker_for_shutdown,
+                timeout=1.5,
+            )
+            logger.info(
+                "Main shutdown debug stage end: stop_llm_worker completed=%s elapsed=%.3fs",
+                completed,
+                time.monotonic() - stage_started_at,
+            )
         except Exception as e:
-            logger.debug(f"stop_llm_worker ignored error: {e}")
+            logger.exception("stop_llm_worker failed during main shutdown: %s", e)
 
         # 4. 不要 mass-cancel asyncio.all_tasks()
         try:
@@ -46629,6 +48612,7 @@ def main():
         except Exception as e:
             logger.debug(f"Loop close ignored error: {e}")
 
+        _log_shutdown_thread_snapshot("main-finally-end")
         logger.info("✨ 服务器已完全关闭，所有资源均已释放。")
 
 

@@ -6,6 +6,81 @@ import AVFoundation
 import CoreAudio
 import os.log
 
+extension AVAudioPCMBuffer {
+    /// 为另一个异步 Speech request 创建独立 PCM 存储。
+    /// 按 AudioBufferList 的实际 mDataByteSize 复制，兼容交错/非交错及不同 PCM sample type。
+    func deepCopyForSpeechRequest() -> AVAudioPCMBuffer? {
+        guard let copy = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: frameCapacity
+        ) else {
+            return nil
+        }
+        copy.frameLength = frameLength
+
+        let sourceList = UnsafeMutableAudioBufferListPointer(
+            UnsafeMutablePointer(mutating: audioBufferList)
+        )
+        let destinationList = UnsafeMutableAudioBufferListPointer(
+            copy.mutableAudioBufferList
+        )
+        guard sourceList.count == destinationList.count else { return nil }
+
+        for index in 0..<sourceList.count {
+            let source = sourceList[index]
+            var destination = destinationList[index]
+            guard let sourceData = source.mData,
+                  let destinationData = destination.mData,
+                  destination.mDataByteSize >= source.mDataByteSize else {
+                return nil
+            }
+            memcpy(destinationData, sourceData, Int(source.mDataByteSize))
+            destination.mDataByteSize = source.mDataByteSize
+            destinationList[index] = destination
+        }
+        return copy
+    }
+}
+
+/// 一条独立的识别流: 一个 locale 对应一个 recognizer + request + task。
+/// 多条流共用 SpeechHelper 的同一个 AVAudioEngine input tap(同一路麦克风音频喂给多个
+/// 识别器), 用于中英文唤醒词并行识别。这是【附加、被动】通道: 只发带 locale 标签的
+/// partial/final, 绝不驱动 stop()/exit()。primary(SpeechHelper 原有单路)行为不变。
+final class RecognitionStream {
+    let locale: String
+    let recognizer: SFSpeechRecognizer?
+    var request: SFSpeechAudioBufferRecognitionRequest?
+    var task: SFSpeechRecognitionTask?
+    // 每次 arm 递增。旧 task 的延迟 final/error 只能观察自己的 generation，不能污染新流。
+    var generation = 0
+    // 每个 generation 的音频投递诊断。全部在 SpeechHelper.stateLock 下读写。
+    var armedAt: TimeInterval = 0
+    var audioBufferCount: UInt64 = 0
+    var audioFrameCount: UInt64 = 0
+    var firstAudioAt: TimeInterval = 0
+    var lastAudioAt: TimeInterval = 0
+    var resultCount: UInt64 = 0
+
+    // 重挂去重: 同一时刻只允许一次在途重挂。SFSpeechRecognitionTask 在坏音频下常
+    // 先回一个空 isFinal、随后又回一次 error(两次独立 handler 调用), 若各自排一次
+    // 重挂就会把一条流裂成两条并发 task。用此标志把"是否已排重挂"收敛为单一真值。
+    var rearmScheduled = false
+    // 连续错误(非端点)计数; 每次真正拿到结果就清零。用于退避与熄灯。
+    var failureCount = 0
+    // 熄灯: 连续错误触顶后彻底停掉本 secondary 流(它是可选增强, 失败就放弃, 绝不
+    // 拖垮 helper), 直到下一次 start() 重新拉起。
+    var disabled = false
+
+    init(locale: String) {
+        self.locale = locale
+        if locale.lowercased() == "auto" || locale.isEmpty {
+            self.recognizer = SFSpeechRecognizer()
+        } else {
+            self.recognizer = SFSpeechRecognizer(locale: Locale(identifier: locale))
+        }
+    }
+}
+
 final class SpeechHelper: NSObject {
     // private var audioDiagnosticTimer: DispatchSourceTimer?
     private var audioConfigurationObserver: NSObjectProtocol?
@@ -20,6 +95,14 @@ final class SpeechHelper: NSObject {
 
     private let maxAudioRestartAttempts = 3
 
+    // secondary(多 locale 被动流)连续错误的熄灯阈值。达到即停掉该流, 不再重挂,
+    // 直到下一次 start()。secondary 只是唤醒词并行识别的增强, 失败放弃优于自旋。
+    private let maxSecondaryFailures = 5
+    // 多 locale 常驻 KWS 中，primary 的无语音端点必须只重挂本流，不能退出 helper。
+    private var primaryRearmScheduled = false
+    private var primaryFailureCount = 0
+    private var primaryTaskGeneration = 0
+
 
     private let audioEngine = AVAudioEngine()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -27,6 +110,14 @@ final class SpeechHelper: NSObject {
     private var speechRecognizer: SFSpeechRecognizer?
 
     private let localeIdentifier: String
+
+    // 多 locale 并行识别(中英文唤醒词并行)的附加 locale。为空 = 单 locale 模式,
+    // 行为与旧版一致(dictation 走此路径, 不受影响)。非空时每个附加 locale 各起一条
+    // 被动 RecognitionStream, 只发带 locale 标签的 partial/final, 绝不触发 stop/exit。
+    private let secondaryLocaleIdentifiers: [String]
+    private var secondaryStreams: [RecognitionStream] = []
+    private var multiLocale: Bool { !secondaryLocaleIdentifiers.isEmpty }
+
     private let stateLock = NSLock()
     private var isStopping = false
 
@@ -55,23 +146,72 @@ final class SpeechHelper: NSObject {
     private let logger = OSLog(subsystem: "com.local.speechhelper", category: "Debug")
 
 
-    init(localeIdentifier: String) {
-        self.localeIdentifier = localeIdentifier
+    init(localeIdentifier rawLocale: String) {
+        // 支持逗号分隔的多 locale(如 "zh-CN,en-US"): 第一个为 primary(驱动生命周期,
+        // 单 locale 行为不变), 其余为 secondary 被动流(并行识别, 只发带 locale 标签的
+        // partial/final)。不含逗号时 secondary 为空 = 旧行为。
+        let parts = rawLocale
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        let primaryLocale = parts.first ?? rawLocale
+        self.localeIdentifier = primaryLocale
+        self.secondaryLocaleIdentifiers = parts.count > 1 ? Array(parts.dropFirst()) : []
         super.init()
 
-        self.debugLog("初始化 SpeechHelper, 语言: \(localeIdentifier)")
+        self.debugLog("初始化 SpeechHelper, 主语言: \(primaryLocale), 附加语言: \(self.secondaryLocaleIdentifiers)")
 
-        if localeIdentifier.lowercased() == "auto" || localeIdentifier.isEmpty {
+        if primaryLocale.lowercased() == "auto" || primaryLocale.isEmpty {
             self.speechRecognizer = SFSpeechRecognizer()
         } else {
-            self.speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier))
+            self.speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: primaryLocale))
         }
 
         if self.speechRecognizer == nil {
             self.debugLog("警告: SFSpeechRecognizer 初始化返回 nil (可能是语言代码错误或系统不支持)")
         }
+
+        for loc in self.secondaryLocaleIdentifiers {
+            self.secondaryStreams.append(RecognitionStream(locale: loc))
+        }
     }
 
+
+    private var useOnDeviceRecognition: Bool {
+        ProcessInfo.processInfo.environment["SPEECH_HELPER_ON_DEVICE"] == "1"
+    }
+
+    private lazy var contextualStrings: [String] = {
+        guard let raw = ProcessInfo.processInfo.environment[
+            "SPEECH_HELPER_CONTEXTUAL_STRINGS"
+        ], let data = raw.data(using: .utf8),
+           let values = try? JSONSerialization.jsonObject(with: data) as? [String]
+        else { return [] }
+        var seen = Set<String>()
+        return values.flatMap { value -> [String] in
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return [] }
+            let variants = [
+                trimmed,
+                trimmed.replacingOccurrences(of: "DeepSeek", with: "Deep Seek"),
+                trimmed.lowercased()
+            ]
+            return variants.filter { seen.insert($0).inserted }
+        }
+    }()
+
+    private func configureRecognitionRequest(
+        _ request: SFSpeechAudioBufferRecognitionRequest,
+        recognizer: SFSpeechRecognizer
+    ) {
+        request.shouldReportPartialResults = true
+        request.taskHint = .dictation
+        if !contextualStrings.isEmpty { request.contextualStrings = contextualStrings }
+        if #available(macOS 10.15, *) {
+            request.requiresOnDeviceRecognition =
+                useOnDeviceRecognition && recognizer.supportsOnDeviceRecognition
+        }
+    }
 
     private func lifecycleLog(_ message: String) {
         fputs("[SpeechHelper lifecycle] \(message)\n", stderr)
@@ -106,6 +246,89 @@ final class SpeechHelper: NSObject {
         return recognitionRequest
     }
 
+    // tap 每次取得 request + stream + generation 的一致快照。append 后仅当 generation
+    // 仍匹配时累计诊断，避免旧 request 的最后一包污染新 task 统计。
+    private func secondaryTargetsForAudioAppend()
+        -> [(SFSpeechAudioBufferRecognitionRequest, RecognitionStream, Int)] {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        if isStopping { return [] }
+        return secondaryStreams.compactMap { stream in
+            guard let request = stream.request else { return nil }
+            return (request, stream, stream.generation)
+        }
+    }
+
+    private func recordSecondaryAudioAppend(
+        stream: RecognitionStream,
+        generation: Int,
+        frameLength: AVAudioFrameCount
+    ) {
+        let now = ProcessInfo.processInfo.systemUptime
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        guard stream.generation == generation else { return }
+        stream.audioBufferCount += 1
+        stream.audioFrameCount += UInt64(frameLength)
+        if stream.firstAudioAt == 0 { stream.firstAudioAt = now }
+        stream.lastAudioAt = now
+    }
+
+    private func secondaryDiagnostic(
+        stream: RecognitionStream,
+        generation: Int
+    ) -> [String: Any] {
+        let now = ProcessInfo.processInfo.systemUptime
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        let sameGeneration = stream.generation == generation
+        let armedAt = sameGeneration ? stream.armedAt : 0
+        let firstAt = sameGeneration ? stream.firstAudioAt : 0
+        let lastAt = sameGeneration ? stream.lastAudioAt : 0
+        return [
+            "generation": generation,
+            "audio_buffers": sameGeneration ? stream.audioBufferCount : 0,
+            "audio_frames": sameGeneration ? stream.audioFrameCount : 0,
+            "results": sameGeneration ? stream.resultCount : 0,
+            "task_lifetime": armedAt > 0 ? max(0, now - armedAt) : 0,
+            "first_audio_delay": (armedAt > 0 && firstAt > 0) ? max(0, firstAt - armedAt) : -1,
+            "last_audio_age": lastAt > 0 ? max(0, now - lastAt) : -1
+        ]
+    }
+
+
+    // Emit a snapshot only when primary and every secondary request/task are active.
+    // Recognition remains concurrent; this event is a readiness barrier, not a serial decoder.
+    private func emitRecognizerReadinessIfComplete(reason: String) {
+        precondition(Thread.isMainThread)
+
+        stateLock.lock()
+        let stopping = isStopping
+        let primaryReady = recognitionRequest != nil && recognitionTask != nil
+        let secondaryStates = secondaryStreams.map { stream in
+            (
+                locale: stream.locale,
+                ready: stream.request != nil && stream.task != nil,
+                generation: stream.generation
+            )
+        }
+        let primaryGeneration = primaryTaskGeneration
+        stateLock.unlock()
+
+        guard !stopping, primaryReady else { return }
+        guard secondaryStates.allSatisfy({ $0.ready }) else { return }
+
+        var generations: [String: Int] = [localeIdentifier: primaryGeneration]
+        for state in secondaryStates {
+            generations[state.locale] = state.generation
+        }
+        emit([
+            "type": "recognizers_ready",
+            "locales": [localeIdentifier] + secondaryStates.map { $0.locale },
+            "generations": generations,
+            "reason": reason
+        ])
+    }
 
     // 专门用于 Debug，输出到 stderr 并写入 macOS 系统日志
     private func debugLog(_ message: String) {
@@ -322,8 +545,31 @@ final class SpeechHelper: NSObject {
         }
     }
 
+    private func softResetRecognition() {
+        precondition(Thread.isMainThread)
+        guard multiLocale, !shutdownState().isStopping else { return }
+        guard audioEngine.isRunning, tapInstalled else {
+            lifecycleLog("soft recognition reset skipped: audio engine is not running")
+            return
+        }
+        primaryRearmScheduled = false
+        primaryFailureCount = 0
+        armPrimaryStream()
+        rearmSecondaryStreamsAfterAudioRestart()
+        emit([
+            "type": "recognition_reset",
+            "primary_locale": localeIdentifier,
+            "secondary_locales": secondaryLocaleIdentifiers
+        ])
+        lifecycleLog("soft recognition reset completed without restarting AVAudioEngine")
+    }
+
     func handleTerminationSignal(_ signalNumber: Int32) {
         switch signalNumber {
+        case SIGUSR2:
+            lifecycleLog("Received SIGUSR2: soft recognition reset")
+            softResetRecognition()
+
         case SIGUSR1:
             lifecycleLog("Received SIGUSR1: graceful dictation finish")
 
@@ -828,6 +1074,29 @@ final class SpeechHelper: NSObject {
             request?.append(
                 buffer
             )
+
+            // 单变量实验: primary 继续使用 tap 原始 buffer；每条 secondary request
+            // 各自获得独立 PCM 存储，排除同一个 AVAudioPCMBuffer 被两个异步 Speech
+            // request 共同持有/消费的未公开行为。tap bufferSize 与 recognizer 配置不变。
+            if self.multiLocale {
+                for (secReq, stream, generation) in self.secondaryTargetsForAudioAppend() {
+                    guard let bufferCopy = buffer.deepCopyForSpeechRequest() else {
+                        self.emit([
+                            "type": "recognizer_state",
+                            "locale": stream.locale,
+                            "state": "copy_failed",
+                            "generation": generation
+                        ])
+                        continue
+                    }
+                    secReq.append(bufferCopy)
+                    self.recordSecondaryAudioAppend(
+                        stream: stream,
+                        generation: generation,
+                        frameLength: bufferCopy.frameLength
+                    )
+                }
+            }
         }
 
         tapInstalled = true
@@ -963,6 +1232,10 @@ final class SpeechHelper: NSObject {
                 the lifetime of the helper could exhaust the limit.
                 */
                 audioRestartAttempts = 0
+                // 音频恢复流动 -> 给 secondary 被动流一次干净重挂(多 locale 才有效)。
+                // 这样蓝牙断开/切换后, 主流重启、附加语言唤醒识别随之点亮, 而不是在
+                // 音频断流期间自旋(旧 bug), 也不是永久熄灯。
+                rearmSecondaryStreamsAfterAudioRestart()
             }
 
         } catch {
@@ -1040,21 +1313,12 @@ final class SpeechHelper: NSObject {
         }
 
         let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        request.taskHint = .dictation
-
+        configureRecognitionRequest(request, recognizer: recognizer)
         if #available(macOS 10.15, *) {
-            let useOnDevice =
-                ProcessInfo.processInfo.environment[
-                    "SPEECH_HELPER_ON_DEVICE"
-                ] == "1"
-
-            request.requiresOnDeviceRecognition =
-                useOnDevice && recognizer.supportsOnDeviceRecognition
-
             lifecycleLog(
                 "on-device recognition: " +
-                "\(request.requiresOnDeviceRecognition)"
+                "\(request.requiresOnDeviceRecognition), " +
+                "contextualStrings=\(request.contextualStrings.count)"
             )
         }
 
@@ -1092,10 +1356,16 @@ final class SpeechHelper: NSObject {
                 let state = self.shutdownState()
 
                 if !state.isStopping {
-                    self.emit([
+                    var evt: [String: Any] = [
                         "type": result.isFinal ? "final" : "partial",
                         "text": text
-                    ])
+                    ]
+                    // 单 locale 时不加 locale 字段(与旧输出逐字一致);
+                    // 多 locale 时标注 primary locale, 供 Python 区分语言流。
+                    if self.multiLocale {
+                        evt["locale"] = self.localeIdentifier
+                    }
+                    self.emit(evt)
                 }
 
                 if result.isFinal {
@@ -1116,8 +1386,11 @@ final class SpeechHelper: NSObject {
                                     reason: "final result during shutdown"
                                 )
                             }
+                        } else if self.multiLocale {
+                            self.primaryFailureCount = 0
+                            self.schedulePrimaryRearm(backoff: 0.3)
                         } else {
-                            // Recognition completed naturally.
+                            // 单 locale / 一次性听写保持原生命周期。
                             self.stop(
                                 exitAfterStop: true,
                                 cancelRecognition: false
@@ -1164,17 +1437,30 @@ final class SpeechHelper: NSObject {
                         return
                     }
 
-                    // This is an unexpected recognition error during an active session.
+                    if self.multiLocale {
+                        self.primaryFailureCount += 1
+                        let backoff = min(
+                            5.0,
+                            0.3 * pow(2.0, Double(min(self.primaryFailureCount - 1, 5)))
+                        )
+                        self.lifecycleLog(
+                            "primary[\(self.localeIdentifier)] ended; rearming in " +
+                            "\(backoff)s: \(error.localizedDescription), code=\(nsError.code), " +
+                            "onDevice=\(self.useOnDeviceRecognition)"
+                        )
+                        self.schedulePrimaryRearm(backoff: backoff)
+                        return
+                    }
+
+                    // 单 locale / 一次性听写保持原错误语义。
                     self.debugLog(
                         "Recognition error: \(error.localizedDescription), " +
                         "code=\(nsError.code)"
                     )
-
                     self.emit([
                         "type": "error",
                         "error": error.localizedDescription
                     ])
-
                     self.stop(
                         exitAfterStop: true,
                         cancelRecognition: true
@@ -1255,12 +1541,350 @@ final class SpeechHelper: NSObject {
 
         // startAudioDiagnostics()
 
+        // The initial primary task was already armed before AVAudioEngine started. Emit it
+        // explicitly; previously only secondary streams produced an "armed" JSON event.
+        if multiLocale {
+            emit([
+                "type": "recognizer_state",
+                "locale": localeIdentifier,
+                "role": "primary",
+                "state": "armed",
+                "generation": primaryTaskGeneration
+            ])
+        }
+
+        // 引擎已起、tap 已装、音频在流动 —— 此时并行拉起附加语言的被动识别流。
+        startSecondaryStreams()
+
         emit([
             "type": "started",
-            "locale": localeIdentifier
+            "locale": localeIdentifier,
+            "secondary_locales": secondaryLocaleIdentifiers
         ])
     }
 
+
+    // 多 locale 常驻模式的 primary 自愈：只替换 primary request/task，不碰
+    // AVAudioEngine、input tap 或 secondary streams。
+    private func schedulePrimaryRearm(backoff: Double) {
+        precondition(Thread.isMainThread)
+        guard multiLocale, !primaryRearmScheduled else { return }
+        guard !shutdownState().isStopping else { return }
+        primaryRearmScheduled = true
+        let scheduledGeneration = primaryTaskGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + backoff) { [weak self] in
+            guard let self = self else { return }
+            self.primaryRearmScheduled = false
+            guard self.multiLocale else { return }
+            guard !self.shutdownState().isStopping else { return }
+            guard scheduledGeneration == self.primaryTaskGeneration else { return }
+            guard self.secondaryAudioFlowing() else {
+                self.lifecycleLog("primary rearm parked: audio is not flowing")
+                return
+            }
+            self.armPrimaryStream()
+        }
+    }
+
+    private func armPrimaryStream() {
+        precondition(Thread.isMainThread)
+        guard multiLocale, !shutdownState().isStopping else { return }
+        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+            primaryFailureCount += 1
+            schedulePrimaryRearm(backoff: min(5.0, Double(primaryFailureCount)))
+            return
+        }
+
+        primaryTaskGeneration += 1
+        let generation = primaryTaskGeneration
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        configureRecognitionRequest(request, recognizer: recognizer)
+
+        stateLock.lock()
+        let staleRequest = recognitionRequest
+        let staleTask = recognitionTask
+        recognitionRequest = request
+        stateLock.unlock()
+        staleRequest?.endAudio()
+        DispatchQueue.global(qos: .userInitiated).async { staleTask?.cancel() }
+
+        recognitionTask = recognizer.recognitionTask(with: request) {
+            [weak self] result, error in
+            guard let self = self else { return }
+            if let result = result {
+                let state = self.shutdownState()
+                if !state.isStopping {
+                    self.emit([
+                        "type": result.isFinal ? "final" : "partial",
+                        "text": result.bestTranscription.formattedString,
+                        "locale": self.localeIdentifier
+                    ])
+                }
+                if result.isFinal {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        guard generation == self.primaryTaskGeneration else { return }
+                        guard !self.shutdownState().isStopping else { return }
+                        self.primaryFailureCount = 0
+                        self.schedulePrimaryRearm(backoff: 0.3)
+                    }
+                }
+                return
+            }
+            if let error = error {
+                let nsError = error as NSError
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    guard generation == self.primaryTaskGeneration else { return }
+                    guard !self.shutdownState().isStopping else { return }
+                    self.primaryFailureCount += 1
+                    let backoff = min(
+                        5.0,
+                        0.3 * pow(2.0, Double(min(self.primaryFailureCount - 1, 5)))
+                    )
+                    self.lifecycleLog(
+                        "primary[\(self.localeIdentifier)] ended; rearming in " +
+                        "\(backoff)s: \(error.localizedDescription), code=\(nsError.code), " +
+                        "onDevice=\(self.useOnDeviceRecognition)"
+                    )
+                    self.schedulePrimaryRearm(backoff: backoff)
+                }
+            }
+        }
+        emit([
+            "type": "recognizer_state",
+            "locale": localeIdentifier,
+            "role": "primary",
+            "state": "armed",
+            "generation": generation
+        ])
+        emitRecognizerReadinessIfComplete(reason: "primary_rearmed")
+        lifecycleLog("primary[\(localeIdentifier)] rearmed: generation=\(generation)")
+    }
+
+    // ==== 多 locale 并行识别: 附加(secondary)被动流的创建与自愈 ====
+    // 设计红线: secondary 只发带 locale 标签的 partial/final, 绝不调用 stop()/exit,
+    // 不触碰 primary 的 recognitionRequest/Task, 因此不影响既有 CoreAudio teardown。
+    private func startSecondaryStreams() {
+        precondition(Thread.isMainThread)
+        guard multiLocale else { return }
+
+        for stream in secondaryStreams {
+            // 新会话: 清零上一会话可能遗留的熄灯/失败/在途标志, 从干净状态拉起。
+            stream.rearmScheduled = false
+            stream.failureCount = 0
+            stream.disabled = false
+            guard let recognizer = stream.recognizer, recognizer.isAvailable else {
+                lifecycleLog("secondary recognizer unavailable: \(stream.locale)")
+                emit([
+                    "type": "recognizer_state",
+                    "locale": stream.locale,
+                    "state": "unavailable"
+                ])
+                continue
+            }
+            armSecondaryStream(stream, recognizer: recognizer)
+        }
+    }
+
+    // secondary 流只在音频真在流动时才有意义: 引擎在跑、tap 已装、未在重启、未在关闭。
+    // 这是修复"蓝牙关掉即 loop"的关键闸门 —— recognizer.isAvailable 只表示语音识别
+    // 服务可用(内置麦恒可用 -> 恒 true), 判断不了"当前有没有真实麦克风音频喂进来",
+    // 旧代码用它当唯一闸门, 于是坏音频下每 0.3s 无限重挂自旋。改用真实音频生命周期。
+    private func secondaryAudioFlowing() -> Bool {
+        precondition(Thread.isMainThread)
+        if shutdownState().isStopping { return false }
+        if audioRestartScheduled { return false }
+        return audioEngine.isRunning && tapInstalled
+    }
+
+    // 集中式 secondary 重挂: 去重 + 熄灯 + 退避 + 音频生命周期闸门。所有重挂路径
+    // (端点 isFinal、瞬时 error)都只走这里, 保证任一时刻每条流至多一次在途重挂,
+    // 消除"空 isFinal + 紧随 error 各排一次 -> 任务翻倍"的堆积。
+    private func scheduleSecondaryRearm(
+        _ stream: RecognitionStream,
+        backoff: Double
+    ) {
+        precondition(Thread.isMainThread)
+        guard multiLocale else { return }
+        if stream.rearmScheduled { return }
+        if shutdownState().isStopping { return }
+
+        stream.rearmScheduled = true
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + backoff
+        ) { [weak self, weak stream] in
+            guard let self = self, let stream = stream else { return }
+            stream.rearmScheduled = false
+            guard !self.shutdownState().isStopping else { return }
+            // 音频没在流动(路由切换 / 引擎重启中): 不硬重挂自旋。直接放弃这次;
+            // 引擎成功重启后由 rearmSecondaryStreamsAfterAudioRestart() 干净重挂。
+            guard self.secondaryAudioFlowing() else {
+                self.lifecycleLog(
+                    "secondary[\(stream.locale)] rearm skipped: audio not flowing"
+                )
+                return
+            }
+            guard let r = stream.recognizer, r.isAvailable else { return }
+            self.armSecondaryStream(stream, recognizer: r)
+        }
+    }
+
+    private func armSecondaryStream(
+        _ stream: RecognitionStream,
+        recognizer: SFSpeechRecognizer
+    ) {
+        precondition(Thread.isMainThread)
+        guard multiLocale else { return }
+
+        // 重挂前先取消上一条 task(放后台, 与 primary 同纪律), 防止旧 task 悬空并发。
+        stateLock.lock()
+        let staleTask = stream.task
+        let staleReq = stream.request
+        stream.task = nil
+        stream.request = nil
+        stateLock.unlock()
+        staleReq?.endAudio()
+        if let staleTask = staleTask {
+            DispatchQueue.global(qos: .userInitiated).async {
+                staleTask.cancel()
+            }
+        }
+
+        let req = SFSpeechAudioBufferRecognitionRequest()
+        configureRecognitionRequest(req, recognizer: recognizer)
+
+        stateLock.lock()
+        stream.generation += 1
+        let generation = stream.generation
+        stream.armedAt = ProcessInfo.processInfo.systemUptime
+        stream.audioBufferCount = 0
+        stream.audioFrameCount = 0
+        stream.firstAudioAt = 0
+        stream.lastAudioAt = 0
+        stream.resultCount = 0
+        stream.request = req
+        stateLock.unlock()
+
+        let localeTag = stream.locale
+
+        stream.task = recognizer.recognitionTask(with: req) { [weak self, weak stream] result, error in
+            guard let self = self, let stream = stream else { return }
+
+            if let result = result {
+                let text = result.bestTranscription.formattedString
+                self.stateLock.lock()
+                if stream.generation == generation { stream.resultCount += 1 }
+                self.stateLock.unlock()
+                let diagnostic = self.secondaryDiagnostic(
+                    stream: stream,
+                    generation: generation
+                )
+                let state = self.shutdownState()
+                DispatchQueue.main.async { [weak self, weak stream] in
+                    guard let self = self, let stream = stream else { return }
+                    guard generation == stream.generation else { return }
+                    guard !self.shutdownState().isStopping else { return }
+                    // 任意有效 partial/final 都证明本流正常，立即清零连续失败计数。
+                    stream.failureCount = 0
+                }
+                if !state.isStopping {
+                    self.emit([
+                        "type": result.isFinal ? "final" : "partial",
+                        "text": text,
+                        "locale": localeTag,
+                        "secondary_debug": diagnostic
+                    ])
+                }
+
+                if result.isFinal {
+                    // 端点检测后本流结束; 拿到过结果 -> 清零错误计数, 走集中式重挂
+                    // (小退避 + 去重 + 音频闸门), 让唤醒词持续可被该语言识别。
+                    DispatchQueue.main.async { [weak self, weak stream] in
+                        guard let self = self, let stream = stream else { return }
+                        guard generation == stream.generation else { return }
+                        stream.failureCount = 0
+                        self.scheduleSecondaryRearm(stream, backoff: 0.3)
+                    }
+                }
+                return
+            }
+
+            if let error = error {
+                let ns = error as NSError
+                self.lifecycleLog(
+                    "secondary[\(localeTag)] ended: \(error.localizedDescription), code=\(ns.code)"
+                )
+                DispatchQueue.main.async { [weak self, weak stream] in
+                    guard let self = self, let stream = stream else { return }
+                    guard generation == stream.generation else { return }
+                    guard !self.shutdownState().isStopping else { return }
+                    stream.failureCount += 1
+                    let exponent = min(stream.failureCount - 1, self.maxSecondaryFailures)
+                    let backoff = min(5.0, 0.3 * pow(2.0, Double(exponent)))
+                    let diagnostic = self.secondaryDiagnostic(
+                        stream: stream,
+                        generation: generation
+                    )
+                    self.emit([
+                        "type": "recognizer_state",
+                        "locale": localeTag,
+                        "state": "backoff",
+                        "failures": stream.failureCount,
+                        "retry_after": backoff,
+                        "error": error.localizedDescription,
+                        "error_code": ns.code,
+                        "on_device": self.useOnDeviceRecognition,
+                        "secondary_debug": diagnostic
+                    ])
+                    self.scheduleSecondaryRearm(stream, backoff: backoff)
+                }
+            }
+        }
+        emit([
+            "type": "recognizer_state",
+            "locale": localeTag,
+            "role": "secondary",
+            "state": "armed",
+            "generation": generation,
+            "secondary_debug": secondaryDiagnostic(
+                stream: stream,
+                generation: generation
+            )
+        ])
+        emitRecognizerReadinessIfComplete(reason: "secondary_armed")
+    }
+
+    // 引擎因配置变化成功重启后, 给 secondary 流一次干净的重挂: 取消陈旧 task/request,
+    // 清零 failure/disabled/rearm 标志, 从头拉起。这实现了"路由不稳时暂时熄灯、音频稳定
+    // 后再点亮"的语义, 且完全由既有音频生命周期驱动, 不与 primary 的 teardown 相撞。
+    private func rearmSecondaryStreamsAfterAudioRestart() {
+        precondition(Thread.isMainThread)
+        guard multiLocale else { return }
+        guard !shutdownState().isStopping else { return }
+        for stream in secondaryStreams {
+            stateLock.lock()
+            let staleTask = stream.task
+            let staleReq = stream.request
+            stream.task = nil
+            stream.request = nil
+            stateLock.unlock()
+            staleReq?.endAudio()
+            if let staleTask = staleTask {
+                DispatchQueue.global(qos: .userInitiated).async {
+                    staleTask.cancel()
+                }
+            }
+            stream.rearmScheduled = false
+            stream.failureCount = 0
+            stream.disabled = false
+            guard let recognizer = stream.recognizer, recognizer.isAvailable else {
+                lifecycleLog("secondary recognizer unavailable on restart: \(stream.locale)")
+                continue
+            }
+            armSecondaryStream(stream, recognizer: recognizer)
+        }
+    }
 
     private func scheduleCleanupFallback() {
         precondition(Thread.isMainThread)
@@ -1452,6 +2076,24 @@ final class SpeechHelper: NSObject {
         */
         request?.endAudio()
 
+        // 多 locale: 同步收尾所有 secondary 流(endAudio + 后台 cancel)。
+        // 与 primary 同纪律: cancel 放后台线程, 避免 Speech 收尾阻塞主线程。
+        if multiLocale {
+            stateLock.lock()
+            let secReqs = secondaryStreams.map { $0.request }
+            let secTasks = secondaryStreams.map { $0.task }
+            for stream in secondaryStreams {
+                stream.request = nil
+                stream.task = nil
+            }
+            stateLock.unlock()
+
+            for r in secReqs { r?.endAudio() }
+            DispatchQueue.global(qos: .userInitiated).async {
+                for t in secTasks { t?.cancel() }
+            }
+        }
+
         /*
         Schedule fallback BEFORE calling cancel().
 
@@ -1503,7 +2145,7 @@ var globalHelper: SpeechHelper?
 var signalSources: [DispatchSourceSignal] = []
 
 func installSignalHandlers() {
-    for signalNumber in [SIGINT, SIGTERM, SIGUSR1] {
+    for signalNumber in [SIGINT, SIGTERM, SIGUSR1, SIGUSR2] {
         signal(signalNumber, SIG_IGN)
 
         let source = DispatchSource.makeSignalSource(
