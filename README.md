@@ -269,22 +269,47 @@ export VE_VOICE_CHAT_CAPTURE_LOCALES='zh-CN,en-US'
 ```
 
 ```python
-VE_VOICE_CHAT_KEYWORDS = (
-    ("Hello DingDing", None, None),
-    ("Hello Baozi", None, None),
-    ("Change the subject", None, None),
+# Single source of truth for wake-up configuration. Each entry defines only one primary keyword; aliases belong exclusively to that keyword.
+# command_locale=None indicates that subsequent commands automatically use the first locale that returns valid text.
+VE_VOICE_CHAT_WAKE_CONFIG = (
+    {
+        "keyword": "hello deepseek",
+        "aliases": (
+            "hello ts",
+            "hello ds",
+            "hello deep",
+            "hello deepa",
+            "hello deepak",
+            "hello deepa sick",
+        ),
+        "route": ("model", "LLM:deepseek"),
+        "command_locale": "en-US",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.88,
+    },
+    {
+        "keyword": "Hello doubao",
+        "aliases": ("Hello baozi",),
+        "route": ("model", "LLM:doubao"),
+        "command_locale": "en-US",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.88,
+    },
+    {
+        "keyword": "Change the subject",
+        "aliases": (),
+        "route": ("command", "new_session"),
+        "command_locale": "en-US",
+        "model_alias": None,
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.88,
+    },
 )
-
-VE_VOICE_CHAT_WAKE_ROUTES = {
-    "Hello DingDing": ("model", "LLM:deepseek"),
-    "Hello Baozi": ("model", "LLM:doubao"),
-    "Change the subject": ("command", "new_session"),
-}
-
-VE_VOICE_CHAT_MODEL_ALIAS = {
-    "LLM:deepseek": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
-    "LLM:doubao": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "Doubao"),
-}
 ```
 
 ## VSCode Configuration
