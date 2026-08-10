@@ -81,6 +81,26 @@ final class RecognitionStream {
     }
 }
 
+final class SegmentJob {
+    let id: Int
+    let buffers: [AVAudioPCMBuffer]
+    let locales: [(String, SFSpeechRecognizer)]
+    var localeIndex = 0
+    var request: SFSpeechAudioBufferRecognitionRequest?
+    var task: SFSpeechRecognitionTask?
+    var bestText = ""
+
+    init(
+        id: Int,
+        buffers: [AVAudioPCMBuffer],
+        locales: [(String, SFSpeechRecognizer)]
+    ) {
+        self.id = id
+        self.buffers = buffers
+        self.locales = locales
+    }
+}
+
 final class SpeechHelper: NSObject {
     // private var audioDiagnosticTimer: DispatchSourceTimer?
     private var audioConfigurationObserver: NSObjectProtocol?
@@ -105,6 +125,25 @@ final class SpeechHelper: NSObject {
 
 
     private let audioEngine = AVAudioEngine()
+    // CoreAudio capture and segment recognition are deliberately separated. The tap only
+    // copies PCM and enqueues it; VAD, segmentation and Speech task creation run elsewhere.
+    private let segmentQueue = DispatchQueue(label: "com.local.speechhelper.segment")
+    private var segmentPreroll: [AVAudioPCMBuffer] = []
+    private var segmentAudio: [AVAudioPCMBuffer] = []
+    private var segmentPrerollFrames: AVAudioFramePosition = 0
+    private var segmentFrames: AVAudioFramePosition = 0
+    private var segmentQuietFrames: AVAudioFramePosition = 0
+    private let segmentNoiseFloorInitial: Float = 0.003
+    private var segmentNoiseFloor: Float = 0.003
+    private var segmentSpeaking = false
+    private var segmentStartFrames: AVAudioFramePosition = 0
+    private var segmentObservedBuffers: UInt64 = 0
+    private var segmentLastDiagnosticAt: TimeInterval = 0
+    private var segmentSequence = 0
+    private var segmentJobs: [Int: SegmentJob] = [:]
+    // Apple on-device recognition is serialized deliberately. The next segment is dropped
+    // while a two-locale job is in flight rather than creating competing Speech tasks.
+    private let maxSegmentJobs = 1
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var speechRecognizer: SFSpeechRecognizer?
@@ -330,6 +369,268 @@ final class SpeechHelper: NSObject {
         ])
     }
 
+    private func segmentRMS(_ buffer: AVAudioPCMBuffer) -> Float {
+        let count = Int(buffer.frameLength)
+        let channels = Int(buffer.format.channelCount)
+        guard count > 0, channels > 0 else { return 0 }
+        var sum = 0.0
+        var total = 0
+        if let data = buffer.floatChannelData {
+            for channel in 0..<channels {
+                for frame in 0..<count {
+                    let value = Double(data[channel][frame])
+                    sum += value * value
+                }
+                total += count
+            }
+        } else if let data = buffer.int16ChannelData {
+            for channel in 0..<channels {
+                for frame in 0..<count {
+                    let value = Double(data[channel][frame]) / Double(Int16.max)
+                    sum += value * value
+                }
+                total += count
+            }
+        } else {
+            return 0
+        }
+        return total == 0 ? 0 : Float(sqrt(sum / Double(total)))
+    }
+
+    private func captureForSegment(_ source: AVAudioPCMBuffer) {
+        guard multiLocale, let copy = source.deepCopyForSpeechRequest() else { return }
+        segmentQueue.async { [weak self] in self?.consumeSegmentBuffer(copy) }
+    }
+
+    private func consumeSegmentBuffer(_ buffer: AVAudioPCMBuffer) {
+        let rate = buffer.format.sampleRate
+        guard rate > 0 else { return }
+        let frames = AVAudioFramePosition(buffer.frameLength)
+        let level = segmentRMS(buffer)
+        // Wake words are short and often begin softly. Use hysteresis and require a short
+        // run of voiced frames instead of one high absolute threshold.
+        let startLevel = max(0.0045, segmentNoiseFloor * 2.2)
+        let holdLevel = max(0.0030, segmentNoiseFloor * 1.45)
+        segmentObservedBuffers += 1
+        let now = ProcessInfo.processInfo.systemUptime
+        if segmentLastDiagnosticAt == 0 || now - segmentLastDiagnosticAt >= 1.0 {
+            segmentLastDiagnosticAt = now
+            emit([
+                "type": "segment_meter",
+                "level": level,
+                "noise_floor": segmentNoiseFloor,
+                "start_threshold": startLevel,
+                "hold_threshold": holdLevel,
+                "speaking": segmentSpeaking,
+                "observed_buffers": segmentObservedBuffers
+            ])
+        }
+        if !segmentSpeaking {
+            segmentNoiseFloor = max(0.0015, segmentNoiseFloor * 0.985 + min(level, 0.03) * 0.015)
+            segmentPreroll.append(buffer)
+            segmentPrerollFrames += frames
+            let limit = AVAudioFramePosition(rate * 0.40)
+            while segmentPrerollFrames > limit && segmentPreroll.count > 1 {
+                segmentPrerollFrames -= AVAudioFramePosition(segmentPreroll.removeFirst().frameLength)
+            }
+            if level >= startLevel {
+                segmentStartFrames += frames
+            } else {
+                segmentStartFrames = 0
+            }
+            guard segmentStartFrames >= AVAudioFramePosition(rate * 0.045) else { return }
+            segmentStartFrames = 0
+            segmentSpeaking = true
+            emit([
+                "type": "segment_speech_started",
+                "level": level,
+                "noise_floor": segmentNoiseFloor,
+                "preroll_duration": Double(segmentPrerollFrames) / rate
+            ])
+            segmentAudio = segmentPreroll
+            segmentFrames = segmentPrerollFrames
+            segmentQuietFrames = 0
+            segmentPreroll.removeAll(keepingCapacity: true)
+            segmentPrerollFrames = 0
+            return
+        }
+        segmentAudio.append(buffer)
+        segmentFrames += frames
+        segmentQuietFrames = level >= holdLevel ? 0 : segmentQuietFrames + frames
+        let ended = segmentQuietFrames >= AVAudioFramePosition(rate * 0.45)
+        let full = segmentFrames >= AVAudioFramePosition(rate * 3.5)
+        guard ended || full else { return }
+        let audio = segmentAudio
+        let frameCount = segmentFrames
+        segmentAudio = []
+        segmentFrames = 0
+        segmentQuietFrames = 0
+        segmentSpeaking = false
+        emit([
+            "type": "segment_speech_ended",
+            "duration": Double(frameCount) / rate,
+            "reason": full ? "maximum" : "silence"
+        ])
+        segmentPreroll = Array(audio.suffix(2))
+        segmentPrerollFrames = segmentPreroll.reduce(0) {
+            $0 + AVAudioFramePosition($1.frameLength)
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.recognizeSegment(audio, frames: frameCount, sampleRate: rate)
+        }
+    }
+
+    private func recognizeSegment(
+        _ buffers: [AVAudioPCMBuffer],
+        frames: AVAudioFramePosition,
+        sampleRate: Double
+    ) {
+        precondition(Thread.isMainThread)
+        guard multiLocale, !shutdownState().isStopping, !buffers.isEmpty else { return }
+        guard segmentJobs.count < maxSegmentJobs else {
+            emit(["type": "segment_dropped", "reason": "recognizer_busy"])
+            return
+        }
+
+        var available: [(String, SFSpeechRecognizer)] = []
+        if let primary = speechRecognizer, primary.isAvailable {
+            available.append((localeIdentifier, primary))
+        }
+        for stream in secondaryStreams {
+            if let recognizer = stream.recognizer, recognizer.isAvailable {
+                available.append((stream.locale, recognizer))
+            }
+        }
+        guard !available.isEmpty else { return }
+
+        segmentSequence += 1
+        let job = SegmentJob(id: segmentSequence, buffers: buffers, locales: available)
+        segmentJobs[job.id] = job
+        emit([
+            "type": "segment_captured",
+            "segment_id": job.id,
+            "duration": Double(frames) / sampleRate,
+            "locales": available.map { $0.0 },
+            "recognition_mode": "sequential"
+        ])
+        startNextSegmentLocale(job)
+    }
+
+    private func startNextSegmentLocale(_ job: SegmentJob) {
+        precondition(Thread.isMainThread)
+        guard segmentJobs[job.id] === job else { return }
+        guard !shutdownState().isStopping else {
+            segmentJobs.removeValue(forKey: job.id)
+            return
+        }
+        guard job.localeIndex < job.locales.count else {
+            segmentJobs.removeValue(forKey: job.id)
+            emit(["type": "segment_complete", "segment_id": job.id])
+            return
+        }
+
+        let localeIndex = job.localeIndex
+        let (locale, recognizer) = job.locales[localeIndex]
+        job.bestText = ""
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        configureRecognitionRequest(request, recognizer: recognizer)
+        request.shouldReportPartialResults = true
+        job.request = request
+        emit([
+            "type": "segment_recognizer_started",
+            "segment_id": job.id,
+            "locale": locale,
+            "locale_index": job.localeIndex
+        ])
+
+        job.task = recognizer.recognitionTask(with: request) { [weak self, weak job] result, error in
+            let recognizedText = result?.bestTranscription.formattedString.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ) ?? ""
+            let isFinal = result?.isFinal == true
+            guard !recognizedText.isEmpty || isFinal || error != nil else { return }
+            DispatchQueue.main.async { [weak self, weak job] in
+                guard let self = self, let job = job else { return }
+                guard self.segmentJobs[job.id] === job else { return }
+                guard job.localeIndex == localeIndex else { return }
+                if !recognizedText.isEmpty { job.bestText = recognizedText }
+                if isFinal || error != nil {
+                    self.finishSegmentLocale(job, locale: locale, error: error)
+                }
+            }
+        }
+
+        for buffer in job.buffers {
+            if let copy = buffer.deepCopyForSpeechRequest() { request.append(copy) }
+        }
+        request.endAudio()
+    }
+
+    private func finishSegmentLocale(
+        _ job: SegmentJob,
+        locale: String,
+        error: Error?
+    ) {
+        precondition(Thread.isMainThread)
+        guard segmentJobs[job.id] === job else { return }
+        let text = job.bestText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty {
+            // Preserve the existing Python wake-state machine: one completed segment is exposed
+            // as a partial update followed by a final endpoint.
+            emit([
+                "type": "partial",
+                "text": text,
+                "locale": locale,
+                "source": "segment",
+                "segment_id": job.id,
+                "locale_index": job.localeIndex
+            ])
+            emit([
+                "type": "final",
+                "text": text,
+                "locale": locale,
+                "source": "segment",
+                "segment_id": job.id,
+                "locale_index": job.localeIndex
+            ])
+        } else if let error = error {
+            let ns = error as NSError
+            emit([
+                "type": "segment_error",
+                "locale": locale,
+                "segment_id": job.id,
+                "error": error.localizedDescription,
+                "error_code": ns.code
+            ])
+        }
+
+        job.task = nil
+        job.request = nil
+        job.localeIndex += 1
+        startNextSegmentLocale(job)
+    }
+
+    private func clearSegmentState(cancelJobs: Bool) {
+        segmentQueue.sync {
+            segmentPreroll.removeAll()
+            segmentAudio.removeAll()
+            segmentPrerollFrames = 0
+            segmentFrames = 0
+            segmentQuietFrames = 0
+            segmentSpeaking = false
+            segmentNoiseFloor = segmentNoiseFloorInitial
+        }
+        guard cancelJobs else { return }
+        let jobs = Array(segmentJobs.values)
+        segmentJobs.removeAll()
+        DispatchQueue.global(qos: .userInitiated).async {
+            for job in jobs {
+                job.request?.endAudio()
+                job.task?.cancel()
+            }
+        }
+    }
+
     // 专门用于 Debug，输出到 stderr 并写入 macOS 系统日志
     private func debugLog(_ message: String) {
         guard Self.debugEnabled else { return }
@@ -552,16 +853,14 @@ final class SpeechHelper: NSObject {
             lifecycleLog("soft recognition reset skipped: audio engine is not running")
             return
         }
-        primaryRearmScheduled = false
-        primaryFailureCount = 0
-        armPrimaryStream()
-        rearmSecondaryStreamsAfterAudioRestart()
+        clearSegmentState(cancelJobs: true)
         emit([
             "type": "recognition_reset",
             "primary_locale": localeIdentifier,
-            "secondary_locales": secondaryLocaleIdentifiers
+            "secondary_locales": secondaryLocaleIdentifiers,
+            "mode": "segment_only"
         ])
-        lifecycleLog("soft recognition reset completed without restarting AVAudioEngine")
+        lifecycleLog("segment collector reset without restarting AVAudioEngine")
     }
 
     func handleTerminationSignal(_ signalNumber: Int32) {
@@ -1067,6 +1366,10 @@ final class SpeechHelper: NSObject {
                 return
             }
 
+            if self.multiLocale {
+                self.captureForSegment(buffer)
+                return
+            }
             let request = (
                 self.requestForAudioAppend()
             )
@@ -1235,7 +1538,7 @@ final class SpeechHelper: NSObject {
                 // 音频恢复流动 -> 给 secondary 被动流一次干净重挂(多 locale 才有效)。
                 // 这样蓝牙断开/切换后, 主流重启、附加语言唤醒识别随之点亮, 而不是在
                 // 音频断流期间自旋(旧 bug), 也不是永久熄灯。
-                rearmSecondaryStreamsAfterAudioRestart()
+                if !multiLocale { rearmSecondaryStreamsAfterAudioRestart() }
             }
 
         } catch {
@@ -1264,6 +1567,55 @@ final class SpeechHelper: NSObject {
         }
     }
 
+
+    private func startSegmentOnlyMode() {
+        precondition(Thread.isMainThread)
+        stateLock.lock()
+        isStopping = false
+        shouldExitAfterStop = false
+        recognitionRequest = nil
+        recognitionTask = nil
+        stateLock.unlock()
+        clearSegmentState(cancelJobs: true)
+
+        do {
+            try installInputTap()
+        } catch {
+            failAndTerminate(message: error.localizedDescription, code: 10)
+            return
+        }
+        startAudioConfigurationObserver()
+        audioEngine.prepare()
+        do {
+            try audioEngine.start()
+        } catch {
+            if tapInstalled, let node = inputNode {
+                node.removeTap(onBus: 0)
+                tapInstalled = false
+            }
+            inputNode = nil
+            audioEngine.reset()
+            failAndTerminate(
+                message: "Audio engine failed to start: \(error.localizedDescription)",
+                code: 9
+            )
+            return
+        }
+        emit([
+            "type": "segment_listener_started",
+            "preroll_seconds": 0.40,
+            "end_silence_seconds": 0.45,
+            "maximum_seconds": 3.5,
+            "recognition_mode": "segment_only_sequential"
+        ])
+        emit([
+            "type": "started",
+            "locale": localeIdentifier,
+            "secondary_locales": secondaryLocaleIdentifiers,
+            "recognition_mode": "segment_only_sequential"
+        ])
+        lifecycleLog("segment-only multi-locale listener started")
+    }
 
     func start() {
         precondition(Thread.isMainThread)
@@ -1312,6 +1664,10 @@ final class SpeechHelper: NSObject {
             return
         }
 
+        if multiLocale {
+            startSegmentOnlyMode()
+            return
+        }
         let request = SFSpeechAudioBufferRecognitionRequest()
         configureRecognitionRequest(request, recognizer: recognizer)
         if #available(macOS 10.15, *) {
@@ -1541,6 +1897,14 @@ final class SpeechHelper: NSObject {
 
         // startAudioDiagnostics()
 
+        if multiLocale {
+            emit([
+                "type": "segment_listener_started",
+                "preroll_seconds": 0.40,
+                "end_silence_seconds": 0.45,
+                "maximum_seconds": 3.5
+            ])
+        }
         // The initial primary task was already armed before AVAudioEngine started. Emit it
         // explicitly; previously only secondary streams produced an "armed" JSON event.
         if multiLocale {
@@ -2041,6 +2405,7 @@ final class SpeechHelper: NSObject {
         )
 
         audioRestartScheduled = false
+        if multiLocale { clearSegmentState(cancelJobs: true) }
 
         if let observer = audioConfigurationObserver {
             NotificationCenter.default.removeObserver(observer)

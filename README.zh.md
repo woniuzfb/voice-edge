@@ -270,22 +270,40 @@ export VE_VOICE_CHAT_CAPTURE_LOCALES='zh-CN,en-US'
 ```
 
 ```python
-VE_VOICE_CHAT_KEYWORDS = (
-    ("你好丁丁", None, None),
-    ("你好包子", None, "0.10"),
-    ("换个话题", None, None),
+# 唤醒配置唯一真值源。每一项只定义一个正式 keyword；aliases 仅属于该 keyword。
+# command_locale=None 表示后续命令自动采用第一个返回有效文本的 locale。
+VE_VOICE_CHAT_WAKE_CONFIG = (
+    {
+        "keyword": "你好丁丁",
+        "aliases": ("你好钉钉", "你好丁丁丁", "你好deepseek"),
+        "route": ("model", "LLM:deepseek"),
+        "command_locale": "zh-CN",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.84,
+    },
+    {
+        "keyword": "你好豆包",
+        "aliases": ("你好包子",),
+        "route": ("model", "LLM:doubao"),
+        "command_locale": "zh-CN",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.84,
+    },
+    {
+        "keyword": "换个话题",
+        "aliases": (),
+        "route": ("command", "new_session"),
+        "command_locale": "zh-CN",
+        "model_alias": None,
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.84,
+    },
 )
-
-VE_VOICE_CHAT_WAKE_ROUTES = {
-    "你好丁丁": ("model", "LLM:deepseek"),
-    "你好包子": ("model", "LLM:doubao"),
-    "换个话题": ("command", "new_session"),
-}
-
-VE_VOICE_CHAT_MODEL_ALIAS = {
-    "LLM:deepseek": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
-    "LLM:doubao": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
-}
 ```
 
 ## VSCode Configuration

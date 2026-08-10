@@ -63,6 +63,7 @@ from enum import Enum
 from http.cookies import SimpleCookie
 from itertools import count, pairwise
 from pathlib import Path
+from pypinyin import Style, lazy_pinyin
 from typing import (
     Annotated,
     Any,
@@ -161,8 +162,33 @@ VLM_APC_BLOCK_SIZE = 16
 VLM_APC_DISK_PATH = os.path.expanduser("~/.cache/mlx-vlm/caching")
 VLM_APC_DISK_MAX_GB = 1
 
-VLM_KV_BITS = 3.5
-VLM_KV_QUANT_SCHEME = "turboquant"
+
+def _parse_vlm_kv_pair_env(name: str, default, *, cast):
+    """Parse one KV value or a per-(key,value) pair from an environment variable."""
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    parts = [part.strip() for part in raw.split(",")]
+    if len(parts) not in {1, 2} or any(not part for part in parts):
+        raise ValueError(f"{name} must be one value or 'key,value', got {raw!r}")
+    values = tuple(cast(part) for part in parts)
+    return values[0] if len(values) == 1 else values
+
+
+# mlx-vlm #1807 accepts KV quantization settings per tensor. A scalar keeps the
+# legacy behavior; "key,value" configures K and V independently on compatible builds.
+VLM_KV_BITS = _parse_vlm_kv_pair_env(
+    "VE_VLM_KV_BITS",
+    3.5,
+    cast=float,
+)
+VLM_KV_GROUP_SIZE = _parse_vlm_kv_pair_env(
+    "VE_VLM_KV_GROUP_SIZE",
+    None,
+    cast=int,
+)
+VLM_QUANTIZED_KV_START = int(os.getenv("VE_VLM_QUANTIZED_KV_START", "0"))
+VLM_KV_QUANT_SCHEME = os.getenv("VE_VLM_KV_QUANT_SCHEME", "turboquant").strip()
 
 VLM_MTP_ENABLED = True
 
@@ -30095,6 +30121,12 @@ def _vlm_stream_text(
     if VLM_KV_BITS is not None:
         kwargs["kv_bits"] = VLM_KV_BITS
 
+    if VLM_KV_GROUP_SIZE is not None:
+        kwargs["kv_group_size"] = VLM_KV_GROUP_SIZE
+
+    if VLM_QUANTIZED_KV_START > 0:
+        kwargs["quantized_kv_start"] = VLM_QUANTIZED_KV_START
+
     if VLM_KV_QUANT_SCHEME:
         kwargs["kv_quant_scheme"] = VLM_KV_QUANT_SCHEME
 
@@ -30104,7 +30136,8 @@ def _vlm_stream_text(
         "draft_block_size=%s max_tokens=%s "
         "temperature=%s top_p=%s "
         "enable_thinking=%s thinking_budget=%s "
-        "apc=%s kv_bits=%s kv_scheme=%s",
+        "apc=%s kv_bits=%s kv_group_size=%s "
+        "quantized_kv_start=%s kv_scheme=%s",
         resolved_model,
         draft_model is not None,
         draft_kind,
@@ -30116,6 +30149,8 @@ def _vlm_stream_text(
         thinking_budget,
         apc_manager is not None,
         VLM_KV_BITS,
+        VLM_KV_GROUP_SIZE,
+        VLM_QUANTIZED_KV_START,
         VLM_KV_QUANT_SCHEME,
     )
 
@@ -30168,6 +30203,14 @@ def _vlm_stream_text(
         )
         fallback_kwargs.pop(
             "kv_bits",
+            None,
+        )
+        fallback_kwargs.pop(
+            "kv_group_size",
+            None,
+        )
+        fallback_kwargs.pop(
+            "quantized_kv_start",
             None,
         )
         fallback_kwargs.pop(
@@ -39257,6 +39300,7 @@ def stop_xiaoai_bridge():
 #              speak_local_async / HTTP_PORT chat endpoint / clean_text_for_tts / hud。
 
 VE_VOICE_CHAT_ENABLED = os.getenv("VE_VOICE_CHAT_ENABLED", "0").strip() == "1"
+
 VE_VOICE_CHAT_MODEL_DIR = os.path.realpath(
     os.path.expanduser(
         os.getenv(
@@ -39269,21 +39313,88 @@ VE_VOICE_CHAT_MODEL_DIR = os.path.realpath(
         )
     )
 )
-# 唤醒词定义 -> keywords_file 落地方式:
-# sherpa-onnx Python KeywordSpotter.__init__ 只接受 keywords_file。因此"用 keywords
-# 不用静态文件" = 运行时把纯文本词表转成 keywords 字符串 -> 临时文件 -> keywords_file。
-# 转换走官方流程: sherpa-onnx-cli text2token --tokens-type phone+ppinyin
-# --lexicon en.phone(模型自带词典, 训练用的发音标注), 不手写任何 token。
-# 词条格式: (文本词, boost_score|None, threshold|None)。显示名由文本词派生,
-# 空格转下划线(官方要求 @ 后不能有空格), 命中结果回显该显示名。
-VE_VOICE_CHAT_KEYWORDS = (
-    ("你好丁丁", None, None),
-    ("你好deepseek", None, None),
-    ("hello deepseek", None, None),
-    ("你好小豆", None, None),
-    ("你好包子", None, None),
-    ("换个话题", None, None),
-    ("Change the subject", None, None),
+
+# 唤醒配置唯一真值源。每一项只定义一个正式 keyword；aliases 仅属于该 keyword。
+# command_locale=None 表示后续命令自动采用第一个返回有效文本的 locale。
+VE_VOICE_CHAT_WAKE_CONFIG = (
+    {
+        "keyword": "你好丁丁",
+        "aliases": ("你好钉钉", "你好丁丁丁", "你好deepseek"),
+        "route": ("model", "LLM:deepseek"),
+        "command_locale": "zh-CN",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.84,
+    },
+    {
+        "keyword": "hello deepseek",
+        "aliases": (
+            "hello ts",
+            "hello ds",
+            "hello deep",
+            "hello deepa",
+            "hello deepak",
+            "hello deepa sick",
+        ),
+        "route": ("model", "LLM:deepseek"),
+        "command_locale": "en-US",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.88,
+    },
+    {
+        "keyword": "你好豆包",
+        "aliases": ("你好包子",),
+        "route": ("model", "LLM:doubao"),
+        "command_locale": "zh-CN",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.84,
+    },
+    {
+        "keyword": "Hello doubao",
+        "aliases": ("Hello baozi",),
+        "route": ("model", "LLM:doubao"),
+        "command_locale": "en-US",
+        "model_alias": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.88,
+    },
+    {
+        "keyword": "换个话题",
+        "aliases": (),
+        "route": ("command", "new_session"),
+        "command_locale": "zh-CN",
+        "model_alias": None,
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.88,
+    },
+    {
+        "keyword": "Change the subject",
+        "aliases": (),
+        "route": ("command", "new_session"),
+        "command_locale": "en-US",
+        "model_alias": None,
+        "score": None,
+        "threshold": None,
+        "apple_threshold": 0.88,
+    },
+)
+
+
+def _ve_voice_chat_wake_entries():
+    for config in VE_VOICE_CHAT_WAKE_CONFIG:
+        yield config["keyword"], config
+
+
+VE_VOICE_CHAT_KEYWORDS = tuple(
+    (config["keyword"], config.get("score"), config.get("threshold"))
+    for config in VE_VOICE_CHAT_WAKE_CONFIG
 )
 
 # en.phone 之外的英文词(OOV): 官方 text2token 对词典外单词会整行跳过, 需扩充词典。
@@ -39305,35 +39416,290 @@ VE_VOICE_CHAT_KWS_ENGINE = (
 VE_VOICE_CHAT_APPLE_ON_DEVICE = os.getenv("SPEECH_HELPER_ON_DEVICE", "0").strip() == "1"
 
 
-_VE_VOICE_CHAT_APPLE_ALIASES = {
-    "你好钉钉": "你好丁丁",
-    "你好丁丁丁": "你好丁丁",
-    "你好deepseek": "你好deepseek",
-    "hellodeepseek": "hello deepseek",
-    "changethesubject": "Change the subject",
-}
-
-
 def _ve_voice_chat_norm_text(s: str) -> str:
-    """唤醒词文本匹配用归一化: 去空格/下划线/连字符并小写。"""
-    return re.sub(r"[\s\-_]+", "", s or "").lower()
+    return re.sub(r"[\W_]+", "", s or "", flags=re.UNICODE).lower()
+
+
+def _ve_voice_chat_has_cjk(text: str) -> bool:
+    return bool(re.search(r"[\u3400-\u9fff]", text or ""))
+
+
+def _ve_voice_chat_pinyin(text: str):
+    parts = lazy_pinyin(
+        text or "",
+        style=Style.NORMAL,
+        neutral_tone_with_five=False,
+        errors=lambda value: value,
+    )
+    return re.sub(r"[^a-z0-9]+", "", "".join(parts).lower())
+
+
+def _ve_voice_chat_similarity(left: str, right: str) -> float:
+    """Dependency-free normalized edit similarity in [0, 1]."""
+    if left == right:
+        return 1.0
+    if not left or not right:
+        return 0.0
+    previous = list(range(len(right) + 1))
+    for i, char_left in enumerate(left, 1):
+        current = [i]
+        for j, char_right in enumerate(right, 1):
+            current.append(
+                min(
+                    current[-1] + 1,
+                    previous[j] + 1,
+                    previous[j - 1] + (char_left != char_right),
+                )
+            )
+        previous = current
+    return 1.0 - (previous[-1] / max(len(left), len(right)))
+
+
+def _ve_voice_chat_jaro_winkler(left: str, right: str) -> float:
+    """Jaro-Winkler similarity for short English recognition variants."""
+    if left == right:
+        return 1.0
+    if not left or not right:
+        return 0.0
+    match_distance = max(len(left), len(right)) // 2 - 1
+    match_distance = max(0, match_distance)
+    left_matches = [False] * len(left)
+    right_matches = [False] * len(right)
+    matches = 0
+    for index, char in enumerate(left):
+        start = max(0, index - match_distance)
+        end = min(index + match_distance + 1, len(right))
+        for candidate in range(start, end):
+            if right_matches[candidate] or right[candidate] != char:
+                continue
+            left_matches[index] = True
+            right_matches[candidate] = True
+            matches += 1
+            break
+    if matches == 0:
+        return 0.0
+    left_ordered = [char for index, char in enumerate(left) if left_matches[index]]
+    right_ordered = [char for index, char in enumerate(right) if right_matches[index]]
+    transpositions = sum(a != b for a, b in zip(left_ordered, right_ordered)) / 2
+    jaro = (
+        matches / len(left)
+        + matches / len(right)
+        + (matches - transpositions) / matches
+    ) / 3
+    prefix = 0
+    for a, b in zip(left, right):
+        if a != b or prefix == 4:
+            break
+        prefix += 1
+    return jaro + prefix * 0.1 * (1.0 - jaro)
+
+
+def _ve_voice_chat_best_window_score(text: str, target: str):
+    """Return best composite English score, method, and aligned normalized window."""
+    if not text or not target:
+        return 0.0, "none", ""
+    if target in text:
+        return 1.0, "exact_window", target
+    low = max(1, len(target) - 3)
+    high = min(len(text), len(target) + 3)
+    windows = (
+        [text]
+        if len(text) <= high
+        else [
+            text[start : start + size]
+            for size in range(low, high + 1)
+            for start in range(0, len(text) - size + 1)
+        ]
+    )
+    best_score, best_method, best_window = 0.0, "none", ""
+    for window in windows:
+        edit_score = _ve_voice_chat_similarity(window, target)
+        jaro_score = _ve_voice_chat_jaro_winkler(window, target)
+        score, method = (
+            (jaro_score, "jaro_winkler")
+            if jaro_score > edit_score
+            else (edit_score, "levenshtein")
+        )
+        if score > best_score:
+            best_score, best_method, best_window = score, method, window
+    return best_score, best_method, best_window
+
+
+def _ve_voice_chat_best_window_similarity(text: str, target: str) -> float:
+    """Compare target with nearby-length windows so command suffixes do not dilute a wake word."""
+    if not text or not target:
+        return 0.0
+    if target in text:
+        return 1.0
+    low = max(1, len(target) - 2)
+    high = min(len(text), len(target) + 2)
+    if len(text) <= high:
+        return _ve_voice_chat_similarity(text, target)
+    best = 0.0
+    for size in range(low, high + 1):
+        for start in range(0, len(text) - size + 1):
+            best = max(
+                best, _ve_voice_chat_similarity(text[start : start + size], target)
+            )
+    return best
+
+
+def _ve_voice_chat_wake_lookup():
+    lookup = {}
+
+    def add_mapping(spoken_form, keyword, config, kind):
+        normalized = _ve_voice_chat_norm_text(spoken_form)
+        if not normalized:
+            raise ValueError(f"Voice chat {kind} must not normalize to an empty string")
+        existing = lookup.get(normalized)
+        if existing is not None and existing[1] is not config:
+            existing_keyword = existing[0]
+            raise ValueError(
+                f"Voice chat {kind} {spoken_form!r} for {keyword!r} conflicts "
+                f"with keyword {existing_keyword!r} after normalization"
+            )
+        lookup[normalized] = (keyword, config)
+
+    for keyword, config in _ve_voice_chat_wake_entries():
+        if not isinstance(keyword, str) or not keyword.strip():
+            raise ValueError(
+                "Each VE_VOICE_CHAT_WAKE_CONFIG item requires one non-empty keyword"
+            )
+        if "keywords" in config:
+            raise ValueError(
+                "Use singular 'keyword'; one config item cannot contain multiple keywords"
+            )
+        threshold = config.get("apple_threshold")
+        if threshold is not None and not 0.0 <= float(threshold) <= 1.0:
+            raise ValueError("apple_threshold must be between 0.0 and 1.0")
+        add_mapping(keyword, keyword, config, "keyword")
+
+    for config in VE_VOICE_CHAT_WAKE_CONFIG:
+        keyword = config["keyword"]
+        aliases = config.get("aliases") or ()
+        if isinstance(aliases, str):
+            raise ValueError("aliases must be a tuple; use ('alias',) for one alias")
+        for alias in aliases:
+            add_mapping(alias, keyword, config, "alias")
+    return lookup
+
+
+_VE_VOICE_CHAT_WAKE_LOOKUP = _ve_voice_chat_wake_lookup()
 
 
 def _ve_voice_chat_match_keyword(partial_text: str):
-    """在听写 partial 文本里找唤醒词, 返回命中的原词(取最早出现者); 无则 None。"""
     norm = _ve_voice_chat_norm_text(partial_text)
-    canonical_alias = _VE_VOICE_CHAT_APPLE_ALIASES.get(norm)
-    if canonical_alias is not None:
-        return canonical_alias
+    exact = _VE_VOICE_CHAT_WAKE_LOOKUP.get(norm)
+    if exact is not None:
+        return exact[0]
+
+    # Exact substring remains the safest path and supports "wake word + command".
     best, best_pos = None, -1
-    for word, _score, _th in VE_VOICE_CHAT_KEYWORDS:
-        nw = _ve_voice_chat_norm_text(word)
-        if not nw:
+    for normalized, (keyword, _config) in _VE_VOICE_CHAT_WAKE_LOOKUP.items():
+        pos = norm.find(normalized)
+        if normalized and pos >= 0 and (best_pos < 0 or pos < best_pos):
+            best_pos, best = pos, keyword
+    if best is not None:
+        return best
+
+    # Fuzzy matching is Apple-Speech-only text post-processing. Chinese entries use
+    # tone-free pinyin when pypinyin is installed; English uses normalized character
+    # edit similarity. Aliases participate as additional reference pronunciations.
+    winner = None
+    winner_score = 0.0
+    winner_reference = None
+    winner_method = None
+    winner_window = None
+    for config in VE_VOICE_CHAT_WAKE_CONFIG:
+        threshold = config.get("apple_threshold")
+        if threshold is None:
             continue
-        pos = norm.find(nw)
-        if pos >= 0 and (best_pos < 0 or pos < best_pos):
-            best_pos, best = pos, word
-    return best
+        references = (
+            config["keyword"],
+            *(config.get("aliases") or ()),
+        )
+        for reference in references:
+            if _ve_voice_chat_has_cjk(reference):
+                observed = _ve_voice_chat_pinyin(partial_text)
+                expected = _ve_voice_chat_pinyin(reference)
+                if not observed or not expected:
+                    observed = norm
+                    expected = _ve_voice_chat_norm_text(reference)
+                score = _ve_voice_chat_best_window_similarity(observed, expected)
+                method = "pinyin_levenshtein"
+                window = observed
+            else:
+                observed = norm
+                expected = _ve_voice_chat_norm_text(reference)
+                score, method, window = _ve_voice_chat_best_window_score(
+                    observed, expected
+                )
+            if not observed or not expected:
+                continue
+            if score >= float(threshold) and score > winner_score:
+                winner = config["keyword"]
+                winner_score = score
+                winner_reference = reference
+                winner_method = method
+                winner_window = window
+    if winner is not None:
+        logger.info(
+            "Voice chat apple KWS fuzzy matched: keyword=%r reference=%r "
+            "method=%s score=%.3f window=%r text=%r",
+            winner,
+            winner_reference,
+            winner_method,
+            winner_score,
+            winner_window,
+            (partial_text or "")[:120],
+        )
+    return winner
+
+
+def _ve_voice_chat_wake_config(keyword):
+    found = _VE_VOICE_CHAT_WAKE_LOOKUP.get(_ve_voice_chat_norm_text(keyword))
+    return found[1] if found else None
+
+
+def _ve_voice_chat_wake_route(keyword):
+    config = _ve_voice_chat_wake_config(keyword)
+    return config.get("route") if config else None
+
+
+def _ve_voice_chat_command_locale(keyword):
+    config = _ve_voice_chat_wake_config(keyword)
+    if not config:
+        return None
+    return config.get("command_locale")
+
+
+def _ve_voice_chat_build_model_aliases():
+    aliases = {}
+    for config in VE_VOICE_CHAT_WAKE_CONFIG:
+        route = config.get("route")
+        alias = config.get("model_alias")
+        if not route or route[0] != "model" or not alias:
+            continue
+        model = route[1]
+        existing = aliases.get(model)
+        if existing is not None and existing != alias:
+            raise ValueError(
+                f"Conflicting model_alias values for {model!r}: "
+                f"{existing!r} and {alias!r}"
+            )
+        aliases[model] = alias
+    return aliases
+
+
+_VE_VOICE_CHAT_MODEL_ALIASES = _ve_voice_chat_build_model_aliases()
+
+
+def _ve_voice_chat_model_alias(model):
+    alias = _VE_VOICE_CHAT_MODEL_ALIASES.get(model)
+    if alias:
+        return alias
+    name = str(model or "")
+    return name.split(":", 1)[1] if ":" in name else (name or "AI")
 
 
 def _ve_voice_chat_build_keywords_string(items=VE_VOICE_CHAT_KEYWORDS) -> str:
@@ -39723,40 +40089,12 @@ _APPLE_KWS_KEEP_INFO_MARKERS = (
     "helper start failed",
 )
 
-# 唤醒词 -> 虚拟会话动作。model 路由维护各自 browser conversation_id;
-# "换个话题" 是控制指令,清空全部虚拟会话。
-VE_VOICE_CHAT_WAKE_ROUTES = {
-    "你好丁丁": ("model", "LLM:deepseek"),
-    "你好deepseek": ("model", "LLM:deepseek"),
-    "hello_deepseek": ("model", "LLM:deepseek"),
-    "你好小豆": ("model", "LLM:doubao"),
-    "你好包子": ("model", "LLM:doubao"),
-    "换个话题": ("command", "new_session"),
-    "Change_the_subject": ("command", "new_session"),
-}
-
 VE_VOICE_CHAT_CONCISE_HINT = (
     "（请用简洁、口语化的中文回答，适合语音朗读，不要使用 markdown 或代码块）\n"
 )
 
 # 虚拟会话历史里"我方"标签(可 env 改)。历史折叠给浏览器模型时用于标注用户轮。
 VE_VOICE_CHAT_USER_LABEL = os.getenv("VE_VOICE_CHAT_USER_LABEL", "用户")
-
-# 模型显示别名(标注助手轮, 不用"助手"二字, 也不是唤醒词)。可 env 覆盖; 未列出的模型
-# 回退到去掉 "LLM:" 前缀的名字。
-VE_VOICE_CHAT_MODEL_ALIAS = {
-    "LLM:deepseek": os.getenv("VE_VOICE_CHAT_ALIAS_DEEPSEEK", "DeepSeek"),
-    "LLM:doubao": os.getenv("VE_VOICE_CHAT_ALIAS_DOUBAO", "豆包"),
-}
-
-
-def _ve_voice_chat_model_alias(model):
-    """模型的显示别名, 用于历史里标注助手轮(避免用"助手")。"""
-    alias = VE_VOICE_CHAT_MODEL_ALIAS.get(model)
-    if alias:
-        return alias
-    name = str(model or "")
-    return name.split(":", 1)[1] if ":" in name else (name or "AI")
 
 
 def _ve_voice_chat_is_browser_model(model):
@@ -40633,15 +40971,50 @@ class VoiceChatSubsystem:
             threading.Thread(target=_reader, daemon=True, name="AppleKWSRead").start()
 
             def _make_turn(kw, text):
-                """从当前命中流文本中去掉唤醒词；空值表示继续在本会话等待命令。"""
+                """Remove a literal keyword/alias prefix; fuzzy-only wake text yields no command."""
                 query = text or ""
-                idx = query.find(kw)
-                if idx >= 0:
-                    query = query[idx + len(kw) :]
-                return query.strip(" ，,。.!！?？") or None
+                config = _ve_voice_chat_wake_config(kw) or {}
+                references = (
+                    kw,
+                    *(config.get("aliases") or ()),
+                )
+                # Map every casefolded code point to the exclusive end offset of its
+                # source character. This preserves the original command text even when
+                # Unicode casefold expands a character, for example German ß -> ss.
+                folded_parts = []
+                folded_end_offsets = []
+                for source_index, char in enumerate(query):
+                    folded_char = char.casefold()
+                    folded_parts.append(folded_char)
+                    folded_end_offsets.extend([source_index + 1] * len(folded_char))
+                folded_query = "".join(folded_parts)
+
+                # Prefer the longest folded reference so a short alias such as
+                # "hello deep" cannot leave "seek" behind from "hello deepseek".
+                for reference in sorted(
+                    references,
+                    key=lambda value: len(value.casefold()),
+                    reverse=True,
+                ):
+                    folded_reference = reference.casefold()
+                    idx = folded_query.find(folded_reference)
+                    if idx >= 0:
+                        folded_end = idx + len(folded_reference)
+                        tail_start = folded_end_offsets[folded_end - 1]
+                        tail = query[tail_start:]
+                        return tail.strip(" ，,。.!！?？") or None
+                return None
 
             wake_keyword = None
             wake_matched_at = 0.0
+            # Segment-only recognition yields two locale transcripts for the same captured
+            # utterance. Once one locale matches the wake word, sibling locale results from
+            # that same segment must never be interpreted as the next command.
+            wake_segment_id = None
+            command_min_segment_id = None
+            command_segment_id = None
+            configured_command_locale = None
+            command_segment_in_progress = False
             # 命中唤醒词的流的 locale。多 locale 下每条流各发【本流累计全文】的 partial,
             # 若不区分流"取最新一条"会在两种语言转写间反复横跳、互相覆盖。故命中唤醒词后
             # 把指令累计【钉】在命中那条流上(唤醒词与后续指令天然同语言同流), 使
@@ -40657,7 +41030,6 @@ class VoiceChatSubsystem:
             }
             wake_stream_snapshot = {}
             last_partial_at = 0.0
-            final_text = None
             # SIGUSR2 是异步软重置；收到 recognition_reset 前丢弃旧 generation 事件。
             resetting_recognition = False
 
@@ -40669,7 +41041,7 @@ class VoiceChatSubsystem:
                 return ev_locale is None or ev_locale == VE_VOICE_CHAT_PRIMARY_LOCALE
 
             def _notification_model(kw):
-                route = VE_VOICE_CHAT_WAKE_ROUTES.get(kw)
+                route = _ve_voice_chat_wake_route(kw)
                 if route and route[0] == "model":
                     return route[1]
                 return None
@@ -40683,11 +41055,17 @@ class VoiceChatSubsystem:
                 except queue.Empty:
                     if wake_keyword:
                         now = time.monotonic()
-                        command = _make_turn(wake_keyword, query_text)
-                        # 只说唤醒词时保持当前双语 helper 与麦克风流，继续等后续命令。
+                        command = (
+                            query_text.strip(" ，,。.!！?？") or None
+                            if command_segment_id is not None
+                            else None
+                        )
+                        # Segment-only mode never derives a command from the wake segment's
+                        # transcript. Wait until a later segment has produced usable text.
                         # 只有已经识别到非空命令，之后的静音才请求 final 并结束本会话。
                         if (
                             command
+                            and not command_segment_in_progress
                             and last_partial_at > 0
                             and (now - last_partial_at)
                             >= VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS
@@ -40720,10 +41098,14 @@ class VoiceChatSubsystem:
                                 return
                             wake_keyword = None
                             wake_matched_at = 0.0
+                            wake_segment_id = None
+                            command_min_segment_id = None
+                            command_segment_id = None
+                            configured_command_locale = None
+                            command_segment_in_progress = False
                             matched_locale = None
                             command_locale = None
                             query_text = ""
-                            final_text = None
                             stream_texts.clear()
                             stream_text_updated_at.clear()
                             wake_stream_snapshot.clear()
@@ -40752,10 +41134,14 @@ class VoiceChatSubsystem:
                                 return
                             wake_keyword = None
                             wake_matched_at = 0.0
+                            wake_segment_id = None
+                            command_min_segment_id = None
+                            command_segment_id = None
+                            configured_command_locale = None
+                            command_segment_in_progress = False
                             matched_locale = None
                             command_locale = None
                             query_text = ""
-                            final_text = None
                             stream_texts.clear()
                             stream_text_updated_at.clear()
                             wake_stream_snapshot.clear()
@@ -40770,6 +41156,42 @@ class VoiceChatSubsystem:
                 except Exception:
                     continue
                 typ = event.get("type")
+                if typ == "segment_listener_started":
+                    logger.info(
+                        "Voice chat apple KWS segment listener started: preroll=%ss end_silence=%ss maximum=%ss",
+                        event.get("preroll_seconds"),
+                        event.get("end_silence_seconds"),
+                        event.get("maximum_seconds"),
+                    )
+                    continue
+                if typ == "segment_meter":
+                    logger.info(
+                        "Voice chat apple KWS segment meter: level=%.5f noise=%.5f start=%.5f hold=%.5f speaking=%s buffers=%s",
+                        float(event.get("level") or 0.0),
+                        float(event.get("noise_floor") or 0.0),
+                        float(event.get("start_threshold") or 0.0),
+                        float(event.get("hold_threshold") or 0.0),
+                        bool(event.get("speaking")),
+                        event.get("observed_buffers"),
+                    )
+                    continue
+                if typ in {
+                    "segment_speech_started",
+                    "segment_speech_ended",
+                    "segment_captured",
+                    "segment_complete",
+                    "segment_dropped",
+                    "segment_error",
+                }:
+                    logger.info("Voice chat apple KWS %s: %s", typ, event)
+                    if wake_keyword is not None:
+                        if typ in {"segment_speech_started", "segment_captured"}:
+                            command_segment_in_progress = True
+                            last_partial_at = time.monotonic()
+                        elif typ in {"segment_complete", "segment_dropped"}:
+                            command_segment_in_progress = False
+                            last_partial_at = time.monotonic()
+                    continue
                 if typ == "recognition_reset":
                     resetting_recognition = False
                     stream_texts.clear()
@@ -40792,7 +41214,16 @@ class VoiceChatSubsystem:
                     self._apple_last_start_error = None
                     self._apple_route_quarantined = False
                     primary = event.get("locale") or VE_VOICE_CHAT_PRIMARY_LOCALE
-                    recognizer_states[primary] = "armed"
+                    recognition_mode = event.get("recognition_mode") or "streaming"
+                    recognizer_states[primary] = (
+                        "segment_ready"
+                        if recognition_mode.startswith("segment_only")
+                        else "armed"
+                    )
+                    logger.info(
+                        "Voice chat apple KWS started: recognition_mode=%s",
+                        recognition_mode,
+                    )
                     for locale in event.get("secondary_locales") or ():
                         recognizer_states.setdefault(locale, "starting")
                 elif typ == "recognizer_state":
@@ -40825,7 +41256,36 @@ class VoiceChatSubsystem:
                     if not text:
                         continue
                     ev_locale = event.get("locale") or VE_VOICE_CHAT_PRIMARY_LOCALE
+                    event_source = event.get("source") or "stream"
+                    event_segment_id = event.get("segment_id")
                     now = time.monotonic()
+                    if (
+                        event_source == "segment"
+                        and wake_keyword is not None
+                        and wake_segment_id is not None
+                        and event_segment_id == wake_segment_id
+                    ):
+                        logger.info(
+                            "Voice chat apple KWS ignoring wake-segment sibling transcript: id=%s locale=%s text=%r",
+                            event_segment_id,
+                            ev_locale,
+                            text[:120],
+                        )
+                        continue
+                    if (
+                        event_source == "segment"
+                        and command_min_segment_id is not None
+                        and event_segment_id is not None
+                        and event_segment_id < command_min_segment_id
+                    ):
+                        continue
+                    if event_source == "segment":
+                        logger.info(
+                            "Voice chat apple KWS segment transcript: id=%s locale=%s text=%r",
+                            event_segment_id,
+                            ev_locale,
+                            text[:120],
+                        )
                     stream_texts[ev_locale] = text
                     stream_text_updated_at[ev_locale] = now
                     recognizer_states[ev_locale] = "active"
@@ -40875,32 +41335,68 @@ class VoiceChatSubsystem:
                         hit = _ve_voice_chat_match_keyword(text)
                         if hit:
                             wake_keyword = hit
+                            wake_segment_id = (
+                                event_segment_id if event_source == "segment" else None
+                            )
+                            command_min_segment_id = (
+                                event_segment_id + 1
+                                if isinstance(event_segment_id, int)
+                                else None
+                            )
                             matched_locale = ev_locale
-                            command_locale = ev_locale
-                            query_text = text
+                            configured_command_locale = _ve_voice_chat_command_locale(
+                                hit
+                            )
+                            command_locale = configured_command_locale
+                            inline_command = _make_turn(hit, text)
+                            query_text = inline_command or ""
+                            command_segment_id = (
+                                event_segment_id
+                                if event_source == "segment" and inline_command
+                                else None
+                            )
+                            command_segment_in_progress = bool(
+                                event_source == "segment" and inline_command
+                            )
+                            logger.info(
+                                "Voice chat apple KWS command locale mapping: keyword=%r wake_locale=%s command_locale=%s",
+                                hit,
+                                ev_locale,
+                                configured_command_locale or "auto",
+                            )
                             wake_stream_snapshot = dict(stream_texts)
                             wake_matched_at = time.monotonic()
                             last_partial_at = wake_matched_at
                             logger.info(
                                 "Voice chat apple KWS matched: %r "
-                                "(locale=%s partial=%r)",
+                                "(locale=%s partial=%r inline_command=%r)",
                                 hit,
                                 ev_locale or VE_VOICE_CHAT_PRIMARY_LOCALE,
                                 text[:60],
+                                inline_command,
                             )
                             # 已经在当前双语 helper 中持续收音，不需要启动第二个听写 helper。
                             # HUD 关闭时用现有 osascript 通知给出明确反馈；HUD 开启时由 HUD
                             # 自己承担可见反馈，避免重复弹窗。
                             if not VE_VOICE_CHAT_SHOW_HUD:
-                                _ve_voice_chat_notify(
-                                    "正在聆听，请继续说话…",
-                                    subtitle=(
-                                        "已唤醒 "
-                                        + _ve_voice_chat_model_alias(
-                                            _notification_model(hit)
-                                        )
-                                    ),
+                                model_alias = _ve_voice_chat_model_alias(
+                                    _notification_model(hit)
                                 )
+                                if inline_command:
+                                    preview = (
+                                        inline_command[:48] + "…"
+                                        if len(inline_command) > 48
+                                        else inline_command
+                                    )
+                                    _ve_voice_chat_notify(
+                                        "已收到指令",
+                                        subtitle=f"{model_alias} · {preview}",
+                                    )
+                                else:
+                                    _ve_voice_chat_notify(
+                                        "正在聆听，请继续说话…",
+                                        subtitle="已唤醒 " + model_alias,
+                                    )
                         elif _same_stream(ev_locale):
                             # 未命中: 仅主流刷新静音节拍, secondary 不扰动。
                             last_partial_at = time.monotonic()
@@ -40909,31 +41405,87 @@ class VoiceChatSubsystem:
                         # 由 en-US 先给出可用文本，英文也可能由 zh-CN 先给出。任一流在唤醒后
                         # 产生了新文本且能提取出命令，就允许它接管本轮。
                         previous = wake_stream_snapshot.get(ev_locale)
-                        candidate = _make_turn(wake_keyword, text)
+                        if (
+                            event_source == "segment"
+                            and configured_command_locale
+                            and ev_locale != configured_command_locale
+                        ):
+                            logger.info(
+                                "Voice chat apple KWS ignoring unmapped command locale: id=%s locale=%s required=%s text=%r",
+                                event_segment_id,
+                                ev_locale,
+                                configured_command_locale,
+                                text[:120],
+                            )
+                            continue
+                        if (
+                            event_source == "segment"
+                            and event_segment_id != wake_segment_id
+                        ):
+                            candidate = text.strip(" ，,。.!！?？") or None
+                        else:
+                            candidate = _make_turn(wake_keyword, text)
                         nested_wake = _ve_voice_chat_match_keyword(text)
                         if (
                             text != previous
                             and candidate
                             and not (nested_wake and candidate == text)
                         ):
-                            command_locale = ev_locale
+                            if event_source == "segment":
+                                # First usable locale wins for this command segment. The sibling
+                                # locale is merely another transcription of identical PCM and
+                                # must not overwrite the command.
+                                if command_segment_id is None:
+                                    command_segment_id = event_segment_id
+                                    command_locale = (
+                                        configured_command_locale or ev_locale
+                                    )
+                                elif (
+                                    event_segment_id != command_segment_id
+                                    or ev_locale != command_locale
+                                ):
+                                    logger.info(
+                                        "Voice chat apple KWS ignoring command-segment sibling transcript: id=%s locale=%s locked_id=%s locked_locale=%s text=%r",
+                                        event_segment_id,
+                                        ev_locale,
+                                        command_segment_id,
+                                        command_locale,
+                                        text[:120],
+                                    )
+                                    continue
+                            else:
+                                command_locale = ev_locale
                             query_text = text
-                            final_text = None
                             last_partial_at = time.monotonic()
                 elif typ == "final":
                     ev_locale = event.get("locale") or VE_VOICE_CHAT_PRIMARY_LOCALE
                     text = (event.get("text") or "").strip()
-                    # 只让当前提供命令的 recognizer 更新 final，其他流的端点不能覆盖命令。
-                    if text and (command_locale is None or ev_locale == command_locale):
-                        candidate = (
-                            _make_turn(wake_keyword, text) if wake_keyword else None
-                        )
-                        if candidate:
-                            final_text = text
+                    # Segment-only: final must belong to the exact command segment and the
+                    # locale selected by its first usable partial. A sibling locale cannot win
+                    # later solely because it finishes later.
+                    final_matches_command = event.get("source") != "segment" or (
+                        command_segment_id is not None
+                        and event.get("segment_id") == command_segment_id
+                        and ev_locale == command_locale
+                    )
+                    final_candidate = None
+                    if text and final_matches_command:
+                        if (
+                            wake_keyword
+                            and event.get("source") == "segment"
+                            and event.get("segment_id") != wake_segment_id
+                        ):
+                            final_candidate = text.strip(" ，,。.!！?？") or None
+                        else:
+                            final_candidate = (
+                                _make_turn(wake_keyword, text) if wake_keyword else None
+                            )
                     logger.info(
-                        "Voice chat apple KWS final[recognizer=%s]: %r",
+                        "Voice chat apple KWS final[recognizer=%s source=%s segment=%s candidate=%r]",
                         ev_locale,
-                        (final_text or "")[:80],
+                        event.get("source") or "stream",
+                        event.get("segment_id"),
+                        (final_candidate or "")[:80],
                     )
                 elif typ == "error":
                     error_text = str(event.get("error") or "")
@@ -41082,7 +41634,7 @@ class VoiceChatSubsystem:
 
     # ---- 一轮对话 ----
     def _handle_wake(self, keyword, captured_query: Optional[str] = None):
-        route = VE_VOICE_CHAT_WAKE_ROUTES.get(keyword)
+        route = _ve_voice_chat_wake_route(keyword)
         if route is None:
             logger.warning("Voice chat wake without route: %r", keyword)
             return
