@@ -6,10 +6,11 @@ Voice Edge
 - OpenAI-compatible chat, transcription, TTS, embedding, rerank, and FIM APIs
 - Native Edge-TTS streaming with chunked FIFO playback
 - Local MLX chat, embedding, reranking, and completion models
-- Optional Xiaomi/XiaoAI smart-speaker streaming bridge
+- Optional XiaoAI smart-speaker streaming bridge
 - Native macOS HUD with live transcription
 - Double-tap Escape to cancel dictation or stop playback
 - Double-tap Control or Control+Option to start global dictation
+- Double-tap Right CMD to start or pause voice chat
 
 Usage:
     python voice_edge.py [--http] [--self-test]
@@ -103,6 +104,7 @@ if TYPE_CHECKING:
 _VE_SOUNDDEVICE_IMPORT_TIMEOUT = float(
     os.environ.get("VE_SOUNDDEVICE_IMPORT_TIMEOUT", "25")
 )
+
 _sd_import_result: dict = {}
 
 
@@ -154,6 +156,319 @@ from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingR
 from starlette.routing import Route  # noqa: E402
 from tavily import TavilyClient  # noqa: E402
 
+
+# ============================================================================
+# 环境变量登记表 (ENV REGISTRY) —— 全文 env 读取的唯一索引
+# ----------------------------------------------------------------------------
+#   此处只做【集中登记】: 变量名 | 默认值 | 定义行号。真正的读取
+#   逻辑仍留在各自模块就近处(跳到行号即可)。新增变量请同时在此登记。
+#   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
+#
+#  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L104
+#    VE_VLM_KV_BITS                         3.5                                          L495
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L500
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L504
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L505
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L919
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L924
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L927
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L931
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L940
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L948
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1003
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1193
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L39695
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L40344
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L40356
+#
+#  【日志开关 (VE_*_LOG_DEBUG)】
+#    VE_APP_LOG_DEBUG                           "0"                                      L380
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L381
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L382
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L383
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L385
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L389
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L392
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L393
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L394
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L395
+#    VE_HUD_LOG_DEBUG                           "0"                                      L396
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L397
+#    VE_KWS_LOG_DEBUG                           "0"                                      L398
+#    VE_LLM_LOG_DEBUG                           "0"                                      L399
+#    VE_M365_LOG_DEBUG                          "0"                                      L400
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L402
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L406
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L409
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L410
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L411
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L412
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L413
+#    VE_TTS_LOG_DEBUG                           "0"                                      L414
+#    VE_VLM_LOG_DEBUG                           "0"                                      L415
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L416
+#
+#  【语音对话 (VE_VOICE_CHAT)】
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L39581
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L39604
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L39631
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L39690
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L40233
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L40236
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L40244
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L40256
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L40258
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L40267
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L40273
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L40279
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L40295
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L40300
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L40307
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L40314
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L40323
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L40330
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L40378
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L42144
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L42145
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L42146
+#
+#  【Qwen】
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13506
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13508
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L13509
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13515
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13517
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13520
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13528
+#    QWEN_COOKIE_HEADER                     ""                                           L13532
+#    QWEN_TOKENS                            ""                                           L13540
+#    QWEN_TOKEN                             ""                                           L13541
+#
+#  【DeepSeek】
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L601
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15175
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L15176
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15178
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15180
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15182
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15185
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15188
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15191
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15312
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15315
+#
+#  【豆包 Doubao / Firefox 鉴权同步】
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17860
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17861
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17867
+#    DOUBAO_FP                              "doubao_voice_edge"                          L17868
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17876
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17878
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17881
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17883
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17885
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L17889
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L17916
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L17919
+#    DOUBAO_WEB_AID                         "497858"                                     L17921
+#    DOUBAO_WEB_REGION                      "CN"                                         L17922
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L17923
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L17924
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L17926
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L17963
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L17956
+#    DOUBAO_COOKIE_HEADER                   ""                                           L18191
+#    DOUBAO_SESSION_IDS                     ""                                           L18233
+#    DOUBAO_SESSION_ID                      ""                                           L18237
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18748
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18757
+#    DOUBAO_SESSION_ID_SS                   ""                                           L18939
+#    DOUBAO_SID_TT                          ""                                           L18942
+#
+#  【M365 / SharePoint】
+#    M365_ENTRY_URL                         ""                                           L23328
+#    SHAREPOINT_HOME_URL                    ""                                           L23329
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23330
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23331
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23358
+#    M365_BRIDGE_PORT                       "5002"                                       L23359
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23360
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L23361
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23363
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23366
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L23369
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L23371
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23391
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23398
+#    M365_CONV_MAP_MAX                      "1024"                                       L23567
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L23832
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L23850
+#
+#  【小爱 XiaoAI / 小米 MI】
+#    XIAOAI_ENABLED                         "0"                                          L35603
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L35812
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L35874
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L35896
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L35903
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L35998
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36000
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36004
+#    MI_USER                                ""                                           L36735
+#    MI_PASS                                ""                                           L36736
+#    XIAOAI_HARDWARE                        "LX06"                                       L36738
+#    MI_DID                                 ""                                           L36740
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L36743
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L36747
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L36750
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L36756
+#    XIAOAI_NATIVE_STATUS_POLL_INTERVAL     "0.25"                                       L36766
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L36771
+#    XIAOAI_NATIVE_PLAY_END_TIMEOUT         "30.0"                                       L36776
+#    XIAOAI_NATIVE_IDLE_CONFIRMATIONS       "1"                                          L36781
+#    XIAOAI_NATIVE_STATUS_FALLBACK_DELAY    "3.0"                                        L36786
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L36806
+#    XIAOAI_VOICE                           "zh"                                         L36808
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L36810
+#    XIAOAI_MAX_TOKENS                      "500"                                        L36813
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L36816
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L36819
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L36823
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L36827
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L36832
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L36837
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L36842
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L36847
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L36852
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L36860
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L36865
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L36870
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L36875
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L36880
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L36885
+#    XIAOAI_NATIVE_TAIL_GUARD               "0.20"                                       L36891
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L36895
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L36898
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L36902
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L36906
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L36910
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L36915
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L36920
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L36924
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L36927
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L36930
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L36933
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L36936
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L36939
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L36942
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L36945
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L36952
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L36958
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L36962
+#
+# 合计 186 个唯一环境变量。
+# ============================================================================
+
+
+# 日志开关(提前解析为模块级常量, 供下方 logging 配置区引用; 只依赖已导入的 os)。
+# 详细分组说明见上方登记表与 logging 配置区。
+def _ve_env_flag(name: str, default: str = "0") -> bool:
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Every functional logger has an independent DEBUG gate. Disabled categories
+# stay at WARNING so warning/error records remain visible without INFO noise.
+VE_APP_LOG_DEBUG = _ve_env_flag("VE_APP_LOG_DEBUG")
+VE_AUTH_LOG_DEBUG = _ve_env_flag("VE_AUTH_LOG_DEBUG")
+VE_AUDIO_LOG_DEBUG = _ve_env_flag("VE_AUDIO_LOG_DEBUG")
+VE_DEEPSEEK_LOG_DEBUG = _ve_env_flag("VE_DEEPSEEK_LOG_DEBUG")
+VE_DEEPSEEK_LOG_STREAM_CHUNKS = _ve_env_flag(
+    "VE_DEEPSEEK_LOG_STREAM_CHUNKS",
+    "1" if VE_DEEPSEEK_LOG_DEBUG else "0",
+)
+VE_DEEPSEEK_LOG_PAGE_CONSOLE = _ve_env_flag(
+    "VE_DEEPSEEK_LOG_PAGE_CONSOLE",
+    "1" if VE_DEEPSEEK_LOG_DEBUG else "0",
+)
+VE_DICTATION_LOG_DEBUG = _ve_env_flag("VE_DICTATION_LOG_DEBUG")
+VE_DOUBAO_LOG_DEBUG = _ve_env_flag("VE_DOUBAO_LOG_DEBUG")
+VE_EMBEDDING_LOG_DEBUG = _ve_env_flag("VE_EMBEDDING_LOG_DEBUG")
+VE_HTTP_LOG_DEBUG = _ve_env_flag("VE_HTTP_LOG_DEBUG")
+VE_HUD_LOG_DEBUG = _ve_env_flag("VE_HUD_LOG_DEBUG")
+VE_KEYBOARD_LOG_DEBUG = _ve_env_flag("VE_KEYBOARD_LOG_DEBUG")
+VE_KWS_LOG_DEBUG = _ve_env_flag("VE_KWS_LOG_DEBUG")
+VE_LLM_LOG_DEBUG = _ve_env_flag("VE_LLM_LOG_DEBUG")
+VE_M365_LOG_DEBUG = _ve_env_flag("VE_M365_LOG_DEBUG")
+VE_M365_LOG_RELAY_TRACE = _ve_env_flag(
+    "VE_M365_LOG_RELAY_TRACE",
+    "1" if VE_M365_LOG_DEBUG else "0",
+)
+VE_M365_LOG_ATTACHMENT = _ve_env_flag(
+    "VE_M365_LOG_ATTACHMENT",
+    "1" if VE_M365_LOG_DEBUG else "0",
+)
+VE_MEMORY_LOG_DEBUG = _ve_env_flag("VE_MEMORY_LOG_DEBUG")
+VE_QWEN_LOG_DEBUG = _ve_env_flag("VE_QWEN_LOG_DEBUG")
+VE_RERANK_LOG_DEBUG = _ve_env_flag("VE_RERANK_LOG_DEBUG")
+VE_SHUTDOWN_LOG_DEBUG = _ve_env_flag("VE_SHUTDOWN_LOG_DEBUG")
+VE_TRANSCRIPTION_LOG_DEBUG = _ve_env_flag("VE_TRANSCRIPTION_LOG_DEBUG")
+VE_TTS_LOG_DEBUG = _ve_env_flag("VE_TTS_LOG_DEBUG")
+VE_VLM_LOG_DEBUG = _ve_env_flag("VE_VLM_LOG_DEBUG")
+VE_XIAOAI_LOG_DEBUG = _ve_env_flag("VE_XIAOAI_LOG_DEBUG")
+
+
+# Functional logger namespaces are initialized before any function/class body can
+# reference them. Each namespace is independently controlled by _ve_env_flag.
+_app_log = logging.getLogger("voice.app")
+_auth_log = logging.getLogger("voice.auth")
+_audio_log = logging.getLogger("voice.audio")
+_deepseek_log = logging.getLogger("voice.deepseek")
+_dictation_log = logging.getLogger("voice.dictation")
+_doubao_log = logging.getLogger("voice.doubao")
+_embedding_log = logging.getLogger("voice.embedding")
+_http_log = logging.getLogger("voice.http")
+_hud_log = logging.getLogger("voice.hud")
+_keyboard_log = logging.getLogger("voice.keyboard")
+_kws_log = logging.getLogger("voice.kws")
+_llm_log = logging.getLogger("voice.llm")
+_m365_log = logging.getLogger("voice.m365")
+_memory_log = logging.getLogger("voice.memory")
+_qwen_log = logging.getLogger("voice.qwen")
+_rerank_log = logging.getLogger("voice.rerank")
+_shutdown_log = logging.getLogger("voice.shutdown")
+_transcription_log = logging.getLogger("voice.transcription")
+_tts_log = logging.getLogger("voice.tts")
+_vlm_log = logging.getLogger("voice.vlm")
+_xiaoai_log = logging.getLogger("voice.xiaoai")
+
+_FUNCTIONAL_LOG_LEVELS = (
+    (_app_log, VE_APP_LOG_DEBUG),
+    (_auth_log, VE_AUTH_LOG_DEBUG),
+    (_audio_log, VE_AUDIO_LOG_DEBUG),
+    (_deepseek_log, VE_DEEPSEEK_LOG_DEBUG),
+    (_dictation_log, VE_DICTATION_LOG_DEBUG),
+    (_doubao_log, VE_DOUBAO_LOG_DEBUG),
+    (_embedding_log, VE_EMBEDDING_LOG_DEBUG),
+    (_http_log, VE_HTTP_LOG_DEBUG),
+    (_hud_log, VE_HUD_LOG_DEBUG),
+    (_keyboard_log, VE_KEYBOARD_LOG_DEBUG),
+    (_kws_log, VE_KWS_LOG_DEBUG),
+    (_llm_log, VE_LLM_LOG_DEBUG),
+    (_m365_log, VE_M365_LOG_DEBUG),
+    (_memory_log, VE_MEMORY_LOG_DEBUG),
+    (_qwen_log, VE_QWEN_LOG_DEBUG),
+    (_rerank_log, VE_RERANK_LOG_DEBUG),
+    (_shutdown_log, VE_SHUTDOWN_LOG_DEBUG),
+    (_transcription_log, VE_TRANSCRIPTION_LOG_DEBUG),
+    (_tts_log, VE_TTS_LOG_DEBUG),
+    (_vlm_log, VE_VLM_LOG_DEBUG),
+    (_xiaoai_log, VE_XIAOAI_LOG_DEBUG),
+)
+for _functional_log, _debug_enabled in _FUNCTIONAL_LOG_LEVELS:
+    _functional_log.setLevel(logging.DEBUG if _debug_enabled else logging.INFO)
+del _functional_log, _debug_enabled
+
+
 # ==================== Configuration ====================
 
 VLM_APC_ENABLED = True
@@ -199,8 +514,6 @@ VLM_MTP_DRAFTER_BY_MODEL = {
 VLM_MTP_DRAFT_BLOCK_SIZE = 4
 
 AGGRESSIVE_RELEASE_AUX_ON_VLM_LOAD = True
-
-MEMORY_DEBUG = False
 
 
 LLM_MODEL_ID = "mlx-community/unsloth-gemma-4-E4B-it-qat-oQ4"
@@ -271,6 +584,7 @@ M365_BROWSER_MODEL_TONES = {
     "LLM:m365-claude-opus": "Claude_Opus",
     "LLM:m365-claude-sonnet": "Claude_Sonnet",
     "LLM:m365-chatgpt-5.6": "Gpt_5_6_Reasoning",
+    "LLM:m365-chatgpt-5.6-quick": "Gpt_5_6_Chat",
     "LLM:m365-chatgpt-5.5": "Gpt_5_5_Chat",
 }
 
@@ -307,6 +621,13 @@ BROWSER_MODEL_METADATA = {
     "LLM:m365-chatgpt-5.6": {
         "owned_by": "m365-copilot-browser",
         "root": "Gpt_5_6_Reasoning",
+        "capabilities": ["chat", "reasoning", "web", "work"],
+        "supports_tools": True,
+        "relay_prompt": True,
+    },
+    "LLM:m365-chatgpt-5.6-quick": {
+        "owned_by": "m365-copilot-browser",
+        "root": "Gpt_5_6_Chat",
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": True,
         "relay_prompt": True,
@@ -394,9 +715,6 @@ MODEL_REVISIONS = {}
 
 # ==================== Embedding / Rerank Debug ====================
 
-DEBUG_EMBEDDINGS = False
-DEBUG_RERANK = False
-DEBUG_RERANK_CAPABILITIES = False
 
 DEFAULT_EMBED_MAX_LENGTH = 512
 DEFAULT_EMBED_BATCH_SIZE = 16
@@ -412,8 +730,7 @@ EMBEDDING_TRUNCATE_NORMALIZE_DEFAULT = True
 
 # ==================== Completion / FIM ====================
 
-DEBUG_COMPLETIONS = False
-DEBUG_COMPLETIONS_MAX_CHARS = 1200
+VE_LLM_LOG_DEBUG_MAX_CHARS = 1200
 
 
 FIM_PREFIX_TOKEN = "<|fim_prefix|>"
@@ -832,7 +1149,7 @@ def _ve_update_input_device_ids(event):
     try:
         ids = frozenset(int(x) for x in raw)
     except (TypeError, ValueError):
-        logger.debug("route-monitor input_device_ids not all ints: %r", raw)
+        _audio_log.debug("route-monitor input_device_ids not all ints: %r", raw)
         return
     _AUDIO_INPUT_DEVICE_IDS = ids
     # 二进制确实在发该字段 -> 允许把"空集"当权威"无麦"信号(sticky, 进程内不回退)。
@@ -861,7 +1178,7 @@ def _ve_note_input_device_removed():
     """
     global _VE_LAST_REFRESHED_INPUT_ID
     if _VE_LAST_REFRESHED_INPUT_ID is not None:
-        logger.info(
+        _audio_log.warning(
             "Voice chat: input device removed; reset refresh dedup marker (was id=%r)",
             _VE_LAST_REFRESHED_INPUT_ID,
         )
@@ -897,14 +1214,14 @@ def _pa_call_with_timeout(fn, *, timeout, label):
         try:
             fn()
         except Exception as exc:
-            logger.debug("PortAudio call %s raised: %r", label, exc)
+            _audio_log.debug("PortAudio call %s raised: %r", label, exc)
         finally:
             done.set()
 
     threading.Thread(target=_runner, name="PaBlockingCall", daemon=True).start()
     if done.wait(timeout=timeout):
         return True
-    logger.error(
+    _audio_log.error(
         "PortAudio call %s did not return within %.1fs; abandoning (stream leaked)",
         label,
         timeout,
@@ -975,8 +1292,6 @@ DOUBLE_TAP_WINDOW = 0.45
 ESC_DOUBLE_TAP_WINDOW = 0.45
 
 MAX_MODIFIER_TAP_DURATION = 0.35
-
-DEBUG_QUARTZ_FLAGS = False
 
 
 _appkit_media_monitor = None
@@ -1360,7 +1675,7 @@ def _browser_attachments_egress_stub(model: str, messages: list) -> None:
         and str(part.get("type") or "").strip().lower() in file_kinds | image_kinds
     )
     if n:
-        logger.warning(
+        _app_log.warning(
             "%s: %d content-part attachment(s) were not forwarded (no upload "
             "transport for this model yet); inline <file_content> text is "
             "preserved in the prompt.",
@@ -4104,7 +4419,7 @@ class ModelProtocolParser:
         # no enabled tools. Suppress the entire block.
         #
         if self.tool_policy == "disabled":
-            logger.warning(
+            _llm_log.warning(
                 "Suppressed model tool call because "
                 "tool calling is disabled: payload=%r",
                 original_payload[:500],
@@ -4170,7 +4485,7 @@ class ModelProtocolParser:
 
                 repaired = True
 
-                logger.warning(
+                _llm_log.warning(
                     "Accepted model tool call after appending "
                     "missing trailing closers: "
                     "appended=%r original_error=%s "
@@ -4188,7 +4503,7 @@ class ModelProtocolParser:
                     f"Trailing-closer repair failed: {repair_error}"
                 )
 
-                logger.warning(
+                _llm_log.warning(
                     "Suppressing invalid model tool call: error=%s payload=%r",
                     self.error,
                     original_payload[:500],
@@ -4708,7 +5023,7 @@ def parser_events_to_chat_sse(
             # Keep warnings server-side.
             #
             # Do not send malformed protocol payloads to delta.content.
-            logger.warning(
+            _http_log.warning(
                 "Model protocol parser warning: %s",
                 event.text,
             )
@@ -5080,7 +5395,7 @@ class AudioRuntime:
         self.last_transition_at = time.monotonic()
         self.last_transition_reason = str(reason)
 
-        logger.info(
+        _audio_log.debug(
             "[AUDIO STATE] %s -> %s "
             "sequence=%d playback_epoch=%d "
             "stream_epoch=%d reason=%s",
@@ -5120,7 +5435,7 @@ class AudioRuntime:
             self.playback_epoch += 1
             epoch = self.playback_epoch
 
-        logger.info(
+        _audio_log.debug(
             "[AUDIO PLAYBACK EPOCH] %d: %s",
             epoch,
             reason,
@@ -5138,7 +5453,7 @@ class AudioRuntime:
             self.stream_epoch += 1
             epoch = self.stream_epoch
 
-        logger.info(
+        _audio_log.debug(
             "[AUDIO STREAM EPOCH] %d: %s",
             epoch,
             reason,
@@ -5269,7 +5584,7 @@ class AudioRuntime:
                 AudioRuntimePhase.STOPPING,
                 AudioRuntimePhase.STOPPED,
             }:
-                logger.info(
+                _audio_log.warning(
                     "Ignoring recovery failure during "
                     "audio shutdown: phase=%s reason=%s",
                     self.phase.value,
@@ -5612,7 +5927,7 @@ class TTSMergeBuffer:
             should_flush = total_size >= self._max_size
 
             if should_flush:
-                logger.debug(
+                _tts_log.debug(
                     f"TTS merge buffer reached size limit ({total_size} chars), flushing"
                 )
                 self._flush_locked()
@@ -5633,7 +5948,7 @@ class TTSMergeBuffer:
         """定时器到期，刷新缓冲区"""
         with self._lock:
             if self._buffer:
-                logger.debug(
+                _tts_log.debug(
                     f"TTS merge timer expired, flushing {len(self._buffer)} items"
                 )
                 self._flush_locked()
@@ -5719,7 +6034,7 @@ class TTSMergeBuffer:
                         self._output_queue.put_nowait(final_item)
 
                     except queue.Full:
-                        logger.warning(
+                        _tts_log.warning(
                             "TTS output queue full, dropping final chunk: %s...",
                             chunk[:50],
                         )
@@ -5765,7 +6080,7 @@ class TTSMergeBuffer:
                 except queue.Full:
                     dropped_chunk_count += 1
 
-                    logger.warning(
+                    _tts_log.warning(
                         "TTS output queue full, dropping chunk: %s...",
                         chunk[:50],
                     )
@@ -5788,7 +6103,7 @@ class TTSMergeBuffer:
 
             buffered_count = len(self._buffer)
 
-            logger.debug(
+            _tts_log.debug(
                 "Immediate TTS merge flush requested: buffered_requests=%d",
                 buffered_count,
             )
@@ -5904,7 +6219,7 @@ class CancellationToken:
     def cancel(self):
         """设置取消标志"""
         if not self._cancelled.is_set():
-            logger.info(f"🛑 CancellationToken '{self.name}' cancelled")
+            _tts_log.debug(f"🛑 CancellationToken '{self.name}' cancelled")
             self._cancelled.set()
 
     def is_cancelled(self) -> bool:
@@ -5946,7 +6261,7 @@ class GlobalCancelManager:
         for proc in procs:
             try:
                 if proc.poll() is None:
-                    logger.debug(f"强制终止 ffmpeg 进程 (PID: {proc.pid})")
+                    _audio_log.debug(f"强制终止 ffmpeg 进程 (PID: {proc.pid})")
                     proc.kill()
             except Exception:
                 pass
@@ -6046,7 +6361,7 @@ class GlobalCancelManager:
         """
         with self._lock:
             if self._global_token is not token:
-                logger.debug("finish_tts_operation skipped: token identity mismatch")
+                _tts_log.debug("finish_tts_operation skipped: token identity mismatch")
                 return False
 
             self._double_press_detected = False
@@ -6096,7 +6411,7 @@ def _tts_async_loop_worker() -> None:
         TTS_ASYNC_LOOP = loop
         TTS_ASYNC_LOOP_STOPPED.clear()
 
-        logger.info(
+        _tts_log.debug(
             "Edge-TTS asyncio loop started: thread=%s loop=%r",
             threading.current_thread().name,
             loop,
@@ -6107,7 +6422,7 @@ def _tts_async_loop_worker() -> None:
         loop.run_forever()
 
     except Exception:
-        logger.exception("Edge-TTS asyncio loop worker failed")
+        _tts_log.exception("Edge-TTS asyncio loop worker failed")
         TTS_ASYNC_LOOP_READY.set()
 
     finally:
@@ -6135,7 +6450,7 @@ def _tts_async_loop_worker() -> None:
                         )
                     )
                 except Exception:
-                    logger.debug(
+                    _tts_log.debug(
                         "Failed while draining cancelled Edge-TTS asyncio tasks",
                         exc_info=True,
                     )
@@ -6143,7 +6458,7 @@ def _tts_async_loop_worker() -> None:
             try:
                 loop.run_until_complete(loop.shutdown_asyncgens())
             except Exception:
-                logger.debug(
+                _tts_log.debug(
                     "Edge-TTS shutdown_asyncgens failed",
                     exc_info=True,
                 )
@@ -6160,7 +6475,7 @@ def _tts_async_loop_worker() -> None:
                         cast(Awaitable[object], shutdown_default_executor())
                     )
                 except Exception:
-                    logger.debug(
+                    _tts_log.debug(
                         "Edge-TTS default executor shutdown failed",
                         exc_info=True,
                     )
@@ -6168,7 +6483,7 @@ def _tts_async_loop_worker() -> None:
             try:
                 loop.close()
             except Exception:
-                logger.debug(
+                _tts_log.debug(
                     "Edge-TTS event loop close failed",
                     exc_info=True,
                 )
@@ -6176,7 +6491,7 @@ def _tts_async_loop_worker() -> None:
         TTS_ASYNC_LOOP = None
         TTS_ASYNC_LOOP_STOPPED.set()
 
-        logger.info("Edge-TTS asyncio loop stopped")
+        _tts_log.debug("Edge-TTS asyncio loop stopped")
 
 
 def start_tts_async_loop() -> bool:
@@ -6245,7 +6560,7 @@ def start_tts_async_loop() -> bool:
     )
 
     if not running:
-        logger.error(
+        _tts_log.error(
             "Edge-TTS asyncio loop failed to start: ready=%s loop=%r thread_alive=%s",
             ready,
             loop,
@@ -6286,7 +6601,7 @@ def _on_tts_async_future_done(
     generation = _remove_tts_async_future(future)
 
     if future.cancelled():
-        logger.debug(
+        _tts_log.debug(
             "Edge-TTS coroutine cancelled: generation=%r",
             generation,
         )
@@ -6297,14 +6612,14 @@ def _on_tts_async_future_done(
     except concurrent.futures.CancelledError:
         return
     except Exception:
-        logger.exception(
+        _tts_log.exception(
             "Unable to inspect completed Edge-TTS Future: generation=%r",
             generation,
         )
         return
 
     if error is not None:
-        logger.error(
+        _tts_log.error(
             "Edge-TTS coroutine failed: generation=%r error=%s",
             generation,
             error,
@@ -6317,7 +6632,7 @@ def _on_tts_async_future_done(
         return
 
     if generation != _get_audio_generation():
-        logger.debug(
+        _tts_log.debug(
             "Edge-TTS coroutine completed after its "
             "generation was invalidated: "
             "future_generation=%r current_generation=%r",
@@ -6326,7 +6641,7 @@ def _on_tts_async_future_done(
         )
         return
 
-    logger.debug(
+    _tts_log.debug(
         "Edge-TTS coroutine completed: generation=%r",
         generation,
     )
@@ -6368,7 +6683,7 @@ def submit_tts_coroutine(
         except Exception:
             pass
 
-        logger.error(
+        _tts_log.error(
             "Cannot submit Edge-TTS coroutine because the dedicated loop is not running"
         )
         return None
@@ -6392,7 +6707,7 @@ def submit_tts_coroutine(
         except Exception:
             pass
 
-        logger.exception(
+        _tts_log.exception(
             "Failed to submit Edge-TTS coroutine: generation=%d",
             generation,
         )
@@ -6436,13 +6751,13 @@ def cancel_tts_async_futures_before_generation(
             if future.cancel():
                 cancelled += 1
         except Exception:
-            logger.debug(
+            _tts_log.debug(
                 "Failed to cancel stale Edge-TTS Future",
                 exc_info=True,
             )
 
     if cancelled:
-        logger.info(
+        _tts_log.debug(
             "Cancelled %d stale Edge-TTS coroutine(s): current_generation=%d",
             cancelled,
             generation,
@@ -6466,7 +6781,7 @@ def cancel_all_tts_async_futures() -> int:
             if not future.done() and future.cancel():
                 cancelled += 1
         except Exception:
-            logger.debug(
+            _tts_log.debug(
                 "Failed to cancel Edge-TTS Future during shutdown",
                 exc_info=True,
             )
@@ -6486,7 +6801,7 @@ def stop_tts_async_loop() -> bool:
     cancelled = cancel_all_tts_async_futures()
 
     if cancelled:
-        logger.info(
+        _tts_log.debug(
             "Cancelled %d Edge-TTS coroutine(s) during shutdown",
             cancelled,
         )
@@ -6497,7 +6812,7 @@ def stop_tts_async_loop() -> bool:
         try:
             loop.call_soon_threadsafe(loop.stop)
         except Exception:
-            logger.debug(
+            _tts_log.debug(
                 "Failed to request Edge-TTS loop stop",
                 exc_info=True,
             )
@@ -6518,7 +6833,7 @@ def stop_tts_async_loop() -> bool:
             TTS_ASYNC_LOOP_THREAD = None
     else:
         assert thread is not None
-        logger.error(
+        _tts_log.error(
             "Edge-TTS asyncio loop thread remains "
             "alive after shutdown timeout: "
             "thread=%s ident=%s",
@@ -6545,7 +6860,7 @@ def _find_portaudio_output_device_by_name(
         devices = sd.query_devices()
 
     except Exception:
-        logger.exception(
+        _audio_log.exception(
             "Failed to enumerate PortAudio devices while matching output route"
         )
 
@@ -6596,7 +6911,7 @@ def _find_portaudio_output_device_by_name(
     matches = exact_matches or partial_matches
 
     if not matches:
-        logger.warning(
+        _audio_log.warning(
             "No PortAudio output device matches CoreAudio target: %r",
             target_name,
         )
@@ -6606,7 +6921,7 @@ def _find_portaudio_output_device_by_name(
     selected = matches[0]
 
     if len(matches) > 1:
-        logger.warning(
+        _audio_log.warning(
             "Multiple PortAudio output devices "
             "match CoreAudio target %r: %r; "
             "selecting index=%d",
@@ -6633,14 +6948,14 @@ def refresh_portaudio_after_route_change(
         dictation_active = IS_DICTATION_ACTIVE
 
     if dictation_active:
-        logger.warning(
+        _dictation_log.warning(
             "Deferring PortAudio refresh because dictation/input capture is active"
         )
 
         return None
 
     with PORTAUDIO_LIFECYCLE_LOCK:
-        logger.warning(
+        _audio_log.warning(
             "Refreshing PortAudio device snapshot: CoreAudio target=%r",
             target_output_name,
         )
@@ -6648,7 +6963,7 @@ def refresh_portaudio_after_route_change(
         # The persistent output stream must already be closed before
         # terminating PortAudio.
         if OUTPUT_STREAM is not None:
-            logger.error(
+            _audio_log.error(
                 "Refusing to terminate PortAudio while OUTPUT_STREAM still exists"
             )
 
@@ -6660,7 +6975,7 @@ def refresh_portaudio_after_route_change(
         try:
             before_default = repr(sd.default.device)
 
-            if logger.isEnabledFor(logging.DEBUG):
+            if VE_AUDIO_LOG_DEBUG:
                 before_devices = repr(sd.query_devices())
 
         except Exception:
@@ -6669,14 +6984,14 @@ def refresh_portaudio_after_route_change(
         try:
             sd._terminate()
         except Exception:
-            logger.exception(
+            _audio_log.exception(
                 "PortAudio termination failed; attempting one recovery initialization"
             )
 
             try:
                 sd._initialize()
             except Exception:
-                logger.exception("PortAudio recovery initialization failed")
+                _audio_log.exception("PortAudio recovery initialization failed")
 
             return None
 
@@ -6685,7 +7000,7 @@ def refresh_portaudio_after_route_change(
         try:
             sd._initialize()
         except Exception:
-            logger.exception("PortAudio initialization failed after route change")
+            _audio_log.exception("PortAudio initialization failed after route change")
             return None
 
         try:
@@ -6694,7 +7009,7 @@ def refresh_portaudio_after_route_change(
                 reset_sounddevice_defaults()
 
         except Exception:
-            logger.debug(
+            _audio_log.debug(
                 "sounddevice default reset failed",
                 exc_info=True,
             )
@@ -6704,7 +7019,7 @@ def refresh_portaudio_after_route_change(
 
             refreshed_devices = sd.query_devices()
 
-            logger.info(
+            _audio_log.debug(
                 "PortAudio refreshed: "
                 "before_default=%s "
                 "after_default=%r "
@@ -6714,19 +7029,18 @@ def refresh_portaudio_after_route_change(
                 len(refreshed_devices),
             )
 
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(
-                    "PortAudio devices before refresh: %s",
-                    before_devices,
-                )
+            _audio_log.debug(
+                "PortAudio devices before refresh: %s",
+                before_devices,
+            )
 
-                logger.debug(
-                    "PortAudio devices after refresh: %r",
-                    refreshed_devices,
-                )
+            _audio_log.debug(
+                "PortAudio devices after refresh: %r",
+                refreshed_devices,
+            )
 
         except Exception:
-            logger.exception("Failed to query PortAudio after refresh")
+            _audio_log.exception("Failed to query PortAudio after refresh")
 
             return None
 
@@ -6736,7 +7050,7 @@ def refresh_portaudio_after_route_change(
             try:
                 matched_info = sd.query_devices(matched_index)
 
-                logger.info(
+                _audio_log.debug(
                     "Matched CoreAudio output to "
                     "PortAudio device: "
                     "target=%r index=%d name=%r "
@@ -6765,7 +7079,7 @@ def refresh_portaudio_after_route_change(
         fallback_index = _get_default_output_device_index()
 
         if fallback_index is None:
-            logger.error(
+            _audio_log.error(
                 "PortAudio refresh completed, but no output device is available"
             )
 
@@ -6790,7 +7104,7 @@ def refresh_portaudio_after_route_change(
             target_output_name
             and fallback_name.casefold() != str(target_output_name).casefold()
         ):
-            logger.error(
+            _audio_log.error(
                 "PortAudio is still stale after "
                 "terminate/initialize: "
                 "CoreAudio target=%r "
@@ -6824,7 +7138,7 @@ def wait_for_audio_route_stability(
         stable_for = time.monotonic() - last_change_at
 
         if stable_for >= AUDIO_ROUTE_MIN_STABLE_SECONDS:
-            logger.info(
+            _audio_log.debug(
                 "CoreAudio route stable for %.2fs: output_id=%r output_name=%r",
                 stable_for,
                 AUDIO_ROUTE_LAST_OUTPUT_ID,
@@ -6835,7 +7149,7 @@ def wait_for_audio_route_stability(
 
         time.sleep(0.1)
 
-    logger.warning(
+    _audio_log.warning(
         "CoreAudio route did not remain stable within %.1fs",
         timeout,
     )
@@ -6888,7 +7202,7 @@ def _schedule_coreaudio_route_change(
         initial_snapshot = old_output_id is None
 
         if initial_snapshot:
-            logger.info(
+            _audio_log.debug(
                 "CoreAudio initial output snapshot: output_id=%r output_name=%r",
                 output_id,
                 output_name,
@@ -6896,7 +7210,7 @@ def _schedule_coreaudio_route_change(
             return
 
         if not output_changed:
-            logger.info(
+            _tts_log.debug(
                 "[AUDIO ROUTE CHANGE] output unchanged; "
                 "no TTS recovery required: "
                 "selector=%r output_id=%r output_name=%r",
@@ -6923,7 +7237,7 @@ def _schedule_coreaudio_route_change(
         AUDIO_ROUTE_CHANGE_TIMER = timer
         timer.start()
 
-    logger.info(
+    _audio_log.debug(
         "[AUDIO ROUTE CHANGE] "
         "selector=%s "
         "output_id=%r "
@@ -6950,7 +7264,7 @@ def _finalize_coreaudio_route_change(
     with AUDIO_ROUTE_CHANGE_LOCK:
         # 如果这是被后续通知取代的旧 Timer，直接忽略。
         if sequence != AUDIO_ROUTE_CHANGE_SEQUENCE:
-            logger.debug(
+            _audio_log.debug(
                 "Ignoring stale CoreAudio "
                 "route-change timer: "
                 "timer_sequence=%d "
@@ -6966,7 +7280,7 @@ def _finalize_coreaudio_route_change(
     AUDIO_ROUTE_CHANGE_PENDING.set()
     TTS_OUTPUT_RECOVERY_REQUIRED.set()
 
-    logger.info(
+    _tts_log.debug(
         "[AUDIO ROUTE CHANGE] "
         "notifications settled; "
         "output_id=%r "
@@ -7004,7 +7318,7 @@ def _ensure_audio_route_monitor_binary(
         if not needs_build:
             return True
 
-        logger.info("Compiling CoreAudio route monitor")
+        _audio_log.debug("Compiling CoreAudio route monitor")
 
         result = subprocess.run(
             [
@@ -7020,7 +7334,7 @@ def _ensure_audio_route_monitor_binary(
         )
 
         if result.returncode != 0:
-            logger.error(
+            _audio_log.error(
                 "Failed to compile CoreAudio route monitor:\n%s",
                 result.stderr.strip(),
             )
@@ -7032,7 +7346,7 @@ def _ensure_audio_route_monitor_binary(
             0o755,
         )
 
-        logger.info(
+        _audio_log.debug(
             "CoreAudio route monitor compiled: %s",
             helper_bin,
         )
@@ -7040,7 +7354,7 @@ def _ensure_audio_route_monitor_binary(
         return True
 
     except Exception:
-        logger.exception("CoreAudio route monitor compilation failed")
+        _audio_log.exception("CoreAudio route monitor compilation failed")
 
         return False
 
@@ -7058,7 +7372,7 @@ def _audio_route_monitor_reader():
     helper_bin = AUDIO_ROUTE_MONITOR_BIN
 
     if not os.path.exists(helper_swift):
-        logger.warning(
+        _audio_log.warning(
             "CoreAudio route monitor source disappeared before reader startup: %s",
             helper_swift,
         )
@@ -7093,7 +7407,7 @@ def _audio_route_monitor_reader():
         with AUDIO_ROUTE_MONITOR_PROCESS_LOCK:
             AUDIO_ROUTE_MONITOR_PROCESS = process
 
-        logger.info(
+        _audio_log.debug(
             "CoreAudio route monitor started: pid=%s",
             process.pid,
         )
@@ -7114,7 +7428,7 @@ def _audio_route_monitor_reader():
                 event = json.loads(line)
 
             except json.JSONDecodeError:
-                logger.warning(
+                _audio_log.warning(
                     "CoreAudio route monitor non-JSON output: %r",
                     line,
                 )
@@ -7125,7 +7439,7 @@ def _audio_route_monitor_reader():
                 event,
                 dict,
             ):
-                logger.warning(
+                _audio_log.warning(
                     "CoreAudio route monitor returned non-object JSON: %r",
                     event,
                 )
@@ -7155,7 +7469,7 @@ def _audio_route_monitor_reader():
 
                 started_received = True
 
-                logger.info(
+                _audio_log.debug(
                     "CoreAudio route monitor ready: "
                     "output_id=%r "
                     "output_name=%r "
@@ -7214,7 +7528,7 @@ def _audio_route_monitor_reader():
                     # 默认输入切换(如插入/移除麦克风)通知等待输入设备的消费者即时唤醒。
                     AUDIO_INPUT_DEVICE_CHANGED.set()
 
-                    logger.info(
+                    _tts_log.debug(
                         "[AUDIO ROUTE CHANGE] "
                         "input-only change observed; "
                         "input_id=%r input_name=%r; "
@@ -7224,7 +7538,7 @@ def _audio_route_monitor_reader():
                     )
 
                 else:
-                    logger.debug(
+                    _audio_log.debug(
                         "Ignoring unknown CoreAudio route selector: %r",
                         selector,
                     )
@@ -7232,7 +7546,7 @@ def _audio_route_monitor_reader():
                 continue
 
             if event_type == "error":
-                logger.error(
+                _audio_log.error(
                     "CoreAudio route monitor reported an error: %r",
                     event,
                 )
@@ -7240,7 +7554,7 @@ def _audio_route_monitor_reader():
                 continue
 
             if event_type == "fatal_error":
-                logger.error(
+                _audio_log.error(
                     "CoreAudio route monitor reported a fatal error: %r",
                     event,
                 )
@@ -7249,11 +7563,11 @@ def _audio_route_monitor_reader():
                 break
 
             if event_type == "stopped":
-                logger.info("CoreAudio route monitor reported stopped")
+                _audio_log.warning("CoreAudio route monitor reported stopped")
 
                 continue
 
-            logger.debug(
+            _audio_log.debug(
                 "Ignoring unknown CoreAudio monitor event: %r",
                 event,
             )
@@ -7264,19 +7578,19 @@ def _audio_route_monitor_reader():
             AUDIO_ROUTE_MONITOR_READY.set()
 
         if not AUDIO_ROUTE_MONITOR_STOP.is_set() and returncode != 0:
-            logger.error(
+            _audio_log.error(
                 "CoreAudio route monitor exited unexpectedly: returncode=%s",
                 returncode,
             )
 
         elif not AUDIO_ROUTE_MONITOR_STOP.is_set():
-            logger.warning(
+            _audio_log.warning(
                 "CoreAudio route monitor exited without a stop request: returncode=%s",
                 returncode,
             )
 
     except Exception:
-        logger.exception("CoreAudio route monitor reader failed")
+        _audio_log.exception("CoreAudio route monitor reader failed")
 
         AUDIO_ROUTE_MONITOR_READY.set()
 
@@ -7291,7 +7605,7 @@ def _audio_route_monitor_reader():
         # 确保 start_audio_route_monitor() 不会一直等到超时。
         AUDIO_ROUTE_MONITOR_READY.set()
 
-        logger.info("CoreAudio route monitor reader exited")
+        _audio_log.debug("CoreAudio route monitor reader exited")
 
 
 def start_audio_route_monitor() -> bool:
@@ -7307,7 +7621,7 @@ def start_audio_route_monitor() -> bool:
     if not os.path.isfile(AUDIO_ROUTE_MONITOR_SWIFT):
         AUDIO_ROUTE_MONITOR_READY.set()
         AUDIO_ROUTE_MONITOR_THREAD = None
-        logger.info(
+        _audio_log.debug(
             "CoreAudio route monitor disabled: optional Swift source is absent: %s",
             AUDIO_ROUTE_MONITOR_SWIFT,
         )
@@ -7360,7 +7674,7 @@ def start_audio_route_monitor() -> bool:
         and AUDIO_ROUTE_LAST_SWIFT_SNAPSHOT is not None
     )
 
-    logger.info(
+    _audio_log.debug(
         "CoreAudio route monitor startup: ready=%s running=%s thread_alive=%s pid=%r",
         ready,
         running,
@@ -7400,7 +7714,7 @@ def stop_audio_route_monitor(
         try:
             process.terminate()
         except Exception:
-            logger.debug(
+            _audio_log.debug(
                 "Failed to terminate CoreAudio route monitor",
                 exc_info=True,
             )
@@ -7421,7 +7735,7 @@ def stop_audio_route_monitor(
             AUDIO_ROUTE_MONITOR_THREAD = None
     else:
         assert thread is not None
-        logger.error(
+        _audio_log.error(
             "CoreAudio route monitor reader "
             "remains alive after shutdown timeout: "
             "thread=%s ident=%s",
@@ -7434,7 +7748,7 @@ def stop_audio_route_monitor(
         TTS_OUTPUT_RECOVERY_REQUIRED.clear()
 
     if stopped:
-        logger.info("CoreAudio route monitor stopped")
+        _audio_log.debug("CoreAudio route monitor stopped")
 
     return stopped
 
@@ -7450,7 +7764,7 @@ def _get_default_output_device_index() -> Optional[int]:
     try:
         default_device = sd.default.device
 
-        logger.debug(
+        _audio_log.debug(
             "Raw sd.default.device: value=%r type=%s",
             default_device,
             type(default_device).__name__,
@@ -7472,13 +7786,13 @@ def _get_default_output_device_index() -> Optional[int]:
         if normalized is not None:
             return normalized
 
-        logger.debug(
+        _audio_log.debug(
             "No valid default output index in sd.default.device=%r",
             default_device,
         )
 
     except Exception as exc:
-        logger.debug(
+        _audio_log.debug(
             "Failed to read sd.default.device: %s",
             exc,
         )
@@ -7500,7 +7814,7 @@ def _get_default_output_device_index() -> Optional[int]:
             normalized = _normalize_device_index(candidate)
 
             if normalized is not None:
-                logger.debug(
+                _audio_log.debug(
                     "Using host API default output: index=%d",
                     normalized,
                 )
@@ -7508,7 +7822,7 @@ def _get_default_output_device_index() -> Optional[int]:
                 return normalized
 
     except Exception as exc:
-        logger.debug(
+        _audio_log.debug(
             "Failed to query host API default output devices: %s",
             exc,
         )
@@ -7561,7 +7875,7 @@ def _get_output_device_signature():
         )
 
     except Exception as exc:
-        logger.debug(
+        _audio_log.debug(
             "Failed to query output device signature for index=%r: %s",
             device_index,
             exc,
@@ -7623,7 +7937,7 @@ def log_audio_output_route(
     """
     snapshot = _get_audio_output_route_snapshot()
 
-    logger.log(
+    _audio_log.log(
         level,
         "[AUDIO ROUTE] "
         "context=%s "
@@ -7657,7 +7971,7 @@ def log_persistent_audio_output_state(
     stream = OUTPUT_STREAM
 
     try:
-        logger.log(
+        _audio_log.log(
             level,
             "Audio output state: "
             "context=%s stream_exists=%s "
@@ -7700,7 +8014,7 @@ def log_persistent_audio_output_state(
         )
 
     except Exception:
-        logger.exception("Failed to log persistent audio output state")
+        _audio_log.exception("Failed to log persistent audio output state")
 
 
 def _get_persistent_output_snapshot():
@@ -7762,7 +8076,7 @@ def is_persistent_audio_output_healthy(
         callback_age = time.monotonic() - callback_at
 
         if callback_age > callback_max_age:
-            logger.warning(
+            _audio_log.warning(
                 "Persistent output callback is stale: stream_epoch=%d age=%.3fs",
                 context.stream_epoch,
                 callback_age,
@@ -8205,7 +8519,7 @@ def _retain_pending_output_close(
         if OUTPUT_STREAM_PENDING_CLOSE.stream is stream:
             return
 
-    logger.critical(
+    _app_log.critical(
         "A second OutputStream failed closure "
         "while another stream is already "
         "pending close"
@@ -8240,7 +8554,7 @@ def start_persistent_audio_output(
         current_device_index = current_signature[0]
 
     if current_device_index is None:
-        logger.error(
+        _audio_log.error(
             "No valid output device index: signature=%r CoreAudio target=%r",
             current_signature,
             AUDIO_ROUTE_LAST_OUTPUT_NAME,
@@ -8264,7 +8578,7 @@ def start_persistent_audio_output(
         )
 
     except Exception:
-        logger.debug(
+        _audio_log.debug(
             "Unable to query selected output device before stream creation: device=%r",
             current_device_index,
             exc_info=True,
@@ -8289,7 +8603,7 @@ def start_persistent_audio_output(
 
     with OUTPUT_STREAM_LOCK:
         if OUTPUT_STREAM_PENDING_CLOSE is not None:
-            logger.error(
+            _audio_log.error(
                 "Refusing to create persistent "
                 "OutputStream while a previous "
                 "stream remains pending close: "
@@ -8314,7 +8628,7 @@ def start_persistent_audio_output(
             )
 
             if route_changed:
-                logger.warning(
+                _audio_log.warning(
                     "Recreating persistent "
                     "OutputStream: "
                     "override_device_index=%r "
@@ -8338,7 +8652,7 @@ def start_persistent_audio_output(
                         stream.stop()
 
                 except Exception as exc:
-                    logger.debug(
+                    _audio_log.debug(
                         "Failed to stop old output stream after route change: %s",
                         exc,
                     )
@@ -8352,7 +8666,7 @@ def start_persistent_audio_output(
                     stream.close()
 
                 except Exception as exc:
-                    logger.debug(
+                    _audio_log.debug(
                         "Failed to close old output stream after route change: %s",
                         exc,
                     )
@@ -8362,7 +8676,7 @@ def start_persistent_audio_output(
             else:
                 try:
                     if stream.active and not stream.stopped:
-                        logger.debug(
+                        _audio_log.debug(
                             "Reusing persistent "
                             "OutputStream: "
                             "signature=%r "
@@ -8383,12 +8697,14 @@ def start_persistent_audio_output(
                         try:
                             stream.start()
 
-                            logger.info("Existing persistent output stream restarted")
+                            _audio_log.debug(
+                                "Existing persistent output stream restarted"
+                            )
 
                             return True
 
                         except Exception as exc:
-                            logger.warning(
+                            _audio_log.warning(
                                 "Failed to restart "
                                 "existing persistent "
                                 "output stream: %s",
@@ -8396,7 +8712,7 @@ def start_persistent_audio_output(
                             )
 
                 except Exception as exc:
-                    logger.debug(
+                    _audio_log.debug(
                         "Failed to inspect existing output stream: %s",
                         exc,
                     )
@@ -8410,7 +8726,7 @@ def start_persistent_audio_output(
                 OUTPUT_CALLBACK_CONTEXT = None
                 OUTPUT_STREAM_DEVICE_SIGNATURE = None
 
-        logger.info(
+        _audio_log.debug(
             "🔊 Initializing persistent audio "
             "output: "
             "requested_device=%r "
@@ -8508,7 +8824,9 @@ def start_persistent_audio_output(
 
                 # 分级: 有 fallback 兜底(recoverable_context)时降为 WARNING(下一级会救,
                 # 典型: 热插拔期第一级 recreate 的瞬时 PaError -9986); 否则保持 ERROR(真失败)。
-                _cand_fail_log = logger.warning if recoverable_context else logger.error
+                _cand_fail_log = (
+                    _audio_log.warning if recoverable_context else _audio_log.error
+                )
                 _cand_fail_log(
                     "Failed to create persistent audio output candidate "
                     "(recoverable=%s): stream_epoch=%d device=%r sample_rate=%d "
@@ -8523,7 +8841,7 @@ def start_persistent_audio_output(
 
                 return False
 
-            logger.info(
+            _audio_log.debug(
                 "✅ Persistent OutputStream started: "
                 "requested_device=%r "
                 "actual_stream_device=%r "
@@ -8544,7 +8862,7 @@ def start_persistent_audio_output(
             return True
 
         except Exception:
-            logger.exception(
+            _audio_log.exception(
                 "Persistent audio output failed "
                 "to initialize: "
                 "device=%r "
@@ -8610,7 +8928,7 @@ def _try_close_output_stream(
     )
     if not abort_done:
         errors.append("abort timed out (stream leaked)")
-        logger.error(
+        _audio_log.error(
             "Persistent output stream abort() timed out; leaking stream to avoid "
             "hanging owner thread: stream_epoch=%r reason=%s",
             stream_epoch_repr,
@@ -8620,7 +8938,7 @@ def _try_close_output_stream(
     if context is None:
         callback_inactive = False
 
-        logger.warning(
+        _app_log.warning(
             "OutputStream has no callback context; "
             "callback inactivity cannot be observed"
         )
@@ -8628,7 +8946,7 @@ def _try_close_output_stream(
         callback_inactive = context.callback_inactive.wait(timeout=1.0)
 
         if not callback_inactive:
-            logger.warning(
+            _app_log.warning(
                 "OutputStream callback did not report "
                 "inactive before close verification: "
                 "stream_epoch=%r reason=%s",
@@ -8647,7 +8965,7 @@ def _try_close_output_stream(
         )
         if not close_done:
             errors.append("close timed out (stream leaked)")
-            logger.error(
+            _audio_log.error(
                 "Persistent output stream close() timed out; leaking stream: "
                 "stream_epoch=%r reason=%s",
                 stream_epoch_repr,
@@ -8661,7 +8979,7 @@ def _try_close_output_stream(
 
         errors.append((f"closed property failed: {type(exc).__name__}: {exc}"))
 
-        logger.exception(
+        _audio_log.exception(
             "Unable to query persistent output stream.closed: stream_epoch=%r",
             (context.stream_epoch if context is not None else None),
         )
@@ -8672,7 +8990,7 @@ def _try_close_output_stream(
     stream_closed = stream_reports_closed
 
     if stream_closed:
-        logger.info(
+        _audio_log.debug(
             "Persistent audio output reached "
             "confirmed closure: "
             "stream_epoch=%r "
@@ -8687,7 +9005,7 @@ def _try_close_output_stream(
 
     error = "; ".join(errors)
 
-    logger.error(
+    _audio_log.error(
         "Persistent audio output closure was "
         "not confirmed: stream_epoch=%r "
         "callback_inactive=%s "
@@ -8735,14 +9053,14 @@ def stop_persistent_audio_output(
     # 仍可能在下一次调用再次卡死。拿不到锁就放弃本轮 close，让进程退出回收 native 资源。
     lock_timeout = min(0.5, max(0.05, _PA_CLOSE_TIMEOUT))
     if not OUTPUT_STREAM_LOCK.acquire(timeout=lock_timeout):
-        logger.error(
+        _audio_log.error(
             "Timed out acquiring OUTPUT_STREAM_LOCK before persistent output detach; "
             "skipping native close to preserve shutdown progress"
         )
         return False
     try:
         if OUTPUT_STREAM_PENDING_CLOSE is not None:
-            logger.error(
+            _audio_log.error(
                 "Cannot stop a newly published stream while another OutputStream "
                 "remains pending close"
             )
@@ -8785,7 +9103,7 @@ def stop_persistent_audio_output(
             finally:
                 OUTPUT_STREAM_LOCK.release()
         else:
-            logger.error(
+            _audio_log.error(
                 "Timed out acquiring OUTPUT_STREAM_LOCK after confirmed stream close; "
                 "leaving pending-close marker for process teardown"
             )
@@ -8798,7 +9116,7 @@ def stop_persistent_audio_output(
     pending.attempts = 1
     pending.last_error = close_error
 
-    logger.error(
+    _audio_log.error(
         "Persistent OutputStream closure was "
         "not confirmed; retained for bounded "
         "retry: stream_epoch=%r "
@@ -8821,7 +9139,7 @@ def retry_pending_output_close() -> bool:
         return True
 
     if pending.attempts >= AUDIO_OUTPUT_CLOSE_MAX_ATTEMPTS:
-        logger.error(
+        _app_log.error(
             "Pending OutputStream exhausted close "
             "attempts: stream_epoch=%r "
             "attempts=%d error=%s",
@@ -8845,7 +9163,7 @@ def retry_pending_output_close() -> bool:
             if OUTPUT_STREAM_PENDING_CLOSE is pending:
                 OUTPUT_STREAM_PENDING_CLOSE = None
 
-        logger.info(
+        _tts_log.debug(
             "Pending OutputStream closed on retry: stream_epoch=%r attempt=%d",
             (pending.context.stream_epoch if pending.context is not None else None),
             pending.attempts,
@@ -8853,7 +9171,7 @@ def retry_pending_output_close() -> bool:
 
         return True
 
-    logger.error(
+    _app_log.error(
         "Pending OutputStream close retry failed: "
         "stream_epoch=%r attempt=%d/%d error=%s",
         (pending.context.stream_epoch if pending.context is not None else None),
@@ -8872,7 +9190,7 @@ def restart_persistent_audio_output(
     target_output_name: Optional[str] = None,
     recoverable_context: bool = False,
 ) -> bool:
-    logger.warning(
+    _audio_log.warning(
         "Restarting persistent audio output: "
         "reason=%s refresh_portaudio=%s "
         "target_output=%r",
@@ -8884,7 +9202,7 @@ def restart_persistent_audio_output(
     # Resolve an old unconfirmed close before
     # touching any currently published stream.
     if not retry_pending_output_close():
-        logger.error(
+        _audio_log.error(
             "Refusing to create a new OutputStream "
             "while the previous stream remains "
             "pending close"
@@ -8898,14 +9216,14 @@ def restart_persistent_audio_output(
         )
     except Exception as exc:
         old_stream_closed = False
-        logger.error(
+        _audio_log.error(
             "Failed to stop old persistent audio output: error_type=%s error=%s",
             type(exc).__name__,
             str(exc).replace("\n", " ")[:1000],
         )
 
     if not old_stream_closed:
-        logger.error(
+        _audio_log.error(
             "Refusing to create a new persistent "
             "OutputStream because closure of the "
             "previous stream was not confirmed"
@@ -8921,7 +9239,7 @@ def restart_persistent_audio_output(
         route_stable = wait_for_audio_route_stability(timeout=5.0)
 
         if not route_stable:
-            logger.warning(
+            _audio_log.warning(
                 "Proceeding with PortAudio refresh "
                 "although route stability was not "
                 "confirmed"
@@ -8932,7 +9250,7 @@ def restart_persistent_audio_output(
         )
 
         if output_device_index is None:
-            logger.error(
+            _audio_log.error(
                 "Unable to refresh PortAudio for CoreAudio target=%r",
                 target_output_name,
             )
@@ -8950,7 +9268,7 @@ def restart_persistent_audio_output(
     )
 
     if not started:
-        logger.warning(
+        _audio_log.warning(
             "Failed to create persistent output "
             "candidate: refresh_portaudio=%s "
             "target=%r",
@@ -8996,7 +9314,7 @@ def ensure_tts_output_ready(
     consumer_thread = TTS_CONSUMER_THREAD
 
     if consumer_thread is None or threading.current_thread() is not consumer_thread:
-        logger.critical(
+        _tts_log.critical(
             "Rejected audio recovery from "
             "non-owner thread: "
             "caller=%s caller_ident=%s "
@@ -9037,7 +9355,7 @@ def ensure_tts_output_ready(
     )
 
     if fault_decision is CallbackFaultDecision.INVARIANT:
-        logger.error(
+        _tts_log.error(
             "Callback stream epoch invariant violation: fault=%r runtime=%r",
             observed_fault,
             audio_runtime.snapshot(),
@@ -9073,7 +9391,7 @@ def ensure_tts_output_ready(
         return True
 
     if not audio_runtime.can_attempt_recovery():
-        logger.warning(
+        _tts_log.warning(
             "Audio recovery is in backoff: phase=%s retry_after=%.3fs",
             audio_runtime.phase.value,
             audio_runtime.seconds_until_recovery(),
@@ -9083,7 +9401,7 @@ def ensure_tts_output_ready(
     try:
         recovery_attempt = audio_runtime.begin_recovery(reason)
     except RuntimeError:
-        logger.exception("Unable to enter audio recovery state")
+        _tts_log.exception("Unable to enter audio recovery state")
         return False
 
     with AUDIO_ROUTE_CHANGE_LOCK:
@@ -9093,7 +9411,7 @@ def ensure_tts_output_ready(
             AUDIO_ROUTE_LAST_OUTPUT_NAME if route_change_detected else None
         )
 
-    logger.warning(
+    _tts_log.warning(
         "[AUDIO RECOVERY] attempt=%d route_sequence=%d reason=%s",
         recovery_attempt,
         recovery_route_sequence,
@@ -9160,7 +9478,7 @@ def ensure_tts_output_ready(
             except Exception as exc:
                 candidate_started = False
                 stage_errors.append(f"{stage_name}: {exc}")
-                logger.exception(
+                _tts_log.exception(
                     "Audio recovery stage raised: %s",
                     stage_name,
                 )
@@ -9172,7 +9490,7 @@ def ensure_tts_output_ready(
                 continue
 
             if SERVER_SHUTTING_DOWN.is_set():
-                logger.info(
+                _tts_log.debug(
                     "Audio recovery candidate was created "
                     "while shutdown was starting; "
                     "leaving teardown to cleanup_service"
@@ -9240,7 +9558,7 @@ def ensure_tts_output_ready(
                 )
 
                 if not probation_committed:
-                    logger.info(
+                    _tts_log.debug(
                         "Audio probation succeeded but was "
                         "not committed because shutdown "
                         "had already started: stage=%s",
@@ -9248,7 +9566,7 @@ def ensure_tts_output_ready(
                     )
                     return False
 
-                logger.info(
+                _tts_log.debug(
                     "[AUDIO RECOVERY] succeeded: "
                     "attempt=%d stage=%s "
                     "route_sequence=%d "
@@ -9283,7 +9601,7 @@ def ensure_tts_output_ready(
                     (f"{stage_name}: rejected candidate close raised: {exc}")
                 )
 
-                logger.exception("Failed to close rejected audio candidate")
+                _tts_log.exception("Failed to close rejected audio candidate")
 
             if not rejected_candidate_closed:
                 stage_errors.append(
@@ -9294,7 +9612,7 @@ def ensure_tts_output_ready(
                     )
                 )
 
-                logger.error(
+                _tts_log.error(
                     "Aborting remaining audio recovery "
                     "stages because the rejected candidate "
                     "did not reach confirmed closure: "
@@ -9311,13 +9629,13 @@ def ensure_tts_output_ready(
             f"recovery raised unexpectedly: {type(exc).__name__}: {exc}"
         )
 
-        logger.exception("Audio recovery raised unexpectedly")
+        _tts_log.exception("Audio recovery raised unexpectedly")
 
     if SERVER_SHUTTING_DOWN.is_set() or audio_runtime.phase in {
         AudioRuntimePhase.STOPPING,
         AudioRuntimePhase.STOPPED,
     }:
-        logger.info("Audio recovery ended during shutdown")
+        _tts_log.debug("Audio recovery ended during shutdown")
         return False
 
     # Count one failure only after the entire bounded two-stage
@@ -9328,7 +9646,7 @@ def ensure_tts_output_ready(
 
     target_phase = audio_runtime.recovery_failed(final_reason)
 
-    logger.error(
+    _tts_log.error(
         "[AUDIO RECOVERY] attempt failed: "
         "phase=%s failures=%d "
         "retry_after=%.3fs reason=%s",
@@ -9405,7 +9723,7 @@ def clear_global_audio_queue(
             item,
             AudioItem,
         ):
-            logger.error(
+            _audio_log.error(
                 "PCM queue invariant violation: expected AudioItem, got %s: %r",
                 type(item).__name__,
                 item,
@@ -9417,7 +9735,7 @@ def clear_global_audio_queue(
             status=fence_status,
         )
 
-    logger.info(
+    _audio_log.debug(
         "Cleared %d PCM item(s); new_playback_epoch=%d reason=%s",
         cleared,
         new_epoch,
@@ -9494,7 +9812,7 @@ def _put_global_audio_item(
                 status=(TTSPlaybackStatus.UNAVAILABLE),
             )
 
-            logger.error(
+            _audio_log.error(
                 "Timed out waiting for persistent "
                 "audio queue: playback_epoch=%d "
                 "queue_size=%d",
@@ -9543,7 +9861,7 @@ def get_whisper_model():
             raise RuntimeError("Server is shutting down")
 
         started = time.monotonic()
-        logger.info(
+        _audio_log.debug(
             "Lazy-loading faster-whisper: model=%s device=%s compute_type=%s",
             WHISPER_MODEL_SIZE,
             WHISPER_DEVICE,
@@ -9558,11 +9876,11 @@ def get_whisper_model():
                 compute_type=WHISPER_COMPUTE_TYPE,
             )
         except Exception:
-            logger.exception("Failed loading faster-whisper")
+            _app_log.exception("Failed loading faster-whisper")
             raise
 
         WHISPER_MODEL = model
-        logger.info(
+        _audio_log.debug(
             "faster-whisper loaded lazily in %.2fs",
             time.monotonic() - started,
         )
@@ -9571,7 +9889,7 @@ def get_whisper_model():
 
 def preload_whisper_model_if_requested() -> None:
     if not WHISPER_PRELOAD:
-        logger.info(
+        _audio_log.debug(
             "faster-whisper lazy loading enabled; model will load on first transcription"
         )
         return
@@ -10051,7 +10369,7 @@ def _get_output_device_sample_rate(
         device_index = _get_default_output_device_index()
 
     if device_index is None:
-        logger.warning(
+        _audio_log.warning(
             "No PortAudio output device index "
             "is available; using fallback "
             "sample rate=%d",
@@ -10080,7 +10398,7 @@ def _get_output_device_sample_rate(
 
         sample_rate = _normalize_sample_rate(reported_sample_rate)
 
-        logger.info(
+        _audio_log.debug(
             "Selected output-device sample rate: "
             "device=%r "
             "name=%r "
@@ -10095,7 +10413,7 @@ def _get_output_device_sample_rate(
         return sample_rate
 
     except Exception:
-        logger.exception(
+        _audio_log.exception(
             "Failed to query output-device sample rate: device=%r; using fallback=%d",
             device_index,
             DEFAULT_OUTPUT_SAMPLE_RATE,
@@ -10143,7 +10461,7 @@ def _get_default_input_device_index() -> Optional[int]:
             return normalized
 
     except Exception as exc:
-        logger.debug(
+        _audio_log.debug(
             "Failed to read default input device index: %s",
             exc,
         )
@@ -10167,7 +10485,7 @@ def _get_default_input_device_index() -> Optional[int]:
                 return normalized
 
     except Exception as exc:
-        logger.debug(
+        _audio_log.debug(
             "Failed to query host API default input devices: %s",
             exc,
         )
@@ -10212,7 +10530,7 @@ def _device_supports_input(
         return True
 
     except Exception as exc:
-        logger.debug(
+        _audio_log.debug(
             "Input device does not support "
             "the required recording format: "
             "index=%r sample_rate=%d "
@@ -10245,7 +10563,7 @@ def _find_usable_input_device() -> Optional[int]:
             if api_default is not None:
                 candidates.append(api_default)
     except Exception as e:
-        logger.debug(f"query_hostapis input fallback failed: {e}")
+        _audio_log.debug(f"query_hostapis input fallback failed: {e}")
 
     candidates.extend(range(len(devices)))
 
@@ -10261,7 +10579,7 @@ def _find_usable_input_device() -> Optional[int]:
                 if device_info
                 else "unknown"
             )
-            logger.debug(f"usable input device: index={idx}, name={name}")
+            _audio_log.debug(f"usable input device: index={idx}, name={name}")
             return idx
 
     return None
@@ -10305,7 +10623,7 @@ def _open_audio_input_stream(
         try:
             device_index = _find_usable_input_device()
         except Exception as exc:
-            logger.debug(
+            _audio_log.debug(
                 "Input device lookup failed on attempt %d/%d: %s",
                 attempt + 1,
                 retries,
@@ -10348,7 +10666,7 @@ def _open_audio_input_stream(
                         ),
                     )
 
-                logger.debug(
+                _audio_log.debug(
                     "Opened audio input stream: attempt=%d/%d device=%r samplerate=%d",
                     attempt + 1,
                     retries,
@@ -10361,7 +10679,7 @@ def _open_audio_input_stream(
             except Exception as exc:
                 last_error = exc
 
-                logger.warning(
+                _audio_log.warning(
                     "Failed to open audio input "
                     "stream: attempt=%d/%d "
                     "device=%r error=%s",
@@ -10429,7 +10747,7 @@ def check_audio_input_device() -> bool:
                 )
 
     except Exception as exc:
-        logger.debug(
+        _audio_log.debug(
             "Input device probe failed: %s",
             exc,
         )
@@ -10447,7 +10765,7 @@ def stop_tts_immediately(
     global CURRENT_CANCEL_EVENT
     global _APPLE_KWS_RESUME_NOT_BEFORE
 
-    logger.info(
+    _tts_log.debug(
         "🛑 立即停止 TTS: %s",
         reason,
     )
@@ -10481,7 +10799,7 @@ def stop_tts_immediately(
         fence_status=(TTSPlaybackStatus.CANCELLED),
     )
 
-    logger.info(
+    _tts_log.debug(
         "Cleared %d queued TTS item(s) and %d queued PCM item(s)",
         cleared,
         pcm_cleared,
@@ -10489,7 +10807,7 @@ def stop_tts_immediately(
 
     if reason in {"double_esc", "TTS playback cancelled"}:
         if _apple_speech_process_is_running():
-            logger.info(
+            _kws_log.debug(
                 "Apple KWS remains on persistent AVAudioEngine after TTS cancellation: "
                 "reason=%s; recognition events stay suppressed until soft reset",
                 reason,
@@ -10499,7 +10817,7 @@ def stop_tts_immediately(
                 _APPLE_KWS_RESUME_NOT_BEFORE = max(
                     _APPLE_KWS_RESUME_NOT_BEFORE, time.monotonic() + 3.0
                 )
-            logger.info(
+            _kws_log.debug(
                 "Apple KWS cold-start deferred after TTS cancellation: "
                 "reason=%s delay=3.0s",
                 reason,
@@ -10510,7 +10828,7 @@ def stop_tts_immediately(
     try:
         hud.hide_visual_only()
     except Exception:
-        logger.debug(
+        _hud_log.debug(
             "Failed to hide TTS HUD",
             exc_info=True,
         )
@@ -10554,7 +10872,7 @@ def speak_edge_tts_stream(
             },
         )
 
-    if logger.isEnabledFor(logging.DEBUG):
+    if VE_TTS_LOG_DEBUG:
         log_audio_output_route(
             "before TTS utterance",
             level=logging.DEBUG,
@@ -10587,14 +10905,14 @@ def speak_edge_tts_stream(
 
     log_text = text[:50].replace("\n", " ").replace("\r", " ")
 
-    logger.info(
+    _tts_log.debug(
         "🎵 TTS: %s...",
         log_text,
     )
 
     utterance_sample_rate = get_current_output_sample_rate()
 
-    logger.info(
+    _tts_log.debug(
         "TTS PCM format selected: sample_rate=%d output_device=%r",
         utterance_sample_rate,
         AUDIO_ROUTE_LAST_OUTPUT_NAME,
@@ -10712,7 +11030,7 @@ def speak_edge_tts_stream(
                     if not cancelled:
                         continue
 
-                    logger.info("🛑 TTS取消，立即终止 ffmpeg")
+                    _audio_log.debug("🛑 TTS取消，立即终止 ffmpeg")
 
                     local_process = process
 
@@ -10721,7 +11039,7 @@ def speak_edge_tts_stream(
                             local_process.kill()
 
                     except Exception as exc:
-                        logger.debug(
+                        _tts_log.debug(
                             "Failed to kill cancelled TTS ffmpeg process: %s",
                             exc,
                         )
@@ -10737,7 +11055,7 @@ def speak_edge_tts_stream(
             ffmpeg_cancel_thread.start()
 
         except FileNotFoundError:
-            logger.error("ffmpeg not found")
+            _tts_log.error("ffmpeg not found")
 
             return make_local_playback_result(
                 TTSPlaybackStatus.FAILED,
@@ -10846,7 +11164,7 @@ def speak_edge_tts_stream(
                                 return
 
                             if tts_chunk is edge_tts_cancelled_marker:
-                                logger.info(
+                                _tts_log.debug(
                                     "Edge-TTS fetch interrupted by TTS cancellation"
                                 )
                                 break
@@ -10909,7 +11227,7 @@ def speak_edge_tts_stream(
                                 if inspect.isawaitable(close_result):
                                     await close_result
                             except Exception as exc:
-                                logger.debug(
+                                _tts_log.debug(
                                     "Failed to close Edge-TTS stream iterator: %s",
                                     exc,
                                 )
@@ -10950,7 +11268,7 @@ def speak_edge_tts_stream(
             except asyncio.CancelledError:
                 fetch_outcome.publish_cancelled()
 
-                logger.debug(
+                _tts_log.debug(
                     "Edge-TTS coroutine received cancellation: generation=%d",
                     generation,
                 )
@@ -10982,7 +11300,7 @@ def speak_edge_tts_stream(
                         local_stdin.close()
 
                 except Exception:
-                    logger.debug(
+                    _tts_log.debug(
                         "Failed to close TTS ffmpeg stdin",
                         exc_info=True,
                     )
@@ -10993,7 +11311,7 @@ def speak_edge_tts_stream(
         )
 
         if fetch_future is None:
-            logger.error(
+            _tts_log.error(
                 "Unable to submit Edge-TTS coroutine: generation=%d",
                 generation,
             )
@@ -11054,7 +11372,7 @@ def speak_edge_tts_stream(
                     raw_audio = process.stdout.read(BLOCK_SIZE * 4)
                 except Exception as exc:
                     if not is_cancelled():
-                        logger.debug(
+                        _tts_log.debug(
                             "ffmpeg stdout read ended: %s",
                             exc,
                         )
@@ -11175,7 +11493,7 @@ def speak_edge_tts_stream(
                 break
 
             if len(remainder) > BLOCK_SIZE * 8:
-                logger.warning(
+                _tts_log.warning(
                     "Unexpectedly large PCM remainder: %d bytes",
                     len(remainder),
                 )
@@ -11197,7 +11515,7 @@ def speak_edge_tts_stream(
                     wf.setframerate(int(utterance_sample_rate))
                     wf.writeframes(pcm16.tobytes())
                 _VE_FIRST_PCM_DUMPED = True
-                logger.info(
+                _tts_log.debug(
                     "TTS first-utterance PCM dumped: path=%r frames=%d "
                     "sample_rate=%d (open it: head present => BT ramp; "
                     "head missing => upstream data loss)",
@@ -11206,7 +11524,7 @@ def speak_edge_tts_stream(
                     int(utterance_sample_rate),
                 )
             except Exception as exc:
-                logger.warning("TTS first-utterance PCM dump failed: %s", exc)
+                _tts_log.warning("TTS first-utterance PCM dump failed: %s", exc)
             finally:
                 dump_active = False
 
@@ -11234,7 +11552,7 @@ def speak_edge_tts_stream(
         if fetch_cancelled or is_cancelled():
             elapsed = time.monotonic() - playback_start_time
 
-            logger.info(
+            _tts_log.debug(
                 "🛑 TTS 已取消 (运行了 %.1fs)",
                 elapsed,
             )
@@ -11354,7 +11672,7 @@ def speak_edge_tts_stream(
         elapsed = time.monotonic() - playback_start_time
 
         if fetch_cancelled or is_cancelled():
-            logger.info(
+            _tts_log.debug(
                 "🛑 TTS 已取消 (运行了 %.1fs)",
                 elapsed,
             )
@@ -11382,7 +11700,7 @@ def speak_edge_tts_stream(
             )
 
         elif first_audio_received:
-            logger.info(
+            _tts_log.debug(
                 "✅ TTS 完成 (耗时 %.1fs)",
                 elapsed,
             )
@@ -11396,7 +11714,7 @@ def speak_edge_tts_stream(
             )
 
         else:
-            logger.warning("TTS completed without receiving any decoded audio")
+            _tts_log.warning("TTS completed without receiving any decoded audio")
 
             return make_local_playback_result(
                 TTSPlaybackStatus.FAILED,
@@ -11405,7 +11723,7 @@ def speak_edge_tts_stream(
             )
 
     except Exception as exc:
-        logger.error(
+        _tts_log.error(
             "TTS PCM producer error: %s",
             exc,
         )
@@ -11434,7 +11752,7 @@ def speak_edge_tts_stream(
             try:
                 fetch_future.cancel()
             except Exception:
-                logger.debug(
+                _tts_log.debug(
                     "Failed to cancel Edge-TTS Future during utterance cleanup",
                     exc_info=True,
                 )
@@ -11460,7 +11778,7 @@ def speak_edge_tts_stream(
             try:
                 process.wait(timeout=1.0)
             except subprocess.TimeoutExpired:
-                logger.warning(
+                _tts_log.warning(
                     "TTS ffmpeg did not exit after kill: pid=%s",
                     process.pid,
                 )
@@ -11560,7 +11878,7 @@ def tts_queue_consumer_worker():
     global IS_SPEAKING
     global CURRENT_CANCEL_EVENT
 
-    logger.info(
+    _tts_log.debug(
         "🚀 TTS 队列消费线程已启动: ident=%s",
         threading.get_ident(),
     )
@@ -11622,7 +11940,7 @@ def tts_queue_consumer_worker():
                 TTS_TEXT_QUEUE.put_nowait("__SHUTDOWN__")
 
             except queue.Full:
-                logger.warning("无法恢复 TTS shutdown marker")
+                _tts_log.warning("无法恢复 TTS shutdown marker")
 
         return cleared
 
@@ -11651,7 +11969,7 @@ def tts_queue_consumer_worker():
             # Shutdown marker.
             #
             if item == "__SHUTDOWN__":
-                logger.info("TTS consumer received shutdown marker")
+                _tts_log.debug("TTS consumer received shutdown marker")
                 break
 
             #
@@ -11686,7 +12004,7 @@ def tts_queue_consumer_worker():
                         with AUDIO_ROUTE_CHANGE_LOCK:
                             AUDIO_ROUTE_CHANGE_PENDING.clear()
                             TTS_OUTPUT_RECOVERY_REQUIRED.clear()
-                        logger.info(
+                        _audio_log.debug(
                             "Silent audio-recovery marker: consumer cold-started with a "
                             "fresh healthy output on the current route; cleared PENDING "
                             "without a redundant recreate (route_pending=%s)",
@@ -11720,7 +12038,7 @@ def tts_queue_consumer_worker():
                             and cur_input_id is not None  # 无麦不强刷(断开路径)
                             and cur_input_id != _VE_LAST_REFRESHED_INPUT_ID
                         )
-                        logger.info(
+                        _tts_log.debug(
                             "TTS consumer: silent audio recovery "
                             "(route_pending=%s input_id=%r last_refreshed=%r "
                             "force_refresh=%s)",
@@ -11750,13 +12068,13 @@ def tts_queue_consumer_worker():
                             else TTSPlaybackStatus.UNAVAILABLE.value
                         )
                     else:
-                        logger.debug(
+                        _audio_log.debug(
                             "Silent audio-recovery marker: output already healthy"
                         )
                         item_success = True
                         item_status = TTSPlaybackStatus.COMPLETED.value
                 except Exception:
-                    logger.debug(
+                    _audio_log.debug(
                         "Silent audio-recovery marker failed",
                         exc_info=True,
                     )
@@ -11797,12 +12115,12 @@ def tts_queue_consumer_worker():
                     "audio": audio_runtime.snapshot(),
                 }
 
-                logger.info("🛑 检测到预先存在的取消请求，跳过当前项目并清空队列")
+                _tts_log.debug("🛑 检测到预先存在的取消请求，跳过当前项目并清空队列")
 
                 try:
                     cancel_manager.consume_cancel()
                 except Exception as exc:
-                    logger.debug(
+                    _app_log.debug(
                         "consume_cancel failed: %s",
                         exc,
                     )
@@ -11821,13 +12139,13 @@ def tts_queue_consumer_worker():
                         fence_status=(TTSPlaybackStatus.CANCELLED),
                     )
                 except Exception as exc:
-                    logger.debug(
+                    _app_log.debug(
                         "Failed to clear global PCM queue: %s",
                         exc,
                     )
                     cleared_pcm = 0
 
-                logger.info(
+                _tts_log.debug(
                     "取消时清空 merge=%d text=%d PCM=%d",
                     cleared_merged,
                     cleared_text,
@@ -11890,7 +12208,7 @@ def tts_queue_consumer_worker():
                     "audio": audio_runtime.snapshot(),
                 }
 
-                logger.debug("Skipping empty TTS queue item")
+                _tts_log.debug("Skipping empty TTS queue item")
                 continue
 
             cancel_event = threading.Event()
@@ -11914,7 +12232,7 @@ def tts_queue_consumer_worker():
 
             log_text = text[:50].replace("\n", " ").replace("\r", " ")
 
-            logger.info(
+            _tts_log.debug(
                 "🗣️ 播放: %s...",
                 log_text,
             )
@@ -11926,7 +12244,7 @@ def tts_queue_consumer_worker():
                     text,
                 )
             except Exception as exc:
-                logger.debug(
+                _hud_log.debug(
                     "Unable to show TTS HUD: %s",
                     exc,
                 )
@@ -11985,7 +12303,7 @@ def tts_queue_consumer_worker():
                     # Let finally publish this item outcome.
                     continue
 
-                logger.info(
+                _tts_log.debug(
                     "TTS output readiness confirmed: target_output=%r",
                     AUDIO_ROUTE_LAST_OUTPUT_NAME,
                 )
@@ -12061,12 +12379,14 @@ def tts_queue_consumer_worker():
                 )
 
             if playback_result.cancelled:
-                logger.info("TTS playback was cancelled; clearing remaining response")
+                _tts_log.debug(
+                    "TTS playback was cancelled; clearing remaining response"
+                )
 
                 try:
                     cancel_manager.consume_cancel()
                 except Exception as exc:
-                    logger.debug(
+                    _app_log.debug(
                         "consume_cancel failed: %s",
                         exc,
                     )
@@ -12080,13 +12400,13 @@ def tts_queue_consumer_worker():
                         fence_status=(TTSPlaybackStatus.CANCELLED),
                     )
                 except Exception as exc:
-                    logger.debug(
+                    _app_log.debug(
                         "Failed to clear cancelled PCM: %s",
                         exc,
                     )
                     cleared_pcm = 0
 
-                logger.info(
+                _tts_log.debug(
                     "Cancellation cleared merge=%d text=%d PCM=%d",
                     cleared_merged,
                     cleared_text,
@@ -12098,7 +12418,7 @@ def tts_queue_consumer_worker():
                 TTSPlaybackStatus.FAILED,
                 TTSPlaybackStatus.UNAVAILABLE,
             }:
-                logger.warning(
+                _tts_log.warning(
                     "TTS playback did not complete: status=%s code=%s error=%r",
                     playback_result.status.value,
                     playback_result.error_code,
@@ -12119,7 +12439,7 @@ def tts_queue_consumer_worker():
                         ),
                     )
                 except Exception:
-                    logger.debug(
+                    _tts_log.debug(
                         "Failed to clear PCM after non-clean TTS outcome",
                         exc_info=True,
                     )
@@ -12154,7 +12474,7 @@ def tts_queue_consumer_worker():
                 "audio": audio_runtime.snapshot(),
             }
 
-            logger.exception(
+            _tts_log.exception(
                 "TTS consumer item failed: %s",
                 exc,
             )
@@ -12201,7 +12521,7 @@ def tts_queue_consumer_worker():
                     try:
                         cancel_manager.finish_tts_operation(operation_token)
                     except Exception as exc:
-                        logger.exception(
+                        _app_log.exception(
                             "finish_tts_operation failed: %s",
                             exc,
                         )
@@ -12214,7 +12534,7 @@ def tts_queue_consumer_worker():
                 try:
                     TTS_TEXT_QUEUE.task_done()
                 except ValueError:
-                    logger.warning("TTS queue task_done called too many times")
+                    _tts_log.warning("TTS queue task_done called too many times")
 
     #
     # Consumer termination cleanup.
@@ -12231,7 +12551,7 @@ def tts_queue_consumer_worker():
     except Exception:
         pass
 
-    logger.info("TTS 队列消费线程已停止")
+    _tts_log.debug("TTS 队列消费线程已停止")
 
 
 def speak_local_sync_and_wait(
@@ -12246,7 +12566,7 @@ def speak_local_sync_and_wait(
     )
 
     if not result.success:
-        logger.warning(
+        _tts_log.warning(
             "TTS playback failed: status=%s code=%s cancelled=%s error=%r text=%s...",
             result.status,
             result.error_code,
@@ -12308,13 +12628,13 @@ def _prime_tts_output(*, route_sequence: int, allow_route_retry: bool = True) ->
     ):
         return False
     if not fence.event.wait(VE_TTS_OUTPUT_PRIME_TIMEOUT):
-        logger.warning("TTS output prime timed out before callback fence")
+        _tts_log.warning("TTS output prime timed out before callback fence")
         # 使超时 prime 的 queued/callback remainder 全部因 epoch 失效，不能晚到真实首句前。
         cleared = clear_global_audio_queue(
             "TTS output prime timed out",
             fence_status=TTSPlaybackStatus.FAILED,
         )
-        logger.warning(
+        _tts_log.warning(
             "TTS output prime timeout invalidated generation=%d cleared_items=%d",
             generation,
             cleared,
@@ -12326,7 +12646,7 @@ def _prime_tts_output(*, route_sequence: int, allow_route_retry: bool = True) ->
     ready = fence.status is TTSPlaybackStatus.COMPLETED and route_unchanged
     if ready:
         return True
-    logger.warning(
+    _tts_log.warning(
         "TTS output prime invalidated: status=%s route_unchanged=%s",
         fence.status.value,
         route_unchanged,
@@ -12341,7 +12661,7 @@ def _prime_tts_output(*, route_sequence: int, allow_route_retry: bool = True) ->
         wait_for_audio_route_stability(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT)
         with AUDIO_ROUTE_CHANGE_LOCK:
             retry_route_sequence = AUDIO_ROUTE_CHANGE_SEQUENCE
-        logger.warning(
+        _tts_log.warning(
             "TTS output route changed during prime; retrying once on route_sequence=%d",
             retry_route_sequence,
         )
@@ -12350,7 +12670,7 @@ def _prime_tts_output(*, route_sequence: int, allow_route_retry: bool = True) ->
             allow_route_retry=False,
         )
     if not route_unchanged:
-        logger.warning(
+        _tts_log.warning(
             "TTS output prime route remained unstable after retry; first speech may be attenuated"
         )
     return False
@@ -12370,7 +12690,7 @@ def _prepare_tts_output(*, preempt_kws: bool) -> bool:
             return True
         if should_preempt:
             _TTS_PREEMPT_KWS.set()
-            logger.info("TTS prepare: requesting apple KWS to yield microphone")
+            _kws_log.debug("TTS prepare: requesting apple KWS to yield microphone")
         try:
             wait_for_audio_route_stability(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT)
             with AUDIO_ROUTE_CHANGE_LOCK:
@@ -12387,14 +12707,14 @@ def _prepare_tts_output(*, preempt_kws: bool) -> bool:
                         AUDIO_ROUTE_CHANGE_PENDING.clear()
                         TTS_OUTPUT_RECOVERY_REQUIRED.clear()
                 committed = True
-                logger.info(
+                _tts_log.debug(
                     "TTS prepare committed: route_sequence=%d prime_ms=%.0f",
                     route_sequence,
                     VE_TTS_OUTPUT_PRIME_MS,
                 )
             return ready
         except Exception:
-            logger.exception("TTS output preparation failed")
+            _tts_log.exception("TTS output preparation failed")
             TTS_OUTPUT_RECOVERY_REQUIRED.set()
             return False
         finally:
@@ -12505,7 +12825,7 @@ def start_tts_consumer_worker():
     Startup failure enters DEGRADED but must not kill the consumer.
     """
     if SERVER_SHUTTING_DOWN.is_set():
-        logger.info(
+        _tts_log.debug(
             "TTS consumer startup was abandoned because service shutdown has started"
         )
         return
@@ -12514,14 +12834,14 @@ def start_tts_consumer_worker():
 
     with TTS_CONSUMER_LOCK:
         if TTS_CONSUMER_THREAD is not None and TTS_CONSUMER_THREAD.is_alive():
-            logger.info(
+            _tts_log.debug(
                 "TTS consumer already running: thread=%s",
                 TTS_CONSUMER_THREAD.name,
             )
             return
 
         if SERVER_SHUTTING_DOWN.is_set():
-            logger.warning("Refusing to start TTS consumer during shutdown")
+            _tts_log.warning("Refusing to start TTS consumer during shutdown")
             return
 
         if audio_runtime.phase is AudioRuntimePhase.STOPPED:
@@ -12538,7 +12858,7 @@ def start_tts_consumer_worker():
         try:
             candidate_created = start_persistent_audio_output()
         except Exception as exc:
-            logger.exception(
+            _tts_log.exception(
                 "Unexpected error while creating startup output candidate: %s",
                 exc,
             )
@@ -12567,7 +12887,7 @@ def start_tts_consumer_worker():
                 except Exception as exc:
                     probation_ok = False
                     probation_error = str(exc) or type(exc).__name__
-                    logger.exception("Startup audio probation raised")
+                    _tts_log.exception("Startup audio probation raised")
 
                 if probation_ok:
                     if SERVER_SHUTTING_DOWN.is_set():
@@ -12585,7 +12905,7 @@ def start_tts_consumer_worker():
                                 "audio runtime was shutting down"
                             )
 
-                            logger.info(
+                            _tts_log.debug(
                                 "Startup audio probation result was "
                                 "not committed because shutdown "
                                 "had already started"
@@ -12604,7 +12924,7 @@ def start_tts_consumer_worker():
                     f"startup candidate close raised: {exc}"
                 )
 
-                logger.exception("Failed to close unaccepted startup output")
+                _tts_log.exception("Failed to close unaccepted startup output")
 
             if not startup_candidate_closed:
                 closure_error = "startup candidate terminal closure was not confirmed"
@@ -12615,7 +12935,7 @@ def start_tts_consumer_worker():
                     else closure_error
                 )
 
-                logger.error(
+                _tts_log.error(
                     "Startup audio candidate did not "
                     "reach confirmed terminal closure; "
                     "automatic stream recreation must "
@@ -12634,7 +12954,7 @@ def start_tts_consumer_worker():
 
             TTS_OUTPUT_RECOVERY_REQUIRED.set()
 
-            logger.warning(
+            _tts_log.warning(
                 "Persistent output is unavailable "
                 "at startup; consumer will still "
                 "start and retry before an utterance: "
@@ -12646,7 +12966,7 @@ def start_tts_consumer_worker():
             )
 
         if SERVER_SHUTTING_DOWN.is_set():
-            logger.info(
+            _tts_log.debug(
                 "TTS consumer thread creation was "
                 "abandoned because service shutdown "
                 "started during audio initialization"
@@ -12660,7 +12980,7 @@ def start_tts_consumer_worker():
         )
         TTS_CONSUMER_THREAD.start()
 
-        logger.info(
+        _tts_log.debug(
             "TTS consumer started: ident=%s "
             "output_ready=%s phase=%s "
             "playback_epoch=%d stream_epoch=%d",
@@ -12824,7 +13144,7 @@ def finish_tts_response() -> None:
         tts_merge_buffer.flush_immediate()
 
     except Exception as exc:
-        logger.exception(
+        _tts_log.exception(
             "Failed to flush TTS merge buffer at logical response completion: %s",
             exc,
         )
@@ -12852,7 +13172,7 @@ def abort_tts_response() -> int:
             cleared = int(result)
 
     except Exception as exc:
-        logger.exception(
+        _tts_log.exception(
             "Failed to clear TTS merge buffer while aborting logical response: %s",
             exc,
         )
@@ -12908,7 +13228,7 @@ def _terminate_and_reap_process(
         process.wait(timeout=kill_timeout)
 
     except subprocess.TimeoutExpired:
-        logger.warning(
+        _app_log.warning(
             "Subprocess did not exit after kill: pid=%s",
             getattr(
                 process,
@@ -13210,7 +13530,6 @@ QWEN_BROWSER_IDLE_TIMEOUT = max(
 QWEN_STALE_REDIRECT_PROBE_SECONDS = max(
     0.0, float(os.getenv("QWEN_STALE_REDIRECT_PROBE_SECONDS", "5"))
 )
-QWEN_DEBUG = os.getenv("QWEN_DEBUG", "0").strip().lower() in {"1", "true", "yes", "on"}
 # Optional cold-start Cookie header for the browser-backed Qwen account.
 # A later Firefox AUTH_SNAPSHOT always replaces this environment snapshot.
 QWEN_COOKIE_HEADER = os.getenv("QWEN_COOKIE_HEADER", "").strip()
@@ -13218,7 +13537,6 @@ QWEN_COOKIE_HEADER = os.getenv("QWEN_COOKIE_HEADER", "").strip()
 # store (including the cookie named "token"). QWEN_TOKEN/QWEN_TOKENS are kept
 # only as local account selectors and are never sent as Authorization headers.
 QWEN_BROWSER_AUTH_MODE = "cookie"
-_qwen_log = logging.getLogger("voice.qwen")
 
 
 def _load_qwen_browser_tokens() -> tuple[str, ...]:
@@ -13549,16 +13867,15 @@ class QwenBrowserRuntime:
         if cookies:
             await context.add_cookies(cookies)
         self._context_cookie_state[context_key] = desired_state
-        if QWEN_DEBUG:
-            _qwen_log.info(
-                "[Debug] applied Qwen cookie snapshot account=%s source=%s "
-                "generation=%d count=%d names=%s",
-                account.account_id,
-                account.cookie_source,
-                account.cookie_generation,
-                len(cookies),
-                sorted({str(item.get("name") or "") for item in cookies}),
-            )
+        _qwen_log.debug(
+            "[Debug] applied Qwen cookie snapshot account=%s source=%s "
+            "generation=%d count=%d names=%s",
+            account.account_id,
+            account.cookie_source,
+            account.cookie_generation,
+            len(cookies),
+            sorted({str(item.get("name") or "") for item in cookies}),
+        )
         return len(cookies)
 
     def _conversation_state(self, chat_id: str) -> QwenConversationState:
@@ -13801,13 +14118,12 @@ class QwenBrowserRuntime:
                     wait_until="domcontentloaded",
                     timeout=60000,
                 )
-                if QWEN_DEBUG:
-                    _qwen_log.info(
-                        "[Debug] Qwen page %d ready status=%s url=%s",
-                        index + 1,
-                        response.status if response else None,
-                        page.url,
-                    )
+                _qwen_log.debug(
+                    "[Debug] Qwen page %d ready status=%s url=%s",
+                    index + 1,
+                    response.status if response else None,
+                    page.url,
+                )
                 await self._pages.put((page, context))
             _qwen_log.info(
                 "Qwen browser backend ready: engine=camoufox pool_size=%d tokens=%s",
@@ -13890,14 +14206,13 @@ class QwenBrowserRuntime:
                 if "NS_BINDING_ABORTED" not in str(exc):
                     raise
                 last_abort = exc
-                if QWEN_DEBUG:
-                    _qwen_log.warning(
-                        "[Debug] Qwen navigation was aborted by the browser; "
-                        "checking settled path attempt=%d target=%s current_url=%s",
-                        attempt + 1,
-                        normalized_expected,
-                        str(page.url or "")[:200],
-                    )
+                _qwen_log.debug(
+                    "[Debug] Qwen navigation was aborted by the browser; "
+                    "checking settled path attempt=%d target=%s current_url=%s",
+                    attempt + 1,
+                    normalized_expected,
+                    str(page.url or "")[:200],
+                )
                 try:
                     await page.wait_for_timeout(500)
                     await page.wait_for_load_state(
@@ -13941,13 +14256,12 @@ class QwenBrowserRuntime:
                 f"actual={actual_path!r} expected={normalized_expected!r}"
             )
 
-        if QWEN_DEBUG:
-            _qwen_log.info(
-                "[Debug] Qwen page prepared path=%s status=%s title=%r",
-                actual_path,
-                response.status if response else None,
-                (await page.title())[:80],
-            )
+        _qwen_log.debug(
+            "[Debug] Qwen page prepared path=%s status=%s title=%r",
+            actual_path,
+            response.status if response else None,
+            (await page.title())[:80],
+        )
 
     async def _set_qwen_spa_path(self, page, path: str) -> None:
         """Update Qwen's visible SPA route without issuing a document request."""
@@ -13974,11 +14288,10 @@ class QwenBrowserRuntime:
                 "Qwen SPA path update failed: "
                 f"actual={actual_path!r} expected={normalized_expected!r}"
             )
-        if QWEN_DEBUG:
-            _qwen_log.info(
-                "[Debug] Qwen SPA route updated without navigation path=%s",
-                actual_path,
-            )
+        _qwen_log.debug(
+            "[Debug] Qwen SPA route updated without navigation path=%s",
+            actual_path,
+        )
 
     async def _ensure_qwen_conversation_page(self, page, chat_id: str) -> None:
         value = str(chat_id or "").strip()
@@ -14121,13 +14434,12 @@ class QwenBrowserRuntime:
                         # conversation redirect and attach a stale flag. If
                         # this branch forwarded the raw error, the consumer
                         # would see it first, without the stale signal.
-                        if QWEN_DEBUG:
-                            _qwen_log.debug(
-                                "[Debug] Qwen terminal %s seen via binding "
-                                "status=%s (handled by result-path)",
-                                value.get("type"),
-                                value.get("status"),
-                            )
+                        _qwen_log.debug(
+                            "[Debug] Qwen terminal %s seen via binding "
+                            "status=%s (handled by result-path)",
+                            value.get("type"),
+                            value.get("status"),
+                        )
                         return
                     await asyncio.to_thread(target.put, value)
 
@@ -14328,15 +14640,14 @@ class QwenBrowserRuntime:
                     request_parent_id,
                     str(result.get("response_id") or ""),
                 )
-                if QWEN_DEBUG:
-                    _qwen_log.info(
-                        "[Debug] Qwen response committed chat=%s "
-                        "request_parent=%s response_id=%s answer_chars=%s",
-                        effective_chat_id,
-                        request_parent_id or "new",
-                        str(result.get("response_id") or "")[:12],
-                        result.get("answer_chars"),
-                    )
+                _qwen_log.debug(
+                    "[Debug] Qwen response committed chat=%s "
+                    "request_parent=%s response_id=%s answer_chars=%s",
+                    effective_chat_id,
+                    request_parent_id or "new",
+                    str(result.get("response_id") or "")[:12],
+                    result.get("answer_chars"),
+                )
                 terminal = True
         except asyncio.CancelledError:
             raise
@@ -14882,23 +15193,6 @@ DEEPSEEK_BROWSER_IDLE_TIMEOUT = max(
 DEEPSEEK_BROWSER_LOGIN_TIMEOUT = max(
     30.0, float(os.getenv("DEEPSEEK_BROWSER_LOGIN_TIMEOUT", "300"))
 )
-DEEPSEEK_DEBUG = os.getenv("DEEPSEEK_DEBUG", "0").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
-# Per-token logs are useful for protocol diagnosis but extremely noisy during
-# normal streaming. Enable them independently when latency/order is inspected.
-DEEPSEEK_LOG_STREAM_CHUNKS = os.getenv(
-    "DEEPSEEK_LOG_STREAM_CHUNKS", "0"
-).strip().lower() in {"1", "true", "yes", "on"}
-DEEPSEEK_LOG_PAGE_CONSOLE = os.getenv(
-    "DEEPSEEK_LOG_PAGE_CONSOLE", "0"
-).strip().lower() in {"1", "true", "yes", "on"}
-_deepseek_log = logging.getLogger("voice.deepseek")
-if DEEPSEEK_DEBUG:
-    _deepseek_log.setLevel(logging.DEBUG)
 
 
 def _deepseek_request_auth() -> dict:
@@ -15175,7 +15469,7 @@ class DeepSeekBrowserRuntime:
         # and completion transport to DeepSeek's loaded web application.
 
     def _ensure_loop(self):
-        _deepseek_log.debug(
+        _shutdown_log.debug(
             "runtime.ensure_loop thread_alive=%s loop=%s shutdown=%s",
             bool(self._thread and self._thread.is_alive()),
             bool(self._loop),
@@ -15264,7 +15558,7 @@ class DeepSeekBrowserRuntime:
         # this request, skip the Playwright fallback entirely - it would block
         # on response.body() until the XHR completes and only duplicate events.
         if request_id in self._page_live_request_ids:
-            _deepseek_log.debug(
+            _llm_log.debug(
                 "completion.network_fallback skipped request=%s reason=page_live",
                 request_id[:8],
             )
@@ -15276,7 +15570,7 @@ class DeepSeekBrowserRuntime:
         try:
             body = (await response.body()).decode("utf-8", "replace")
             if request_id in self._page_live_request_ids:
-                _deepseek_log.debug(
+                _llm_log.debug(
                     "completion.network_fallback skipped request=%s reason=page_live",
                     request_id[:8],
                 )
@@ -15490,14 +15784,14 @@ class DeepSeekBrowserRuntime:
             top_unknown = sorted(
                 unknown_shape_counts.items(), key=lambda item: (-item[1], item[0])
             )[:20]
-            _deepseek_log.info(
+            _llm_log.info(
                 "completion.patch_shapes request=%s unique=%d unknown_unique=%d top=%s",
                 request_id[:8],
                 len(shape_counts),
                 len(unknown_shape_counts),
                 json.dumps(top_shapes, ensure_ascii=False),
             )
-            _deepseek_log.info(
+            _llm_log.info(
                 "completion.unknown_patch_shapes request=%s packets=%d top=%s",
                 request_id[:8],
                 sum(unknown_shape_counts.values()),
@@ -15536,7 +15830,7 @@ class DeepSeekBrowserRuntime:
                     "conversation_id": conversation_id,
                 }
             )
-            _deepseek_log.info(
+            _llm_log.info(
                 "completion.network_fallback done request=%s body_bytes=%d packets=%d events=%d chars=%d",
                 request_id[:8],
                 len(body.encode("utf-8")),
@@ -15648,10 +15942,9 @@ class DeepSeekBrowserRuntime:
                                     "captured x-hif-leim length=%d", len(value)
                                 )
                     except Exception:
-                        if DEEPSEEK_DEBUG:
-                            _deepseek_log.debug(
-                                "Failed capturing live DeepSeek headers", exc_info=True
-                            )
+                        _deepseek_log.debug(
+                            "Failed capturing live DeepSeek headers", exc_info=True
+                        )
 
                 context.on("request", capture_deepseek_dynamic_headers)
 
@@ -15714,7 +16007,7 @@ class DeepSeekBrowserRuntime:
                     event_type = item.get("type")
                     if event_type in {"content", "reasoning"}:
                         content = str(item.get("content") or "")
-                        if DEEPSEEK_LOG_STREAM_CHUNKS:
+                        if VE_DEEPSEEK_LOG_STREAM_CHUNKS:
                             _deepseek_log.info(
                                 "stream.rx request=%s type=%s chars=%d at=%.6f",
                                 request_id[:8],
@@ -16136,7 +16429,7 @@ class DeepSeekBrowserRuntime:
                 )
                 await context.add_init_script(script=init_script)
                 page = await context.new_page()
-                if DEEPSEEK_LOG_PAGE_CONSOLE or DEEPSEEK_DEBUG:
+                if VE_DEEPSEEK_LOG_PAGE_CONSOLE:
                     page.on(
                         "console",
                         lambda msg: _deepseek_log.debug(
@@ -16204,7 +16497,7 @@ class DeepSeekBrowserRuntime:
         if page is None:
             raise RuntimeError("DeepSeek browser page is not initialized")
         authorization = _deepseek_request_auth()["authorization"]
-        _deepseek_log.debug(
+        _auth_log.debug(
             "page_request begin method=%s path=%s auth=%s hif=%s",
             method,
             path,
@@ -16274,7 +16567,7 @@ class DeepSeekBrowserRuntime:
                 except (json.JSONDecodeError, TypeError, KeyError):
                     root = {}
                 authenticated = int(root.get("code", -1)) == 0
-            _deepseek_log.debug(
+            _auth_log.debug(
                 "login.check attempt=%d status=%s authenticated=%s url=%s",
                 attempt,
                 result.get("status"),
@@ -16317,7 +16610,7 @@ class DeepSeekBrowserRuntime:
                                 }""",
                                 token,
                             )
-                            _deepseek_log.warning(
+                            _auth_log.warning(
                                 "login API authenticated but SPA route guard remained on /sign_in; hydrated userToken and retrying"
                             )
                             await page.reload(
@@ -16378,11 +16671,10 @@ class DeepSeekBrowserRuntime:
                 "DeepSeek SPA path update failed: "
                 f"actual={normalized_actual!r} expected={normalized_expected!r}"
             )
-        if DEEPSEEK_DEBUG:
-            _deepseek_log.info(
-                "[Debug] DeepSeek SPA route updated without navigation path=%s",
-                normalized_actual,
-            )
+        _deepseek_log.debug(
+            "[Debug] DeepSeek SPA route updated without navigation path=%s",
+            normalized_actual,
+        )
         return normalized_actual
 
     async def _assert_deepseek_session_referer(self, session_id: str) -> None:
@@ -16872,7 +17164,7 @@ class DeepSeekBrowserRuntime:
                         "DeepSeek stream did not emit a terminal event"
                     ) from None
             finally:
-                _deepseek_log.debug("chat.cleanup request=%s", request_id[:8])
+                _shutdown_log.debug("chat.cleanup request=%s", request_id[:8])
                 try:
                     await page.evaluate(
                         "requestId => { if (window.__voiceEdgeDeepSeekRequestId === requestId) window.__voiceEdgeDeepSeekRequestId = ''; }",
@@ -16913,7 +17205,7 @@ class DeepSeekBrowserRuntime:
                 }""",
                 authorization,
             )
-            _deepseek_log.debug(
+            _auth_log.debug(
                 "auth.apply cookies=%d auth=%s", len(cookies), bool(authorization)
             )
             await page.goto(
@@ -17415,7 +17707,7 @@ async def _direct_deepseek_chat_response(
                     content = str(event.get("content") or "")
                     if not content:
                         continue
-                    if DEEPSEEK_LOG_STREAM_CHUNKS:
+                    if VE_DEEPSEEK_LOG_STREAM_CHUNKS:
                         _deepseek_log.info(
                             "stream.tx id=%s type=content chars=%d at=%.6f",
                             completion_id[-8:],
@@ -17617,12 +17909,6 @@ if DOUBAO_HTTP_MISSING_CONVERSATION_POLICY not in {
         "DOUBAO_HTTP_MISSING_CONVERSATION_POLICY must be one of: "
         "allow, reject, bootstrap_then_reject, reuse"
     )
-DOUBAO_DEBUG = os.getenv("DOUBAO_DEBUG", "0").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
 # Keep the verified upstream request behavior by default: Chromium consumes the
 # complete SSE response body before Python parses it. The live Playwright
 # binding path remains opt-in while its request-signing behavior is diagnosed.
@@ -17659,7 +17945,6 @@ DOUBAO_OPTIONAL_COOKIE_ENV = {
     "is_staff_user": "DOUBAO_IS_STAFF_USER",
     "has_biz_token": "DOUBAO_HAS_BIZ_TOKEN",
 }
-_doubao_log = logging.getLogger("voice.doubao")
 
 
 # Local-only Firefox authentication synchronization.  The WebExtension sends
@@ -17753,10 +18038,10 @@ def ensure_firefox_auth_sync_native_host() -> dict:
         "manifest_path": str(FIREFOX_AUTH_SYNC_MANIFEST_PATH),
     }
     if not enabled:
-        logger.info("Firefox auth-sync native host bootstrap is disabled")
+        _auth_log.info("Firefox auth-sync native host bootstrap is disabled")
         return result
     if sys.platform != "darwin":
-        logger.warning(
+        _auth_log.warning(
             "Firefox auth-sync native host auto-install supports macOS only; platform=%s",
             sys.platform,
         )
@@ -17784,7 +18069,7 @@ def ensure_firefox_auth_sync_native_host() -> dict:
         0o600,
     )
     result["changed"] = bool(bridge_changed or manifest_changed)
-    logger.info(
+    _auth_log.info(
         "Firefox auth-sync native host ready: changed=%s host=%s manifest=%s",
         result["changed"],
         FIREFOX_AUTH_SYNC_NATIVE_HOST_PATH,
@@ -18078,7 +18363,7 @@ class DoubaoAccountPool:
         self.accounts = (
             [DoubaoAccount(**d) for d in data] if isinstance(data, list) else []
         )
-        _doubao_log.info(f"Loaded {len(self.accounts)} upstream account(s)")
+        _doubao_log.debug(f"Loaded {len(self.accounts)} upstream account(s)")
 
     async def save(self):
         await self.db.save([a.to_dict() for a in self.accounts])
@@ -18476,7 +18761,7 @@ class DoubaoBrowserEngine:
             if v.strip()
         ) or ("macos",)
 
-        _doubao_log.info(
+        _doubao_log.debug(
             "Starting browser engine (Camoufox, headless=%s, humanize=%s, os=%s)...",
             DOUBAO_BROWSER_HEADLESS,
             humanize,
@@ -18497,7 +18782,7 @@ class DoubaoBrowserEngine:
         self._browser = await self._camoufox.__aenter__()
         await self._init_pages("camoufox")
         self._started = True
-        _doubao_log.info(
+        _doubao_log.debug(
             "Browser engine started: engine=camoufox pool_size=%d",
             self.pool_size,
         )
@@ -18505,7 +18790,7 @@ class DoubaoBrowserEngine:
     async def _start_playwright(self, engine: str):
         from playwright.async_api import async_playwright
 
-        _doubao_log.info(
+        _doubao_log.debug(
             "Starting browser engine (Playwright %s, headless=%s)...",
             engine,
             DOUBAO_BROWSER_HEADLESS,
@@ -18523,7 +18808,7 @@ class DoubaoBrowserEngine:
         self._browser = await browser_type.launch(**launch_options)
         await self._init_pages(engine)
         self._started = True
-        _doubao_log.info(
+        _doubao_log.debug(
             "Browser engine started: engine=%s pool_size=%d",
             engine,
             self.pool_size,
@@ -18535,7 +18820,7 @@ class DoubaoBrowserEngine:
         只创建空的 context+page，不导航。Cookie 注入和页面导航在
         fetch_chat 中按需执行，确保页面以登录态加载。
         """
-        _doubao_log.info(f"[Browser] 正在初始化 {self.pool_size} 个并发页面...")
+        _doubao_log.debug(f"[Browser] 正在初始化 {self.pool_size} 个并发页面...")
         browser = self._browser
         if browser is None:
             raise RuntimeError("Doubao browser is not initialized")
@@ -18556,7 +18841,7 @@ class DoubaoBrowserEngine:
             self._stream_binding_names[id(page)] = binding_name
             # 队列元素：(page, context) 元组，context 用于 Cookie 注入
             await self._pages.put((page, context))
-            _doubao_log.info(
+            _doubao_log.debug(
                 f"  [Browser] Page {i + 1}/{self.pool_size} ready (idle, no navigation yet)"
             )
 
@@ -18627,12 +18912,11 @@ class DoubaoBrowserEngine:
                 for item in live_cookies
                 if item.get("name") and item.get("value") != ""
             }
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] injected structured Firefox cookies count=%d names=%s",
-                    len(live_cookies),
-                    sorted({str(item.get("name") or "") for item in live_cookies}),
-                )
+            _doubao_log.debug(
+                "[Debug] injected structured Firefox cookies count=%d names=%s",
+                len(live_cookies),
+                sorted({str(item.get("name") or "") for item in live_cookies}),
+            )
             return
 
         header_values = _load_doubao_cookie_header()
@@ -18678,13 +18962,12 @@ class DoubaoBrowserEngine:
             for name, value in values.items()
             if value != ""
         }
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] injected Doubao cookie names=%s source=%s count=%d",
-                sorted(values),
-                source,
-                len(cookies),
-            )
+        _doubao_log.debug(
+            "[Debug] injected Doubao cookie names=%s source=%s count=%d",
+            sorted(values),
+            source,
+            len(cookies),
+        )
 
     async def _force_override_ttwid(self, context) -> None:
         """把 Firefox 插件快照中的 ttwid 强制覆盖回 Camoufox 上下文。
@@ -18708,12 +18991,11 @@ class DoubaoBrowserEngine:
                 }
             ]
         )
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] force-overrode ttwid in Camoufox context=%s digest=%s",
-                id(context),
-                _doubao_cookie_digest(ttwid),
-            )
+        _doubao_log.debug(
+            "[Debug] force-overrode ttwid in Camoufox context=%s digest=%s",
+            id(context),
+            _doubao_cookie_digest(ttwid),
+        )
 
     # ── SSE 流式请求 ─────────────────────────────────────
 
@@ -18757,11 +19039,10 @@ class DoubaoBrowserEngine:
                 "Doubao SPA route did not reach the expected path: "
                 f"expected={expected_path!r} actual={actual_path!r}"
             )
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] Doubao SPA route updated without navigation path=%s",
-                actual_path,
-            )
+        _doubao_log.debug(
+            "[Debug] Doubao SPA route updated without navigation path=%s",
+            actual_path,
+        )
         return actual_path
 
     async def _prepare_chat_page(
@@ -18784,12 +19065,11 @@ class DoubaoBrowserEngine:
         previous = self._context_sessionid.get(ctx_id, "")
 
         if previous == sessionid and current_path == target_path:
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] reusing prepared page context=%s path=%s",
-                    ctx_id,
-                    current_path or "/",
-                )
+            _doubao_log.debug(
+                "[Debug] reusing prepared page context=%s path=%s",
+                ctx_id,
+                current_path or "/",
+            )
             return
 
         # Same account + an already initialized Doubao chat document: only
@@ -18803,15 +19083,14 @@ class DoubaoBrowserEngine:
             await self._set_doubao_spa_path(page, conversation_id)
             return
 
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] preparing browser page context=%s cookie=%s "
-                "target_path=%s direct_conversation=%s",
-                ctx_id,
-                _mask_doubao_session_id(sessionid),
-                target_path or "/",
-                bool(conversation_id),
-            )
+        _doubao_log.debug(
+            "[Debug] preparing browser page context=%s cookie=%s "
+            "target_path=%s direct_conversation=%s",
+            ctx_id,
+            _mask_doubao_session_id(sessionid),
+            target_path or "/",
+            bool(conversation_id),
+        )
 
         if previous != sessionid:
             await self.inject_session(context, sessionid)
@@ -18827,8 +19106,8 @@ class DoubaoBrowserEngine:
         )
         identity = await self._wait_for_browser_identity(page, context)
         await self._force_override_ttwid(context)
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
+        if VE_DOUBAO_LOG_DEBUG:
+            _doubao_log.debug(
                 "[Debug] browser identity ready=%s wait_ms=%d fp=%s "
                 "device_keys=%s missing=%s",
                 identity["ready"],
@@ -18859,14 +19138,14 @@ class DoubaoBrowserEngine:
                 "is_staff_user",
                 "has_biz_token",
             )
-            _doubao_log.info(
+            _doubao_log.debug(
                 "[Debug] page prepared url=%s status=%s cookie_names=%s title=%r",
                 page.url,
                 response.status if response else None,
                 sorted(cookie_names),
                 await page.title(),
             )
-            _doubao_log.info(
+            _doubao_log.debug(
                 "[Debug] Doubao auth cookie presence=%s",
                 {name: name in cookie_names for name in important},
             )
@@ -18884,7 +19163,7 @@ class DoubaoBrowserEngine:
                 "uid_tt_ss",
                 "ttwid",
             )
-            _doubao_log.info(
+            _doubao_log.debug(
                 "[Debug] injected cookie state=%s",
                 {
                     name: (
@@ -18918,12 +19197,11 @@ class DoubaoBrowserEngine:
         except Exception:
             current_path = urllib.parse.urlparse(str(page.url or "")).path.rstrip("/")
         if current_path == expected_path:
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] conversation SPA route already active conv=%s path=%s",
-                    conversation_id[:16],
-                    current_path,
-                )
+            _doubao_log.debug(
+                "[Debug] conversation SPA route already active conv=%s path=%s",
+                conversation_id[:16],
+                current_path,
+            )
             return
         if current_path == "/chat" or current_path.startswith("/chat/"):
             await self._set_doubao_spa_path(page, conversation_id)
@@ -19029,8 +19307,8 @@ class DoubaoBrowserEngine:
             )
         payload_ext["fp"] = effective_fp
 
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
+        if VE_DOUBAO_LOG_DEBUG:
+            _doubao_log.debug(
                 "[Debug] Doubao identity cookie_fp=%s payload_fp=%s configured_fp=%s matched=%s source=%s",
                 self._mask_browser_identity(cookie_fp),
                 self._mask_browser_identity(effective_fp),
@@ -19039,7 +19317,7 @@ class DoubaoBrowserEngine:
                 "s_v_web_id" if cookie_fp else "DOUBAO_FP",
             )
             if cookie_fp and previous_fp and previous_fp != cookie_fp:
-                _doubao_log.info(
+                _doubao_log.debug(
                     "[Debug] replaced mismatched Doubao payload fp old=%s new=%s",
                     self._mask_browser_identity(previous_fp),
                     self._mask_browser_identity(cookie_fp),
@@ -19111,9 +19389,7 @@ class DoubaoBrowserEngine:
         try:
             value = await page.evaluate(script)
         except Exception as exc:
-            _doubao_log.warning(
-                "[Debug] failed reading Doubao browser device context: %s", exc
-            )
+            _doubao_log.warning("Failed reading Doubao browser device context: %s", exc)
             value = {}
         context = dict(value) if isinstance(value, dict) else {}
         # Stable public web-client fields are safe fallbacks. Device-bound values
@@ -19219,31 +19495,30 @@ class DoubaoBrowserEngine:
         self, trace_id: str, shape: Optional[dict]
     ) -> None:
         if shape is None:
-            _doubao_log.warning(
+            _llm_log.debug(
                 "[Debug] no final /chat/completion network request was observed trace=%s",
                 trace_id[:12],
             )
             return
 
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] actual completion request trace=%s host=%s path=%s "
-                "query_keys=%s a_bogus=%s query_msToken=%s device_context=%s "
-                "tea_uuid_eq_web_id=%s device_id_eq_tea_uuid=%s agw_js_conv=%r "
-                "trace_format_web=%s referer_path_kind=%s",
-                trace_id[:12],
-                shape.get("host"),
-                shape.get("path"),
-                shape.get("query_keys"),
-                shape.get("has_a_bogus"),
-                shape.get("has_ms_token"),
-                shape.get("device_context"),
-                shape.get("tea_uuid_eq_web_id"),
-                shape.get("device_id_eq_tea_uuid"),
-                shape.get("agw_js_conv"),
-                shape.get("trace_format_web"),
-                shape.get("referer_path_kind"),
-            )
+        _llm_log.debug(
+            "[Debug] actual completion request trace=%s host=%s path=%s "
+            "query_keys=%s a_bogus=%s query_msToken=%s device_context=%s "
+            "tea_uuid_eq_web_id=%s device_id_eq_tea_uuid=%s agw_js_conv=%r "
+            "trace_format_web=%s referer_path_kind=%s",
+            trace_id[:12],
+            shape.get("host"),
+            shape.get("path"),
+            shape.get("query_keys"),
+            shape.get("has_a_bogus"),
+            shape.get("has_ms_token"),
+            shape.get("device_context"),
+            shape.get("tea_uuid_eq_web_id"),
+            shape.get("device_id_eq_tea_uuid"),
+            shape.get("agw_js_conv"),
+            shape.get("trace_format_web"),
+            shape.get("referer_path_kind"),
+        )
 
     async def fetch_chat_stream(
         self, sessionid: str, request_body: str, conversation_id: str = ""
@@ -19307,8 +19582,8 @@ class DoubaoBrowserEngine:
                     )
             hook_ready, hook_preview = await self._wait_for_fetch_interceptor(page)
 
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
+            if VE_DOUBAO_LOG_DEBUG:
+                _doubao_log.debug(
                     "[Debug] fetch interceptor ready=%s preview=%r mode=%s",
                     hook_ready,
                     hook_preview[:120],
@@ -19316,7 +19591,7 @@ class DoubaoBrowserEngine:
                 )
 
                 if not hook_ready:
-                    _doubao_log.warning(
+                    _doubao_log.debug(
                         "[Debug] window.fetch still appears native after %.1fs; "
                         "continuing with final network-request inspection",
                         DOUBAO_FETCH_HOOK_WAIT_SECONDS,
@@ -19333,11 +19608,10 @@ class DoubaoBrowserEngine:
             endpoint, request_context = await self._build_completion_endpoint(
                 page, browser_fp
             )
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] browser device context keys=%s",
-                    sorted(request_context),
-                )
+            _doubao_log.debug(
+                "[Debug] browser device context keys=%s",
+                sorted(request_context),
+            )
 
             def _observe_request(request):
                 nonlocal observed_shape
@@ -19348,15 +19622,14 @@ class DoubaoBrowserEngine:
             request_handler = _observe_request
             page.on("request", request_handler)
 
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] starting Doubao fetch trace=%s conv=%s body_bytes=%d "
-                    "endpoint_path=/chat/completion mode=%s",
-                    trace_id[:12],
-                    str(conversation_id or "")[:16] or "new",
-                    len(request_body.encode("utf-8")),
-                    "live" if DOUBAO_LIVE_STREAM_ENABLED else "buffered-upstream",
-                )
+            _doubao_log.debug(
+                "[Debug] starting Doubao fetch trace=%s conv=%s body_bytes=%d "
+                "endpoint_path=/chat/completion mode=%s",
+                trace_id[:12],
+                str(conversation_id or "")[:16] or "new",
+                len(request_body.encode("utf-8")),
+                "live" if DOUBAO_LIVE_STREAM_ENABLED else "buffered-upstream",
+            )
 
             if not DOUBAO_LIVE_STREAM_ENABLED:
                 # Match doubao2API upstream exactly: let Chromium read the full
@@ -19381,31 +19654,30 @@ class DoubaoBrowserEngine:
                 response_meta = result.get("response_meta", {})
                 response_meta = response_meta if isinstance(response_meta, dict) else {}
 
-                if DOUBAO_DEBUG:
-                    _doubao_log.info(
-                        "[Debug] buffered Doubao fetch finished trace=%s status=%s bytes=%d "
-                        "response_x_ms_token_present=%s response_agw_login=%r "
-                        "response_content_type=%r page_path_kind=%s",
-                        trace_id[:12],
-                        status,
-                        len(body.encode("utf-8")),
-                        bool(response_meta.get("x_ms_token")),
-                        str(response_meta.get("agw_login", ""))[:16],
-                        str(response_meta.get("content_type", ""))[:80],
-                        (
-                            "local_chat"
-                            if re.fullmatch(
-                                r"/chat/local_[^/]+/?", str(result.get("page_path", ""))
-                            )
-                            else "conversation_chat"
-                            if re.fullmatch(
-                                r"/chat/[^/]+/?", str(result.get("page_path", ""))
-                            )
-                            else "chat_root"
-                            if str(result.get("page_path", "")).rstrip("/") == "/chat"
-                            else "other"
-                        ),
-                    )
+                _doubao_log.debug(
+                    "[Debug] buffered Doubao fetch finished trace=%s status=%s bytes=%d "
+                    "response_x_ms_token_present=%s response_agw_login=%r "
+                    "response_content_type=%r page_path_kind=%s",
+                    trace_id[:12],
+                    status,
+                    len(body.encode("utf-8")),
+                    bool(response_meta.get("x_ms_token")),
+                    str(response_meta.get("agw_login", ""))[:16],
+                    str(response_meta.get("content_type", ""))[:80],
+                    (
+                        "local_chat"
+                        if re.fullmatch(
+                            r"/chat/local_[^/]+/?", str(result.get("page_path", ""))
+                        )
+                        else "conversation_chat"
+                        if re.fullmatch(
+                            r"/chat/[^/]+/?", str(result.get("page_path", ""))
+                        )
+                        else "chat_root"
+                        if str(result.get("page_path", "")).rstrip("/") == "/chat"
+                        else "other"
+                    ),
+                )
 
                 yield {"type": "meta", "status": status}
                 if status != 200:
@@ -19453,19 +19725,18 @@ class DoubaoBrowserEngine:
                 if kind == "chunk":
                     chunk_bytes += len(str(item.get("data", "")).encode("utf-8"))
 
-                if DOUBAO_DEBUG:
-                    _doubao_log.info(
-                        "[Debug] browser event trace=%s n=%d type=%s status=%s "
-                        "chunk_bytes=%d total_bytes=%d",
-                        trace_id[:12],
-                        event_count,
-                        kind,
-                        item.get("status"),
-                        len(str(item.get("data", "")).encode("utf-8"))
-                        if kind == "chunk"
-                        else 0,
-                        chunk_bytes,
-                    )
+                _doubao_log.debug(
+                    "[Debug] browser event trace=%s n=%d type=%s status=%s "
+                    "chunk_bytes=%d total_bytes=%d",
+                    trace_id[:12],
+                    event_count,
+                    kind,
+                    item.get("status"),
+                    len(str(item.get("data", "")).encode("utf-8"))
+                    if kind == "chunk"
+                    else 0,
+                    chunk_bytes,
+                )
 
                 yield item
                 if kind in {"done", "error"}:
@@ -19474,13 +19745,12 @@ class DoubaoBrowserEngine:
                 self._log_completion_request_shape(trace_id, observed_shape)
             await asyncio.wait_for(task, timeout=5)
 
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] Doubao live fetch finished trace=%s events=%d bytes=%d",
-                    trace_id[:12],
-                    event_count,
-                    chunk_bytes,
-                )
+            _doubao_log.debug(
+                "[Debug] Doubao live fetch finished trace=%s events=%d bytes=%d",
+                trace_id[:12],
+                event_count,
+                chunk_bytes,
+            )
         except Exception as exc:
             refresh = True
             if task is not None and not task.done():
@@ -19489,7 +19759,7 @@ class DoubaoBrowserEngine:
                 # A stale conversation is an expected, recoverable control-flow
                 # signal, not a fault. Log a single clean line WITHOUT a stack
                 # trace; a traceback here is misleading noise.
-                _doubao_log.info(
+                _doubao_log.debug(
                     "[Debug] Doubao conversation is stale; triggering recovery: %s",
                     exc,
                 )
@@ -19501,7 +19771,11 @@ class DoubaoBrowserEngine:
                 # so the typed exception reaches chat_stream's handler; the
                 # finally block below still refreshes this stale page.
                 raise
-            _doubao_log.exception("[Debug] Doubao browser stream failed: %s", exc)
+            _doubao_log.debug(
+                "[Debug] Doubao browser stream failed: %s",
+                exc,
+                exc_info=True,
+            )
             yield {"type": "error", "status": 0, "data": str(exc)}
         finally:
             if request_handler is not None:
@@ -19568,7 +19842,7 @@ class DoubaoBrowserEngine:
                 await self.inject_session(context, sessionid)
                 self._context_sessionid[ctx_id] = sessionid
 
-                _doubao_log.info(
+                _doubao_log.debug(
                     f"[Browser] {'首次' if not prev_sessionid else 'Cookie 变化，'}导航页面 (sessionid={sessionid[:8]}...)"
                 )
                 try:
@@ -19599,14 +19873,14 @@ class DoubaoBrowserEngine:
                         "() => window.fetch.toString().substring(0, 80)"
                     )
                     is_hooked = "native code" not in fetch_str
-                    _doubao_log.info(
+                    _doubao_log.debug(
                         f"[Browser] fetch hooked={is_hooked}, fetch={fetch_str[:60]}"
                     )
                 except Exception:
                     pass
             else:
                 # 同一账号，Cookie 已存在，无需重新导航
-                _doubao_log.info(
+                _doubao_log.debug(
                     f"[Browser] 复用已有页面 (sessionid={sessionid[:8]}...)"
                 )
 
@@ -19625,18 +19899,17 @@ class DoubaoBrowserEngine:
             url, request_context = await self._build_completion_endpoint(
                 page, browser_fp
             )
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] browser device context keys=%s",
-                    sorted(request_context),
-                )
+            _doubao_log.debug(
+                "[Debug] browser device context keys=%s",
+                sorted(request_context),
+            )
             # 诊断：打印请求体的关键字段
             try:
                 import json as _json
 
                 body_obj = _json.loads(request_body)
                 cm = body_obj.get("client_meta", {})
-                _doubao_log.info(
+                _doubao_log.debug(
                     f"[Browser] 请求体诊断: conversation_id={cm.get('conversation_id', 'N/A')!r}, "
                     f"local_conversation_id={cm.get('local_conversation_id', 'N/A')}, "
                     f"bot_id={cm.get('bot_id', 'N/A')}, "
@@ -19663,7 +19936,7 @@ class DoubaoBrowserEngine:
             if isinstance(res, dict):
                 hook = res.get("fetch_hook", "unknown")
                 body_len = res.get("body_len", len(res.get("body", "")))
-                _doubao_log.info(
+                _doubao_log.debug(
                     f"[Browser] fetch result: status={res.get('status')}, "
                     f"body_len={body_len}, fetch_hook={hook[:60]}"
                 )
@@ -20026,29 +20299,25 @@ class DoubaoSSEParser:
         """解析完整的 SSE 响应文本"""
         events = self._split_sse_events(raw_body)
 
-        _doubao_log.info(
-            f"[SSE] Parsed {len(events)} events from {len(raw_body)} chars"
-        )
+        _http_log.info(f"[SSE] Parsed {len(events)} events from {len(raw_body)} chars")
         if not events:
             # 诊断：raw_body 不像 SSE 格式
             if raw_body.strip().startswith("{"):
-                _doubao_log.warning(
+                _http_log.warning(
                     f"[SSE] raw_body 是 JSON 而非 SSE！preview: {raw_body[:300]}"
                 )
             elif raw_body.strip().startswith("<"):
-                _doubao_log.warning(
+                _http_log.warning(
                     f"[SSE] raw_body 是 HTML 而非 SSE！preview: {raw_body[:300]}"
                 )
             elif not raw_body.strip():
-                _doubao_log.warning("[SSE] raw_body 为空！")
+                _http_log.warning("[SSE] raw_body 为空！")
             else:
-                _doubao_log.warning(
-                    f"[SSE] raw_body 格式异常！preview: {raw_body[:300]}"
-                )
+                _http_log.warning(f"[SSE] raw_body 格式异常！preview: {raw_body[:300]}")
         # # 打印事件类型摘要
         # evt_types = [e.event_type for e in events]
         # if evt_types:
-        #     _doubao_log.info(f"[SSE] Event types: {evt_types}")
+        #     _doubao_log.debug(f"[SSE] Event types: {evt_types}")
         for evt in events:
             self._process_event(evt)
 
@@ -20193,7 +20462,7 @@ class DoubaoSSEParser:
         meta = data.get("ack_client_meta", {})
         conv_id = meta.get("conversation_id", "")
         if conv_id == "0":
-            _doubao_log.warning(
+            _http_log.warning(
                 f"[SSE] ⚠️ conversation_id='0' — 会话创建可能失败！ack_client_meta={json.dumps(meta, ensure_ascii=False)[:500]}"
             )
         if not self._session_meta.conversation_id:
@@ -20248,15 +20517,15 @@ class DoubaoSSEParser:
         # 诊断：打印首个 STREAM_MSG_NOTIFY 的完整 content 结构
         if not DoubaoSSEParser._stream_msg_logged:
             DoubaoSSEParser._stream_msg_logged = True
-            _doubao_log.info(
+            _http_log.info(
                 f"[SSE] 首个 STREAM_MSG_NOTIFY content keys={list(content.keys())}"
             )
-            _doubao_log.info(f"[SSE]   content_block 数量={len(blocks)}")
+            _http_log.info(f"[SSE]   content_block 数量={len(blocks)}")
             for i, block in enumerate(blocks[:3]):
                 block_type = block.get("block_type", 0)
                 block_content = block.get("content", {})
                 block_content_json = json.dumps(block_content, ensure_ascii=False)[:800]
-                _doubao_log.info(
+                _http_log.info(
                     f"[SSE]   block[{i}]: block_type={block_type}, content={block_content_json}"
                 )
 
@@ -20273,7 +20542,7 @@ class DoubaoSSEParser:
         ext = content.get("ext", {})
         bot_state = ext.get("bot_state", "")
         if "Agent-Text2Image" in str(bot_state):
-            _doubao_log.info("[SSE] Image generation agent detected")
+            _http_log.info("[SSE] Image generation agent detected")
 
     def _process_chunk_delta(self, data: dict):
         """处理 CHUNK_DELTA 事件 - 增量文本（最简洁路径）"""
@@ -20289,7 +20558,7 @@ class DoubaoSSEParser:
         # 诊断：打印前3个 STREAM_CHUNK 的完整结构
         if DoubaoSSEParser._first_stream_chunk_logged < 3:
             DoubaoSSEParser._first_stream_chunk_logged += 1
-            _doubao_log.info(
+            _http_log.info(
                 f"[SSE] STREAM_CHUNK #{DoubaoSSEParser._first_stream_chunk_logged} data keys={list(data.keys())}"
             )
             for i, op in enumerate(patch_ops):
@@ -20300,7 +20569,7 @@ class DoubaoSSEParser:
                     if isinstance(pv, dict)
                     else str(pv)[:500]
                 )
-                _doubao_log.info(
+                _http_log.info(
                     f"[SSE]   patch_op[{i}]: patch_object={po}, patch_value={pv_json[:1000]}"
                 )
 
@@ -20328,7 +20597,7 @@ class DoubaoSSEParser:
                         pass
                     else:
                         # 未知 block_type — 记录一次
-                        _doubao_log.debug(
+                        _http_log.debug(
                             f"[SSE] 未知 block_type={block_type} in STREAM_CHUNK"
                         )
 
@@ -20489,7 +20758,7 @@ class DoubaoClient:
             payload = self.session_store.build_full_payload(session.session_id, text)
             body_str = json.dumps(payload, ensure_ascii=False)
 
-            _doubao_log.info(
+            _doubao_log.debug(
                 f"[Client] chat request: session={session.session_id[:8]}... "
                 f"bot_id={bot_id} is_new={not conversation_id} "
                 f"account={acc.name}"
@@ -20548,19 +20817,19 @@ class DoubaoClient:
 
             # 解析 SSE 响应
             raw_body = result.get("body", "")
-            _doubao_log.info(
+            _doubao_log.debug(
                 f"[Client] raw_body length={len(raw_body)}, preview={raw_body[:300]!r}"
             )
             parser = DoubaoSSEParser()
             stream_result = parser.parse_raw_sse(raw_body)
-            _doubao_log.info(
+            _http_log.info(
                 f"[Client] SSE parsed: text_len={len(stream_result.text)}, "
                 f"error={stream_result.error}, "
                 f"conv_id={stream_result.session_meta.conversation_id[:12] if stream_result.session_meta.conversation_id else 'N/A'}"
             )
 
             if not stream_result.text and not stream_result.error:
-                _doubao_log.warning(
+                _http_log.warning(
                     f"[Client] ⚠️ SSE 解析成功但文本为空！raw_body 前 500 字符:\n{raw_body[:500]}"
                 )
 
@@ -20574,7 +20843,7 @@ class DoubaoClient:
                 elif "invalid param" in err:
                     _doubao_log.error("[Client] invalid param — 请求体格式可能有误")
                 # SSE 解析错误可能是请求格式问题，不一定是账号问题
-                _doubao_log.warning(
+                _http_log.warning(
                     f"[Client] SSE parse error (not marking invalid): {err[:200]}"
                 )
                 self.account_pool.release(acc)
@@ -20596,7 +20865,7 @@ class DoubaoClient:
             self.account_pool.mark_success(acc)
             self.account_pool.release(acc)
 
-            _doubao_log.info(
+            _doubao_log.debug(
                 f"[Client] chat complete: conv_id={meta.conversation_id[:12] if meta.conversation_id else 'N/A'}... "
                 f"text_len={len(stream_result.text)} session={session.session_id[:8]}..."
             )
@@ -20685,16 +20954,15 @@ class DoubaoClient:
             session.account_sessionid = acc.sessionid
         await self.account_pool.pace_request(acc)
 
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] chat_stream acquired account=%s session=%s "
-                "requested_conv=%s effective_conv=%s text_chars=%d",
-                _mask_doubao_session_id(acc.sessionid),
-                session.session_id[:12],
-                str(conversation_id or "")[:16] or "new",
-                str(session.conversation_id or "")[:16] or "new",
-                len(text),
-            )
+        _doubao_log.debug(
+            "[Debug] chat_stream acquired account=%s session=%s "
+            "requested_conv=%s effective_conv=%s text_chars=%d",
+            _mask_doubao_session_id(acc.sessionid),
+            session.session_id[:12],
+            str(conversation_id or "")[:16] or "new",
+            str(session.conversation_id or "")[:16] or "new",
+            len(text),
+        )
 
         yield {"type": "meta", "session_id": session.session_id, "acc": acc}
         payload = self.session_store.build_full_payload(session.session_id, text)
@@ -20706,18 +20974,17 @@ class DoubaoClient:
                 f"payload={payload_index!r} stored={session.last_message_index!r}"
             )
 
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] payload keys=%s local_conv=%s section=%s "
-                "message_index=%s stored_message_index=%s cursor_match=%s",
-                sorted(payload.keys()),
-                payload_meta.get("local_conversation_id"),
-                payload_meta.get("last_section_id"),
-                payload_index,
-                session.last_message_index,
-                (not session.conversation_id)
-                or payload_index == session.last_message_index,
-            )
+        _doubao_log.debug(
+            "[Debug] payload keys=%s local_conv=%s section=%s "
+            "message_index=%s stored_message_index=%s cursor_match=%s",
+            sorted(payload.keys()),
+            payload_meta.get("local_conversation_id"),
+            payload_meta.get("last_section_id"),
+            payload_index,
+            session.last_message_index,
+            (not session.conversation_id)
+            or payload_index == session.last_message_index,
+        )
 
         status = None
 
@@ -20974,13 +21241,13 @@ class DoubaoClient:
                             evt.data.get("msg_finish_attr", {}).get("brief", "") or ""
                         )
                         if (
-                            DOUBAO_DEBUG
+                            VE_DOUBAO_LOG_DEBUG
                             and final_brief
                             and full_text
                             and final_brief.replace("\n", "")
                             != full_text.replace("\n", "")
                         ):
-                            _doubao_log.warning(
+                            _http_log.debug(
                                 "[SSE] streamed text differs from final brief: stream=%r brief=%r",
                                 full_text,
                                 final_brief,
@@ -21004,20 +21271,19 @@ class DoubaoClient:
                         ]
                         observed_max = max(observed_values) if observed_values else None
 
-                        if DOUBAO_DEBUG:
-                            _doubao_log.info(
-                                "[Debug] Doubao cursor update session=%s previous=%s "
-                                "ack_query_max=%s full_msg_max=%s stream_msg_max=%s "
-                                "observed_max=%s stored=%s text_sources=%s",
-                                session_id[:12],
-                                cursor_previous,
-                                cursor_ack_query_max,
-                                cursor_full_msg_max,
-                                cursor_stream_msg_max,
-                                observed_max,
-                                stored_index,
-                                sorted(text_sources_seen),
-                            )
+                        _doubao_log.debug(
+                            "[Debug] Doubao cursor update session=%s previous=%s "
+                            "ack_query_max=%s full_msg_max=%s stream_msg_max=%s "
+                            "observed_max=%s stored=%s text_sources=%s",
+                            session_id[:12],
+                            cursor_previous,
+                            cursor_ack_query_max,
+                            cursor_full_msg_max,
+                            cursor_stream_msg_max,
+                            observed_max,
+                            stored_index,
+                            sorted(text_sources_seen),
+                        )
 
                         if (
                             observed_max is not None
@@ -21117,7 +21383,7 @@ class DoubaoClient:
                         "error_type": error_type,
                         "code": error_code,
                         "retryable": False if verification_required else None,
-                        "details": safe_details if DOUBAO_DEBUG else None,
+                        "details": safe_details if VE_DOUBAO_LOG_DEBUG else None,
                     }
                     return
         finally:
@@ -21452,14 +21718,14 @@ class DoubaoRuntime:
             self._pool = pool
             self._engine = engine
             self._client = DoubaoClient(engine, pool)
-            _doubao_log.info(
+            _doubao_log.debug(
                 "Doubao browser backend ready alongside local models: "
                 "engine=%s accounts=%s local=%s debug=%s "
                 "first_event_timeout=%.0fs idle_timeout=%.0fs",
                 DOUBAO_BROWSER_ENGINE,
                 [_mask_doubao_session_id(v) for v in session_ids],
                 local_models_after,
-                DOUBAO_DEBUG,
+                VE_DOUBAO_LOG_DEBUG,
                 DOUBAO_STREAM_FIRST_EVENT_TIMEOUT,
                 DOUBAO_STREAM_IDLE_TIMEOUT,
             )
@@ -21516,21 +21782,19 @@ class DoubaoRuntime:
     async def _chat_stream(self, text: str, conversation_id: str, output_queue):
         started = time.monotonic()
 
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] runtime stream entered conv=%s text_chars=%d",
-                str(conversation_id or "")[:16] or "new",
-                len(text),
-            )
+        _doubao_log.debug(
+            "[Debug] runtime stream entered conv=%s text_chars=%d",
+            str(conversation_id or "")[:16] or "new",
+            len(text),
+        )
 
         terminal_forwarded = False
         try:
             await self._initialize()
 
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] runtime initialized; entering client.chat_stream"
-                )
+            _doubao_log.debug(
+                "[Debug] runtime initialized; entering client.chat_stream"
+            )
 
             client = self._client
             if client is None:
@@ -21543,8 +21807,7 @@ class DoubaoRuntime:
             ):
                 kind = event.get("type")
 
-                if DOUBAO_DEBUG:
-                    _doubao_log.info("[Debug] runtime forwarding event type=%s", kind)
+                _doubao_log.debug("[Debug] runtime forwarding event type=%s", kind)
 
                 if self._shutdown_requested.is_set() or SERVER_SHUTTING_DOWN.is_set():
                     break
@@ -21569,16 +21832,17 @@ class DoubaoRuntime:
                 if kind in {"done", "error", "shutdown"}:
                     terminal_forwarded = True
         except asyncio.CancelledError:
-            _doubao_log.warning(
+            _doubao_log.debug(
                 "[Debug] runtime stream cancelled after %.2fs",
                 time.monotonic() - started,
             )
             raise
         except Exception as exc:
-            _doubao_log.exception(
+            _doubao_log.debug(
                 "[Debug] runtime stream exception after %.2fs: %s",
                 time.monotonic() - started,
                 exc,
+                exc_info=True,
             )
             self._put_terminal_nowait(
                 output_queue,
@@ -21594,11 +21858,10 @@ class DoubaoRuntime:
             with self._activity_lock:
                 self._active_queues.discard(output_queue)
 
-            if DOUBAO_DEBUG:
-                _doubao_log.info(
-                    "[Debug] runtime stream exited after %.2fs",
-                    time.monotonic() - started,
-                )
+            _doubao_log.debug(
+                "[Debug] runtime stream exited after %.2fs",
+                time.monotonic() - started,
+            )
 
     def submit_chat_stream(self, text: str, conversation_id: str = ""):
         self._ensure_loop()
@@ -21761,7 +22024,7 @@ class DoubaoRuntime:
         # HTTP browser callers also resume the same captured conversation.
         _doubao_http_set_last_conversation_id(conversation_id)
         cookie_count = len(_doubao_live_cookie_snapshot())
-        _doubao_log.info(
+        _doubao_log.debug(
             "Applied Firefox Doubao snapshot and restored conversation: "
             "cookies=%d session=%s conversation=%s section=%s "
             "last_message_index=%d page=%s title=%r "
@@ -21809,7 +22072,7 @@ class DoubaoRuntime:
             queues = list(self._active_queues)
             futures = list(self._active_futures)
         if first or queues or futures:
-            _doubao_log.info(
+            _doubao_log.debug(
                 "Stopping Doubao runtime: active_futures=%d active_streams=%d",
                 len(futures),
                 len(queues),
@@ -21829,12 +22092,12 @@ class DoubaoRuntime:
         await asyncio.sleep(0)
         engine = self._engine
         if engine is not None:
-            _doubao_log.info(
+            _doubao_log.debug(
                 "Closing Doubao browser backend: engine=%s", DOUBAO_BROWSER_ENGINE
             )
             try:
                 await asyncio.wait_for(engine.stop(), timeout=1.5)
-                _doubao_log.info("Doubao browser engine stopped")
+                _doubao_log.debug("Doubao browser engine stopped")
             except asyncio.TimeoutError:
                 _doubao_log.warning("Doubao browser engine shutdown timed out")
             except Exception:
@@ -21847,7 +22110,7 @@ class DoubaoRuntime:
         self.begin_shutdown()
         loop, thread = self._loop, self._thread
         if not loop or not thread:
-            _doubao_log.info("Doubao runtime was not started")
+            _doubao_log.debug("Doubao runtime was not started")
             return True
         if thread is threading.current_thread():
             _doubao_log.warning("Doubao runtime cannot join its own loop thread")
@@ -21874,7 +22137,7 @@ class DoubaoRuntime:
             thread.join(timeout=3.0)
         stopped = not thread.is_alive()
         if stopped:
-            _doubao_log.info("Doubao runtime thread stopped")
+            _doubao_log.debug("Doubao runtime thread stopped")
             self._loop = self._thread = None
             with self._activity_lock:
                 self._active_futures.clear()
@@ -22122,12 +22385,12 @@ class AuthSyncServer:
             daemon=True,
         )
         self._thread.start()
-        logger.info("Firefox auth sync listening on %s", self.path)
+        _auth_log.info("Firefox auth sync listening on %s", self.path)
 
     def _serve(self) -> None:
         sock = self._sock
         if sock is None:
-            logger.error("Firefox auth-sync socket is not initialized")
+            _auth_log.error("Firefox auth-sync socket is not initialized")
             return
         while not self._stop.is_set():
             try:
@@ -22140,7 +22403,9 @@ class AuthSyncServer:
             with self._clients_lock:
                 self._clients.add(client)
                 client_count = len(self._clients)
-            logger.info("Firefox auth-sync client connected clients=%d", client_count)
+            _auth_log.info(
+                "Firefox auth-sync client connected clients=%d", client_count
+            )
             client_thread = threading.Thread(
                 target=self._handle_client,
                 args=(client,),
@@ -22190,9 +22455,9 @@ class AuthSyncServer:
                         message = json.loads(line.decode("utf-8"))
                         _recv_type = str(message.get("type") or "")
                         _recv_log = (
-                            logger.debug
+                            _auth_log.debug
                             if _recv_type in _QUIET_SYNC_TYPES
-                            else logger.info
+                            else _auth_log.info
                         )
                         _recv_log(
                             "Firefox auth-sync recv type=%s provider=%s cookies=%d",
@@ -22203,9 +22468,9 @@ class AuthSyncServer:
                         response = self._dispatch(message)
                         _reply_type = str(response.get("type") or "")
                         _reply_log = (
-                            logger.debug
+                            _auth_log.debug
                             if _reply_type in _QUIET_SYNC_TYPES
-                            else logger.info
+                            else _auth_log.info
                         )
                         _reply_log(
                             "Firefox auth-sync reply type=%s provider=%s success=%s validated=%s",
@@ -22257,7 +22522,9 @@ class AuthSyncServer:
         with self._clients_lock:
             clients = list(self._clients)
         _bcast_type = str(message.get("type") or "")
-        _bcast_log = logger.debug if _bcast_type in _QUIET_SYNC_TYPES else logger.info
+        _bcast_log = (
+            _auth_log.debug if _bcast_type in _QUIET_SYNC_TYPES else _auth_log.info
+        )
         _bcast_log(
             "Firefox auth-sync broadcast type=%s provider=%s clients=%d",
             message.get("type"),
@@ -22294,7 +22561,9 @@ class AuthSyncServer:
                     stderr=subprocess.DEVNULL,
                 )
             except Exception:
-                logger.debug("Failed sending Doubao auth notification", exc_info=True)
+                _doubao_log.debug(
+                    "Failed sending Doubao auth notification", exc_info=True
+                )
 
     def notify_qwen_auth_required(
         self,
@@ -22328,7 +22597,7 @@ class AuthSyncServer:
                     stderr=subprocess.DEVNULL,
                 )
             except Exception:
-                logger.debug("Failed sending Qwen auth notification", exc_info=True)
+                _qwen_log.debug("Failed sending Qwen auth notification", exc_info=True)
 
     def notify_deepseek_auth_required(self, status: int = 401) -> None:
         self.broadcast(
@@ -22356,7 +22625,9 @@ class AuthSyncServer:
                     stderr=subprocess.DEVNULL,
                 )
             except Exception:
-                logger.debug("Failed sending DeepSeek auth notification", exc_info=True)
+                _deepseek_log.debug(
+                    "Failed sending DeepSeek auth notification", exc_info=True
+                )
 
     def request_stop(self) -> None:
         """Non-blocking shutdown signal safe for the main teardown path."""
@@ -22392,7 +22663,7 @@ class AuthSyncServer:
         with self._clients_lock:
             alive = [thread for thread in self._client_threads if thread.is_alive()]
         if alive:
-            logger.warning(
+            _auth_log.warning(
                 "Firefox auth-sync shutdown left %d client thread(s) alive",
                 len(alive),
             )
@@ -22506,21 +22777,20 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
         if isinstance(message, dict)
     ]
 
-    if DOUBAO_DEBUG:
-        _doubao_log.info(
-            "[Debug] incoming Doubao HTTP request request_id=%s source=%s "
-            "stream=%s conversation=%s decision=%s message_count=%d roles=%s "
-            "text_chars=%d text_sha256=%s",
-            request_id,
-            str(body.get("source", "unknown") or "unknown")[:40],
-            stream_mode,
-            conversation_id[:16] if conversation_id else "new",
-            conversation_decision,
-            len(messages),
-            roles,
-            len(text),
-            text_hash,
-        )
+    _doubao_log.debug(
+        "[Debug] incoming Doubao HTTP request request_id=%s source=%s "
+        "stream=%s conversation=%s decision=%s message_count=%d roles=%s "
+        "text_chars=%d text_sha256=%s",
+        request_id,
+        str(body.get("source", "unknown") or "unknown")[:40],
+        stream_mode,
+        conversation_id[:16] if conversation_id else "new",
+        conversation_decision,
+        len(messages),
+        roles,
+        len(text),
+        text_hash,
+    )
 
     if conversation_decision == "reject":
         remembered = _doubao_http_get_last_conversation_id()
@@ -22554,12 +22824,11 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
     created = int(time.time())
 
     if stream_mode:
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] submitting Doubao HTTP stream request_id=%s conversation=%s",
-                request_id,
-                conversation_id[:16] if conversation_id else "new",
-            )
+        _doubao_log.debug(
+            "[Debug] submitting Doubao HTTP stream request_id=%s conversation=%s",
+            request_id,
+            conversation_id[:16] if conversation_id else "new",
+        )
 
         future, event_queue = DOUBAO_RUNTIME.submit_chat_stream(text, conversation_id)
 
@@ -22611,7 +22880,7 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
                                 else DOUBAO_STREAM_IDLE_TIMEOUT
                             )
                             message = f"Doubao HTTP stream timeout after {timeout:.0f}s: first_event={event_count == 0} runtime_future=pending"
-                            _doubao_log.error("[Debug] %s", message)
+                            _doubao_log.error("%s", message)
                             yield _chat_sse_data(
                                 {
                                     "error": {
@@ -22626,12 +22895,11 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
                     deadline = time.monotonic() + DOUBAO_STREAM_IDLE_TIMEOUT
                     kind = event.get("type")
 
-                    if DOUBAO_DEBUG:
-                        _doubao_log.info(
-                            "[Debug] HTTP stream received event n=%d type=%s",
-                            event_count,
-                            kind,
-                        )
+                    _http_log.debug(
+                        "[Debug] HTTP stream received event n=%d type=%s",
+                        event_count,
+                        kind,
+                    )
 
                     if kind == "meta":
                         continue
@@ -22644,12 +22912,11 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
                                 returned_conversation_id
                             )
 
-                            if DOUBAO_DEBUG:
-                                _doubao_log.info(
-                                    "[Debug] remembered Doubao HTTP conversation request_id=%s conversation=%s",
-                                    request_id,
-                                    returned_conversation_id[:16],
-                                )
+                            _doubao_log.debug(
+                                "[Debug] remembered Doubao HTTP conversation request_id=%s conversation=%s",
+                                request_id,
+                                returned_conversation_id[:16],
+                            )
                         yield _chat_sse_data(
                             {
                                 "id": completion_id,
@@ -22752,7 +23019,7 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
                             error_payload["code"] = event.get("code")
                         if event.get("retryable") is not None:
                             error_payload["retryable"] = event.get("retryable")
-                        if DOUBAO_DEBUG and event.get("details"):
+                        if VE_DOUBAO_LOG_DEBUG and event.get("details"):
                             error_payload["details"] = event.get("details")
                         yield _chat_sse_data({"error": error_payload})
                         break
@@ -22974,12 +23241,11 @@ async def _direct_doubao_chat_response(body: dict, messages: list, stream_mode: 
     effective_id = result.session_meta.conversation_id or conversation_id
     if effective_id:
         _doubao_http_set_last_conversation_id(effective_id)
-        if DOUBAO_DEBUG:
-            _doubao_log.info(
-                "[Debug] remembered Doubao HTTP conversation request_id=%s conversation=%s",
-                request_id,
-                effective_id[:16],
-            )
+        _doubao_log.debug(
+            "[Debug] remembered Doubao HTTP conversation request_id=%s conversation=%s",
+            request_id,
+            effective_id[:16],
+        )
     content = result.text or ""
     if result.image_urls:
         content += ("\\n" if content else "") + "\\n".join(
@@ -23061,7 +23327,6 @@ async def dispatch_browser_chat_model(
 
 # ==================== M365 Copilot Browser Backend ====================
 
-_m365_log = logging.getLogger("voice.m365")
 
 M365_ENTRY_URL = os.getenv("M365_ENTRY_URL", "").strip()
 SHAREPOINT_HOME_URL = os.getenv("SHAREPOINT_HOME_URL", "").strip().rstrip("/")
@@ -23135,9 +23400,6 @@ M365_TERMINAL_DRAIN_SECONDS = max(
 M365_BRIDGE_MAX_MSG_SIZE = int(
     os.getenv("M365_BRIDGE_MAX_MSG_SIZE", str(32 * 1024 * 1024))
 )
-M365_DEBUG = os.getenv("M365_DEBUG", "0").strip().lower() in {"1", "true", "yes", "on"}
-if M365_DEBUG:
-    _m365_log.setLevel(logging.DEBUG)
 # Observation-only relay tracing. When enabled, the M365 pipeline accounts for
 # every answer character at two points and logs a per-request summary:
 #   [producer] the driver() coroutine that converts the extension's cumulative
@@ -23147,14 +23409,6 @@ if M365_DEBUG:
 # any text loss happens inside Python (relay/queue) or downstream (SSE transport
 # / Continue rendering). It never alters the reconstruction logic; it only
 # counts and hashes what already flows. Gated so production stays silent.
-M365_RELAY_TRACE = os.getenv("M365_RELAY_TRACE", "0").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
-if M365_RELAY_TRACE:
-    _m365_log.setLevel(logging.DEBUG)
 
 
 def _m365_trace_digest(text: str) -> str:
@@ -23191,16 +23445,8 @@ def _m365_trace_inbound_key(mtype: str, msg: dict) -> str:
     return base
 
 
-M365_ATTACHMENT_DEBUG = os.getenv("M365_ATTACHMENT_DEBUG", "0").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
-
-
 def _m365_attachment_debug(event: str, **fields) -> None:
-    if not M365_ATTACHMENT_DEBUG:
+    if not VE_M365_LOG_ATTACHMENT:
         return
     safe = {}
     for key, value in fields.items():
@@ -23548,10 +23794,10 @@ def _m365_remember_conversation(
     # DIFFERENT ConversationId, two client chats share an identical first user
     # turn. full_key separates them from turn 2 on; the residual window is the
     # first↔second-turn boundary. Surface it rather than crossing talk silently.
-    if M365_DEBUG and boot_key:
+    if VE_M365_LOG_DEBUG and boot_key:
         prior = _m365_lru_get(boot_key)
         if prior and prior != cid:
-            _m365_log.warning(
+            _m365_log.debug(
                 "[conv-collision] boot_key=%s already=%s… incoming=%s… tone=%s "
                 "has_history=%s — two chats share the same first user turn",
                 boot_key,
@@ -24540,9 +24786,9 @@ class M365BrowserRuntime:
                         "sharePointHomeUrl": SHAREPOINT_HOME_URL,
                         "sharePointUploadFolder": SHAREPOINT_UPLOAD_FOLDER,
                         "sharePointDownloadFolder": SHAREPOINT_DOWNLOAD_FOLDER,
-                        # Propagate backend verbose tracing so M365_DEBUG=1 lights
+                        # Propagate backend verbose tracing so VE_M365_LOG_DEBUG=1 lights
                         # up the extension's dlog end-to-end.
-                        "debug": M365_DEBUG,
+                        "debug": VE_M365_LOG_DEBUG,
                     },
                     ensure_ascii=False,
                 )
@@ -24652,15 +24898,14 @@ class M365BrowserRuntime:
             # cannot attribute it to a live request. Distinguishes "wrong/unknown
             # id" from "request already finished" so a routing bug is not
             # mistaken for a normal late frame. Observation-only; gated.
-            if M365_RELAY_TRACE:
-                _m365_log.warning(
-                    "[relay-inbound-drop] no pending queue for id=%s type=%s "
-                    "text_len=%s known_ids=%s",
-                    rid or "<empty>",
-                    mtype or "<empty>",
-                    len(str(msg.get("text") or "")) if "text" in msg else "n/a",
-                    sorted(known) if known else "[]",
-                )
+            _m365_log.debug(
+                "[relay-inbound-drop] no pending queue for id=%s type=%s "
+                "text_len=%s known_ids=%s",
+                rid or "<empty>",
+                mtype or "<empty>",
+                len(str(msg.get("text") or "")) if "text" in msg else "n/a",
+                sorted(known) if known else "[]",
+            )
 
     async def _send_to_ext(self, obj: dict) -> None:
         ws = self._ext_ws
@@ -24712,7 +24957,7 @@ class M365BrowserRuntime:
         def _dispatch() -> None:
             ws = self._ext_ws
             if ws is None or getattr(ws, "closed", True):
-                logger.warning(
+                _m365_log.warning(
                     "M365_STOP not sent because extension websocket is unavailable: id=%s reason=%s",
                     rid,
                     reason,
@@ -24848,7 +25093,7 @@ class M365BrowserRuntime:
                 trace_inbound_types: dict = {}
 
                 def _log_producer_summary(signal: str) -> None:
-                    if not M365_RELAY_TRACE:
+                    if not VE_M365_LOG_RELAY_TRACE:
                         return
                     # best == sum(emitted deltas) proves the relay itself is
                     # lossless; if they differ, loss is INSIDE Python (a delta
@@ -24958,7 +25203,7 @@ class M365BrowserRuntime:
                             return
                         continue
                     mtype = str(msg.get("type") or "")
-                    if M365_RELAY_TRACE:
+                    if VE_M365_LOG_RELAY_TRACE:
                         trace_inbound_msgs += 1
                         _tk = _m365_trace_inbound_key(mtype, msg)
                         trace_inbound_types[_tk] = trace_inbound_types.get(_tk, 0) + 1
@@ -25009,7 +25254,7 @@ class M365BrowserRuntime:
                             if not emit({"type": "delta", "content": _delta}):
                                 return
                             best = text
-                            if M365_RELAY_TRACE:
+                            if VE_M365_LOG_RELAY_TRACE:
                                 trace_emitted_chars += len(_delta)
                                 trace_emitted_frames += 1
                             idle_deadline = time.monotonic() + request_idle_seconds
@@ -25078,7 +25323,7 @@ class M365BrowserRuntime:
                             if not emit({"type": "delta", "content": _delta}):
                                 return
                             best = text
-                            if M365_RELAY_TRACE:
+                            if VE_M365_LOG_RELAY_TRACE:
                                 trace_emitted_chars += len(_delta)
                                 trace_emitted_frames += 1
                         elif text and text != best:
@@ -25128,7 +25373,7 @@ class M365BrowserRuntime:
                                 return
                             append_emitted = True
                             best += append_text
-                            if M365_RELAY_TRACE:
+                            if VE_M365_LOG_RELAY_TRACE:
                                 trace_emitted_chars += len(append_text)
                                 trace_emitted_frames += 1
                         if _m365_done_is_authoritative(msg):
@@ -25519,7 +25764,7 @@ async def _direct_m365_chat_response(
     # asked for reasoning at all. Logs the raw presence/value of every reasoning
     # flag we honor, the resolved decision, and the full set of top-level body
     # keys (values omitted; only key names, so no prompt/content is leaked).
-    # Unconditional INFO so it shows without flipping M365_DEBUG; remove or gate
+    # Unconditional INFO so it shows without flipping VE_M365_LOG_DEBUG; remove or gate
     # once the Continue-side reasoning toggle is confirmed working.
     _m365_log.debug(
         "[reasoning-req] model=%s enable_thinking=%r reasoning_effort=%r "
@@ -25623,7 +25868,7 @@ async def _direct_m365_chat_response(
         trace_yielded_text = []
 
         def _log_consumer_summary(signal: str) -> None:
-            if not M365_RELAY_TRACE:
+            if not VE_M365_LOG_RELAY_TRACE:
                 return
             joined = "".join(trace_yielded_text)
             _m365_log.debug(
@@ -25745,7 +25990,7 @@ async def _direct_m365_chat_response(
                         # whole chunk was model envelope tag(s) or a held-back
                         # partial tag; nothing to yield this frame.
                         continue
-                    if M365_RELAY_TRACE:
+                    if VE_M365_LOG_RELAY_TRACE:
                         # Count the answer delta actually yielded (raw answer
                         # text, model envelope tags already stripped; the
                         # transport's own opening tag is added below and is not
@@ -26048,14 +26293,21 @@ async def _direct_m365_chat_response(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("voice")
 
+# Functional logger namespaces. Keep unrelated subsystems independently filterable.
+
+# ==================== Third-party log levels ====================
+# Third-party MCP request lifecycle logs remain warning-only.
+logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.streamable_http_manager").setLevel(logging.WARNING)
+
 preload_whisper_model_if_requested()
-logger.info(
+_transcription_log.info(
     "Live microphone transcription: Apple Speech; "
     "file/HTTP transcription: faster-whisper (lazy=%s)",
     not WHISPER_PRELOAD,
 )
 
-logger.info(f"MLX LLM model will be loaded in dedicated LLM worker: {LLM_MODEL_ID}")
+_llm_log.info(f"MLX LLM model will be loaded in dedicated LLM worker: {LLM_MODEL_ID}")
 
 
 mlx_llm_model = None
@@ -26073,26 +26325,26 @@ async def cleanup_async_resources(
     - asyncio 任务只能协作式取消，无法强制终止。
     - wait_seconds 到期后不会继续无限等待残留任务。
     """
-    logger.info("🧹 清理异步资源...")
+    _shutdown_log.info("🧹 清理异步资源...")
 
     try:
         running_loop = asyncio.get_running_loop()
     except RuntimeError:
-        logger.warning("异步资源清理跳过：当前线程没有运行中的事件循环")
+        _shutdown_log.warning("异步资源清理跳过：当前线程没有运行中的事件循环")
         return
 
     main_loop = _main_event_loop
 
     if main_loop is None:
-        logger.info("异步资源清理跳过：主事件循环尚未初始化")
+        _shutdown_log.info("异步资源清理跳过：主事件循环尚未初始化")
         return
 
     if main_loop.is_closed():
-        logger.info("异步资源清理跳过：主事件循环已经关闭")
+        _shutdown_log.info("异步资源清理跳过：主事件循环已经关闭")
         return
 
     if running_loop is not main_loop:
-        logger.warning(
+        _shutdown_log.warning(
             "异步资源清理运行在错误的事件循环：running_loop=%r main_loop=%r",
             running_loop,
             main_loop,
@@ -26108,14 +26360,14 @@ async def cleanup_async_resources(
             if (task is not current_task and not task.done())
         ]
     except Exception:
-        logger.exception("枚举待清理异步任务失败")
+        _shutdown_log.exception("枚举待清理异步任务失败")
         return
 
     if not tasks:
-        logger.info("✅ 无待处理异步任务")
+        _shutdown_log.info("✅ 无待处理异步任务")
         return
 
-    logger.info(
+    _shutdown_log.info(
         "正在取消 %d 个待处理异步任务...",
         len(tasks),
     )
@@ -26128,12 +26380,12 @@ async def cleanup_async_resources(
             try:
                 task.cancel()
             except Exception:
-                logger.exception(
+                _shutdown_log.exception(
                     "取消异步任务失败：task=%r",
                     task,
                 )
         except Exception:
-            logger.exception(
+            _shutdown_log.exception(
                 "取消异步任务失败：task=%r",
                 task,
             )
@@ -26162,10 +26414,10 @@ async def cleanup_async_resources(
                 except Exception:
                     pass
 
-        logger.warning("异步资源清理协程自身被取消")
+        _shutdown_log.warning("异步资源清理协程自身被取消")
         raise
     except Exception:
-        logger.exception("等待异步任务退出时发生异常")
+        _shutdown_log.exception("等待异步任务退出时发生异常")
 
         done = {task for task in tasks if task.done()}
         pending = {task for task in tasks if not task.done()}
@@ -26187,7 +26439,7 @@ async def cleanup_async_resources(
             continue
         except Exception:
             failed_count += 1
-            logger.exception(
+            _shutdown_log.exception(
                 "读取已完成任务状态失败：task=%r",
                 task,
             )
@@ -26195,14 +26447,14 @@ async def cleanup_async_resources(
 
         if exception is not None:
             failed_count += 1
-            logger.debug(
+            _shutdown_log.debug(
                 "异步任务在关闭期间异常退出：task=%r error=%r",
                 task,
                 exception,
             )
 
     if pending:
-        logger.warning(
+        _shutdown_log.warning(
             "异步清理超时，仍有 %d 个任务未退出",
             len(pending),
         )
@@ -26230,7 +26482,7 @@ async def cleanup_async_resources(
             except Exception:
                 coroutine_name = None
 
-            logger.warning(
+            _shutdown_log.warning(
                 "关闭时仍未退出的异步任务：name=%r coro=%r task=%r",
                 task.get_name(),
                 coroutine_name,
@@ -26246,7 +26498,7 @@ async def cleanup_async_resources(
         except Exception:
             pass
 
-    logger.info(
+    _shutdown_log.info(
         "✅ 异步资源清理结束：total=%d done=%d cancelled=%d failed=%d pending=%d",
         len(tasks),
         len(done),
@@ -26298,14 +26550,14 @@ def _run_shutdown_call_bounded(label: str, func, timeout: float | None = None):
     )
     thread.start()
     if not done.wait(timeout):
-        logger.error(
+        _shutdown_log.error(
             "Shutdown call timed out after %.1fs and was detached: %s",
             timeout,
             label,
         )
         return False, None
     if result["error"] is not None:
-        logger.error(
+        _shutdown_log.error(
             "Shutdown call failed: %s: %s",
             label,
             result["error"],
@@ -26323,7 +26575,7 @@ def _snapshot_pending_output_close_bounded(*, timeout: float = 0.25):
     """Best-effort shutdown snapshot without allowing OUTPUT_STREAM_LOCK to hang exit."""
     acquired = OUTPUT_STREAM_LOCK.acquire(timeout=max(0.05, float(timeout)))
     if not acquired:
-        logger.error(
+        _audio_log.error(
             "Timed out acquiring OUTPUT_STREAM_LOCK during shutdown snapshot; "
             "treating persistent output as unresolved"
         )
@@ -26339,7 +26591,7 @@ def _log_shutdown_thread_snapshot(label: str):
         f"{thread.name}(daemon={thread.daemon},alive={thread.is_alive()})"
         for thread in threading.enumerate()
     ]
-    logger.info(
+    _shutdown_log.info(
         "Shutdown debug thread snapshot [%s]: count=%d threads=%s",
         label,
         len(threads),
@@ -26354,13 +26606,13 @@ def cleanup_service():
 
     _cleanup_started.set()
     cleanup_started_at = time.monotonic()
-    logger.info("Shutdown debug: cleanup_service begin")
+    _shutdown_log.info("Shutdown debug: cleanup_service begin")
     _log_shutdown_thread_snapshot("cleanup-start")
 
     # Signal the listening socket synchronously, then detach all lock acquisition and joins.
     # Auth client threads may own the logging or clients lock during interpreter shutdown;
     # neither may delay the main teardown transaction.
-    logger.info("Shutdown debug stage begin: auth-sync-stop-request")
+    _auth_log.info("Shutdown debug stage begin: auth-sync-stop-request")
     try:
         AUTH_SYNC_SERVER.request_stop()
     except BaseException:
@@ -26378,12 +26630,14 @@ def cleanup_service():
             name="ShutdownAuthSyncStop",
             daemon=True,
         ).start()
-        logger.info("Shutdown debug stage end: auth-sync-stop-request dispatched=True")
+        _auth_log.info(
+            "Shutdown debug stage end: auth-sync-stop-request dispatched=True"
+        )
     except BaseException:
         # Do not enter logging.exception here; a logging handler may be held by the auth thread.
         pass
 
-    logger.info("Shutdown stage: stopping M365 browser bridge")
+    _m365_log.info("Shutdown stage: stopping M365 browser bridge")
 
     def stop_m365_browser_for_shutdown():
         return M365_BROWSER_RUNTIME.begin_shutdown(timeout=3.0)
@@ -26394,13 +26648,13 @@ def cleanup_service():
         timeout=4.0,
     )
     if not (m365_call_completed and m365_result):
-        logger.error(
+        _m365_log.error(
             "M365 browser bridge did not reach full shutdown; continuing final cleanup"
         )
     else:
-        logger.info("Shutdown stage complete: M365 browser bridge stopped")
+        _m365_log.info("Shutdown stage complete: M365 browser bridge stopped")
 
-    logger.info("Shutdown stage: stopping Doubao browser backend")
+    _doubao_log.debug("Shutdown stage: stopping Doubao browser backend")
 
     def stop_doubao_runtime_for_shutdown():
         return DOUBAO_RUNTIME.stop(timeout=4.0)
@@ -26412,11 +26666,11 @@ def cleanup_service():
     )
     doubao_stopped = bool(doubao_call_completed and doubao_result)
     if not doubao_stopped:
-        logger.error(
+        _doubao_log.error(
             "Doubao browser backend did not reach full shutdown; continuing final cleanup"
         )
     else:
-        logger.info("Shutdown stage complete: Doubao browser backend stopped")
+        _doubao_log.debug("Shutdown stage complete: Doubao browser backend stopped")
 
     try:
         if audio_runtime.phase not in {
@@ -26428,16 +26682,16 @@ def cleanup_service():
                 "service cleanup started",
             )
     except Exception:
-        logger.exception("Failed to enter audio STOPPING state")
+        _audio_log.exception("Failed to enter audio STOPPING state")
 
-    logger.info("👋 正在关闭服务，清理硬件资源...")
+    _shutdown_log.info("👋 正在关闭服务，清理硬件资源...")
 
     # Prevent a delayed TTS callback from touching the HUD while or after the
     # HUD helper is being closed.
     try:
         _cancel_tts_hud_hide()
     except Exception:
-        logger.debug(
+        _hud_log.debug(
             "Failed cancelling delayed HUD hide during cleanup",
             exc_info=True,
         )
@@ -26459,7 +26713,7 @@ def cleanup_service():
     try:
         abort_tts_response()
     except Exception:
-        logger.exception("Failed to abort pending TTS response during shutdown")
+        _tts_log.exception("Failed to abort pending TTS response during shutdown")
 
     # Cancel the active TTS producer.
     try:
@@ -26482,13 +26736,13 @@ def cleanup_service():
         )
 
         if pcm_cleared:
-            logger.info(
+            _shutdown_log.info(
                 "清除了 %d 个待播放 PCM 项目",
                 pcm_cleared,
             )
 
     except Exception as exc:
-        logger.debug(
+        _shutdown_log.debug(
             "Failed to clear persistent PCM queue: %s",
             exc,
         )
@@ -26529,7 +26783,7 @@ def cleanup_service():
                 pass
 
     if cleared_count:
-        logger.info(
+        _shutdown_log.info(
             "清除了 %d 个待播放项目",
             cleared_count,
         )
@@ -26541,7 +26795,7 @@ def cleanup_service():
             timeout=1.0,
         )
     except queue.Full:
-        logger.warning("Unable to enqueue TTS shutdown marker")
+        _tts_log.warning("Unable to enqueue TTS shutdown marker")
 
     thread = TTS_CONSUMER_THREAD
 
@@ -26555,7 +26809,7 @@ def cleanup_service():
     consumer_stopped = thread is None or not thread.is_alive()
 
     if not consumer_stopped:
-        logger.error(
+        _tts_log.error(
             "TTS consumer remains alive after shutdown "
             "join timeout; AudioRuntime must remain STOPPING: "
             "thread=%s ident=%s",
@@ -26563,14 +26817,14 @@ def cleanup_service():
             thread.ident if thread is not None else None,
         )
 
-    logger.info("Audio shutdown stage: stopping route monitor")
+    _audio_log.debug("Audio shutdown stage: stopping route monitor")
     try:
         route_monitor_stopped = stop_audio_route_monitor(clear_pending=True)
     except Exception:
         route_monitor_stopped = False
-        logger.exception("Failed to stop audio route monitor")
+        _audio_log.exception("Failed to stop audio route monitor")
 
-    logger.info("Audio shutdown stage: closing persistent output")
+    _audio_log.debug("Audio shutdown stage: closing persistent output")
 
     # Only application shutdown closes the persistent PortAudio stream.
     completed, close_result = _run_shutdown_call_bounded(
@@ -26588,7 +26842,7 @@ def cleanup_service():
     pending_snapshot = _snapshot_pending_output_close_bounded()
     had_pending_close = pending_snapshot is True
     if pending_snapshot is None:
-        logger.warning(
+        _audio_log.warning(
             "Persistent output pending-close state is unknown; closure cannot be confirmed"
         )
 
@@ -26608,7 +26862,7 @@ def cleanup_service():
     resolved_snapshot = _snapshot_pending_output_close_bounded()
     pending_close_resolved = resolved_snapshot is False
     if resolved_snapshot is None:
-        logger.warning(
+        _audio_log.warning(
             "Persistent output close resolution is unknown; treating stream as unresolved"
         )
 
@@ -26621,7 +26875,7 @@ def cleanup_service():
         had_pending_close and pending_close_resolved
     )
 
-    logger.info(
+    _audio_log.debug(
         "Persistent output shutdown closure: "
         "initial_closed=%s "
         "had_pending_close=%s "
@@ -26635,19 +26889,19 @@ def cleanup_service():
         stream_closed,
     )
 
-    logger.info("Audio shutdown stage: stopping Edge-TTS event loop")
+    _tts_log.debug("Audio shutdown stage: stopping Edge-TTS event loop")
     try:
         async_loop_stopped = stop_tts_async_loop()
     except Exception:
         async_loop_stopped = False
-        logger.exception("Failed to stop Edge-TTS asyncio loop")
+        _tts_log.exception("Failed to stop Edge-TTS asyncio loop")
 
     stream_references_detached = (
         OUTPUT_STREAM is None and OUTPUT_CALLBACK_CONTEXT is None
     )
 
     if not stream_references_detached:
-        logger.error(
+        _audio_log.error(
             "Persistent output global references remain published after shutdown"
         )
 
@@ -26667,7 +26921,7 @@ def cleanup_service():
                 "service audio cleanup completed",
             )
         else:
-            logger.error(
+            _audio_log.error(
                 "Audio shutdown did not reach closure; "
                 "remaining in STOPPING: "
                 "consumer_stopped=%s "
@@ -26680,7 +26934,7 @@ def cleanup_service():
                 stream_closed,
             )
 
-    logger.info(
+    _audio_log.debug(
         "Shutdown debug: audio subsystem closure evaluated closed=%s", shutdown_closed
     )
     _log_shutdown_thread_snapshot("after-audio-runtime-stop")
@@ -26692,14 +26946,14 @@ def cleanup_service():
     # Application shutdown may stop all remaining PortAudio
     # streams globally after the dedicated TTS consumer and
     # persistent output stream have already been stopped.
-    logger.info("Shutdown debug stage begin: sounddevice-stop")
+    _audio_log.debug("Shutdown debug stage begin: sounddevice-stop")
     stage_started_at = time.monotonic()
     sd_completed, _ = _run_shutdown_call_bounded(
         "sounddevice-stop",
         sd.stop,
         timeout=min(2.0, AUDIO_SHUTDOWN_CALL_TIMEOUT),
     )
-    logger.info(
+    _audio_log.debug(
         "Shutdown debug stage end: sounddevice-stop completed=%s elapsed=%.3fs",
         sd_completed,
         time.monotonic() - stage_started_at,
@@ -26708,7 +26962,7 @@ def cleanup_service():
     # AppKit/Quartz teardown can block inside NativeHUD._lock or process IPC. HUD is
     # non-essential during shutdown, so request close on a detached daemon and never wait.
     # Avoid logging from the worker: logging handlers may also be tearing down.
-    logger.info("Shutdown debug stage begin: hud-close-request")
+    _hud_log.info("Shutdown debug stage begin: hud-close-request")
 
     def close_hud_detached() -> None:
         try:
@@ -26722,35 +26976,37 @@ def cleanup_service():
             name="ShutdownHUDClose",
             daemon=True,
         ).start()
-        logger.info("Shutdown debug stage end: hud-close-request dispatched=True")
+        _hud_log.info("Shutdown debug stage end: hud-close-request dispatched=True")
     except Exception:
-        logger.exception("Failed dispatching detached HUD close during shutdown")
+        _hud_log.exception("Failed dispatching detached HUD close during shutdown")
 
-    logger.info("Shutdown debug stage begin: reset-question-recording")
+    _shutdown_log.info("Shutdown debug stage begin: reset-question-recording")
     stage_started_at = time.monotonic()
     try:
         reset_question_recording_state()
-        logger.info(
+        _shutdown_log.info(
             "Shutdown debug stage end: reset-question-recording elapsed=%.3fs",
             time.monotonic() - stage_started_at,
         )
     except Exception:
-        logger.exception("Failed to reset question recording state during shutdown")
+        _dictation_log.exception(
+            "Failed to reset question recording state during shutdown"
+        )
 
     async_cleanup_future = None
 
-    logger.info("Shutdown debug stage begin: async-resource-cleanup")
+    _shutdown_log.info("Shutdown debug stage begin: async-resource-cleanup")
     async_stage_started_at = time.monotonic()
     loop = _main_event_loop
 
     if loop is None:
-        logger.info("未记录主事件循环，跳过额外的协程资源清理")
+        _shutdown_log.info("未记录主事件循环，跳过额外的协程资源清理")
 
     elif loop.is_closed():
-        logger.info("主事件循环已经关闭，跳过额外的协程资源清理")
+        _shutdown_log.info("主事件循环已经关闭，跳过额外的协程资源清理")
 
     elif not loop.is_running():
-        logger.info("主事件循环已经停止，跳过额外的协程资源清理")
+        _shutdown_log.info("主事件循环已经停止，跳过额外的协程资源清理")
 
     else:
         cleanup_coro = cleanup_async_resources(
@@ -26768,7 +27024,7 @@ def cleanup_service():
             # “coroutine was never awaited”。
             cleanup_coro.close()
 
-            logger.exception("提交异步资源清理协程失败")
+            _shutdown_log.exception("提交异步资源清理协程失败")
 
     if async_cleanup_future is not None:
         try:
@@ -26778,16 +27034,18 @@ def cleanup_service():
                 timeout=5.0,
             )
         except concurrent.futures.TimeoutError:
-            logger.warning("等待异步资源清理超时，取消清理 future 并继续同步兜底清理")
+            _shutdown_log.warning(
+                "等待异步资源清理超时，取消清理 future 并继续同步兜底清理"
+            )
 
             try:
                 async_cleanup_future.cancel()
             except Exception:
                 pass
         except Exception:
-            logger.exception("异步资源清理执行失败")
+            _shutdown_log.exception("异步资源清理执行失败")
 
-    logger.info(
+    _shutdown_log.info(
         "Shutdown debug stage end: async-resource-cleanup elapsed=%.3fs future=%s",
         time.monotonic() - async_stage_started_at,
         async_cleanup_future is not None,
@@ -26804,7 +27062,7 @@ def cleanup_service():
         # Stage 1: graceful recognition finalization
         # -------------------------------------------------
         try:
-            logger.info(
+            _shutdown_log.info(
                 "Requesting Apple Speech helper graceful "
                 "finalization during service shutdown: "
                 "pid=%s",
@@ -26818,7 +27076,7 @@ def cleanup_service():
             helper_exited = True
 
         except subprocess.TimeoutExpired:
-            logger.warning(
+            _shutdown_log.warning(
                 "Apple Speech helper did not exit after "
                 "SIGUSR1 during service shutdown: pid=%s",
                 apple_proc.pid,
@@ -26828,7 +27086,7 @@ def cleanup_service():
             helper_exited = True
 
         except Exception:
-            logger.exception(
+            _dictation_log.exception(
                 "Failed requesting Apple Speech graceful finalization: pid=%s",
                 apple_proc.pid,
             )
@@ -26846,7 +27104,7 @@ def cleanup_service():
         # -------------------------------------------------
         if not helper_exited and apple_proc.poll() is None:
             try:
-                logger.warning(
+                _shutdown_log.warning(
                     "Sending SIGTERM to Apple Speech "
                     "helper during final service shutdown: "
                     "pid=%s",
@@ -26859,7 +27117,7 @@ def cleanup_service():
                 helper_exited = True
 
             except subprocess.TimeoutExpired:
-                logger.error(
+                _dictation_log.error(
                     "Apple Speech helper remained alive "
                     "after its SIGTERM hard-exit window: "
                     "pid=%s",
@@ -26870,7 +27128,7 @@ def cleanup_service():
                 helper_exited = True
 
             except Exception:
-                logger.exception(
+                _dictation_log.exception(
                     "Apple Speech SIGTERM stage failed: pid=%s",
                     apple_proc.pid,
                 )
@@ -26882,7 +27140,7 @@ def cleanup_service():
         # -------------------------------------------------
         if not helper_exited and apple_proc.poll() is None:
             try:
-                logger.critical(
+                _dictation_log.critical(
                     "Apple Speech helper is still alive "
                     "after SIGUSR1 and SIGTERM; sending "
                     "last-resort SIGKILL to prevent an "
@@ -26899,14 +27157,14 @@ def cleanup_service():
                 helper_exited = True
 
             except subprocess.TimeoutExpired:
-                logger.critical(
+                _dictation_log.critical(
                     "Apple Speech helper did not report "
                     "exit even after SIGKILL: pid=%s",
                     apple_proc.pid,
                 )
 
             except Exception:
-                logger.exception(
+                _dictation_log.exception(
                     "Last-resort Apple Speech SIGKILL failed: pid=%s",
                     apple_proc.pid,
                 )
@@ -26915,14 +27173,14 @@ def cleanup_service():
     if apple_proc is not None and apple_proc.poll() is not None:
         _clear_apple_speech_process_if_exited(apple_proc)
     elif apple_proc is not None:
-        logger.critical(
+        _dictation_log.critical(
             "Apple Speech helper remains alive while "
             "the parent service is exiting: pid=%s",
             apple_proc.pid,
         )
 
     _log_shutdown_thread_snapshot("cleanup-end")
-    logger.info(
+    _shutdown_log.info(
         "Shutdown debug: cleanup_service end elapsed=%.3fs "
         "doubao_stopped=%s audio_closed=%s",
         time.monotonic() - cleanup_started_at,
@@ -26932,7 +27190,7 @@ def cleanup_service():
 
 
 def signal_handler(signum, frame):
-    logger.info(
+    _shutdown_log.info(
         "Received signal %s; requesting shutdown",
         signum,
     )
@@ -27194,7 +27452,7 @@ class NativeHUD:
             if os.path.exists(path):
                 os.remove(path)
         except Exception as exc:
-            logger.debug(
+            _hud_log.debug(
                 "Failed removing HUD temporary file %s: %s",
                 path,
                 exc,
@@ -27236,14 +27494,16 @@ class NativeHUD:
                 try:
                     process.wait(timeout=1.0)
                 except subprocess.TimeoutExpired:
-                    logger.warning("HUD process did not terminate in time; killing it")
+                    _hud_log.warning(
+                        "HUD process did not terminate in time; killing it"
+                    )
 
                     process.kill()
 
                     try:
                         process.wait(timeout=1.0)
                     except subprocess.TimeoutExpired:
-                        logger.warning(
+                        _hud_log.warning(
                             "HUD process did not exit after kill; "
                             "starting background reaper"
                         )
@@ -27252,7 +27512,7 @@ class NativeHUD:
                             try:
                                 process.wait()
                             except Exception:
-                                logger.debug(
+                                _hud_log.debug(
                                     "HUD background reaper failed",
                                     exc_info=True,
                                 )
@@ -27275,7 +27535,7 @@ class NativeHUD:
             pass
 
         except Exception as exc:
-            logger.warning(
+            _hud_log.warning(
                 "Failed terminating HUD process: %s",
                 exc,
             )
@@ -27319,7 +27579,7 @@ class NativeHUD:
                         (now, now),
                     )
                 except OSError:
-                    logger.debug(
+                    _hud_log.debug(
                         "Failed forcing HUD status mtime",
                         exc_info=True,
                     )
@@ -27336,7 +27596,7 @@ class NativeHUD:
 
         if self.process is not None:
             return_code = self.process.poll()
-            logger.warning(
+            _hud_log.warning(
                 "HUD process exited with code %s; restarting",
                 return_code,
             )
@@ -27368,7 +27628,7 @@ class NativeHUD:
             return True, process
 
         except Exception as exc:
-            logger.warning("Failed to start HUD: %s", exc)
+            _hud_log.warning("Failed to start HUD: %s", exc)
             self._terminate_process_locked()
             return False, None
 
@@ -27394,7 +27654,7 @@ class NativeHUD:
                 return False
             return_code = process.poll()
             if return_code is not None:
-                logger.warning(
+                _hud_log.warning(
                     "HUD process exited during startup with code %s",
                     return_code,
                 )
@@ -27430,12 +27690,12 @@ class NativeHUD:
             running, started = self._start_hud_locked()
 
         if not running:
-            logger.warning(
+            _hud_log.warning(
                 "HUD update skipped because HUD process could not be started"
             )
             return
         if started is not None and not self._wait_for_started_hud(started):
-            logger.warning(
+            _hud_log.warning(
                 "HUD update skipped because HUD process failed during startup"
             )
             return
@@ -27444,12 +27704,12 @@ class NativeHUD:
             if _cleanup_started.is_set():
                 return
             if not self._is_hud_running_locked():
-                logger.warning("HUD update skipped because HUD process exited")
+                _hud_log.warning("HUD update skipped because HUD process exited")
                 return
             try:
                 self._atomic_write_locked(content)
             except Exception as exc:
-                logger.error("Failed writing to HUD channel: %s", exc)
+                _hud_log.error("Failed writing to HUD channel: %s", exc)
                 self._close_locked(notify=False)
 
     def hide_visual_only(self) -> None:
@@ -27467,7 +27727,7 @@ class NativeHUD:
                 return
             running = self._is_hud_running_locked()
 
-            # logger.info(
+            # _app_log.info(
             #     "[HUD] hide_visual_only: running=%s pid=%s",
             #     running,
             #     (
@@ -27483,13 +27743,13 @@ class NativeHUD:
             try:
                 self._atomic_write_locked("HIDE")
 
-                # logger.info(
+                # _app_log.info(
                 #     "[HUD] HIDE written to %s",
                 #     self.status_file,
                 # )
 
             except Exception as exc:
-                logger.error(
+                _hud_log.error(
                     "Failed hiding HUD: %s",
                     exc,
                 )
@@ -27524,7 +27784,7 @@ class NativeHUD:
                 self._atomic_write_locked("CLOSE")
 
             except Exception as exc:
-                logger.debug(
+                _hud_log.debug(
                     "Failed sending CLOSE to HUD: %s",
                     exc,
                 )
@@ -27537,7 +27797,7 @@ class NativeHUD:
                 except subprocess.TimeoutExpired:
                     pass
                 except Exception:
-                    logger.debug(
+                    _hud_log.debug(
                         "Failed waiting for graceful HUD close",
                         exc_info=True,
                     )
@@ -27552,7 +27812,7 @@ class NativeHUD:
         except FileNotFoundError:
             pass
         except OSError:
-            logger.debug(
+            _hud_log.debug(
                 "HUD temporary directory not empty: %s",
                 self.temp_dir,
             )
@@ -28183,7 +28443,7 @@ def prepare_tool_call_messages(
         instruction,
     )
 
-    logger.info(
+    _llm_log.info(
         "Prepared tool-call messages: mode=%s "
         "tool_choice=%r tool_count=%d forced_tool=%r",
         mode,
@@ -28281,7 +28541,7 @@ def _ensure_vlm_drafter_loaded(
         revision=None,
     )
 
-    logger.info(
+    _vlm_log.info(
         "Loading VLM MTP drafter: target=%s drafter=%s path=%s",
         target_model_id,
         drafter_id,
@@ -28312,7 +28572,7 @@ def _ensure_vlm_drafter_loaded(
     MLX_VLM_DRAFTER_ID = drafter_id
     MLX_VLM_DRAFTER_TARGET_ID = target_model_id
 
-    logger.info(
+    _vlm_log.info(
         "VLM MTP drafter loaded: drafter=%s kind=%s type=%s",
         drafter_id,
         resolved_kind,
@@ -28333,7 +28593,7 @@ def _release_vlm_drafter(
     if MLX_VLM_DRAFT_MODEL is None:
         return
 
-    logger.info(
+    _vlm_log.info(
         "Releasing VLM drafter: drafter=%s kind=%s target=%s reason=%s",
         MLX_VLM_DRAFTER_ID,
         MLX_VLM_DRAFT_KIND,
@@ -28367,7 +28627,7 @@ def _ensure_vlm_apc_manager(model_id: str):
 
     _release_vlm_apc_manager(reason=f"switch_apc_to:{model_id}")
 
-    # logger.info(
+    # _app_log.info(
     #     f"[VLM APC] creating APCManager: model={model_id}, "
     #     f"num_blocks={VLM_APC_NUM_BLOCKS}, block_size={VLM_APC_BLOCK_SIZE}, "
     #     f"disk={VLM_APC_DISK_PATH}, disk_max_gb={VLM_APC_DISK_MAX_GB}"
@@ -28398,17 +28658,17 @@ def _release_vlm_apc_manager(reason: str = "release_vlm_apc"):
     if mlx_vlm_apc_manager is None:
         return
 
-    # logger.info(f"[VLM APC] releasing APCManager: {MLX_VLM_APC_MODEL_ID} ({reason})")
+    # _app_log.info(f"[VLM APC] releasing APCManager: {MLX_VLM_APC_MODEL_ID} ({reason})")
 
     # try:
-    #     logger.info(f"[VLM APC] stats before close: {mlx_vlm_apc_manager.stats_snapshot()}")
+    #     _app_log.info(f"[VLM APC] stats before close: {mlx_vlm_apc_manager.stats_snapshot()}")
     # except Exception:
     #     pass
 
     try:
         mlx_vlm_apc_manager.close()
     except Exception as e:
-        logger.debug(f"[VLM APC] close ignored error: {e}")
+        _vlm_log.debug(f"[VLM APC] close ignored error: {e}")
 
     mlx_vlm_apc_manager = None
     MLX_VLM_APC_MODEL_ID = None
@@ -28547,7 +28807,7 @@ def _best_effort_memory_cleanup(reason: str = ""):
                 pass
 
     except Exception as e:
-        logger.debug(f"MLX cache cleanup ignored error during {reason}: {e}")
+        _memory_log.debug(f"MLX cache cleanup ignored error during {reason}: {e}")
 
 
 def _release_vlm_model(
@@ -28564,7 +28824,7 @@ def _release_vlm_model(
     if mlx_vlm_model is None and mlx_vlm_processor is None:
         return
 
-    logger.info(
+    _vlm_log.info(
         "Releasing MLX-VLM model: %s (%s)",
         MLX_VLM_CURRENT_MODEL_ID,
         reason,
@@ -28583,7 +28843,7 @@ def _release_llm_model(reason: str = "release_llm_model"):
     if mlx_llm_model is None and mlx_llm_tokenizer is None:
         return
 
-    logger.info(f"Releasing MLX LLM model: {LLM_CURRENT_MODEL_ID} ({reason})")
+    _llm_log.info(f"Releasing MLX LLM model: {LLM_CURRENT_MODEL_ID} ({reason})")
 
     mlx_llm_model = None
     mlx_llm_tokenizer = None
@@ -28598,7 +28858,7 @@ def _release_embed_model(reason: str = "switch_embed_model"):
     if embed_model is None and embed_processor is None:
         return
 
-    logger.info(f"Releasing embed model: {embed_model_id_loaded} ({reason})")
+    _embedding_log.info(f"Releasing embed model: {embed_model_id_loaded} ({reason})")
 
     embed_model = None
     embed_processor = None
@@ -28613,7 +28873,7 @@ def _release_rerank_model(reason: str = "switch_rerank_model"):
     if rerank_model is None and rerank_processor is None:
         return
 
-    logger.info(f"Releasing rerank model: {rerank_model_id_loaded} ({reason})")
+    _rerank_log.info(f"Releasing rerank model: {rerank_model_id_loaded} ({reason})")
 
     rerank_model = None
     rerank_processor = None
@@ -28750,7 +29010,7 @@ def cut_at_suffix_overlap(
 
 def _release_llm_worker_models():
     """Fully unload worker models during normal runtime, including MLX cache cleanup."""
-    logger.info("Releasing LLM worker models...")
+    _llm_log.info("Releasing LLM worker models...")
 
     _release_llm_model(reason="worker_release")
     _release_embed_model(reason="worker_release")
@@ -28759,7 +29019,7 @@ def _release_llm_worker_models():
 
     _best_effort_memory_cleanup("worker_release")
 
-    logger.info("LLM worker models released")
+    _llm_log.info("LLM worker models released")
 
 
 def _detach_llm_worker_models_for_process_exit():
@@ -28813,7 +29073,7 @@ def _detach_llm_worker_models_for_process_exit():
     MLX_VLM_DRAFTER_ID = None
     MLX_VLM_DRAFTER_TARGET_ID = None
 
-    logger.info(
+    _llm_log.info(
         "Detached LLM worker models for process exit: retained_objects=%d",
         len(_LLM_PROCESS_EXIT_MODEL_RETENTION),
     )
@@ -28828,7 +29088,7 @@ def _load_jina_official_mlx_reranker_in_worker(model_id: str):
     relative to the model repo directory, so we load from the HF snapshot
     and temporarily chdir into that directory during construction.
     """
-    logger.info(f"Loading official Jina MLX reranker: {model_id}")
+    _rerank_log.info(f"Loading official Jina MLX reranker: {model_id}")
 
     import importlib.util
     import inspect
@@ -28843,13 +29103,13 @@ def _load_jina_official_mlx_reranker_in_worker(model_id: str):
             )
         ).resolve()
 
-        logger.info(
+        _rerank_log.info(
             "Using cached Jina reranker snapshot: %s",
             local_dir,
         )
 
     except Exception:
-        logger.info(
+        _rerank_log.info(
             "Cached Jina reranker unavailable; checking Hugging Face: %s",
             model_id,
         )
@@ -28912,7 +29172,7 @@ def _load_jina_official_mlx_reranker_in_worker(model_id: str):
         try:
             reranker = MLXReranker(**kwargs)
         except TypeError as e:
-            logger.debug(
+            _rerank_log.debug(
                 f"MLXReranker kwargs failed ({kwargs}), retrying no-arg init: {e}"
             )
             reranker = MLXReranker()
@@ -28920,7 +29180,7 @@ def _load_jina_official_mlx_reranker_in_worker(model_id: str):
     finally:
         os.chdir(cwd)
 
-    logger.info(f"Official Jina MLX reranker loaded from: {local_dir}")
+    _rerank_log.info(f"Official Jina MLX reranker loaded from: {local_dir}")
     return reranker, None
 
 
@@ -28935,7 +29195,7 @@ def _load_mlx_embedding_model_in_worker(model_id: str):
     if not model_id:
         return None, None
 
-    logger.info(f"Loading MLX embedding/rerank model in LLM worker: {model_id}")
+    _rerank_log.info(f"Loading MLX embedding/rerank model in LLM worker: {model_id}")
 
     try:
         from mlx_embeddings import load as mlx_embed_load
@@ -28944,7 +29204,7 @@ def _load_mlx_embedding_model_in_worker(model_id: str):
 
     model, processor = mlx_embed_load(model_id)
 
-    logger.info(f"MLX embedding/rerank model loaded: {model_id}")
+    _rerank_log.info(f"MLX embedding/rerank model loaded: {model_id}")
     return model, processor
 
 
@@ -28954,23 +29214,23 @@ def is_qwen3_vl_model(model_id: Optional[str]) -> bool:
 
 
 def _debug_embed(msg: str, **kwargs):
-    if not DEBUG_EMBEDDINGS:
+    if not VE_EMBEDDING_LOG_DEBUG:
         return
 
     try:
         details = " | ".join(f"{k}={v}" for k, v in kwargs.items())
-        logger.info("[EMBED DEBUG] %s | %s", msg, details)
+        _embedding_log.info("[EMBED DEBUG] %s | %s", msg, details)
     except Exception:
         pass
 
 
 def _debug_rerank(msg: str, **kwargs):
-    if not DEBUG_RERANK:
+    if not VE_RERANK_LOG_DEBUG:
         return
 
     try:
         details = " | ".join(f"{k}={v}" for k, v in kwargs.items())
-        logger.info("[RERANK DEBUG] %s | %s", msg, details)
+        _rerank_log.info("[RERANK DEBUG] %s | %s", msg, details)
     except Exception:
         pass
 
@@ -29243,12 +29503,12 @@ def _embed_texts_in_worker(
 
 
 def _debug_rerank_model_capabilities(model, processor):
-    if not DEBUG_RERANK_CAPABILITIES:
+    if not VE_RERANK_LOG_DEBUG:
         return
 
     try:
-        logger.info("Rerank model type: %s", type(model))
-        logger.info("Rerank processor type: %s", type(processor))
+        _rerank_log.info("Rerank model type: %s", type(model))
+        _rerank_log.info("Rerank processor type: %s", type(processor))
 
         public_methods = [name for name in dir(model) if not name.startswith("_")]
 
@@ -29269,7 +29529,7 @@ def _debug_rerank_model_capabilities(model, processor):
             )
         ]
 
-        logger.info("Rerank model interesting methods: %s", interesting)
+        _rerank_log.info("Rerank model interesting methods: %s", interesting)
 
         try:
             import inspect
@@ -29278,7 +29538,7 @@ def _debug_rerank_model_capabilities(model, processor):
                 obj = getattr(model, name, None)
                 if callable(obj):
                     try:
-                        logger.info(
+                        _rerank_log.info(
                             "Method %s signature: %s",
                             name,
                             inspect.signature(obj),
@@ -29289,15 +29549,15 @@ def _debug_rerank_model_capabilities(model, processor):
             pass
 
     except Exception as e:
-        logger.debug("Rerank model capability debug failed: %s", e)
+        _rerank_log.debug("Rerank model capability debug failed: %s", e)
 
 
 def _debug_mlx_embedding_output(output):
-    if not (DEBUG_EMBEDDINGS or DEBUG_RERANK):
+    if not (VE_EMBEDDING_LOG_DEBUG or VE_RERANK_LOG_DEBUG):
         return
 
     try:
-        logger.info("mlx-embeddings output type: %s", type(output))
+        _embedding_log.info("mlx-embeddings output type: %s", type(output))
 
         attrs = [name for name in dir(output) if not name.startswith("_")]
 
@@ -29310,13 +29570,13 @@ def _debug_mlx_embedding_output(output):
             )
         ]
 
-        logger.info("mlx-embeddings output interesting attrs: %s", interesting)
+        _embedding_log.info("mlx-embeddings output interesting attrs: %s", interesting)
 
         for name in interesting:
             try:
                 val = getattr(output, name)
                 shape = getattr(val, "shape", None)
-                logger.info(
+                _embedding_log.info(
                     "output.%s type=%s shape=%s",
                     name,
                     type(val),
@@ -29326,7 +29586,7 @@ def _debug_mlx_embedding_output(output):
                 pass
 
     except Exception as e:
-        logger.debug("mlx embedding output debug failed: %s", e)
+        _embedding_log.debug("mlx embedding output debug failed: %s", e)
 
 
 def _try_extract_scores_from_output(
@@ -29779,7 +30039,7 @@ def _rerank_in_worker(
             _debug_mlx_embedding_output(output)
 
         except Exception as e:
-            logger.debug(f"Rerank model.process fallback: {e}")
+            _rerank_log.debug(f"Rerank model.process fallback: {e}")
 
     # 4. Other native methods
     for method_name in ("rerank", "rank"):
@@ -29807,10 +30067,10 @@ def _rerank_in_worker(
                 ], f"native_{method_name}:{model_id}"
 
             except Exception as e:
-                logger.debug(f"Rerank {method_name} fallback: {e}")
+                _rerank_log.debug(f"Rerank {method_name} fallback: {e}")
 
     # 5. Fallback
-    logger.warning(
+    _rerank_log.warning(
         "Rerank model did not expose native scores; "
         "falling back to embedding similarity with embed model"
     )
@@ -29963,7 +30223,7 @@ def _build_vlm_prompt_for_worker(
                     **kwargs,
                 )
 
-                logger.debug(
+                _vlm_log.debug(
                     "[VLM] apply_chat_template succeeded: kwargs=%s prompt_chars=%d",
                     kwargs,
                     len(prompt),
@@ -29975,7 +30235,7 @@ def _build_vlm_prompt_for_worker(
                 last_error = exc
                 continue
 
-        logger.warning(
+        _vlm_log.warning(
             "[VLM] apply_chat_template rejected all "
             "thinking arguments; using raw prompt: %s",
             last_error,
@@ -29984,7 +30244,7 @@ def _build_vlm_prompt_for_worker(
         return prompt_text
 
     except Exception as exc:
-        logger.warning(
+        _vlm_log.warning(
             "[VLM] apply_chat_template failed; using raw prompt: %s",
             exc,
         )
@@ -30031,14 +30291,14 @@ def _log_vlm_speculative_stats(
         stats = format_speculative_stats(draft_model)
 
         if stats:
-            logger.info(
+            _vlm_log.info(
                 "[VLM %s] %s",
                 str(draft_kind or "draft").upper(),
                 stats,
             )
 
     except Exception:
-        logger.debug(
+        _vlm_log.debug(
             "Failed to collect VLM speculative stats",
             exc_info=True,
         )
@@ -30085,7 +30345,7 @@ def _vlm_stream_text(
             ) = _ensure_vlm_drafter_loaded(resolved_model)
 
         except Exception:
-            logger.exception(
+            _vlm_log.exception(
                 "VLM MTP drafter initialization failed; using normal decoding"
             )
 
@@ -30130,7 +30390,7 @@ def _vlm_stream_text(
     if VLM_KV_QUANT_SCHEME:
         kwargs["kv_quant_scheme"] = VLM_KV_QUANT_SCHEME
 
-    logger.info(
+    _vlm_log.info(
         "[VLM] stream requested: "
         "model=%s mtp=%s draft_kind=%s "
         "draft_block_size=%s max_tokens=%s "
@@ -30168,7 +30428,7 @@ def _vlm_stream_text(
 
     generation_kwargs = dict(kwargs)
 
-    logger.info(
+    _vlm_log.info(
         "[VLM] stream_generate start: prompt_chars=%d kwargs=%s",
         len(prompt),
         sorted(generation_kwargs.keys()),
@@ -30186,7 +30446,7 @@ def _vlm_stream_text(
         )
 
     except TypeError as exc:
-        logger.warning(
+        _vlm_log.warning(
             "[VLM] stream_generate rejected optional "
             "APC/KV arguments: %s; retrying while "
             "preserving MTP",
@@ -30259,7 +30519,7 @@ def _vlm_stream_text(
 
         for chunk in stream_iter:
             if stop_event is not None and stop_event.is_set():
-                logger.info("[VLM] stream stopped by stop_event")
+                _vlm_log.info("[VLM] stream stopped by stop_event")
                 break
 
             if isinstance(chunk, str):
@@ -30285,7 +30545,7 @@ def _vlm_stream_text(
             )
 
             if hit_stop:
-                logger.info(
+                _vlm_log.info(
                     "[VLM] stop marker emitted: cut_text_chars=%d pending_chars=%d",
                     len(cut_text),
                     len(pending_text),
@@ -30320,14 +30580,14 @@ def _vlm_stream_text(
 
         if apc_manager is not None:
             try:
-                logger.debug(
+                _vlm_log.debug(
                     "[VLM APC] stats=%s",
                     apc_manager.stats_snapshot(),
                 )
             except Exception:
                 pass
 
-        logger.info("[VLM] stream_generate done")
+        _vlm_log.info("[VLM] stream_generate done")
 
 
 def _vlm_generate_text(
@@ -30429,7 +30689,7 @@ def resolve_local_hf_snapshot(
         if not resolved.is_dir():
             raise NotADirectoryError(f"Local model path is not a directory: {resolved}")
 
-        logger.info(
+        _app_log.info(
             "Using explicit local model path: %s",
             resolved,
         )
@@ -30457,7 +30717,7 @@ def resolve_local_hf_snapshot(
 
     resolved = Path(local_path).resolve()
 
-    logger.info(
+    _app_log.info(
         "Resolved cached Hugging Face model: repo=%s revision=%s path=%s",
         raw,
         revision or "local refs/main",
@@ -30495,7 +30755,7 @@ def validate_local_model_cache():
                     revision=get_model_revision(model_id),
                 )
 
-                # logger.info(
+                # _app_log.info(
                 #     "[LOCAL MODEL OK] group=%s alias=%s path=%s",
                 #     group_name,
                 #     alias,
@@ -30506,7 +30766,7 @@ def validate_local_model_cache():
                 failures.append(f"{group_name} {alias} -> {model_id}: {exc}")
 
     if failures:
-        logger.warning(
+        _app_log.warning(
             "Some models are unavailable locally:\n%s",
             "\n".join(failures),
         )
@@ -30524,7 +30784,7 @@ def validate_default_local_models():
             revision=get_model_revision(model_id),
         )
 
-        logger.info(
+        _app_log.info(
             "Default %s model available locally: %s",
             kind,
             local_path,
@@ -30556,14 +30816,14 @@ def _ensure_vlm_model_loaded(model_id: str):
         _release_vlm_model(reason=f"switch_vlm_model_to:{model_id}")
 
     if AGGRESSIVE_RELEASE_AUX_ON_VLM_LOAD:
-        logger.info(
+        _vlm_log.info(
             "Aggressive auxiliary-model release: %s",
             AGGRESSIVE_RELEASE_AUX_ON_VLM_LOAD,
         )
         _release_embed_model(reason=f"before_loading_vlm:{model_id}")
         _release_rerank_model(reason=f"before_loading_vlm:{model_id}")
 
-    logger.info(f"Loading MLX-VLM model in LLM worker: {model_id}")
+    _vlm_log.info(f"Loading MLX-VLM model in LLM worker: {model_id}")
 
     try:
         from mlx_vlm import load as vlm_load
@@ -30575,7 +30835,7 @@ def _ensure_vlm_model_loaded(model_id: str):
         revision=get_model_revision(model_id),
     )
 
-    logger.info(
+    _vlm_log.info(
         "Loading MLX-VLM model locally: model=%s path=%s",
         model_id,
         local_model_path,
@@ -30588,7 +30848,7 @@ def _ensure_vlm_model_loaded(model_id: str):
 
     MLX_VLM_CURRENT_MODEL_ID = model_id
 
-    logger.info(f"MLX-VLM model loaded in LLM worker: {model_id}")
+    _vlm_log.info(f"MLX-VLM model loaded in LLM worker: {model_id}")
 
 
 def _ensure_llm_model_loaded(model_id: str):
@@ -30609,7 +30869,9 @@ def _ensure_llm_model_loaded(model_id: str):
     if mlx_vlm_model is not None or mlx_vlm_processor is not None:
         _release_vlm_model(reason=f"switch_to_mlx_lm:{requested_model}")
 
-    logger.info(f"Switching MLX LLM model: {LLM_CURRENT_MODEL_ID} -> {requested_model}")
+    _llm_log.info(
+        f"Switching MLX LLM model: {LLM_CURRENT_MODEL_ID} -> {requested_model}"
+    )
 
     mlx_llm_model = None
     mlx_llm_tokenizer = None
@@ -30626,7 +30888,7 @@ def _ensure_llm_model_loaded(model_id: str):
         revision=get_model_revision(requested_model),
     )
 
-    logger.info(
+    _llm_log.info(
         "Loading MLX LLM model from local path: model=%s path=%s",
         requested_model,
         local_model_path,
@@ -30636,7 +30898,7 @@ def _ensure_llm_model_loaded(model_id: str):
 
     LLM_CURRENT_MODEL_ID = requested_model
 
-    logger.info(f"MLX LLM model loaded in LLM worker: {requested_model}")
+    _llm_log.info(f"MLX LLM model loaded in LLM worker: {requested_model}")
 
 
 def llm_control_fifo_worker():
@@ -30648,10 +30910,10 @@ def llm_control_fifo_worker():
     except FileExistsError:
         pass
     except Exception as e:
-        logger.warning(f"Failed to create LLM control FIFO: {e}")
+        _llm_log.warning(f"Failed to create LLM control FIFO: {e}")
         return
 
-    logger.info(f"LLM control FIFO listening at {LLM_CONTROL_FIFO}")
+    _llm_log.info(f"LLM control FIFO listening at {LLM_CONTROL_FIFO}")
 
     while not SERVER_SHUTTING_DOWN.is_set():
         try:
@@ -30671,7 +30933,7 @@ def llm_control_fifo_worker():
                         with LLM_FORCED_MODEL_LOCK:
                             LLM_FORCED_MODEL = model
 
-                        logger.info(
+                        _llm_log.info(
                             f"LLM forced model set to: {LLM_FORCED_MODEL} "
                             f"-> {resolve_llm_model_name(LLM_FORCED_MODEL)}"
                         )
@@ -30680,7 +30942,7 @@ def llm_control_fifo_worker():
                         with LLM_FORCED_MODEL_LOCK:
                             LLM_FORCED_MODEL = None
 
-                        logger.info(
+                        _llm_log.info(
                             "LLM forced model cleared; using request/default model"
                         )
 
@@ -30688,7 +30950,7 @@ def llm_control_fifo_worker():
                         with LLM_FORCED_MODEL_LOCK:
                             forced = LLM_FORCED_MODEL
 
-                        logger.info(
+                        _llm_log.info(
                             f"LLM model status: forced={forced}, default={LLM_MODEL_ID}"
                         )
 
@@ -30697,14 +30959,14 @@ def llm_control_fifo_worker():
                             break
 
                     else:
-                        logger.warning(f"Unknown LLM FIFO command: {cmd}")
+                        _llm_log.warning(f"Unknown LLM FIFO command: {cmd}")
 
         except Exception as e:
             if not SERVER_SHUTTING_DOWN.is_set():
-                logger.debug(f"LLM control FIFO error: {e}")
+                _llm_log.debug(f"LLM control FIFO error: {e}")
                 time.sleep(0.5)
 
-    logger.info("LLM control FIFO worker stopped")
+    _llm_log.info("LLM control FIFO worker stopped")
 
 
 def start_llm_control_fifo_worker():
@@ -30720,7 +30982,7 @@ def start_llm_control_fifo_worker():
     )
     LLM_CONTROL_THREAD.start()
 
-    logger.info("LLM control FIFO worker started")
+    _llm_log.info("LLM control FIFO worker started")
 
 
 def _build_chat_prompt_for_worker(
@@ -30794,13 +31056,13 @@ def _init_mlx_worker_stream():
     if hasattr(mlx_generate_mod, "generation_stream"):
         mlx_generate_mod.generation_stream = generation_stream  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
 
-    logger.info(f"LLM worker default stream: {default_stream!r}")
-    logger.info(f"LLM worker generation_stream rebound: {generation_stream!r}")
+    _llm_log.info(f"LLM worker default stream: {default_stream!r}")
+    _llm_log.info(f"LLM worker generation_stream rebound: {generation_stream!r}")
 
     try:
         mx.eval(mx.array([0]))
     except Exception as e:
-        logger.debug(f"LLM worker MLX warmup ignored error: {e}")
+        _llm_log.debug(f"LLM worker MLX warmup ignored error: {e}")
 
     return mlx_generate_mod
 
@@ -30835,7 +31097,7 @@ def _get_job_thinking_options(
     try:
         thinking_budget = int(raw_budget)
     except (TypeError, ValueError):
-        logger.warning(
+        _app_log.warning(
             "Ignoring invalid thinking_budget: %r",
             raw_budget,
         )
@@ -30864,7 +31126,7 @@ def _llm_worker_loop():
         mlx_llm_tokenizer = None
         LLM_CURRENT_MODEL_ID = None
 
-        logger.info("LLM worker initialized; model will be loaded lazily")
+        _llm_log.info("LLM worker initialized; model will be loaded lazily")
 
         if LOAD_EMBED_MODEL_ON_START and EMBED_MODEL_ID:
             _ensure_embed_model_loaded(EMBED_MODEL_ID)
@@ -30873,20 +31135,20 @@ def _llm_worker_loop():
             _ensure_rerank_model_loaded(RERANK_MODEL_ID)
 
     except Exception as e:
-        logger.exception(f"Failed to initialize LLM worker: {e}")
+        _llm_log.exception(f"Failed to initialize LLM worker: {e}")
         LLM_WORKER_READY.set()
         LLM_WORKER_STOPPED.set()
         return
 
     LLM_WORKER_READY.set()
-    logger.info("LLM worker thread started")
+    _llm_log.info("LLM worker thread started")
 
     while True:
         job = LLM_JOB_QUEUE.get()
 
         try:
             if job is None:
-                logger.info("LLM worker received shutdown signal")
+                _llm_log.info("LLM worker received shutdown signal")
                 _detach_llm_worker_models_for_process_exit()
                 break
 
@@ -30986,7 +31248,7 @@ def _llm_worker_loop():
                     _put_queue_interruptible(out_q, ("result", result), stop_event)
 
                 except Exception as e:
-                    logger.exception("LLM generate job failed")
+                    _llm_log.exception("LLM generate job failed")
                     _put_queue_interruptible(out_q, ("error", str(e)), stop_event)
 
             elif job_type == "stream":
@@ -31096,14 +31358,14 @@ def _llm_worker_loop():
                     # configuration errors. Keep the message actionable without
                     # emitting the chained Hugging Face traceback.
                     error_message = re.sub(r"\s+", " ", str(exc)).strip()
-                    logger.error("LLM model unavailable: %s", error_message)
+                    _llm_log.error("LLM model unavailable: %s", error_message)
                     _put_queue_interruptible(
                         out_q,
                         ("error", error_message),
                         stop_event,
                     )
                 except Exception as exc:
-                    logger.exception("stream_generate failed")
+                    _llm_log.exception("stream_generate failed")
                     _put_queue_interruptible(
                         out_q,
                         ("error", str(exc)),
@@ -31132,7 +31394,7 @@ def _llm_worker_loop():
                     )
 
                 except Exception as e:
-                    logger.exception("Embed job failed")
+                    _embedding_log.exception("Embed job failed")
                     _put_queue_interruptible(
                         out_q,
                         ("error", str(e)),
@@ -31169,7 +31431,7 @@ def _llm_worker_loop():
                     )
 
                 except Exception as e:
-                    logger.exception("Rerank job failed")
+                    _rerank_log.exception("Rerank job failed")
                     _put_queue_interruptible(
                         out_q,
                         ("error", str(e)),
@@ -31234,7 +31496,7 @@ def _llm_worker_loop():
                     )
 
                 except Exception as e:
-                    logger.exception("LLM completion job failed")
+                    _llm_log.exception("LLM completion job failed")
                     _put_queue_interruptible(
                         out_q,
                         ("error", str(e)),
@@ -31326,14 +31588,14 @@ def _llm_worker_loop():
 
                 except FileNotFoundError as exc:
                     error_message = re.sub(r"\s+", " ", str(exc)).strip()
-                    logger.error("Completion model unavailable: %s", error_message)
+                    _llm_log.error("Completion model unavailable: %s", error_message)
                     _put_queue_interruptible(
                         out_q,
                         ("error", error_message),
                         stop_event,
                     )
                 except Exception as exc:
-                    logger.exception("completion stream_generate failed")
+                    _llm_log.exception("completion stream_generate failed")
                     _put_queue_interruptible(
                         out_q,
                         ("error", str(exc)),
@@ -31354,7 +31616,7 @@ def _llm_worker_loop():
                 pass
 
     LLM_WORKER_STOPPED.set()
-    logger.info("LLM worker thread stopped")
+    _llm_log.info("LLM worker thread stopped")
 
 
 def start_llm_worker():
@@ -31383,7 +31645,7 @@ def start_llm_worker():
         thread.start()
 
     if not LLM_WORKER_READY.wait(timeout=10):
-        logger.warning("LLM worker did not become ready within timeout")
+        _llm_log.warning("LLM worker did not become ready within timeout")
 
 
 def wake_llm_control_fifo():
@@ -31467,7 +31729,7 @@ def _cancel_pending_llm_jobs_for_shutdown() -> int:
             pass
 
     if cancelled:
-        logger.info(
+        _llm_log.info(
             "Cancelled %d queued LLM job(s) during shutdown",
             cancelled,
         )
@@ -31490,7 +31752,7 @@ def stop_llm_worker(
     thread = LLM_WORKER_THREAD
 
     if thread is None or not thread.is_alive():
-        logger.info("LLM worker is already stopped")
+        _llm_log.info("LLM worker is already stopped")
 
         return
 
@@ -31525,7 +31787,7 @@ def stop_llm_worker(
             continue
 
     if not sentinel_queued:
-        logger.warning(
+        _llm_log.warning(
             "LLM job queue remained full during shutdown; cancelling queued jobs"
         )
 
@@ -31540,7 +31802,7 @@ def stop_llm_worker(
             sentinel_queued = True
 
         except queue.Full:
-            logger.error(
+            _llm_log.error(
                 "Unable to enqueue LLM worker "
                 "shutdown sentinel even after "
                 "clearing queued jobs"
@@ -31551,7 +31813,7 @@ def stop_llm_worker(
     thread.join(timeout=timeout)
 
     if thread.is_alive():
-        logger.warning(
+        _llm_log.warning(
             "LLM worker is still alive after "
             "%.1fs shutdown timeout; "
             "sentinel_queued=%s "
@@ -31562,7 +31824,7 @@ def stop_llm_worker(
         )
 
     else:
-        logger.info("LLM worker stopped cleanly")
+        _llm_log.info("LLM worker stopped cleanly")
 
 
 def resolve_generation_model_for_job(
@@ -31626,7 +31888,7 @@ def _purge_pending_xiaoai_jobs() -> int:
     for job in kept:
         LLM_JOB_QUEUE.put_nowait(job)
     if removed:
-        logger.info("Compacted %d pending XiaoAI LLM job(s)", removed)
+        _llm_log.info("Compacted %d pending XiaoAI LLM job(s)", removed)
     return removed
 
 
@@ -31932,7 +32194,7 @@ def _generate_llm_text_via_worker(
         raise
 
     except Exception as exc:
-        logger.warning(
+        _llm_log.warning(
             "MLX LLM generation error: %s",
             exc,
             exc_info=True,
@@ -32080,7 +32342,7 @@ def correct_text_sync(text: str, context: str = "") -> str:
     if result:
         return result
 
-    logger.warning("LLM correction failed, using raw text")
+    _llm_log.warning("LLM correction failed, using raw text")
     return text
 
 
@@ -32262,7 +32524,7 @@ def _begin_question_recording_session() -> int:
         except Exception:
             pass
 
-    logger.debug(
+    _dictation_log.debug(
         "Interactive question recording session started: generation=%d",
         generation,
     )
@@ -32287,7 +32549,7 @@ def _end_question_recording_session(
 
     with QUESTION_RECORDING_LOCK:
         if generation != QUESTION_RECORDING_GENERATION:
-            logger.debug(
+            _dictation_log.debug(
                 "Ignoring stale question-recording cleanup: generation=%d current=%d",
                 generation,
                 QUESTION_RECORDING_GENERATION,
@@ -32308,7 +32570,7 @@ def _end_question_recording_session(
         except Exception:
             pass
 
-    logger.debug(
+    _dictation_log.debug(
         "Interactive question recording session ended: generation=%d",
         generation,
     )
@@ -32379,7 +32641,7 @@ def record_audio_interactive(
         question,
     )
 
-    logger.info(
+    _dictation_log.debug(
         "Dictation Q%d/%d: %s...",
         num,
         total,
@@ -32393,7 +32655,7 @@ def record_audio_interactive(
             stream = _open_audio_input_stream(audio_callback)
 
         except Exception as exc:
-            logger.error(
+            _audio_log.error(
                 "Failed to open audio input stream: %s",
                 exc,
             )
@@ -32419,7 +32681,7 @@ def record_audio_interactive(
                     was_cancelled_all = True
                     cancel_flag["cancel_all"] = True
 
-                    logger.info(
+                    _dictation_log.debug(
                         "Interactive question recording cancelled all: generation=%d",
                         question_generation,
                     )
@@ -32428,7 +32690,7 @@ def record_audio_interactive(
 
                 if QUESTION_RECORDING_SKIP.is_set():
                     was_skipped = True
-                    logger.info(
+                    _dictation_log.debug(
                         "Interactive question recording skipped: generation=%d",
                         question_generation,
                     )
@@ -32436,7 +32698,7 @@ def record_audio_interactive(
                     break
 
                 if QUESTION_RECORDING_STOP.is_set():
-                    logger.info(
+                    _dictation_log.debug(
                         "Interactive question "
                         "recording stopped: "
                         "generation=%d "
@@ -32448,7 +32710,7 @@ def record_audio_interactive(
                     break
 
                 if total_frames >= MAX_AUDIO_BUFFER_SIZE:
-                    logger.warning("Interactive recording reached maximum length")
+                    _audio_log.warning("Interactive recording reached maximum length")
 
                     break
 
@@ -32487,7 +32749,7 @@ def record_audio_interactive(
         return None
 
     if total_frames >= MAX_AUDIO_BUFFER_SIZE:
-        logger.warning("Recording reached maximum length, truncating")
+        _audio_log.warning("Recording reached maximum length, truncating")
 
     if not audio_chunks:
         return None
@@ -32496,7 +32758,7 @@ def record_audio_interactive(
         return np.concatenate(audio_chunks)
 
     except Exception as exc:
-        logger.error(
+        _audio_log.error(
             "Failed to concatenate interactive recording: %s",
             exc,
         )
@@ -32562,7 +32824,7 @@ def _handle_enter_during_question_recording() -> bool:
 
         QUESTION_RECORDING_STOP.set()
 
-    logger.info(
+    _dictation_log.debug(
         "Enter swallowed during question "
         "recording: stop current answer "
         "(generation=%d)",
@@ -32596,7 +32858,7 @@ def _commit_question_single_escape(
 
         QUESTION_RECORDING_SKIP.set()
 
-    logger.info(
+    _dictation_log.debug(
         "Single ESC committed during question "
         "recording: skip current question "
         "(generation=%d)",
@@ -32676,7 +32938,7 @@ def _handle_escape_during_question_recording() -> bool:
             pass
 
     if cancel_all:
-        logger.info(
+        _dictation_log.debug(
             "Double ESC detected during question "
             "recording: cancel all questions "
             "(generation=%d)",
@@ -32694,7 +32956,7 @@ def _handle_escape_during_question_recording() -> bool:
         ).start()
 
     elif start_timer is not None:
-        logger.info(
+        _dictation_log.debug(
             "First ESC detected during question "
             "recording; waiting %.2fs for "
             "possible second ESC "
@@ -32754,7 +33016,7 @@ def _handle_escape_keydown_global():
         _last_esc_tap_at = 0.0
         _suppress_esc_until = now + 0.35
 
-        logger.info("Detected ESC double-tap via Quartz")
+        _app_log.debug("Detected ESC double-tap via Quartz")
 
         threading.Thread(
             target=_cancel_question_or_stop_speaking_from_esc,
@@ -32774,7 +33036,7 @@ def _handle_escape_keydown_global():
 def _insert_text_at_cursor(text: str):
     """Insert text with NSPasteboard and guarded best-effort restoration."""
     if not HAS_APPKIT or NSPasteboard is None:
-        logger.error("AppKit NSPasteboard unavailable; cannot insert text")
+        _app_log.error("AppKit NSPasteboard unavailable; cannot insert text")
         return False
 
     pasteboard = NSPasteboard.generalPasteboard()
@@ -32796,12 +33058,14 @@ def _insert_text_at_cursor(text: str):
         # Give Electron/WebKit applications more time to consume the paste.
         time.sleep(0.8)
         if int(pasteboard.changeCount()) != owned_change_count:
-            logger.info("Clipboard changed after dictation paste; skipping restore")
+            _dictation_log.debug(
+                "Clipboard changed after dictation paste; skipping restore"
+            )
             return True
 
         current = pasteboard.stringForType_(NSPasteboardTypeString)
         if current != inserted_text:
-            logger.info(
+            _dictation_log.debug(
                 "Clipboard contents changed after dictation paste; skipping restore"
             )
             return True
@@ -32815,7 +33079,7 @@ def _insert_text_at_cursor(text: str):
         return True
 
     except Exception as exc:
-        logger.error("Failed to insert text at cursor: %s", exc)
+        _app_log.error("Failed to insert text at cursor: %s", exc)
         return False
 
 
@@ -32886,7 +33150,7 @@ def _press_enter_after_insert():
         return True
 
     except Exception as e:
-        logger.error(f"Failed to replay Enter after dictation insert: {e}")
+        _dictation_log.error(f"Failed to replay Enter after dictation insert: {e}")
         return False
 
 
@@ -32983,7 +33247,7 @@ def _clear_apple_speech_process_if_exited(
             CURRENT_APPLE_SPEECH_PROCESS = None
             _LAST_APPLE_SPEECH_EXIT_AT = time.monotonic()
 
-            logger.info(
+            _app_log.info(
                 "Cleared exited Apple Speech helper reference: pid=%s, returncode=%s",
                 proc.pid,
                 proc.returncode,
@@ -33023,7 +33287,7 @@ def _start_apple_speech_reaper(
 
     def reaper():
         try:
-            logger.warning(
+            _audio_log.warning(
                 "Apple Speech helper is still completing CoreAudio teardown; "
                 "retaining process ownership until actual exit: pid=%s",
                 proc.pid,
@@ -33035,7 +33299,7 @@ def _start_apple_speech_reaper(
                         timeout=APPLE_SPEECH_REAPER_LOG_INTERVAL,
                     )
                 except subprocess.TimeoutExpired:
-                    logger.warning(
+                    _audio_log.warning(
                         "Apple Speech helper is still alive; "
                         "not sending SIGKILL because it may still own "
                         "AVAudioEngine/CoreAudio: pid=%s",
@@ -33043,7 +33307,7 @@ def _start_apple_speech_reaper(
                     )
                     continue
 
-                logger.info(
+                _shutdown_log.info(
                     "Apple Speech helper exited after delayed cleanup: "
                     "pid=%s, returncode=%s",
                     proc.pid,
@@ -33055,7 +33319,7 @@ def _start_apple_speech_reaper(
                 _clear_apple_speech_process_if_exited(proc)
 
         except Exception:
-            logger.exception(
+            _dictation_log.exception(
                 "Apple Speech helper reaper failed: pid=%s",
                 proc.pid,
             )
@@ -33092,7 +33356,7 @@ def _ensure_apple_speech_helper_binary(
         if not needs_build:
             return True
 
-        logger.info("Compiling Apple Speech helper because source is newer")
+        _app_log.info("Compiling Apple Speech helper because source is newer")
 
         result = subprocess.run(
             [
@@ -33116,7 +33380,7 @@ def _ensure_apple_speech_helper_binary(
         )
 
         if result.returncode != 0:
-            logger.error(
+            _dictation_log.error(
                 "Failed to compile Apple Speech helper:\n%s",
                 result.stderr.strip(),
             )
@@ -33124,14 +33388,14 @@ def _ensure_apple_speech_helper_binary(
 
         os.chmod(helper_bin, 0o755)
 
-        logger.info(
+        _app_log.info(
             "Apple Speech helper compiled successfully: %s",
             helper_bin,
         )
         return True
 
     except Exception as e:
-        logger.exception(
+        _dictation_log.exception(
             "Apple Speech helper compilation failed: %s",
             e,
         )
@@ -33144,14 +33408,14 @@ def _handoff_apple_speech_to_dictation() -> bool:
     with CURRENT_APPLE_SPEECH_PROCESS_LOCK:
         previous = CURRENT_APPLE_SPEECH_PROCESS
     if previous is not None and previous.poll() is None:
-        logger.info(
+        _dictation_log.debug(
             "Dictation requesting Apple KWS helper handoff: pid=%s", previous.pid
         )
         try:
             previous.terminate()
             previous.wait(timeout=5.0)
         except subprocess.TimeoutExpired:
-            logger.error(
+            _dictation_log.error(
                 "Dictation handoff failed: Apple Speech helper still alive after SIGTERM: pid=%s",
                 previous.pid,
             )
@@ -33159,7 +33423,7 @@ def _handoff_apple_speech_to_dictation() -> bool:
         except ProcessLookupError:
             pass
         except Exception:
-            logger.exception(
+            _dictation_log.exception(
                 "Dictation handoff failed while stopping Apple Speech helper"
             )
             return False
@@ -33171,7 +33435,9 @@ def _handoff_apple_speech_to_dictation() -> bool:
     if last_exit > 0 and gap > 0:
         time.sleep(gap)
     stable = wait_for_audio_route_stability(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT)
-    logger.info("Dictation Apple Speech handoff route stability: stable=%s", stable)
+    _dictation_log.debug(
+        "Dictation Apple Speech handoff route stability: stable=%s", stable
+    )
     return bool(stable)
 
 
@@ -33198,7 +33464,7 @@ def _run_apple_speech_dictation(
     helper_path = os.path.join(base_dir, "apple_speech_helper.swift")
 
     if not os.path.exists(helper_path):
-        logger.error(f"Apple speech helper not found: {helper_path}")
+        _dictation_log.error(f"Apple speech helper not found: {helper_path}")
         if show_hud:
             hud.show(
                 "dictation_error",
@@ -33215,11 +33481,13 @@ def _run_apple_speech_dictation(
     if _ensure_apple_speech_helper_binary(helper_bin, helper_swift, helper_plist):
         cmd = [helper_bin, locale]
     else:
-        logger.warning("Using Swift interpreter because helper compilation failed")
+        _dictation_log.warning(
+            "Using Swift interpreter because helper compilation failed"
+        )
         cmd = ["/usr/bin/swift", helper_swift, locale]
 
     if not _handoff_apple_speech_to_dictation():
-        logger.error("Apple Dictation could not acquire microphone ownership")
+        _dictation_log.error("Apple Dictation could not acquire microphone ownership")
         if show_hud:
             hud.show(
                 "dictation_error", "Apple Dictation", "Microphone route is still busy"
@@ -33234,7 +33502,7 @@ def _run_apple_speech_dictation(
     if last_exit_at > 0 and elapsed_since_exit < APPLE_SPEECH_RESTART_GAP:
         wait_time = APPLE_SPEECH_RESTART_GAP - elapsed_since_exit
 
-        logger.info(
+        _dictation_log.debug(
             "Waiting %.2fs before restarting Apple Speech helper "
             "to allow CoreAudio teardown",
             wait_time,
@@ -33242,11 +33510,11 @@ def _run_apple_speech_dictation(
 
         time.sleep(wait_time)
 
-    logger.info(f"Starting Apple Speech helper: {' '.join(cmd)}")
+    _dictation_log.debug(f"Starting Apple Speech helper: {' '.join(cmd)}")
 
     with APPLE_SPEECH_START_LOCK:
         if _apple_speech_process_is_running():
-            logger.error(
+            _dictation_log.error(
                 "Apple Dictation ownership invariant failed: helper still running after handoff"
             )
             return None
@@ -33266,7 +33534,7 @@ def _run_apple_speech_dictation(
                 ),
             )
         except OSError as e:
-            logger.exception("Failed to start Apple Speech helper: %s", e)
+            _dictation_log.exception("Failed to start Apple Speech helper: %s", e)
             if show_hud:
                 hud.show(
                     "dictation_error",
@@ -33296,7 +33564,7 @@ def _run_apple_speech_dictation(
                 for line in proc.stdout:
                     stdout_queue.put(line)
         except Exception as e:
-            logger.debug(f"Apple Speech stdout reader ended with error: {e}")
+            _app_log.debug(f"Apple Speech stdout reader ended with error: {e}")
         finally:
             stdout_eof.set()
 
@@ -33306,7 +33574,7 @@ def _run_apple_speech_dictation(
                 for line in proc.stderr:
                     stderr_queue.put(line)
         except Exception as e:
-            logger.debug(f"Apple Speech stderr reader ended with error: {e}")
+            _app_log.debug(f"Apple Speech stderr reader ended with error: {e}")
         finally:
             stderr_eof.set()
 
@@ -33342,7 +33610,7 @@ def _run_apple_speech_dictation(
             if proc.poll() is not None:
                 return True
 
-            logger.info(
+            _shutdown_log.info(
                 "Stopping Apple Speech helper gracefully: %s, pid=%s",
                 reason,
                 proc.pid,
@@ -33352,7 +33620,7 @@ def _run_apple_speech_dictation(
 
             try:
                 proc.wait(timeout=timeout)
-                logger.info(
+                _shutdown_log.info(
                     "Apple Speech helper exited gracefully: pid=%s, returncode=%s",
                     proc.pid,
                     proc.returncode,
@@ -33360,7 +33628,7 @@ def _run_apple_speech_dictation(
                 return True
 
             except subprocess.TimeoutExpired:
-                logger.error(
+                _dictation_log.error(
                     "Apple Speech helper did not exit within %.1fs after SIGTERM: "
                     "reason=%s, pid=%s. Refusing immediate SIGKILL to protect CoreAudio.",
                     timeout,
@@ -33371,7 +33639,7 @@ def _run_apple_speech_dictation(
                 return False
 
         except Exception as e:
-            logger.exception(
+            _dictation_log.exception(
                 "Failed to stop Apple Speech helper cleanly: %s",
                 e,
             )
@@ -33421,7 +33689,7 @@ def _run_apple_speech_dictation(
                     should_stop = QUESTION_RECORDING_STOP.is_set()
 
             if is_stale:
-                logger.info(
+                _dictation_log.debug(
                     f"Apple Speech helper stale session detected: "
                     f"generation={generation}, current={_dictation_generation}"
                 )
@@ -33436,7 +33704,7 @@ def _run_apple_speech_dictation(
                 break
 
             if should_cancel:
-                logger.info("Cancelling Apple Speech helper")
+                _dictation_log.debug("Cancelling Apple Speech helper")
                 cancel_requested = True
                 shutdown_requested = True
                 final_text = None
@@ -33461,7 +33729,7 @@ def _run_apple_speech_dictation(
                 and (time.monotonic() - last_partial_at)
                 >= APPLE_SPEECH_SILENCE_STOP_SECONDS
             ):
-                logger.info(
+                _dictation_log.debug(
                     "Apple Speech silence stop: no new partial for %.1fs "
                     "(last_partial=%r)",
                     APPLE_SPEECH_SILENCE_STOP_SECONDS,
@@ -33470,7 +33738,7 @@ def _run_apple_speech_dictation(
                 should_stop = True
 
             if should_stop and not graceful_finish_requested:
-                logger.info(
+                _dictation_log.debug(
                     "Requesting graceful Apple Speech finalization: pid=%s",
                     proc.pid,
                 )
@@ -33483,7 +33751,7 @@ def _run_apple_speech_dictation(
                 try:
                     proc.send_signal(signal.SIGUSR1)
                 except Exception as e:
-                    logger.error(
+                    _dictation_log.error(
                         "Failed sending SIGUSR1 to Apple Speech helper: %s",
                         e,
                     )
@@ -33504,7 +33772,7 @@ def _run_apple_speech_dictation(
                 )
 
                 if returncode not in (0, None) and not expected_exit:
-                    logger.error(
+                    _dictation_log.error(
                         "Apple Speech helper exited abnormally: pid=%s, returncode=%s",
                         proc.pid,
                         returncode,
@@ -33512,7 +33780,7 @@ def _run_apple_speech_dictation(
 
                     TTS_OUTPUT_RECOVERY_REQUIRED.set()
 
-                    logger.warning(
+                    _dictation_log.warning(
                         "Marked persistent TTS output "
                         "for recovery after abnormal "
                         "Apple Speech helper exit"
@@ -33522,7 +33790,7 @@ def _run_apple_speech_dictation(
                         "after Apple Speech helper abnormal exit"
                     )
                 else:
-                    logger.info(
+                    _dictation_log.debug(
                         "Apple Speech helper exited: "
                         "pid=%s, returncode=%s, "
                         "expected=%s, final_received=%s, "
@@ -33545,7 +33813,7 @@ def _run_apple_speech_dictation(
                 and (time.monotonic() - graceful_finish_requested_at)
                 > APPLE_SPEECH_FINAL_EXIT_TIMEOUT
             ):
-                logger.warning(
+                _dictation_log.warning(
                     "Apple Speech graceful finalization timed out; "
                     "leaving the helper registered until it actually exits: "
                     "pid=%s",
@@ -33559,7 +33827,7 @@ def _run_apple_speech_dictation(
                 and (time.monotonic() - final_received_at)
                 > APPLE_SPEECH_FINAL_EXIT_TIMEOUT
             ):
-                logger.warning(
+                _dictation_log.warning(
                     "Apple Speech final result was received, but helper "
                     "did not report stopped within %.1fs; "
                     "returning the final text while retaining helper "
@@ -33581,13 +33849,13 @@ def _run_apple_speech_dictation(
             try:
                 event = json.loads(line)
             except Exception:
-                logger.debug(f"Apple Speech non-json line: {line}")
+                _dictation_log.debug(f"Apple Speech non-json line: {line}")
                 continue
 
             typ = event.get("type")
 
             if typ == "started":
-                logger.info(f"Apple Speech started: {event}")
+                _dictation_log.debug(f"Apple Speech started: {event}")
                 continue
 
             if typ == "partial":
@@ -33614,7 +33882,7 @@ def _run_apple_speech_dictation(
 
                 final_received = True
 
-                logger.info(
+                _dictation_log.debug(
                     "Apple Speech final result received; "
                     "waiting for helper CoreAudio teardown: "
                     "pid=%s, text=%r",
@@ -33629,7 +33897,7 @@ def _run_apple_speech_dictation(
 
             if typ == "error":
                 err = str(event.get("error", ""))
-                logger.error(f"Apple Speech error: {err}")
+                _dictation_log.debug(f"Apple Speech error: {err}")
                 if show_hud:
                     hud.show("dictation_error", "Apple Dictation", err[:300])
                 time.sleep(1.0)
@@ -33639,7 +33907,7 @@ def _run_apple_speech_dictation(
             if typ == "stopped":
                 helper_reported_stopped = True
 
-                logger.info(
+                _dictation_log.debug(
                     "Apple Speech helper reported CoreAudio teardown complete: pid=%s",
                     proc.pid,
                 )
@@ -33649,7 +33917,7 @@ def _run_apple_speech_dictation(
                         timeout=APPLE_SPEECH_FINAL_EXIT_TIMEOUT,
                     )
                 except subprocess.TimeoutExpired:
-                    logger.warning(
+                    _dictation_log.warning(
                         "Apple Speech helper reported stopped but has not "
                         "exited yet; handing ownership to reaper: pid=%s",
                         proc.pid,
@@ -33685,7 +33953,7 @@ def _run_apple_speech_dictation(
             )
 
         if proc.poll() is None and final_received:
-            logger.warning(
+            _dictation_log.warning(
                 "Apple Speech helper produced a final result but "
                 "is still completing teardown; refusing SIGTERM/SIGKILL "
                 "and retaining process ownership: pid=%s",
@@ -33697,7 +33965,7 @@ def _run_apple_speech_dictation(
         # This deliberately blocks a new Apple Speech session until the
         # old helper has actually released its process lifetime.
         if proc.poll() is None and not helper_exited:
-            logger.warning(
+            _dictation_log.warning(
                 "Apple Speech helper has not exited; "
                 "the process reference will remain registered "
                 "until actual exit: pid=%s",
@@ -33717,7 +33985,7 @@ def _run_apple_speech_dictation(
             pass
 
         if stderr_lines:
-            logger.warning(
+            _dictation_log.debug(
                 "Apple Speech stderr:\n%s",
                 "\n".join(stderr_lines[-20:]),
             )
@@ -33731,7 +33999,7 @@ def _run_apple_speech_dictation(
         if helper_exited:
             _clear_apple_speech_process_if_exited(proc)
         else:
-            logger.warning(
+            _dictation_log.warning(
                 "Apple Speech helper is still cleaning up: "
                 "pid=%s, stopped_event=%s, shutdown_requested=%s",
                 proc.pid,
@@ -33751,7 +34019,7 @@ def show_dictation_hud_if_current(
 ) -> bool:
     """Update the global-dictation HUD only for the active generation."""
     if not _is_current_dictation_generation(generation):
-        logger.debug(
+        _hud_log.debug(
             "Stale dictation session skipped HUD update: generation=%r status=%s",
             generation,
             status,
@@ -33766,7 +34034,7 @@ def hide_dictation_hud_if_current(
     generation: Optional[int],
 ):
     if not _is_current_dictation_generation(generation):
-        logger.debug(
+        _hud_log.debug(
             "Stale dictation session skipped HUD hide: generation=%r",
             generation,
         )
@@ -33776,7 +34044,7 @@ def hide_dictation_hud_if_current(
     try:
         hud.hide_visual_only()
     except Exception:
-        logger.debug(
+        _hud_log.debug(
             "Failed to hide dictation HUD",
             exc_info=True,
         )
@@ -33797,11 +34065,11 @@ def _global_dictation_flow(
     global _dictation_state, _dictation_cancel, _dictation_stop, IS_DICTATION_ACTIVE
     global _dictation_generation
 
-    logger.info("🎤 Global dictation starting")
+    _dictation_log.debug("🎤 Global dictation starting")
 
     dictation_locale = locale or DICTATION_LOCALE_DEFAULT
 
-    logger.info(f"🎤 Dictation locale: {dictation_locale}")
+    _dictation_log.debug(f"🎤 Dictation locale: {dictation_locale}")
 
     with _dictation_state_lock:
         if generation is None:
@@ -33809,7 +34077,7 @@ def _global_dictation_flow(
 
         # If this is already stale, exit immediately.
         if generation != _dictation_generation:
-            logger.info(
+            _dictation_log.debug(
                 f"Stale dictation flow ignored: generation={generation}, current={_dictation_generation}"
             )
             return
@@ -33827,7 +34095,7 @@ def _global_dictation_flow(
     )
 
     if should_check_audio_input and not check_audio_input_device():
-        logger.error("No audio input device available for global dictation")
+        _dictation_log.error("No audio input device available for global dictation")
         show_dictation_hud_if_current(
             generation, "dictation_error", "Dictation", "No microphone detected"
         )
@@ -33850,14 +34118,14 @@ def _global_dictation_flow(
                 cancelled = _dictation_cancel
 
             if is_stale:
-                logger.info(
+                _dictation_log.debug(
                     f"Apple dictation flow stale after helper returned: "
                     f"generation={generation}, current={_dictation_generation}"
                 )
                 return
 
             if cancelled:
-                logger.info("Dictation cancelled, no text inserted")
+                _dictation_log.debug("Dictation cancelled, no text inserted")
                 show_dictation_hud_if_current(
                     generation, "dictation_cancelled", "Dictation", "Cancelled"
                 )
@@ -33897,11 +34165,13 @@ def _global_dictation_flow(
                     if corrected:
                         final_text = corrected
                 except Exception as e:
-                    logger.warning(f"Apple dictation correction failed, using raw: {e}")
+                    _dictation_log.warning(
+                        f"Apple dictation correction failed, using raw: {e}"
+                    )
 
             with _dictation_state_lock:
                 if generation != _dictation_generation:
-                    logger.info(
+                    _dictation_log.debug(
                         "Discarding stale Apple "
                         "dictation result before insert: "
                         "generation=%r current=%r",
@@ -33916,15 +34186,17 @@ def _global_dictation_flow(
             success = _insert_text_at_cursor(final_text)
 
             if success:
-                logger.info("Apple dictation final text inserted")
+                _dictation_log.debug("Apple dictation final text inserted")
 
                 if submit_after_insert:
-                    logger.info("Replaying Enter after dictation text insertion")
+                    _dictation_log.debug(
+                        "Replaying Enter after dictation text insertion"
+                    )
                     _press_enter_after_insert()
 
                 if GLOBAL_DICTATION_SHOW_DONE:
                     if not _is_current_dictation_generation(generation):
-                        logger.info(
+                        _hud_log.info(
                             "Apple dictation became stale "
                             "after text insertion; skipping "
                             "HUD updates"
@@ -33953,7 +34225,7 @@ def _global_dictation_flow(
                 try:
                     hud.hide_visual_only()
                 except Exception:
-                    logger.debug(
+                    _hud_log.debug(
                         "Failed hiding Apple dictation HUD during final cleanup",
                         exc_info=True,
                     )
@@ -34014,7 +34286,7 @@ def _global_dictation_flow(
             return np.concatenate(detached_chunks)
 
         except Exception as exc:
-            logger.error(
+            _audio_log.error(
                 "Failed to concatenate final audio chunks: %s",
                 exc,
             )
@@ -34052,7 +34324,7 @@ def _global_dictation_flow(
 
     def live_partial_worker():
         """Background worker that periodically transcribes and updates HUD only."""
-        logger.info("🎙️ Live HUD dictation partial worker ENTERED")
+        _hud_log.info("🎙️ Live HUD dictation partial worker ENTERED")
 
         min_frames = int(AUDIO_INPUT_SAMPLE_RATE * GLOBAL_DICTATION_PARTIAL_MIN_SECONDS)
         partial_window_frames = int(
@@ -34070,14 +34342,14 @@ def _global_dictation_flow(
                 "Listening... waiting for audio",
             )
         except Exception as e:
-            logger.error(f"Live HUD initial show failed: {e}")
+            _hud_log.error(f"Live HUD initial show failed: {e}")
 
         while not live_stop_event.is_set():
             time.sleep(0.05)
 
             with state_lock:
                 if is_cancelled:
-                    logger.info("Live HUD worker sees cancellation")
+                    _hud_log.info("Live HUD worker sees cancellation")
                     break
 
             with audio_lock:
@@ -34107,7 +34379,7 @@ def _global_dictation_flow(
                         display_text,
                     )
                 except Exception as e:
-                    logger.error(f"Live HUD heartbeat show failed: {e}")
+                    _hud_log.error(f"Live HUD heartbeat show failed: {e}")
 
             if frames_now < min_frames:
                 continue
@@ -34128,7 +34400,7 @@ def _global_dictation_flow(
             if audio_snapshot is None or len(audio_snapshot) == 0:
                 continue
 
-            logger.info(
+            _hud_log.info(
                 f"Live HUD transcribing snapshot: {len(audio_snapshot) / AUDIO_INPUT_SAMPLE_RATE:.2f}s"
             )
 
@@ -34143,7 +34415,7 @@ def _global_dictation_flow(
                 partial_text = strip_llm_artifacts(raw, remove_reasoning=True).strip()
 
             except Exception as e:
-                logger.warning(f"Live HUD partial transcription failed: {e}")
+                _hud_log.warning(f"Live HUD partial transcription failed: {e}")
                 try:
                     show_dictation_hud_if_current(
                         generation,
@@ -34156,7 +34428,7 @@ def _global_dictation_flow(
                 continue
 
             if not partial_text:
-                logger.info("Live HUD partial empty")
+                _hud_log.info("Live HUD partial empty")
                 continue
 
             last_partial = live_state["last_partial_text"]
@@ -34173,12 +34445,12 @@ def _global_dictation_flow(
             live_state["partial_updated_at"] = time.monotonic()
 
             if not delta.strip():
-                logger.info("Live HUD delta empty")
+                _hud_log.info("Live HUD delta empty")
                 continue
 
             # Avoid duplicated exact phrase if already visible.
             if delta.strip() in live_state["hud_text"]:
-                logger.info("Live HUD delta already exists in hud_text")
+                _hud_log.info("Live HUD delta already exists in hud_text")
                 continue
 
             # English/number spacing guard. Chinese unaffected.
@@ -34193,7 +34465,7 @@ def _global_dictation_flow(
 
             live_state["hud_text"] = (hud_text + delta)[-MAX_LIVE_HUD_TEXT_CHARS:]
 
-            logger.info(
+            _hud_log.info(
                 f"Live HUD delta: {delta[:80]!r}, hud_text={live_state['hud_text'][-160:]!r}"
             )
 
@@ -34205,9 +34477,9 @@ def _global_dictation_flow(
                     live_state["hud_text"][-500:],
                 )
             except Exception as e:
-                logger.error(f"Live HUD partial show failed: {e}")
+                _hud_log.error(f"Live HUD partial show failed: {e}")
 
-        logger.info("🎙️ Live HUD dictation partial worker EXITED")
+        _hud_log.info("🎙️ Live HUD dictation partial worker EXITED")
 
     show_dictation_hud_if_current(
         generation,
@@ -34216,23 +34488,23 @@ def _global_dictation_flow(
         "Listening...",
     )
 
-    logger.info("Global dictation: recording started")
+    _dictation_log.debug("Global dictation: recording started")
 
     partial_thread = None
 
-    logger.info(f"GLOBAL_DICTATION_LIVE_HUD={GLOBAL_DICTATION_LIVE_HUD}")
+    _dictation_log.debug(f"GLOBAL_DICTATION_LIVE_HUD={GLOBAL_DICTATION_LIVE_HUD}")
 
     if GLOBAL_DICTATION_LIVE_HUD:
         partial_thread = threading.Thread(target=live_partial_worker, daemon=True)
         partial_thread.start()
-        logger.info("Live HUD partial thread started")
+        _hud_log.info("Live HUD partial thread started")
     else:
-        logger.info("Live HUD disabled")
+        _hud_log.info("Live HUD disabled")
 
     try:
         stream = _open_audio_input_stream(audio_callback)
     except Exception as e:
-        logger.error(f"Failed to open audio input stream for dictation: {e}")
+        _dictation_log.error(f"Failed to open audio input stream for dictation: {e}")
 
         live_stop_event.set()
         if partial_thread and partial_thread.is_alive():
@@ -34265,7 +34537,7 @@ def _global_dictation_flow(
                     with state_lock:
                         is_cancelled = True
 
-                    logger.info(
+                    _dictation_log.debug(
                         "Global dictation became stale: generation=%r current=%r",
                         generation,
                         _dictation_generation,
@@ -34277,12 +34549,12 @@ def _global_dictation_flow(
                     with state_lock:
                         is_cancelled = True
 
-                    logger.info("Global dictation: cancel signal received")
+                    _dictation_log.debug("Global dictation: cancel signal received")
 
                     break
 
                 if stop_requested:
-                    logger.info("Global dictation: stop signal received")
+                    _dictation_log.debug("Global dictation: stop signal received")
 
                     break
 
@@ -34296,7 +34568,7 @@ def _global_dictation_flow(
             partial_thread.join(timeout=2.0)
 
             if partial_thread.is_alive():
-                logger.warning(
+                _dictation_log.warning(
                     "Live partial transcription thread "
                     "is still finishing its current "
                     "transcription"
@@ -34306,7 +34578,7 @@ def _global_dictation_flow(
             IS_DICTATION_ACTIVE = False
 
     if is_cancelled:
-        logger.info("Global dictation: cancelled")
+        _dictation_log.debug("Global dictation: cancelled")
         show_dictation_hud_if_current(
             generation, "dictation_cancelled", "Dictation", "Cancelled"
         )
@@ -34321,14 +34593,14 @@ def _global_dictation_flow(
         frames_final = total_frames
 
     if frames_final >= MAX_AUDIO_BUFFER_SIZE:
-        logger.warning(
+        _dictation_log.warning(
             f"Global dictation reached maximum length ({MAX_RECORDING_SECONDS}s), truncating"
         )
 
     audio = take_audio_snapshot()
 
     if audio is None or len(audio) == 0:
-        logger.info("Global dictation: no audio captured")
+        _dictation_log.debug("Global dictation: no audio captured")
         show_dictation_hud_if_current(
             generation, "dictation_nospeech", "Dictation", "No speech detected"
         )
@@ -34347,7 +34619,7 @@ def _global_dictation_flow(
             generation, "dictation_processing", "Dictation", "Final transcription..."
         )
 
-    logger.info("Global dictation: final transcription...")
+    _dictation_log.debug("Global dictation: final transcription...")
 
     try:
         audio_16k = resample_audio(audio, AUDIO_INPUT_SAMPLE_RATE, WHISPER_SAMPLE_RATE)
@@ -34355,7 +34627,7 @@ def _global_dictation_flow(
         raw = strip_llm_artifacts(raw, remove_reasoning=True).strip()
 
     except Exception as e:
-        logger.error(f"Global dictation transcription failed: {e}")
+        _dictation_log.error(f"Global dictation transcription failed: {e}")
         show_dictation_hud_if_current(
             generation, "dictation_error", "Dictation", "Transcription failed"
         )
@@ -34367,7 +34639,7 @@ def _global_dictation_flow(
         return
 
     if not raw.strip():
-        logger.info("Global dictation: no speech recognized")
+        _dictation_log.debug("Global dictation: no speech recognized")
         show_dictation_hud_if_current(
             generation, "dictation_nospeech", "Dictation", "No speech recognized"
         )
@@ -34386,7 +34658,7 @@ def _global_dictation_flow(
                 generation, "dictation_processing", "Dictation", "Correcting..."
             )
 
-        logger.info(f"Global dictation: raw text = '{raw[:100]}...'")
+        _dictation_log.debug(f"Global dictation: raw text = '{raw[:100]}...'")
 
         try:
             corrected = correct_text_sync(raw)
@@ -34395,13 +34667,17 @@ def _global_dictation_flow(
             if corrected:
                 final_text = corrected
             else:
-                logger.warning("Global dictation correction empty, using raw text")
+                _dictation_log.warning(
+                    "Global dictation correction empty, using raw text"
+                )
 
         except Exception as e:
-            logger.warning(f"Global dictation correction failed, using raw text: {e}")
+            _dictation_log.warning(
+                f"Global dictation correction failed, using raw text: {e}"
+            )
 
     if not final_text.strip():
-        logger.warning("Global dictation: final text is empty")
+        _dictation_log.warning("Global dictation: final text is empty")
         show_dictation_hud_if_current(
             generation, "dictation_nospeech", "Dictation", "No usable text recognized"
         )
@@ -34412,14 +34688,14 @@ def _global_dictation_flow(
             _reset_dictation_state(cooldown=0.8, generation=generation)
         return
 
-    logger.info(
+    _dictation_log.debug(
         "Global dictation final text = %r",
         final_text[:120],
     )
 
     with _dictation_state_lock:
         if generation != _dictation_generation:
-            logger.info(
+            _dictation_log.debug(
                 "Discarding stale Whisper "
                 "dictation result before insert: "
                 "generation=%r current=%r",
@@ -34434,10 +34710,10 @@ def _global_dictation_flow(
     success = _insert_text_at_cursor(final_text)
 
     if success:
-        logger.info("Global dictation: final text inserted at cursor")
+        _dictation_log.debug("Global dictation: final text inserted at cursor")
 
         if submit_after_insert:
-            logger.info("Replaying Enter after dictation text insertion")
+            _dictation_log.debug("Replaying Enter after dictation text insertion")
 
             _press_enter_after_insert()
 
@@ -34473,7 +34749,7 @@ def _global_dictation_flow(
         show_dictation_hud_if_current(
             generation, "dictation_error", "Dictation", "Failed to insert text"
         )
-        logger.error("Global dictation: failed to insert final text")
+        _dictation_log.error("Global dictation: failed to insert final text")
 
     if GLOBAL_DICTATION_SHOW_DONE:
         time.sleep(1)
@@ -34572,7 +34848,7 @@ def _force_reset_timed_out_dictation_locked(
         float(cooldown),
     )
 
-    logger.warning(
+    _dictation_log.warning(
         "Invalidated timed-out dictation: "
         "old_generation=%d "
         "new_generation=%d "
@@ -34594,7 +34870,7 @@ def _reset_dictation_state(cooldown: float = 0.8, generation: Optional[int] = No
     # Important:
     # An old dictation thread must not reset a newer dictation session.
     if generation is not None and generation != _dictation_generation:
-        logger.info(
+        _dictation_log.debug(
             f"Skip reset from stale dictation generation={generation}, current={_dictation_generation}"
         )
         return
@@ -34648,7 +34924,7 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
     with _dictation_state_lock:
         # Ignore shortcut residue immediately after stop/cancel/reset.
         if now < _dictation_shortcut_block_until:
-            logger.info(
+            _keyboard_log.warning(
                 f"{label} ignored because shortcut cooldown active "
                 f"({_dictation_shortcut_block_until - now:.2f}s left)"
             )
@@ -34659,7 +34935,7 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
             elapsed = now - _dictation_state_changed_at
 
             if elapsed > 12.0:
-                logger.warning(
+                _keyboard_log.warning(
                     "Dictation stuck in processing "
                     "for %.1fs; invalidating the "
                     "old session",
@@ -34675,7 +34951,7 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
                 # a new session after the short cooldown.
                 return
 
-            logger.info(
+            _keyboard_log.warning(
                 "%s ignored because dictation state=processing",
                 label,
             )
@@ -34687,7 +34963,7 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
                 with CURRENT_APPLE_SPEECH_PROCESS_LOCK:
                     previous_proc = CURRENT_APPLE_SPEECH_PROCESS
 
-                logger.warning(
+                _keyboard_log.warning(
                     "Cannot start dictation because previous Apple Speech helper "
                     "is still running: pid=%s",
                     previous_proc.pid if previous_proc else "unknown",
@@ -34707,7 +34983,7 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
                 _dictation_shortcut_block_until = time.monotonic() + 1.5
                 return
 
-            logger.info(f"{label} dictation shortcut detected: locale={locale}")
+            _keyboard_log.debug(f"{label} dictation shortcut detected: locale={locale}")
 
             _dictation_generation += 1
             generation = _dictation_generation
@@ -34735,7 +35011,7 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
             # Ignore stop shortcuts that arrive immediately after startup.
             # These are usually leftover Ctrl/Ctrl+Opt release events from the start shortcut.
             if elapsed_since_start < 1.3:
-                logger.info(
+                _keyboard_log.warning(
                     f"{label} stop ignored because dictation just started "
                     f"({elapsed_since_start:.2f}s ago)"
                 )
@@ -34744,7 +35020,9 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
                 reset_tap_state()
                 return
 
-            logger.info(f"{label} shortcut detected while recording: stop dictation")
+            _keyboard_log.debug(
+                f"{label} shortcut detected while recording: stop dictation"
+            )
 
             _dictation_stop = True
             _dictation_cancel = False
@@ -34757,7 +35035,9 @@ def _toggle_dictation_from_hotkey(locale: str, label: str):
 
             return
 
-        logger.info(f"{label} ignored because dictation state={_dictation_state}")
+        _keyboard_log.debug(
+            f"{label} ignored because dictation state={_dictation_state}"
+        )
     pass
 
 
@@ -34768,7 +35048,7 @@ def cancel_active_dictation():
 
     with _dictation_state_lock:
         if _dictation_state in ("recording", "processing"):
-            logger.info("ESC pressed during dictation: cancel dictation")
+            _dictation_log.debug("ESC pressed during dictation: cancel dictation")
 
             _dictation_cancel = True
             _dictation_stop = False
@@ -34789,7 +35069,7 @@ def _handle_enter_during_dictation():
 
     with _dictation_state_lock:
         if _dictation_state == "recording":
-            logger.info(
+            _dictation_log.debug(
                 "Enter swallowed during dictation: stop and submit after insert"
             )
 
@@ -34802,7 +35082,7 @@ def _handle_enter_during_dictation():
             return True  # swallow
 
         if _dictation_state == "processing":
-            logger.info("Enter swallowed because dictation is processing")
+            _dictation_log.debug("Enter swallowed because dictation is processing")
             return True
 
     return False
@@ -34815,7 +35095,7 @@ def _handle_escape_during_dictation():
     if not active:
         return False
 
-    logger.info("Esc swallowed during dictation: cancel")
+    _dictation_log.debug("Esc swallowed during dictation: cancel")
     threading.Thread(
         target=cancel_active_dictation,
         daemon=True,
@@ -34863,14 +35143,13 @@ def _handle_modifier_flags_changed_locked(event):
     CTRL_KEYCODES = {59, 62}  # left ctrl, right ctrl
     OPT_KEYCODES = {58, 61}  # left option, right option
 
-    if DEBUG_QUARTZ_FLAGS:
-        logger.info(
-            "Quartz flagsChanged: keycode=%s ctrl_down=%s opt_down=%s flags=%s",
-            keycode,
-            ctrl_down,
-            opt_down,
-            flags,
-        )
+    _keyboard_log.debug(
+        "Quartz flagsChanged: keycode=%s ctrl_down=%s opt_down=%s flags=%s",
+        keycode,
+        ctrl_down,
+        opt_down,
+        flags,
+    )
 
     # Ignore non Ctrl/Option flagsChanged events.
     if keycode not in CTRL_KEYCODES and keycode not in OPT_KEYCODES:
@@ -34879,7 +35158,7 @@ def _handle_modifier_flags_changed_locked(event):
     # If AppKit just saw a media/system key, suppress plain Ctrl interpretation.
     # This protects against Launchpad/media keys causing weird modifier residue.
     if now - _last_appkit_media_event_at < 0.35:
-        logger.info(
+        _keyboard_log.debug(
             "Suppress modifier event after media/system key: keycode=%s",
             keycode,
         )
@@ -34906,16 +35185,15 @@ def _handle_modifier_flags_changed_locked(event):
         if previous_down is not None:
             age = now - previous_down
             if age <= MAX_MODIFIER_TAP_DURATION:
-                if DEBUG_QUARTZ_FLAGS:
-                    logger.debug(
-                        "Ignoring duplicate Ctrl down: keycode=%d age=%.3f",
-                        keycode,
-                        age,
-                    )
+                _keyboard_log.debug(
+                    "Ignoring duplicate Ctrl down: keycode=%d age=%.3f",
+                    keycode,
+                    age,
+                )
                 return
             _modifier_down_since.pop(keycode, None)
             _ctrl_tap_had_option.pop(keycode, None)
-            logger.debug(
+            _keyboard_log.debug(
                 "Discarded stale Ctrl down: keycode=%d age=%.3f",
                 keycode,
                 age,
@@ -34926,8 +35204,9 @@ def _handle_modifier_flags_changed_locked(event):
         # If Option is already held when Ctrl goes down, this is a chord tap.
         _ctrl_tap_had_option[keycode] = bool(opt_down)
 
-        if DEBUG_QUARTZ_FLAGS:
-            logger.info("Ctrl down tracked: keycode=%s opt_down=%s", keycode, opt_down)
+        _keyboard_log.debug(
+            "Ctrl down tracked: keycode=%s opt_down=%s", keycode, opt_down
+        )
 
         return
 
@@ -34951,12 +35230,11 @@ def _handle_modifier_flags_changed_locked(event):
                 None,
             )
 
-            if DEBUG_QUARTZ_FLAGS:
-                logger.debug(
-                    "Ignoring unmatched Ctrl release: keycode=%d flags=0x%x",
-                    keycode,
-                    flags,
-                )
+            _keyboard_log.debug(
+                "Ignoring unmatched Ctrl release: keycode=%d flags=0x%x",
+                keycode,
+                flags,
+            )
 
             return
 
@@ -34964,13 +35242,12 @@ def _handle_modifier_flags_changed_locked(event):
 
         had_option = bool(_ctrl_tap_had_option.pop(keycode, False)) or bool(opt_down)
 
-        if DEBUG_QUARTZ_FLAGS:
-            logger.info(
-                "Ctrl release tracked: keycode=%s duration=%.3f had_option=%s",
-                keycode,
-                duration,
-                had_option,
-            )
+        _keyboard_log.debug(
+            "Ctrl release tracked: keycode=%s duration=%.3f had_option=%s",
+            keycode,
+            duration,
+            had_option,
+        )
 
         if duration > MAX_MODIFIER_TAP_DURATION:
             return
@@ -34985,7 +35262,7 @@ def _handle_modifier_flags_changed_locked(event):
             if now - _last_ctrl_opt_tap_at <= DOUBLE_TAP_WINDOW:
                 _last_ctrl_opt_tap_at = 0.0
 
-                logger.info("Detected Ctrl+Opt double tap via Quartz")
+                _keyboard_log.debug("Detected Ctrl+Opt double tap via Quartz")
 
                 threading.Thread(
                     target=_toggle_dictation_from_hotkey,
@@ -35001,13 +35278,13 @@ def _handle_modifier_flags_changed_locked(event):
         # Plain Ctrl tap path
         # -----------------------------
         if now < _suppress_plain_ctrl_until:
-            logger.info("Plain Ctrl tap suppressed")
+            _keyboard_log.debug("Plain Ctrl tap suppressed")
             return
 
         if now - _last_ctrl_tap_at <= DOUBLE_TAP_WINDOW:
             _last_ctrl_tap_at = 0.0
 
-            logger.info("Detected Ctrl double tap via Quartz")
+            _keyboard_log.debug("Detected Ctrl double tap via Quartz")
 
             threading.Thread(
                 target=_toggle_dictation_from_hotkey,
@@ -35026,7 +35303,7 @@ def _debug_flags_event(event):
         )
         flags = Quartz.CGEventGetFlags(event)  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
 
-        logger.debug(
+        _keyboard_log.debug(
             "flagsChanged raw keycode=%s flags=%s physical_ctrl=%s physical_opt=%s",
             keycode,
             flags,
@@ -35057,7 +35334,7 @@ def _start_quartz_keyboard_event_tap():
         return True
 
     if not HAS_QUARTZ:
-        logger.warning("Quartz not available; keyboard event tap disabled")
+        _keyboard_log.warning("Quartz not available; keyboard event tap disabled")
         return False
 
     started = threading.Event()
@@ -35080,7 +35357,7 @@ def _start_quartz_keyboard_event_tap():
                         True,
                     )
 
-                logger.warning(
+                _keyboard_log.warning(
                     "Keyboard event tap was re-enabled; modifier tap state was reset"
                 )
 
@@ -35156,7 +35433,7 @@ def _start_quartz_keyboard_event_tap():
             return event
 
         except Exception as e:
-            logger.error(f"Quartz keyboard event tap callback error: {e}")
+            _keyboard_log.error(f"Quartz keyboard event tap callback error: {e}")
             return event
 
     def event_tap_thread():
@@ -35181,7 +35458,7 @@ def _start_quartz_keyboard_event_tap():
             )
 
             if tap is None:
-                logger.warning(
+                _keyboard_log.warning(
                     "Failed to create Quartz keyboard event tap. "
                     "Grant Accessibility/Input Monitoring permission to Terminal/Python."
                 )
@@ -35205,13 +35482,13 @@ def _start_quartz_keyboard_event_tap():
 
             reset_tap_state()
 
-            logger.info("Quartz keyboard event tap started")
+            _keyboard_log.debug("Quartz keyboard event tap started")
             started.set()
 
             Quartz.CFRunLoopRun()  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
 
         except Exception as e:
-            logger.error(f"Quartz keyboard event tap thread failed: {e}")
+            _keyboard_log.error(f"Quartz keyboard event tap thread failed: {e}")
             started.set()
 
     threading.Thread(
@@ -35238,7 +35515,7 @@ def _stop_quartz_keyboard_event_tap():
             Quartz.CFRunLoopStop(_keyboard_event_tap_runloop)  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
 
     except Exception as e:
-        logger.debug(f"Failed to stop Quartz keyboard event tap cleanly: {e}")
+        _keyboard_log.debug(f"Failed to stop Quartz keyboard event tap cleanly: {e}")
 
     _keyboard_event_tap_started = False
     _keyboard_event_tap_port = None
@@ -35276,26 +35553,28 @@ def _handle_appkit_media_event(event):
         return
 
     if key_code == NX_KEYTYPE_PLAY:
-        logger.info("Media key: Play/Pause")
+        _keyboard_log.debug("Media key: Play/Pause")
     elif key_code == NX_KEYTYPE_NEXT:
-        logger.info("Media key: Next")
+        _keyboard_log.debug("Media key: Next")
     elif key_code == NX_KEYTYPE_PREVIOUS:
-        logger.info("Media key: Previous")
+        _keyboard_log.debug("Media key: Previous")
     elif key_code == NX_KEYTYPE_MUTE:
-        logger.info("Media key: Mute")
+        _keyboard_log.debug("Media key: Mute")
     elif key_code == NX_KEYTYPE_SOUND_UP:
-        logger.info("Media key: Volume Up")
+        _keyboard_log.debug("Media key: Volume Up")
     elif key_code == NX_KEYTYPE_SOUND_DOWN:
-        logger.info("Media key: Volume Down")
+        _keyboard_log.debug("Media key: Volume Down")
     else:
-        logger.info("Media/system key ignored: code=%s state=%s", key_code, key_state)
+        _keyboard_log.debug(
+            "Media/system key ignored: code=%s state=%s", key_code, key_state
+        )
 
 
 def _start_appkit_media_monitor():
     global _appkit_media_monitor
 
     if not HAS_APPKIT:
-        logger.info("AppKit not available; media key monitor disabled")
+        _keyboard_log.warning("AppKit not available; media key monitor disabled")
         return False
 
     if _appkit_media_monitor is not None:
@@ -35309,11 +35588,11 @@ def _start_appkit_media_monitor():
             _handle_appkit_media_event,
         )
 
-        logger.info("AppKit systemDefined media monitor started")
+        _keyboard_log.debug("AppKit systemDefined media monitor started")
         return True
 
     except Exception as e:
-        logger.warning(f"Failed to start AppKit media monitor: {e}")
+        _keyboard_log.warning(f"Failed to start AppKit media monitor: {e}")
         return False
 
 
@@ -35504,7 +35783,9 @@ def _notify_xiaoai_auth_failure(status: int) -> None:
         return
     osascript = "/usr/bin/osascript"
     if not os.path.isfile(osascript) or not os.access(osascript, os.X_OK):
-        logger.warning("Cannot send Xiaomi 401 notification: %s unavailable", osascript)
+        _auth_log.warning(
+            "Cannot send Xiaomi 401 notification: %s unavailable", osascript
+        )
         return
     script = (
         "display notification "
@@ -35523,7 +35804,7 @@ def _notify_xiaoai_auth_failure(status: int) -> None:
             stderr=subprocess.DEVNULL,
         )
     except Exception:
-        logger.debug("Failed sending Xiaomi 401 notification", exc_info=True)
+        _auth_log.debug("Failed sending Xiaomi 401 notification", exc_info=True)
 
 
 def _env_csv(name: str, default: str) -> tuple[str, ...]:
@@ -35637,7 +35918,7 @@ async def _xiaoai_otp_input(otp_method: str) -> str:
             raise RuntimeError("No Xiaomi OTP code was provided")
         return code
 
-    logger.warning(
+    _auth_log.warning(
         "Xiaomi %s OTP required; waiting up to %.0fs for %s",
         otp_method,
         timeout,
@@ -35650,7 +35931,7 @@ async def _xiaoai_otp_input(otp_method: str) -> str:
         except FileNotFoundError:
             code = ""
         except OSError as exc:
-            logger.warning("Cannot read Xiaomi OTP file %s: %s", otp_path, exc)
+            _auth_log.warning("Cannot read Xiaomi OTP file %s: %s", otp_path, exc)
             code = ""
 
         if code:
@@ -35659,7 +35940,7 @@ async def _xiaoai_otp_input(otp_method: str) -> str:
             except FileNotFoundError:
                 pass
             except OSError:
-                logger.warning(
+                _auth_log.warning(
                     "Xiaomi OTP was read but file could not be removed: %s",
                     otp_path,
                     exc_info=True,
@@ -35684,7 +35965,7 @@ class EmbeddedMiTokenStore:
         except FileNotFoundError:
             return None
         except Exception:
-            logger.exception("Failed reading Xiaomi token store %s", self.path)
+            _embedding_log.exception("Failed reading Xiaomi token store %s", self.path)
             return None
 
     def save(self, token: Optional[dict]) -> None:
@@ -35881,12 +36162,12 @@ class EmbeddedMiAccount:
             if isinstance(saved_token, dict) and saved_token:
                 self.token = saved_token
                 self.store.save(saved_token)
-            logger.error(
+            _xiaoai_log.error(
                 "Xiaomi login failed for sid=%s: %s",
                 sid,
                 exc,
             )
-            logger.debug("Xiaomi login traceback", exc_info=True)
+            _xiaoai_log.debug("Xiaomi login traceback", exc_info=True)
             return False
 
     async def _verify_otp(self, sid: str, notification_url: str) -> dict:
@@ -35900,7 +36181,7 @@ class EmbeddedMiAccount:
         headers = {"User-Agent": XIAOMI_UA_OTP}
         cookies = {"deviceId": self.token["deviceId"]}
 
-        logger.info("Xiaomi OTP verification required")
+        _xiaoai_log.info("Xiaomi OTP verification required")
         async with self.session.get(
             notification_url,
             headers=headers,
@@ -35993,7 +36274,7 @@ class EmbeddedMiAccount:
         # Xiaomi deployments return 401 here while still establishing the
         # cookies required by the subsequent serviceLogin request.
         parsed_location = urllib.parse.urlparse(str(location))
-        logger.info(
+        _xiaoai_log.info(
             "Xiaomi OTP accepted; completing auth session: host=%s path=%s",
             parsed_location.hostname or "",
             parsed_location.path or "",
@@ -36007,7 +36288,7 @@ class EmbeddedMiAccount:
             location_status = response.status
             await response.read()
         if location_status != 200:
-            logger.debug(
+            _xiaoai_log.debug(
                 "Xiaomi OTP completion navigation returned HTTP %d; "
                 "continuing with serviceLogin as upstream does",
                 location_status,
@@ -36119,7 +36400,7 @@ class EmbeddedMiAccount:
 
         if status == 401 and relogin:
             parsed_url = urllib.parse.urlparse(str(url))
-            logger.warning(
+            _xiaoai_log.warning(
                 "Xiaomi authentication expired: host=%s path=%s; relogin",
                 parsed_url.hostname or "",
                 parsed_url.path or "",
@@ -36263,7 +36544,7 @@ class XiaoAIMiNAClient:
                     XIAOAI_PLAY_RETRY_MAX_DELAY,
                     XIAOAI_PLAY_RETRY_BASE_DELAY * (2 ** (attempt - 1)),
                 )
-                logger.warning(
+                _xiaoai_log.warning(
                     "Xiaomi play remote-control timeout (device_code=%s); "
                     "retry %d/%d in %.1fs",
                     exc.device_code,
@@ -36540,9 +36821,7 @@ class XiaoAIConfig:
     poll_interval: float = field(
         default_factory=lambda: float(os.getenv("XIAOAI_POLL_INTERVAL", "1.0"))
     )
-    poll_debug: bool = field(
-        default_factory=lambda: os.getenv("XIAOAI_POLL_DEBUG", "0") == "1"
-    )
+    poll_debug: bool = field(default_factory=lambda: VE_XIAOAI_LOG_DEBUG)
     poll_log_every: int = field(
         default_factory=lambda: max(1, int(os.getenv("XIAOAI_POLL_LOG_EVERY", "60")))
     )
@@ -36609,9 +36888,7 @@ class XiaoAIConfig:
             0.0, float(os.getenv("XIAOAI_PLAYBACK_TAIL_GUARD", "1"))
         )
     )
-    player_status_debug: bool = field(
-        default_factory=lambda: os.getenv("XIAOAI_PLAYER_STATUS_DEBUG", "0") == "1"
-    )
+    player_status_debug: bool = field(default_factory=lambda: VE_XIAOAI_LOG_DEBUG)
     native_tail_guard: float = field(
         default_factory=lambda: max(
             0.0, float(os.getenv("XIAOAI_NATIVE_TAIL_GUARD", "0.20"))
@@ -36969,7 +37246,7 @@ class XiaoAIAudioServer:
             playback.consumer_error = str(exc) or "Xiaomi audio HTTP connection reset"
             playback.consumer_failed.set()
             await playback.abort()
-            logger.debug(
+            _audio_log.debug(
                 "Xiaomi audio client disconnected: playback_id=%s epoch=%d error=%s",
                 playback.playback_id,
                 playback.epoch,
@@ -37280,7 +37557,7 @@ class XiaoGPTBridge:
             self.pending_doubao_query = ""
             self.pending_doubao_query_epoch = 0
             self.pending_doubao_replay_count += 1
-            logger.info(
+            _doubao_log.debug(
                 "XiaoAI Doubao authentication refreshed: conversation=%s; "
                 "replaying challenged question epoch=%s replay_count=%s chars=%s",
                 conversation_id[:18],
@@ -37300,7 +37577,7 @@ class XiaoGPTBridge:
                 "source_epoch": pending_epoch,
             }
 
-        logger.info(
+        _doubao_log.debug(
             "XiaoAI Doubao authentication refreshed: conversation=%s; "
             "no challenged question is pending, opening one listening window",
             conversation_id[:18],
@@ -37337,7 +37614,7 @@ class XiaoGPTBridge:
         self.miio_service = XiaoAIMiIOClient(self.account_client)
         await self._initialize_device()
         await self._replace_poll_session()
-        logger.info(
+        _xiaoai_log.debug(
             "XiaoAI ready: hardware=%s device_id=%s keywords=%r "
             "new_conversation=%r dialog_mode=always relisten=after_every_answer "
             "native_keywords=%r native_status_poll=%.2fs tavily_tool=%s "
@@ -37382,7 +37659,7 @@ class XiaoGPTBridge:
                 self.poll_auth_recovery_failures > 0
                 and since_last < self.config.poll_auth_recovery_cooldown
             ):
-                logger.warning(
+                _xiaoai_log.warning(
                     "XiaoAI auth recovery cooling down: status=%d remaining=%.1fs",
                     status,
                     self.config.poll_auth_recovery_cooldown - since_last,
@@ -37399,7 +37676,7 @@ class XiaoGPTBridge:
             if isinstance(saved_token, dict):
                 account_client.token = saved_token
 
-            logger.warning(
+            _xiaoai_log.warning(
                 "XiaoAI polling authentication rejected (HTTP %d); refreshing micoapi credentials",
                 status,
             )
@@ -37413,7 +37690,7 @@ class XiaoGPTBridge:
                 await self._replace_poll_session()
                 self.poll_auth_recovery_failures = 0
                 self.poll_consecutive_errors = 0
-                logger.info(
+                _xiaoai_log.debug(
                     "XiaoAI polling authentication recovered; watcher will continue"
                 )
                 return True
@@ -37427,7 +37704,7 @@ class XiaoGPTBridge:
                 if isinstance(saved_token, dict) and saved_token:
                     account_client.token = saved_token
                     account_client.store.save(saved_token)
-                logger.error(
+                _xiaoai_log.error(
                     "XiaoAI polling authentication recovery failed: attempt=%d/%d error=%s",
                     self.poll_auth_recovery_failures,
                     self.config.poll_auth_recovery_max_attempts,
@@ -37446,7 +37723,7 @@ class XiaoGPTBridge:
         for session in (self.poll_session, self.mi_session):
             if session is not None and not session.closed:
                 await session.close()
-        logger.info("XiaoAI embedded bridge stopped")
+        _xiaoai_log.debug("XiaoAI embedded bridge stopped")
 
     async def _initialize_device(self):
         mina_service = self.mina_service
@@ -37466,7 +37743,7 @@ class XiaoGPTBridge:
             raise RuntimeError(f"Cannot find Xiaomi hardware {self.config.hardware!r}")
 
     async def _watch_conversations(self):
-        logger.info("XiaoAI watcher started")
+        _xiaoai_log.debug("XiaoAI watcher started")
         transient_types = (
             aiohttp.ClientConnectionError,  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
             aiohttp.ServerTimeoutError,  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
@@ -37484,7 +37761,7 @@ class XiaoGPTBridge:
                 self.poll_consecutive_errors = 0
                 self.poll_auth_recovery_failures = 0
                 if record:
-                    logger.info(
+                    _xiaoai_log.debug(
                         "XiaoAI new record accepted: query=%r request_id=%r time=%r",
                         record.get("query"),
                         record.get("requestId"),
@@ -37492,7 +37769,7 @@ class XiaoGPTBridge:
                     )
                     await self._handle_record(record)
             except asyncio.CancelledError:
-                logger.info("XiaoAI conversation watcher cancelled")
+                _xiaoai_log.debug("XiaoAI conversation watcher cancelled")
                 raise
             except XiaoAIPollFatalError as exc:
                 self.poll_error_count += 1
@@ -37501,7 +37778,7 @@ class XiaoGPTBridge:
                     if await self._recover_poll_auth(exc.status):
                         await asyncio.sleep(self.config.poll_min_interval)
                         continue
-                    logger.error(
+                    _xiaoai_log.error(
                         "XiaoAI polling authentication could not be recovered: "
                         "poll=%d status=%d error=%s",
                         self.poll_count,
@@ -37522,7 +37799,7 @@ class XiaoGPTBridge:
                         raise
                     except Exception as session_exc:
                         session_rebuilt = False
-                        logger.warning(
+                        _xiaoai_log.warning(
                             "XiaoAI poll session rebuild failed after API error: "
                             "poll=%d status=%d error=%s",
                             self.poll_count,
@@ -37534,7 +37811,7 @@ class XiaoGPTBridge:
                         self.config.poll_error_backoff_max,
                         float(2 ** min(self.poll_consecutive_errors - 1, 5)),
                     )
-                    logger.warning(
+                    _xiaoai_log.warning(
                         "XiaoAI poll retryable API error: poll=%d status=%d "
                         "consecutive=%d session_rebuilt=%s retry_in=%.1fs "
                         "error=%s",
@@ -37550,7 +37827,7 @@ class XiaoGPTBridge:
                         self.config.poll_error_backoff_max,
                         float(2 ** min(self.poll_consecutive_errors - 1, 5)),
                     )
-                    logger.warning(
+                    _xiaoai_log.warning(
                         "XiaoAI poll retryable HTTP error: poll=%d status=%d "
                         "consecutive=%d retry_in=%.1fs",
                         self.poll_count,
@@ -37559,7 +37836,7 @@ class XiaoGPTBridge:
                         extra_backoff,
                     )
                 else:
-                    logger.error(
+                    _xiaoai_log.error(
                         "XiaoAI conversation polling stopped: poll=%d status=%d error=%s",
                         self.poll_count,
                         exc.status,
@@ -37573,7 +37850,7 @@ class XiaoGPTBridge:
                     self.config.poll_error_backoff_max,
                     float(2 ** min(self.poll_consecutive_errors - 1, 5)),
                 )
-                logger.warning(
+                _xiaoai_log.warning(
                     "XiaoAI poll transient network error: poll=%d errors=%d "
                     "consecutive=%d retry_in=%.1fs error=%s",
                     self.poll_count,
@@ -37590,7 +37867,7 @@ class XiaoGPTBridge:
                     float(2 ** min(self.poll_consecutive_errors - 1, 5)),
                 )
                 # Unexpected errors retain a traceback for diagnostics.
-                logger.exception(
+                _xiaoai_log.exception(
                     "XiaoAI conversation poll unexpected failure: poll=%d "
                     "errors=%d consecutive=%d retry_in=%.1fs error=%s",
                     self.poll_count,
@@ -37629,7 +37906,7 @@ class XiaoGPTBridge:
             self.poll_count == 1 or self.poll_count % self.config.poll_log_every == 0
         )
         if should_heartbeat:
-            logger.info(
+            _xiaoai_log.debug(
                 "XiaoAI poll request: poll=%d url=%s cookie_names=%s "
                 "speaker_device_id=%s account_device_id_matches_speaker=%s "
                 "last_timestamp=%s",
@@ -37648,14 +37925,14 @@ class XiaoGPTBridge:
             raw = await response.read()
 
         if should_heartbeat:
-            logger.debug(
+            _xiaoai_log.debug(
                 "XiaoAI poll heartbeat: poll=%d status=%s records_pending bytes=%d",
                 self.poll_count,
                 self.last_poll_status,
                 len(raw),
             )
         elif self.last_poll_status != 200:
-            logger.warning(
+            _xiaoai_log.warning(
                 "XiaoAI poll HTTP error: status=%s body=%r",
                 self.last_poll_status,
                 raw[:500].decode("utf-8", errors="replace"),
@@ -37707,7 +37984,7 @@ class XiaoGPTBridge:
         self.poll_success_count += 1
         if should_heartbeat:
             first = records[0] if records and isinstance(records[0], dict) else None
-            logger.debug(
+            _xiaoai_log.debug(
                 "XiaoAI poll decoded: poll=%d api_code=%r records=%d "
                 "first_query=%r first_time=%r first_request_id=%r",
                 self.poll_count,
@@ -37722,7 +37999,7 @@ class XiaoGPTBridge:
 
         record = records[0]
         if not isinstance(record, dict):
-            logger.warning("XiaoAI first record is not an object: %r", record)
+            _xiaoai_log.warning("XiaoAI first record is not an object: %r", record)
             return None
         timestamp = int(record.get("time") or 0)
         request_id = str(record.get("requestId") or "")
@@ -37730,7 +38007,7 @@ class XiaoGPTBridge:
         self.last_poll_record_time = timestamp
         if timestamp <= self.last_timestamp:
             if should_heartbeat:
-                logger.debug(
+                _xiaoai_log.debug(
                     "XiaoAI record ignored as old: record_time=%s last_timestamp=%s "
                     "query=%r",
                     timestamp,
@@ -37740,7 +38017,7 @@ class XiaoGPTBridge:
             return None
         if identity in self.seen_utterances:
             if should_heartbeat:
-                logger.debug(
+                _xiaoai_log.debug(
                     "XiaoAI record ignored as duplicate: identity=%r", identity
                 )
             return None
@@ -37755,7 +38032,7 @@ class XiaoGPTBridge:
 
         now = time.monotonic()
         if query == XIAOAI_WAKEUP_KEYWORD:
-            logger.debug("XiaoAI synthetic wake record ignored")
+            _xiaoai_log.debug("XiaoAI synthetic wake record ignored")
             return
 
         explicit_keyword = any(
@@ -37776,7 +38053,7 @@ class XiaoGPTBridge:
             # Keep Xiaomi's native answer untouched, then open exactly one new
             # listening window after native playback reaches idle.
             await self._cancel_relisten()
-            logger.info(
+            _xiaoai_log.debug(
                 "XiaoAI native answer: query=%r matched=%r; relisten=once",
                 query,
                 native_keyword,
@@ -37793,11 +38070,11 @@ class XiaoGPTBridge:
         await self._cancel_relisten()
 
         if now < self.suppress_records_until:
-            logger.debug("XiaoAI record suppressed after wakeup: %r", query)
+            _xiaoai_log.debug("XiaoAI record suppressed after wakeup: %r", query)
             return
 
         if query.strip() in self.config.new_conversation:
-            logger.info("XiaoAI model conversation reset requested")
+            _xiaoai_log.debug("XiaoAI model conversation reset requested")
             async with self.conversation_lock:
                 self.conversation_generation += 1
                 reset_generation = self.conversation_generation
@@ -37832,11 +38109,11 @@ class XiaoGPTBridge:
             and normalized == previous
             and now - self.last_accepted_query_at < self.config.query_debounce_seconds
         ):
-            logger.debug("XiaoAI duplicate utterance ignored: %r", forwarded)
+            _xiaoai_log.debug("XiaoAI duplicate utterance ignored: %r", forwarded)
             return
 
         if forwarded in self.config.stop_phrases:
-            logger.info("XiaoAI stop command received")
+            _xiaoai_log.debug("XiaoAI stop command received")
             await self.cancel_active_turn("user_stop_command")
             return
 
@@ -37845,7 +38122,7 @@ class XiaoGPTBridge:
             # Latest query wins. During model cold start or active playback,
             # a newly received utterance supersedes the current turn instead
             # of being ignored.
-            logger.info(
+            _xiaoai_log.debug(
                 "XiaoAI superseding active turn %s with newer query: %r",
                 active.epoch,
                 forwarded,
@@ -37856,7 +38133,7 @@ class XiaoGPTBridge:
 
         self.last_accepted_query = normalized
         self.last_accepted_query_at = now
-        logger.info("XiaoAI ask: %s", forwarded)
+        _xiaoai_log.debug("XiaoAI ask: %s", forwarded)
 
         # Mute the built-in answer immediately, before cancellation/turn setup.
         await self._stop_xiaomi_player()
@@ -37916,7 +38193,7 @@ class XiaoGPTBridge:
 
     async def _cancel_turn_resources(self, turn):
         if turn.doubao_request_committed:
-            logger.warning(
+            _doubao_log.warning(
                 "XiaoAI cancelling committed Doubao turn: "
                 "epoch=%s conv=%s generated_chars=%s phase=%s",
                 turn.epoch,
@@ -38071,7 +38348,7 @@ class XiaoGPTBridge:
                         "XiaoAI LLM produced no text before the audio prebuffer deadline"
                     )
 
-                logger.warning(
+                _xiaoai_log.warning(
                     "XiaoAI audio prebuffer timeout; rebuilding audio pipeline only: "
                     "epoch=%d attempt=%d/%d replay_segments=%d generated_chars=%d",
                     turn.epoch,
@@ -38192,7 +38469,7 @@ class XiaoGPTBridge:
                 ),
             )
             if drain_seconds > 0:
-                logger.info(
+                _xiaoai_log.debug(
                     "XiaoAI finishing playback: remaining=%.2fs total=%.2fs",
                     drain_seconds,
                     total_audio,
@@ -38209,7 +38486,9 @@ class XiaoGPTBridge:
             if not self._is_current(turn):
                 return
             turn.phase = XiaoAITurnPhase.COMPLETED
-            logger.info("XiaoAI answer completed: chars=%d", len(turn.generated_text))
+            _xiaoai_log.debug(
+                "XiaoAI answer completed: chars=%d", len(turn.generated_text)
+            )
             self._commit_completed_turn(turn)
             async with self.conversation_lock:
                 conversation_generation = self.conversation_generation
@@ -38240,7 +38519,7 @@ class XiaoGPTBridge:
                     # re-arming AUTH_REQUIRED and looping with the same capture.
                     self.pending_doubao_query = ""
                     self.pending_doubao_query_epoch = 0
-                    logger.warning(
+                    _xiaoai_log.warning(
                         "XiaoAI auth replay was challenged again; automatic "
                         "replay disabled until a new user question: epoch=%d chars=%d",
                         turn.epoch,
@@ -38249,13 +38528,13 @@ class XiaoGPTBridge:
                 else:
                     self.pending_doubao_query = turn.query
                     self.pending_doubao_query_epoch = turn.epoch
-                    logger.info(
+                    _doubao_log.debug(
                         "XiaoAI saved challenged Doubao question for one replay "
                         "after the next Firefox sync: epoch=%d chars=%d",
                         turn.epoch,
                         len(turn.query),
                     )
-            logger.warning(
+            _xiaoai_log.warning(
                 "XiaoAI turn %d paused: type=%s code=%s message=%s",
                 turn.epoch,
                 exc.error_type,
@@ -38286,7 +38565,7 @@ class XiaoGPTBridge:
             error_message = re.sub(r"\s+", " ", str(root_exc or exc)).strip()
             if not error_message:
                 error_message = type(root_exc).__name__
-            logger.error(
+            _xiaoai_log.error(
                 "XiaoAI turn %d failed: %s",
                 turn.epoch,
                 error_message[:1000],
@@ -38323,7 +38602,7 @@ class XiaoGPTBridge:
         # OpenAI-style system role.  Prefixing XIAOAI_SYSTEM_PROMPT here would
         # turn the system instruction into part of the user's first message.
         prompt = turn.query
-        logger.info(
+        _doubao_log.debug(
             "XiaoAI Doubao turn snapshot: epoch=%s generation=%s conv=%s "
             "query_chars=%d prompt_chars=%d system_prompt_injected=%s",
             turn.epoch,
@@ -38380,7 +38659,7 @@ class XiaoGPTBridge:
                                 self.doubao_conversation_id = conv_id
                                 turn.doubao_conversation_id = conv_id
                             else:
-                                logger.warning(
+                                _doubao_log.warning(
                                     "Ignored stale Doubao conversation update: "
                                     "epoch=%s turn_generation=%s current_generation=%s conv=%s",
                                     turn.epoch,
@@ -38491,15 +38770,14 @@ class XiaoGPTBridge:
         # Keep browser-model input identical to the user's utterance.  Qwen's
         # web chat endpoint likewise has no separate system-message channel.
         prompt = turn.query
-        if QWEN_DEBUG:
-            logger.info(
-                "XiaoAI Qwen browser prompt: conv=%s query_chars=%d "
-                "prompt_chars=%d system_prompt_injected=%s",
-                str(conversation_id or "")[:16] or "new",
-                len(turn.query),
-                len(prompt),
-                prompt != turn.query,
-            )
+        _qwen_log.debug(
+            "XiaoAI Qwen browser prompt: conv=%s query_chars=%d "
+            "prompt_chars=%d system_prompt_injected=%s",
+            str(conversation_id or "")[:16] or "new",
+            len(turn.query),
+            len(prompt),
+            prompt != turn.query,
+        )
         future, event_queue = QWEN_BROWSER_RUNTIME.submit_chat_stream(
             prompt, conversation_id
         )
@@ -38676,7 +38954,7 @@ class XiaoGPTBridge:
                             TAVILY_MAX_RESULTS,
                         ),
                     )
-                    logger.info(
+                    _xiaoai_log.debug(
                         "XiaoAI Tavily search: query=%r results=%d",
                         query,
                         result_count,
@@ -38714,7 +38992,7 @@ class XiaoGPTBridge:
                                 await speech_queue.put(cleaned)
                     return
             elif self.config.tavily_tool_enabled and not TAVILY_API_KEY:
-                logger.warning(
+                _xiaoai_log.warning(
                     "XiaoAI Tavily tool disabled for this turn: "
                     "TAVILY_API_KEY is not configured"
                 )
@@ -38831,14 +39109,14 @@ class XiaoGPTBridge:
             try:
                 status_info = await mina_service.player_get_status(self.device_id)
             except Exception:
-                logger.debug(
+                _xiaoai_log.debug(
                     "XiaoAI model player status query failed",
                     exc_info=True,
                 )
                 return
 
             if self.config.player_status_debug:
-                logger.info(
+                _xiaoai_log.debug(
                     "XiaoAI model playback status_info: poll=%d info=%r",
                     poll_count,
                     status_info,
@@ -38851,7 +39129,7 @@ class XiaoGPTBridge:
             elif status in (0, 3):
                 idle_count += 1
                 if idle_count >= self.config.playback_idle_confirmations:
-                    logger.debug(
+                    _xiaoai_log.debug(
                         "XiaoAI model playback idle confirmed: polls=%d confirmations=%d",
                         poll_count,
                         idle_count,
@@ -38865,7 +39143,7 @@ class XiaoGPTBridge:
             else:
                 # Unsupported/unknown status: trust local duration rather than
                 # adding the complete timeout to every answer.
-                logger.debug(
+                _xiaoai_log.debug(
                     "XiaoAI model playback status unsupported: %r",
                     status_info,
                 )
@@ -38878,7 +39156,7 @@ class XiaoGPTBridge:
                 return
 
         if self._is_current(turn):
-            logger.warning(
+            _xiaoai_log.warning(
                 "XiaoAI model playback status confirmation timed out after %.2fs",
                 timeout,
             )
@@ -38892,16 +39170,18 @@ class XiaoGPTBridge:
         try:
             await self.mina_service.player_pause(self.device_id)
         except Exception:
-            logger.debug("Xiaomi player_pause failed", exc_info=True)
+            _xiaoai_log.debug("Xiaomi player_pause failed", exc_info=True)
         try:
             await self.mina_service.player_stop(self.device_id)
         except Exception:
-            logger.debug("Xiaomi player_stop failed", exc_info=True)
+            _xiaoai_log.debug("Xiaomi player_stop failed", exc_info=True)
 
     async def _relisten_after_native_answer(self):
         mina_service = self.mina_service
         if mina_service is None:
-            logger.warning("Cannot relisten: Xiaomi MiNA service is not initialized")
+            _xiaoai_log.warning(
+                "Cannot relisten: Xiaomi MiNA service is not initialized"
+            )
             return
         try:
             poll = self.config.native_status_poll_interval
@@ -38917,13 +39197,13 @@ class XiaoGPTBridge:
                 try:
                     status_info = await mina_service.player_get_status(self.device_id)
                 except Exception:
-                    logger.debug(
+                    _xiaoai_log.debug(
                         "XiaoAI native player status query failed",
                         exc_info=True,
                     )
                     status_info = None
                 if self.config.player_status_debug:
-                    logger.info(
+                    _xiaoai_log.debug(
                         "XiaoAI native playback status_info: phase=start info=%r",
                         status_info,
                     )
@@ -38946,13 +39226,13 @@ class XiaoGPTBridge:
                             self.device_id
                         )
                     except Exception:
-                        logger.debug(
+                        _xiaoai_log.debug(
                             "XiaoAI native player status query failed",
                             exc_info=True,
                         )
                         status_info = None
                     if self.config.player_status_debug:
-                        logger.info(
+                        _xiaoai_log.debug(
                             "XiaoAI native playback status_info: phase=end info=%r",
                             status_info,
                         )
@@ -38965,14 +39245,14 @@ class XiaoGPTBridge:
                             break
                     await asyncio.sleep(poll)
                 else:
-                    logger.warning(
+                    _xiaoai_log.warning(
                         "XiaoAI native playback status timeout; opening follow-up"
                     )
             else:
                 # Some firmware does not expose short native TTS in
                 # mediaplayer status. Retain a bounded fallback only for that
                 # unsupported/no-playing-observed case.
-                logger.debug(
+                _xiaoai_log.debug(
                     "XiaoAI native play state not observed: status_supported=%s",
                     status_supported,
                 )
@@ -38989,7 +39269,9 @@ class XiaoGPTBridge:
 
             if self.active_turn is not None or self.stop_event.is_set():
                 return
-            logger.info("XiaoAI native playback finished; opening follow-up listening")
+            _xiaoai_log.debug(
+                "XiaoAI native playback finished; opening follow-up listening"
+            )
             await self._start_relisten_cycle(player_idle_confirmed=True)
         except asyncio.CancelledError:
             raise
@@ -39025,14 +39307,14 @@ class XiaoGPTBridge:
             try:
                 status_info = await mina_service.player_get_status(self.device_id)
             except Exception:
-                logger.debug(
+                _xiaoai_log.debug(
                     "XiaoAI pre-wakeup player status query failed",
                     exc_info=True,
                 )
                 return True
 
             if self.config.player_status_debug:
-                logger.info(
+                _xiaoai_log.debug(
                     "XiaoAI pre-wakeup player status_info: poll=%d info=%r",
                     poll_count,
                     status_info,
@@ -39049,7 +39331,7 @@ class XiaoGPTBridge:
                         await asyncio.sleep(self.config.playback_tail_guard)
                     return True
             else:
-                logger.debug(
+                _xiaoai_log.debug(
                     "XiaoAI pre-wakeup player status unsupported: %r",
                     status_info,
                 )
@@ -39057,7 +39339,7 @@ class XiaoGPTBridge:
 
             await asyncio.sleep(self.config.playback_status_poll_interval)
 
-        logger.warning(
+        _xiaoai_log.warning(
             "XiaoAI player remained busy before wakeup timeout; "
             "skipping this relisten window"
         )
@@ -39087,7 +39369,7 @@ class XiaoGPTBridge:
             if not await self._wait_player_idle_before_wakeup():
                 return
 
-        logger.info("XiaoAI opening one follow-up listening window")
+        _xiaoai_log.debug("XiaoAI opening one follow-up listening window")
         await self._wakeup_xiaomi()
 
     async def _wakeup_xiaomi(self):
@@ -39099,11 +39381,11 @@ class XiaoGPTBridge:
         )
         miio_service = self.miio_service
         if miio_service is None:
-            logger.warning("Cannot wake XiaoAI: MIoT service is not initialized")
+            _xiaoai_log.warning("Cannot wake XiaoAI: MIoT service is not initialized")
             return
         try:
             (siid, aiid), args, mode = self.config.wakeup_action
-            logger.debug(
+            _xiaoai_log.debug(
                 "Xiaomi wakeup: hardware=%s mode=%s command=%s-%s args=%r",
                 self.config.hardware,
                 mode,
@@ -39121,7 +39403,7 @@ class XiaoGPTBridge:
             # state. status describes media playback, so idle values such as
             # 0 or 3 are valid immediately after a successful wake action.
             # A successful MIoT action is therefore considered sufficient.
-            logger.info(
+            _xiaoai_log.debug(
                 "Xiaomi MIoT wakeup sent: hardware=%s command=%s-%s",
                 self.config.hardware,
                 siid,
@@ -39131,9 +39413,9 @@ class XiaoGPTBridge:
         except Exception as primary_exc:
             fallback = self.config.directive_fallback_action
             if fallback is None:
-                logger.debug("Xiaomi wakeup failed", exc_info=True)
+                _xiaoai_log.debug("Xiaomi wakeup failed", exc_info=True)
                 return
-            logger.warning(
+            _xiaoai_log.warning(
                 "Xiaomi MIoT wakeup action failed for hardware=%s; "
                 "falling back to directive mode: %s",
                 self.config.hardware,
@@ -39142,7 +39424,7 @@ class XiaoGPTBridge:
 
         try:
             (siid, aiid), args, mode = fallback
-            logger.debug(
+            _xiaoai_log.debug(
                 "Xiaomi wakeup fallback: hardware=%s mode=%s command=%s-%s args=%r",
                 self.config.hardware,
                 mode,
@@ -39156,14 +39438,14 @@ class XiaoGPTBridge:
                 aiid,
                 args,
             )
-            logger.info(
+            _xiaoai_log.info(
                 "Xiaomi directive wakeup fallback sent: hardware=%s command=%s-%s",
                 self.config.hardware,
                 siid,
                 aiid,
             )
         except Exception:
-            logger.debug("Xiaomi directive wakeup fallback failed", exc_info=True)
+            _xiaoai_log.debug("Xiaomi directive wakeup fallback failed", exc_info=True)
 
     def _commit_completed_turn(self, turn):
         if self.config.model in BROWSER_MODEL_ALIASES:
@@ -39208,7 +39490,7 @@ class XiaoAIBridgeThread:
         try:
             loop.run_until_complete(self.bridge.run())
         except Exception:
-            logger.exception("XiaoAI bridge exited")
+            _xiaoai_log.exception("XiaoAI bridge exited")
         finally:
             pending = asyncio.all_tasks(loop)
             for task in pending:
@@ -39252,7 +39534,7 @@ class XiaoAIBridgeThread:
                 "pending": True,
             }
         except Exception as exc:
-            logger.warning(
+            _xiaoai_log.warning(
                 "XiaoAI post-auth refresh callback failed: %s",
                 re.sub(r"\s+", " ", str(exc)).strip()[:500],
                 exc_info=False,
@@ -39272,7 +39554,7 @@ class XiaoAIBridgeThread:
         if self.thread:
             self.thread.join(timeout)
             if self.thread.is_alive():
-                logger.warning("XiaoAI bridge thread did not stop cleanly")
+                _xiaoai_log.warning("XiaoAI bridge thread did not stop cleanly")
         self.thread = None
 
 
@@ -39480,14 +39762,16 @@ def _ve_voice_chat_jaro_winkler(left: str, right: str) -> float:
         return 0.0
     left_ordered = [char for index, char in enumerate(left) if left_matches[index]]
     right_ordered = [char for index, char in enumerate(right) if right_matches[index]]
-    transpositions = sum(a != b for a, b in zip(left_ordered, right_ordered)) / 2
+    transpositions = (
+        sum(a != b for a, b in zip(left_ordered, right_ordered, strict=True)) / 2
+    )
     jaro = (
         matches / len(left)
         + matches / len(right)
         + (matches - transpositions) / matches
     ) / 3
     prefix = 0
-    for a, b in zip(left, right):
+    for a, b in zip(left, right, strict=False):
         if a != b or prefix == 4:
             break
         prefix += 1
@@ -39643,7 +39927,7 @@ def _ve_voice_chat_match_keyword(partial_text: str):
                 winner_method = method
                 winner_window = window
     if winner is not None:
-        logger.info(
+        _kws_log.debug(
             "Voice chat apple KWS fuzzy matched: keyword=%r reference=%r "
             "method=%s score=%.3f window=%r text=%r",
             winner,
@@ -40154,12 +40438,14 @@ def _ve_voice_chat_notify(text, *, title="语音助手", subtitle="", sound=""):
                 stderr=subprocess.DEVNULL,
             )
         except Exception:
-            logger.debug("Voice chat notification failed", exc_info=True)
+            _app_log.debug("Voice chat notification failed", exc_info=True)
 
     try:
         threading.Thread(target=_run, name="voice-chat-notify", daemon=True).start()
     except Exception:
-        logger.debug("Voice chat notification thread failed to start", exc_info=True)
+        _xiaoai_log.debug(
+            "Voice chat notification thread failed to start", exc_info=True
+        )
 
 
 _voice_chat_subsystem = None
@@ -40178,14 +40464,14 @@ def _voice_chat_force_stop_apple_speech(reason: str) -> bool:
     if proc is None or proc.poll() is not None:
         return True
     try:
-        logger.info(
+        _xiaoai_log.info(
             "Voice chat force-stopping Apple Speech helper: %s pid=%s",
             reason,
             proc.pid,
         )
         proc.terminate()
     except Exception:
-        logger.debug("Voice chat force-stop terminate failed", exc_info=True)
+        _xiaoai_log.debug("Voice chat force-stop terminate failed", exc_info=True)
     try:
         proc.wait(timeout=3.0)
         return True
@@ -40286,7 +40572,7 @@ class VoiceChatSubsystem:
                 kw_path = _ve_voice_chat_keywords_file()
                 _ve_voice_chat_build_keywords_string()
             except Exception:
-                logger.exception("Voice chat keywords invalid; subsystem disabled")
+                _xiaoai_log.exception("Voice chat keywords invalid; subsystem disabled")
                 return
         else:
             kw_path = "apple engine (文本匹配, 无需 keywords 文件)"
@@ -40295,7 +40581,7 @@ class VoiceChatSubsystem:
             target=self._run, name="VoiceChatWakeWord", daemon=True
         )
         self._thread.start()
-        logger.info(
+        _xiaoai_log.info(
             "Voice chat subsystem started: keywords=%s threshold=%.3f score=%.2f",
             kw_path,
             VE_VOICE_CHAT_KWS_THRESHOLD,
@@ -40305,14 +40591,14 @@ class VoiceChatSubsystem:
         # 若这里的拼音与 tokens.txt 约定不一致, 唤醒词永远匹配不到, 再调阈值也没用。
         if VE_VOICE_CHAT_KWS_ENGINE == "sherpa":
             try:
-                logger.info(
+                _kws_log.info(
                     "Voice chat KWS keywords content:\n%s",
                     _ve_voice_chat_build_keywords_string(),
                 )
             except Exception:
-                logger.exception("Voice chat KWS keywords dump failed")
+                _kws_log.exception("Voice chat KWS keywords dump failed")
         else:
-            logger.info(
+            _kws_log.info(
                 "Voice chat apple KWS keywords: %s",
                 [w for w, _s, _t in VE_VOICE_CHAT_KEYWORDS],
             )
@@ -40329,7 +40615,7 @@ class VoiceChatSubsystem:
         if thread is not None and thread is not threading.current_thread():
             thread.join(timeout=6.0)
             if thread.is_alive():
-                logger.warning(
+                _xiaoai_log.warning(
                     "Voice chat thread did not exit within join timeout; "
                     "mic already released via helper SIGTERM"
                 )
@@ -40375,12 +40661,12 @@ class VoiceChatSubsystem:
             # 听写/播报, 让其尽快退出, 而不是只影响下一次监听、也不误伤他人。
             self._turn_abort.set()
             self._abort_own_turn("voice chat paused")
-            logger.info("Voice chat listening PAUSED (double-tap right cmd)")
+            _xiaoai_log.info("Voice chat listening PAUSED (double-tap right cmd)")
             self._flash_hud("voice_paused", "监听已暂停")
         else:
             self._turn_abort.clear()
             self._enabled.set()
-            logger.info("Voice chat listening RESUMED (double-tap right cmd)")
+            _xiaoai_log.info("Voice chat listening RESUMED (double-tap right cmd)")
             self._flash_hud("voice_listen", "监听已开启，说出唤醒词")
 
     def _abort_own_turn(self, reason: str):
@@ -40398,18 +40684,20 @@ class VoiceChatSubsystem:
                 if not exited:
                     # helper 在 CoreAudio teardown 中拒绝 SIGTERM, 受
                     # "绝不 SIGKILL"策略约束, 可能短暂继续占麦、与 KWS 新流并存。
-                    logger.warning(
+                    _dictation_log.warning(
                         "Voice chat: wake dictation helper refused SIGTERM (%s); "
                         "mic may stay busy briefly until CoreAudio teardown completes",
                         reason,
                     )
             except Exception:
-                logger.debug("abort: force-stop apple speech failed", exc_info=True)
+                _xiaoai_log.debug(
+                    "abort: force-stop apple speech failed", exc_info=True
+                )
         if self._wake_speaking_active.is_set():
             try:
                 stop_tts_immediately(reason)
             except Exception:
-                logger.debug("abort: stop_tts_immediately failed", exc_info=True)
+                _xiaoai_log.debug("abort: stop_tts_immediately failed", exc_info=True)
 
     def _flash_hud(self, status, text):
         # 默认无 HUD:唤醒助手走后台, 不弹任何提示窗。置 VE_VOICE_CHAT_SHOW_HUD=1 才显示。
@@ -40454,7 +40742,7 @@ class VoiceChatSubsystem:
         try:
             spotter = self._ensure_spotter()
         except Exception:
-            logger.exception("Voice chat KWS init failed; subsystem disabled")
+            _kws_log.exception("Voice chat KWS init failed; subsystem disabled")
             return
         while not self._stop.is_set():
             if not self._enabled.is_set():
@@ -40483,7 +40771,7 @@ class VoiceChatSubsystem:
                 # 无设备/设备被拔: 属预期状态, 转入安静等待, 不刷 traceback。
                 if _ve_voice_chat_is_no_input_device_error(exc):
                     if not self._mic_waiting:
-                        logger.info(
+                        _audio_log.warning(
                             "Voice chat: input device lost; "
                             "waiting for a microphone (event-driven)"
                         )
@@ -40494,13 +40782,13 @@ class VoiceChatSubsystem:
                 self._listen_error_count += 1
                 delay = min(5.0, 0.5 * (2 ** min(self._listen_error_count - 1, 4)))
                 if self._listen_error_count == 1 or self._listen_error_count % 10 == 0:
-                    logger.exception(
+                    _kws_log.exception(
                         "Voice chat KWS listen error (#%d); backing off %.1fs",
                         self._listen_error_count,
                         delay,
                     )
                 else:
-                    logger.debug(
+                    _kws_log.debug(
                         "Voice chat KWS listen error (#%d): %r",
                         self._listen_error_count,
                         exc,
@@ -40513,7 +40801,7 @@ class VoiceChatSubsystem:
             try:
                 self._handle_wake(keyword)
             except Exception:
-                logger.exception("Voice chat turn failed: keyword=%r", keyword)
+                _xiaoai_log.exception("Voice chat turn failed: keyword=%r", keyword)
 
     def _wait_for_input_device(self) -> bool:
         """确保有可用输入设备; 无则事件驱动地等待, 不轮询。
@@ -40537,13 +40825,13 @@ class VoiceChatSubsystem:
         self._last_probe_at = now
         if check_audio_input_device():
             if self._mic_waiting:
-                logger.info("Voice chat: microphone detected; resuming listening")
+                _audio_log.debug("Voice chat: microphone detected; resuming listening")
                 self._mic_waiting = False
                 self._listen_error_count = 0
             return True
         # 无设备: 首次进入记一条, 之后静默等待事件。
         if not self._mic_waiting:
-            logger.info(
+            _audio_log.warning(
                 "Voice chat: no input device; waiting for a microphone (event-driven)"
             )
             self._mic_waiting = True
@@ -40600,7 +40888,7 @@ class VoiceChatSubsystem:
         wait_for_audio_route_stability(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT)
         if self._stop.is_set():
             return
-        logger.info("Voice chat: driving silent audio recovery (%s)", reason)
+        _audio_log.debug("Voice chat: driving silent audio recovery (%s)", reason)
         # 懒启动 TTS consumer(幂等, 已运行则零开销返回): recovery 标记需要
         # consumer 线程处理, voice chat 模式启动时不预启动 consumer。
         # 记录本次 nudge 是否【冷启动】了 consumer(启动前它未在运行): 若是, 冷启动会在
@@ -40624,14 +40912,16 @@ class VoiceChatSubsystem:
             # 等 owner 线程处理完标记(恢复跑完)再返回, 下一轮 PENDING 已清即可推进。
             done_result.event.wait(timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT + 5.0)
         except Exception:
-            logger.debug("Voice chat: silent audio recovery failed", exc_info=True)
+            _audio_log.debug("Voice chat: silent audio recovery failed", exc_info=True)
 
     def _prewarm_output_before_answer(self):
         """Voice chat 回答前使用统一 TTS 准备事务。"""
         if self._stop.is_set():
             return
         ready = _prepare_tts_output(preempt_kws=False)
-        logger.info("Voice chat: TTS output preparation before answer ready=%s", ready)
+        _tts_log.debug(
+            "Voice chat: TTS output preparation before answer ready=%s", ready
+        )
 
     def _run_apple(self):
         """Apple Speech 单会话唤醒引擎: 一个常驻听写会话干到底。
@@ -40640,7 +40930,7 @@ class VoiceChatSubsystem:
         收集指令(partial 是累计全文, 取最新一条), 静音自停结束; 然后停麦走回答
         (LLM+TTS), 播报完重启会话。Ctrl 听写/其他功能要麦时让出。
         """
-        logger.info("Voice chat KWS engine: apple (single continuous session)")
+        _kws_log.debug("Voice chat KWS engine: apple (single continuous session)")
         while not self._stop.is_set():
             if not self._enabled.is_set():
                 self._enabled.wait(timeout=0.25)
@@ -40652,7 +40942,7 @@ class VoiceChatSubsystem:
                 continue
 
             if self._apple_route_quarantined:
-                logger.info(
+                _kws_log.debug(
                     "Voice chat apple KWS parked after repeated CoreAudio -10868; "
                     "waiting for an input-device event"
                 )
@@ -40662,7 +40952,7 @@ class VoiceChatSubsystem:
                 stable = wait_for_audio_route_stability(
                     timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT
                 )
-                logger.info(
+                _kws_log.debug(
                     "Voice chat apple KWS quarantine probe gate: route_stable=%s",
                     stable,
                 )
@@ -40714,7 +41004,7 @@ class VoiceChatSubsystem:
                 )
             ):
                 if not self._mic_waiting:
-                    logger.info(
+                    _audio_log.info(
                         "Voice chat apple: CoreAudio reports no input device; not "
                         "spawning helper (event-driven wait for a microphone)"
                     )
@@ -40723,7 +41013,9 @@ class VoiceChatSubsystem:
                 self._wait_input_device_event()
                 continue
             if self._mic_waiting:
-                logger.info("Voice chat apple: microphone present; resuming listening")
+                _xiaoai_log.info(
+                    "Voice chat apple: microphone present; resuming listening"
+                )
                 self._mic_waiting = False
                 self._listen_error_count = 0
 
@@ -40743,7 +41035,7 @@ class VoiceChatSubsystem:
                 self._listen_error_count += 1
                 delay = min(5.0, 0.5 * (2 ** min(self._listen_error_count - 1, 4)))
                 if self._listen_error_count == 1 or self._listen_error_count % 10 == 0:
-                    logger.exception(
+                    _xiaoai_log.exception(
                         "Voice chat apple session error (#%d); backing off %.1fs",
                         self._listen_error_count,
                         delay,
@@ -40778,20 +41070,20 @@ class VoiceChatSubsystem:
                         self._apple_route_start_cooldown_until,
                         time.monotonic() + cooldown,
                     )
-                    logger.warning(
+                    _kws_log.warning(
                         "Voice chat apple KWS CoreAudio -10868 cooldown: failures=%d delay=%.1fs",
                         self._apple_route_start_failures,
                         cooldown,
                     )
                     if self._apple_route_start_failures >= 3:
                         self._apple_route_quarantined = True
-                        logger.error(
+                        _kws_log.error(
                             "Voice chat apple KWS entering CoreAudio route quarantine "
                             "after %d consecutive -10868 failures; periodic helper spawn disabled",
                             self._apple_route_start_failures,
                         )
                 if self._listen_error_count == 1 or self._listen_error_count % 5 == 0:
-                    logger.warning(
+                    _xiaoai_log.info(
                         "Voice chat apple session did not start (#%d; helper cannot "
                         "open the mic); waiting for a device change (min %.1fs between "
                         "retries)",
@@ -40847,7 +41139,7 @@ class VoiceChatSubsystem:
             resume_not_before = _APPLE_KWS_RESUME_NOT_BEFORE
         resume_wait = resume_not_before - time.monotonic()
         if resume_wait > 0:
-            logger.info(
+            _kws_log.debug(
                 "Voice chat apple KWS waiting %.2fs for post-TTS route recovery",
                 resume_wait,
             )
@@ -40857,7 +41149,7 @@ class VoiceChatSubsystem:
             route_stable = wait_for_audio_route_stability(
                 timeout=VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT
             )
-            logger.info(
+            _kws_log.debug(
                 "Voice chat apple KWS post-TTS route stability: stable=%s",
                 route_stable,
             )
@@ -40869,7 +41161,7 @@ class VoiceChatSubsystem:
 
         route_cooldown = self._apple_route_start_cooldown_until - time.monotonic()
         if route_cooldown > 0:
-            logger.info(
+            _kws_log.debug(
                 "Voice chat apple KWS spawn held by -10868 cooldown: %.2fs",
                 route_cooldown,
             )
@@ -40898,7 +41190,7 @@ class VoiceChatSubsystem:
             or _TTS_PREEMPT_KWS.is_set()
             or AUDIO_ROUTE_CHANGE_PENDING.is_set()
         ):
-            logger.debug(
+            _kws_log.debug(
                 "Voice chat apple KWS: state changed during restart gap; "
                 "skipping helper spawn this round"
             )
@@ -40923,7 +41215,7 @@ class VoiceChatSubsystem:
                     env=env,
                 )
             except Exception as exc:
-                logger.warning("Voice chat apple KWS: helper start failed: %s", exc)
+                _kws_log.warning("Voice chat apple KWS: helper start failed: %s", exc)
                 return
 
             # helper 进程已起(不代表已进入聆听 —— 那要等 "started" 事件)。标记本轮确实
@@ -40943,9 +41235,9 @@ class VoiceChatSubsystem:
                             # 的常规生命周期降 DEBUG, 默认级别下不刷屏, 排障开 DEBUG 仍可见。
                             _low = line.lower()
                             if any(m in _low for m in _APPLE_KWS_KEEP_INFO_MARKERS):
-                                logger.info("Apple KWS helper: %s", line)
+                                _kws_log.info("Apple KWS helper: %s", line)
                             else:
-                                logger.debug("Apple KWS helper: %s", line)
+                                _kws_log.debug("Apple KWS helper: %s", line)
                 except Exception:
                     pass
 
@@ -40953,7 +41245,7 @@ class VoiceChatSubsystem:
                 target=_stderr_relay, daemon=True, name="AppleKWSStderr"
             ).start()
 
-            logger.info("Voice chat apple KWS: session listening (pid=%d)", proc.pid)
+            _kws_log.debug("Voice chat apple KWS: session listening (pid=%d)", proc.pid)
 
             q: queue.Queue = queue.Queue()
             eof = threading.Event()
@@ -41070,14 +41362,14 @@ class VoiceChatSubsystem:
                             and (now - last_partial_at)
                             >= VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS
                         ):
-                            logger.info(
+                            _kws_log.debug(
                                 "Voice chat apple KWS: command complete in persistent session, query=%r",
                                 command[:80],
                             )
                             try:
                                 self._handle_wake(wake_keyword, captured_query=command)
                             except Exception:
-                                logger.exception(
+                                _xiaoai_log.exception(
                                     "Voice chat turn failed in persistent Apple session: keyword=%r",
                                     wake_keyword,
                                 )
@@ -41091,7 +41383,7 @@ class VoiceChatSubsystem:
                                 proc.send_signal(signal.SIGUSR2)
                                 resetting_recognition = True
                             except Exception as exc:
-                                logger.error(
+                                _kws_log.error(
                                     "Voice chat apple KWS: SIGUSR2 soft reset failed: %s",
                                     exc,
                                 )
@@ -41114,7 +41406,7 @@ class VoiceChatSubsystem:
                                 locale: "resetting"
                                 for locale in VE_VOICE_CHAT_CAPTURE_LOCALES
                             }
-                            logger.info(
+                            _kws_log.debug(
                                 "Voice chat apple KWS resumed on persistent AVAudioEngine after TTS"
                             )
                         elif (
@@ -41123,7 +41415,7 @@ class VoiceChatSubsystem:
                             and (now - wake_matched_at)
                             >= VE_VOICE_CHAT_DICTATION_TIMEOUT
                         ):
-                            logger.info(
+                            _kws_log.debug(
                                 "Voice chat apple KWS: command wait timed out after %.1fs; soft resetting",
                                 VE_VOICE_CHAT_DICTATION_TIMEOUT,
                             )
@@ -41157,7 +41449,7 @@ class VoiceChatSubsystem:
                     continue
                 typ = event.get("type")
                 if typ == "segment_listener_started":
-                    logger.info(
+                    _kws_log.debug(
                         "Voice chat apple KWS segment listener started: preroll=%ss end_silence=%ss maximum=%ss",
                         event.get("preroll_seconds"),
                         event.get("end_silence_seconds"),
@@ -41165,7 +41457,7 @@ class VoiceChatSubsystem:
                     )
                     continue
                 if typ == "segment_meter":
-                    logger.info(
+                    _kws_log.debug(
                         "Voice chat apple KWS segment meter: level=%.5f noise=%.5f start=%.5f hold=%.5f speaking=%s buffers=%s",
                         float(event.get("level") or 0.0),
                         float(event.get("noise_floor") or 0.0),
@@ -41183,7 +41475,7 @@ class VoiceChatSubsystem:
                     "segment_dropped",
                     "segment_error",
                 }:
-                    logger.info("Voice chat apple KWS %s: %s", typ, event)
+                    _kws_log.debug("Voice chat apple KWS %s: %s", typ, event)
                     if wake_keyword is not None:
                         if typ in {"segment_speech_started", "segment_captured"}:
                             command_segment_in_progress = True
@@ -41201,7 +41493,7 @@ class VoiceChatSubsystem:
                         recognizer_states[locale] = "resetting"
                     continue
                 if resetting_recognition and typ in {"partial", "final"}:
-                    logger.debug(
+                    _kws_log.debug(
                         "Voice chat apple KWS: ignoring %s while recognition reset is pending",
                         typ,
                     )
@@ -41220,7 +41512,7 @@ class VoiceChatSubsystem:
                         if recognition_mode.startswith("segment_only")
                         else "armed"
                     )
-                    logger.info(
+                    _kws_log.debug(
                         "Voice chat apple KWS started: recognition_mode=%s",
                         recognition_mode,
                     )
@@ -41232,7 +41524,7 @@ class VoiceChatSubsystem:
                     if locale:
                         recognizer_states[locale] = state
                     debug = event.get("secondary_debug") or {}
-                    logger.info(
+                    _kws_log.debug(
                         "Voice chat apple KWS recognizer state: locale=%s state=%s "
                         "failures=%s retry_after=%s error=%r generation=%s "
                         "buffers=%s frames=%s results=%s lifetime=%.3fs "
@@ -41265,7 +41557,7 @@ class VoiceChatSubsystem:
                         and wake_segment_id is not None
                         and event_segment_id == wake_segment_id
                     ):
-                        logger.info(
+                        _kws_log.debug(
                             "Voice chat apple KWS ignoring wake-segment sibling transcript: id=%s locale=%s text=%r",
                             event_segment_id,
                             ev_locale,
@@ -41280,7 +41572,7 @@ class VoiceChatSubsystem:
                     ):
                         continue
                     if event_source == "segment":
-                        logger.info(
+                        _kws_log.debug(
                             "Voice chat apple KWS segment transcript: id=%s locale=%s text=%r",
                             event_segment_id,
                             ev_locale,
@@ -41291,7 +41583,7 @@ class VoiceChatSubsystem:
                     recognizer_states[ev_locale] = "active"
                     secondary_debug = event.get("secondary_debug")
                     if secondary_debug:
-                        logger.info(
+                        _kws_log.debug(
                             "Voice chat apple KWS recognizer result debug: locale=%s "
                             "generation=%s buffers=%s frames=%s results=%s lifetime=%.3fs "
                             "first_audio_delay=%.3fs last_audio_age=%.3fs",
@@ -41324,7 +41616,7 @@ class VoiceChatSubsystem:
                     )
                     if log_key != self._last_partial_logged:
                         self._last_partial_logged = log_key
-                        logger.info(
+                        _kws_log.debug(
                             "Voice chat apple KWS bilingual[%s updated]: %s",
                             ev_locale,
                             " | ".join(snapshot),
@@ -41358,7 +41650,7 @@ class VoiceChatSubsystem:
                             command_segment_in_progress = bool(
                                 event_source == "segment" and inline_command
                             )
-                            logger.info(
+                            _kws_log.debug(
                                 "Voice chat apple KWS command locale mapping: keyword=%r wake_locale=%s command_locale=%s",
                                 hit,
                                 ev_locale,
@@ -41367,7 +41659,7 @@ class VoiceChatSubsystem:
                             wake_stream_snapshot = dict(stream_texts)
                             wake_matched_at = time.monotonic()
                             last_partial_at = wake_matched_at
-                            logger.info(
+                            _kws_log.debug(
                                 "Voice chat apple KWS matched: %r "
                                 "(locale=%s partial=%r inline_command=%r)",
                                 hit,
@@ -41410,7 +41702,7 @@ class VoiceChatSubsystem:
                             and configured_command_locale
                             and ev_locale != configured_command_locale
                         ):
-                            logger.info(
+                            _kws_log.debug(
                                 "Voice chat apple KWS ignoring unmapped command locale: id=%s locale=%s required=%s text=%r",
                                 event_segment_id,
                                 ev_locale,
@@ -41444,7 +41736,7 @@ class VoiceChatSubsystem:
                                     event_segment_id != command_segment_id
                                     or ev_locale != command_locale
                                 ):
-                                    logger.info(
+                                    _kws_log.debug(
                                         "Voice chat apple KWS ignoring command-segment sibling transcript: id=%s locale=%s locked_id=%s locked_locale=%s text=%r",
                                         event_segment_id,
                                         ev_locale,
@@ -41480,7 +41772,7 @@ class VoiceChatSubsystem:
                             final_candidate = (
                                 _make_turn(wake_keyword, text) if wake_keyword else None
                             )
-                    logger.info(
+                    _kws_log.debug(
                         "Voice chat apple KWS final[recognizer=%s source=%s segment=%s candidate=%r]",
                         ev_locale,
                         event.get("source") or "stream",
@@ -41492,8 +41784,8 @@ class VoiceChatSubsystem:
                     self._apple_last_start_error = (
                         "-10868" if "-10868" in error_text else "other"
                     )
-                    logger.warning(
-                        "Voice chat apple KWS helper error: %s",
+                    _kws_log.info(
+                        "Voice chat apple KWS helper: %s",
                         error_text,
                     )
                     return
@@ -41546,7 +41838,7 @@ class VoiceChatSubsystem:
         # "无设备"进入等待, 而该流从未释放)。
         try:
             mic.start()
-            logger.info(
+            _kws_log.debug(
                 "Voice chat KWS: input stream opened (device=%r rate=%d blocksize=%d)",
                 device_index,
                 VE_VOICE_CHAT_SAMPLE_RATE,
@@ -41575,7 +41867,7 @@ class VoiceChatSubsystem:
                 except Exception:
                     # read_available 抛错通常意味着设备已消失: 退出让既有 route-change
                     # 链路刷新 PortAudio, 之后 _run 会重开麦。
-                    logger.info(
+                    _kws_log.debug(
                         "Voice chat KWS: input device lost (read_available error); "
                         "releasing mic"
                     )
@@ -41598,7 +41890,7 @@ class VoiceChatSubsystem:
                     if _kws_dead_since == 0.0:
                         _kws_dead_since = now
                     elif now - _kws_dead_since >= 8.0:
-                        logger.warning(
+                        _kws_log.warning(
                             "Voice chat KWS: input stream RMS remained near zero "
                             "for %.1fs after startup grace; forcing audio recovery",
                             now - _kws_dead_since,
@@ -41614,7 +41906,7 @@ class VoiceChatSubsystem:
                     spotter.decode_stream(stream)
                     result = spotter.get_result(stream)
                     if result:
-                        logger.info("Voice chat KWS raw hit: %r", result)
+                        _kws_log.debug("Voice chat KWS raw hit: %r", result)
                         spotter.reset_stream(stream)
                         return result
             return None
@@ -41636,14 +41928,14 @@ class VoiceChatSubsystem:
     def _handle_wake(self, keyword, captured_query: Optional[str] = None):
         route = _ve_voice_chat_wake_route(keyword)
         if route is None:
-            logger.warning("Voice chat wake without route: %r", keyword)
+            _xiaoai_log.warning("Voice chat wake without route: %r", keyword)
             return
         kind, value = route
         if kind == "command" and value == "new_session":
             with self._conversations_lock:
                 self._conversations.clear()
             self._history_clear()
-            logger.info("Voice chat: virtual sessions cleared (new topic)")
+            _xiaoai_log.info("Voice chat: virtual sessions cleared (new topic)")
             self._wake_speaking_active.set()
             try:
                 speak_local_async(
@@ -41659,14 +41951,14 @@ class VoiceChatSubsystem:
         global IS_DICTATION_ACTIVE
 
         model = value
-        logger.info("Voice chat wake: keyword=%r -> model=%s", keyword, model)
+        _xiaoai_log.info("Voice chat wake: keyword=%r -> model=%s", keyword, model)
 
         # 竞态守卫:绝不在 Ctrl 听写已在录音时再开第二个麦克风消费者。
         # 置位 IS_DICTATION_ACTIVE 让 wake 听写成为一等公民, 与既有互斥体系
         # (IS_DICTATION_ACTIVE + Apple Speech 进程单例) 对齐, 关掉竞态窗口。
         with DICTATION_LOCK:
             if IS_DICTATION_ACTIVE:
-                logger.info("Voice chat wake ignored: dictation already active")
+                _dictation_log.debug("Voice chat wake ignored: dictation already active")
                 return
             IS_DICTATION_ACTIVE = True
 
@@ -41706,7 +41998,7 @@ class VoiceChatSubsystem:
             self._flash_hud("voice_nospeech", "没有听清")
             return
 
-        logger.info("Voice chat query: %s", query[:120])
+        _xiaoai_log.info("Voice chat query: %s", query[:120])
         # 标记 wake 正在播报: 覆盖流式+播报等待整个生命周期, 使暂停/关闭的 owner
         # 守卫只切 wake 自己的 TTS, 不误伤其他功能正在播放的语音。
         self._wake_speaking_active.set()
@@ -41749,7 +42041,7 @@ class VoiceChatSubsystem:
                     locale, generation=None, show_hud=VE_VOICE_CHAT_SHOW_HUD
                 )
             except Exception:
-                logger.exception("Voice chat wake dictation failed")
+                _dictation_log.exception("Voice chat wake dictation failed")
             finally:
                 done.set()
 
@@ -41763,12 +42055,12 @@ class VoiceChatSubsystem:
         self._wake_dictation_active.set()
         if self._turn_abort.is_set() or self._stop.is_set():
             self._wake_dictation_active.clear()
-            logger.info("Voice chat wake dictation aborted before start")
+            _dictation_log.debug("Voice chat wake dictation aborted before start")
             return None
         thread.start()
         try:
             if not done.wait(timeout=VE_VOICE_CHAT_DICTATION_TIMEOUT):
-                logger.warning(
+                _dictation_log.warning(
                     "Voice chat wake dictation timed out after %.1fs; releasing mic",
                     VE_VOICE_CHAT_DICTATION_TIMEOUT,
                 )
@@ -41776,7 +42068,7 @@ class VoiceChatSubsystem:
                 if not exited:
                     # SIGTERM 被拒(CoreAudio teardown 中), 受"绝不 SIGKILL"
                     # 约束, 该听写线程可能继续占麦、与 KWS 新流短暂并存。
-                    logger.warning(
+                    _dictation_log.warning(
                         "Voice chat wake dictation helper refused SIGTERM; mic may "
                         "stay busy briefly and coexist with KWS until it exits"
                     )
@@ -41944,7 +42236,9 @@ class VoiceChatSubsystem:
                     except (TypeError, ValueError):
                         continue
                     if event.get("error"):
-                        logger.warning("Voice chat upstream error: %s", event["error"])
+                        _xiaoai_log.warning(
+                            "Voice chat upstream error: %s", event["error"]
+                        )
                         break
                     conv = str(event.get("conversation_id") or "").strip()
                     if conv:
@@ -41967,7 +42261,7 @@ class VoiceChatSubsystem:
             # abort 后不再朗读尾段缓冲(≤max_chars), 否则 stop_tts 之后又冒出
             # 一句, 暂停/停止不彻底。coalescer 为局部变量, 跳过即随方法返回销毁。
             if self._stop.is_set() or self._turn_abort.is_set():
-                logger.info("Voice chat aborted; skipping coalescer tail flush")
+                _xiaoai_log.info("Voice chat aborted; skipping coalescer tail flush")
             else:
                 for chunk in coalescer.finish():
                     cleaned = clean_text_for_tts(chunk)
@@ -41982,15 +42276,15 @@ class VoiceChatSubsystem:
             # 正常暂停/关闭:abort 置位时读超时(默认 30s)会抛异常, 属预期打断,
             # 降级为 info, 不刷 traceback。非 abort 的真实故障仍按 exception 记录。
             if self._turn_abort.is_set() or self._stop.is_set():
-                logger.info("Voice chat streaming interrupted by pause/stop")
+                _xiaoai_log.info("Voice chat streaming interrupted by pause/stop")
             else:
-                logger.exception("Voice chat streaming request failed")
+                _xiaoai_log.exception("Voice chat streaming request failed")
 
         try:
             hud.hide_visual_only()
         except Exception:
             pass
-        logger.info(
+        _xiaoai_log.info(
             "Voice chat answer done: model=%s chars=%d spoken=%s",
             model,
             answer_chars,
@@ -42009,7 +42303,7 @@ class VoiceChatSubsystem:
         if self._get_conversation_id(model) and answer_chars > 0:
             self._mark_history_covered(model)
         elif self._get_conversation_id(model):
-            logger.warning(
+            _xiaoai_log.warning(
                 "Voice chat history watermark not advanced: model=%s returned no answer delta",
                 model,
             )
@@ -42029,7 +42323,7 @@ class VoiceChatSubsystem:
                 return
             time.sleep(0.1)
         if _TTS_PREEMPT_KWS.is_set():
-            logger.warning(
+            _kws_log.warning(
                 "Voice chat TTS lifecycle wait timed out; releasing KWS preempt"
             )
             _TTS_PREEMPT_KWS.clear()
@@ -42038,7 +42332,7 @@ class VoiceChatSubsystem:
 def start_voice_chat_subsystem():
     global _voice_chat_subsystem
     if not VE_VOICE_CHAT_ENABLED:
-        logger.info("Voice chat subsystem disabled (set VE_VOICE_CHAT_ENABLED=1)")
+        _xiaoai_log.info("Voice chat subsystem disabled (set VE_VOICE_CHAT_ENABLED=1)")
         return
     with _voice_chat_lock:
         if _voice_chat_subsystem is None:
@@ -42113,7 +42407,7 @@ def ask_user_dictation(
 
     reset_question_recording_state()
 
-    logger.info(f"Dictation: {len(questions)} questions")
+    _dictation_log.debug(f"Dictation: {len(questions)} questions")
     answers = []
     cancel_flag = {"cancel_all": False}
 
@@ -42131,7 +42425,7 @@ def ask_user_dictation(
         for i, question in enumerate(questions):
             # 🔧 在每轮循环开始前检查取消状态
             if cancel_manager.is_cancel_requested():
-                logger.info("🛑 检测到取消请求，停止所有问题")
+                _dictation_log.debug("🛑 检测到取消请求，停止所有问题")
                 cancel_flag["cancel_all"] = True
 
             if cancel_flag["cancel_all"]:
@@ -42141,14 +42435,14 @@ def ask_user_dictation(
                 # 标记后续所有问题为已取消
                 for remaining_q in questions[i + 1 :]:
                     answers.append(f"**{remaining_q}**\n[CANCELLED]\n")
-                logger.info("所有剩余问题已标记为取消")
+                _dictation_log.debug("所有剩余问题已标记为取消")
                 break
 
             hud.show("reading", f"Question {i + 1}/{len(questions)}", question)
 
             if read_questions:
                 if not speak_local_sync_and_wait(question):
-                    logger.warning(
+                    _dictation_log.warning(
                         "TTS queue item did not finish "
                         "within the expected time for Q%d",
                         i + 1,
@@ -42294,10 +42588,12 @@ def speak(
     text = filter_streaming_tts_reasoning(text)
 
     if not text:
-        logger.info("TTS chunk skipped because it contained only reasoning/artifacts")
+        _tts_log.debug(
+            "TTS chunk skipped because it contained only reasoning/artifacts"
+        )
         return "Skipped reasoning-only TTS chunk"
 
-    logger.info(
+    _app_log.debug(
         "Speaking (%s): %s...",
         "cleaned" if clean_text else "sanitized",
         text[:100],
@@ -42336,7 +42632,7 @@ def speak(
             text = clean_text_for_tts(text)
 
         except Exception as e:
-            logger.warning(f"LLM clean failed; using sanitized text: {e}")
+            _llm_log.warning(f"LLM clean failed; using sanitized text: {e}")
 
     if not text or not text.strip():
         return "Skipped empty TTS text after cleaning"
@@ -42748,13 +43044,15 @@ async def transcribe_api(request):
 
                     while True:
                         if SERVER_SHUTTING_DOWN.is_set():
-                            logger.info(
+                            _transcription_log.info(
                                 "HTTP transcription stream ending because server is shutting down"
                             )
                             return
 
                         if await request.is_disconnected():
-                            logger.info("HTTP transcription client disconnected")
+                            _transcription_log.info(
+                                "HTTP transcription client disconnected"
+                            )
                             return
 
                         seg = await asyncio.to_thread(get_next_segment)
@@ -42784,11 +43082,11 @@ async def transcribe_api(request):
                     yield _SSE_DONE_FRAME
 
                 except asyncio.CancelledError:
-                    logger.info("HTTP transcription stream cancelled")
+                    _transcription_log.info("HTTP transcription stream cancelled")
                     return
 
                 except Exception as e:
-                    logger.error(f"Stream transcription error: {e}")
+                    _transcription_log.error(f"Stream transcription error: {e}")
                     yield (
                         f"data: "
                         f"{json.dumps({'type': 'error', 'error': str(e)}, ensure_ascii=False)}"
@@ -42808,7 +43106,7 @@ async def transcribe_api(request):
                             try:
                                 await asyncio.to_thread(close_method)
                             except Exception:
-                                logger.debug(
+                                _transcription_log.debug(
                                     "Failed to close Whisper segment generator",
                                     exc_info=True,
                                 )
@@ -42880,13 +43178,13 @@ async def transcribe_api(request):
             )
 
     except ClientDisconnect:
-        logger.info("Transcription API client disconnected")
+        _transcription_log.info("Transcription API client disconnected")
         raise
     except asyncio.CancelledError:
-        logger.info("Transcription API cancelled during shutdown")
+        _transcription_log.info("Transcription API cancelled during shutdown")
         raise
     except Exception as e:
-        logger.error(f"Transcription API error: {e}")
+        _transcription_log.error(f"Transcription API error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
     finally:
         if not stream_mode:
@@ -42922,7 +43220,7 @@ async def speech_api(request):
             return JSONResponse({"error": str(exc)}, status_code=400)
         stream_mode = body.get("stream", False) in (True, "true", "True", "1")
 
-        logger.info(
+        _tts_log.debug(
             "HTTP TTS: voice=%s  speed=%.2f  chars=%d  stream=%s",
             voice,
             speed,
@@ -42949,13 +43247,13 @@ async def speech_api(request):
 
                     async for chunk in communicate.stream():
                         if SERVER_SHUTTING_DOWN.is_set():
-                            logger.info(
+                            _tts_log.debug(
                                 "HTTP TTS stream ending because server is shutting down"
                             )
                             return
 
                         if await request.is_disconnected():
-                            logger.info("HTTP TTS client disconnected")
+                            _tts_log.debug("HTTP TTS client disconnected")
                             return
 
                         if chunk.get("type") == "audio":
@@ -43005,11 +43303,11 @@ async def speech_api(request):
                     yield _SSE_DONE_FRAME
 
                 except asyncio.CancelledError:
-                    logger.info("HTTP TTS stream cancelled")
+                    _tts_log.debug("HTTP TTS stream cancelled")
                     raise
 
                 except Exception as exc:
-                    logger.exception("HTTP TTS stream failed")
+                    _tts_log.exception("HTTP TTS stream failed")
 
                     yield (
                         "data: "
@@ -43076,7 +43374,7 @@ async def speech_api(request):
         if not audio_data:
             return JSONResponse({"error": "No audio generated"}, status_code=500)
 
-        logger.info("HTTP TTS done: %d bytes generated", len(audio_data))
+        _tts_log.debug("HTTP TTS done: %d bytes generated", len(audio_data))
         return Response(
             content=audio_data,
             media_type="audio/mpeg",
@@ -43088,13 +43386,13 @@ async def speech_api(request):
         )
 
     except ClientDisconnect:
-        logger.info("Speech API client disconnected")
+        _http_log.info("Speech API client disconnected")
         raise
     except asyncio.CancelledError:
-        logger.info("Speech API cancelled during shutdown")
+        _http_log.info("Speech API cancelled during shutdown")
         raise
     except Exception as e:
-        logger.error("Speech API error: %s", e)
+        _tts_log.error("Speech API error: %s", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -43267,7 +43565,7 @@ def prepare_response_format_messages(messages, response_format):
 
 
 def _dbg_trunc(value, max_chars: int | None = None) -> str:
-    max_chars = max_chars or DEBUG_COMPLETIONS_MAX_CHARS
+    max_chars = max_chars or VE_LLM_LOG_DEBUG_MAX_CHARS
 
     try:
         if value is None:
@@ -43288,14 +43586,14 @@ def _dbg_trunc(value, max_chars: int | None = None) -> str:
 
 
 def _debug_completion_log(label: str, **kwargs):
-    if not DEBUG_COMPLETIONS:
+    if not VE_LLM_LOG_DEBUG:
         return
 
     parts = []
     for k, v in kwargs.items():
         parts.append(f"{k}={_dbg_trunc(v)}")
 
-    logger.info("[COMPLETIONS DEBUG] %s | %s", label, " | ".join(parts))
+    _llm_log.info("[COMPLETIONS DEBUG] %s | %s", label, " | ".join(parts))
 
 
 async def completions_api(request):
@@ -43351,7 +43649,7 @@ async def completions_api(request):
             )
 
             if err:
-                logger.warning(err)
+                _llm_log.warning(err)
                 return JSONResponse({"error": err}, status_code=400)
 
             resolved_model = resolve_fim_model_name(requested_model)
@@ -43367,7 +43665,7 @@ async def completions_api(request):
             )
 
             if err:
-                logger.warning(err)
+                _llm_log.warning(err)
                 return JSONResponse({"error": err}, status_code=400)
 
             resolved_model = resolve_llm_model_name(requested_model)
@@ -43515,14 +43813,14 @@ async def completions_api(request):
                 try:
                     while True:
                         if SERVER_SHUTTING_DOWN.is_set():
-                            logger.info(
+                            _llm_log.info(
                                 "Completion stream ending because server is shutting down"
                             )
                             stop_event.set()
                             return
 
                         if await request.is_disconnected():
-                            logger.info("Completion API client disconnected")
+                            _llm_log.info("Completion API client disconnected")
                             stop_event.set()
                             return
 
@@ -43735,7 +44033,7 @@ async def completions_api(request):
                     yield _SSE_DONE_FRAME
 
                 except asyncio.CancelledError:
-                    # logger.info("Completion stream cancelled")
+                    # _app_log.info("Completion stream cancelled")
                     stop_event.set()
                     return
 
@@ -43864,13 +44162,13 @@ async def completions_api(request):
         )
 
     except ClientDisconnect:
-        logger.info("Completions API client disconnected")
+        _llm_log.info("Completions API client disconnected")
         raise
     except asyncio.CancelledError:
-        logger.info("Completions API cancelled during shutdown")
+        _llm_log.info("Completions API cancelled during shutdown")
         raise
     except Exception as e:
-        logger.error(f"Completions API error: {e}")
+        _llm_log.error(f"Completions API error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -43884,7 +44182,7 @@ def apply_parallel_tool_call_policy(
         return tool_calls
 
     if len(tool_calls) > 1:
-        logger.warning(
+        _llm_log.warning(
             "Model emitted %d tool calls while parallel_tool_calls=false; keeping only the first",
             len(tool_calls),
         )
@@ -43951,7 +44249,7 @@ def _chat_sse_data(
         ensure_ascii=False,
     )
 
-    logger.debug(
+    _http_log.debug(
         "[CHAT SSE OUT] %s",
         encoded,
     )
@@ -44261,7 +44559,7 @@ async def chat_api(request):
                         "function_call",
                     )
                 ):
-                    logger.info(
+                    _http_log.info(
                         "Ignoring OpenAI tool-call fields for plain browser model %s",
                         requested_model,
                     )
@@ -44301,7 +44599,7 @@ async def chat_api(request):
         )
 
         if err:
-            logger.warning(err)
+            _http_log.warning(err)
             return JSONResponse({"error": err}, status_code=400)
 
         resolved_model = resolve_llm_model_name(requested_model)
@@ -44445,7 +44743,7 @@ async def chat_api(request):
                                 or not event.call_id
                                 or not event.name
                             ):
-                                logger.warning(
+                                _app_log.warning(
                                     "Ignoring invalid tool_start event: %r",
                                     event,
                                 )
@@ -44472,7 +44770,7 @@ async def chat_api(request):
                         # ====================================================
                         if event.kind == "arguments_delta":
                             if event.index is None:
-                                logger.warning(
+                                _app_log.warning(
                                     "Ignoring arguments event without an index: %r",
                                     event,
                                 )
@@ -44505,7 +44803,7 @@ async def chat_api(request):
                         # Parser warnings stay in server logs
                         # ====================================================
                         if event.kind == "warning":
-                            logger.warning(
+                            _app_log.warning(
                                 "Model protocol parser warning: %s",
                                 event.text,
                             )
@@ -44535,7 +44833,7 @@ async def chat_api(request):
                 try:
                     while True:
                         if SERVER_SHUTTING_DOWN.is_set():
-                            logger.info(
+                            _llm_log.info(
                                 "HTTP chat stream ending because "
                                 "server is shutting down"
                             )
@@ -44543,7 +44841,7 @@ async def chat_api(request):
                             return
 
                         if await request.is_disconnected():
-                            logger.info("Client disconnected, stopping generation")
+                            _llm_log.info("Client disconnected, stopping generation")
                             stop_event.set()
                             return
 
@@ -44588,7 +44886,7 @@ async def chat_api(request):
                             # Decide OpenAI finish_reason
                             # ========================================================
                             if protocol_parser.error:
-                                logger.warning(
+                                _llm_log.warning(
                                     "Protocol parser finished with error: %s",
                                     protocol_parser.error,
                                 )
@@ -44604,7 +44902,7 @@ async def chat_api(request):
                             ):
                                 # This normally also sets protocol_parser.error in
                                 # protocol_parser.finish(), but keep the check explicit.
-                                logger.warning(
+                                _llm_log.warning(
                                     "Model did not produce a valid required "
                                     "tool call: mode=%s",
                                     tool_choice_mode,
@@ -44672,7 +44970,7 @@ async def chat_api(request):
                         # Step 4: stop on fatal protocol errors
                         # ============================================================
                         if protocol_parser.error:
-                            logger.warning(
+                            _llm_log.warning(
                                 "Protocol parser stopped generation: %s",
                                 protocol_parser.error,
                             )
@@ -44798,7 +45096,7 @@ async def chat_api(request):
         )
 
         if parse_error:
-            logger.warning(
+            _http_log.warning(
                 "Model response parse warning: %s",
                 parse_error,
             )
@@ -44836,13 +45134,13 @@ async def chat_api(request):
         )
 
     except ClientDisconnect:
-        logger.info("Chat API client disconnected")
+        _http_log.info("Chat API client disconnected")
         raise
     except asyncio.CancelledError:
-        logger.info("Chat API cancelled during shutdown")
+        _http_log.info("Chat API cancelled during shutdown")
         raise
     except Exception as e:
-        logger.error(f"Chat API error: {e}")
+        _http_log.error(f"Chat API error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -44892,7 +45190,7 @@ async def embeddings_api(request):
         )
 
         if err:
-            logger.warning(err)
+            _embedding_log.warning(err)
             return JSONResponse({"error": err}, status_code=400)
 
         try:
@@ -44977,15 +45275,15 @@ async def embeddings_api(request):
         )
 
     except ClientDisconnect:
-        logger.info("Embeddings API client disconnected")
+        _embedding_log.info("Embeddings API client disconnected")
         raise
 
     except asyncio.CancelledError:
-        logger.info("Embeddings API cancelled during shutdown")
+        _embedding_log.info("Embeddings API cancelled during shutdown")
         raise
 
     except Exception as e:
-        logger.error(f"Embeddings API error: {e}")
+        _embedding_log.error(f"Embeddings API error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -45012,7 +45310,7 @@ async def rerank_api(request):
         )
 
         if err:
-            logger.warning(err)
+            _rerank_log.warning(err)
             return JSONResponse({"error": err}, status_code=400)
 
         try:
@@ -45066,13 +45364,13 @@ async def rerank_api(request):
         )
 
     except ClientDisconnect:
-        logger.info("Rerank API client disconnected")
+        _rerank_log.info("Rerank API client disconnected")
         raise
     except asyncio.CancelledError:
-        logger.info("Rerank API cancelled during shutdown")
+        _rerank_log.info("Rerank API cancelled during shutdown")
         raise
     except Exception as e:
-        logger.error(f"Rerank API error: {e}")
+        _rerank_log.error(f"Rerank API error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -45110,7 +45408,7 @@ def search_web_sync(
 
     client = _get_tavily_client()
 
-    logger.info(
+    _app_log.info(
         "[WEB SEARCH] Tavily request: query=%r max_results=%d",
         query,
         n,
@@ -45211,7 +45509,7 @@ def search_web_sync(
 
     serialized_bytes = len(serialized_json.encode("utf-8"))
 
-    logger.info(
+    _app_log.info(
         "[WEB SEARCH] Tavily completed: "
         "query=%r results=%d "
         "content_chars=%d "
@@ -45297,15 +45595,15 @@ async def web_search_api(request):
         return JSONResponse(results)
 
     except ClientDisconnect:
-        logger.info("Web search client disconnected")
+        _http_log.info("Web search client disconnected")
         raise
 
     except asyncio.CancelledError:
-        logger.info("Web search request cancelled")
+        _http_log.info("Web search request cancelled")
         raise
 
     except Exception as exc:
-        logger.exception("Tavily web search failed")
+        _http_log.exception("Tavily web search failed")
 
         return JSONResponse(
             {
@@ -45494,19 +45792,19 @@ def _safe_unlink(
     try:
         os.unlink(path)
 
-        logger.debug(
+        _app_log.debug(
             "Removed temporary file: %s",
             path,
         )
 
     except FileNotFoundError:
-        logger.debug(
+        _app_log.debug(
             "Temporary file already removed: %s",
             path,
         )
 
     except OSError:
-        logger.exception(
+        _app_log.exception(
             "Failed to remove temporary file: %s",
             path,
         )
@@ -45525,14 +45823,14 @@ def _force_close_uvicorn_connections(server, *, cancel_tasks: bool = False):
     try:
         state = getattr(server, "server_state", None)
         if state is None:
-            logger.debug("Uvicorn server_state not available")
+            _http_log.debug("Uvicorn server_state not available")
             return
 
         connections = list(getattr(state, "connections", []) or [])
         tasks = list(getattr(state, "tasks", []) or [])
 
         if connections:
-            logger.info(
+            _http_log.info(
                 f"Force closing {len(connections)} active Uvicorn connection(s)"
             )
 
@@ -45548,15 +45846,15 @@ def _force_close_uvicorn_connections(server, *, cancel_tasks: bool = False):
                     transport.close()
                     continue
 
-                logger.debug(f"Unknown Uvicorn connection object: {conn!r}")
+                _http_log.debug(f"Unknown Uvicorn connection object: {conn!r}")
 
             except Exception as e:
-                logger.debug(f"Failed closing uvicorn connection: {e}")
+                _http_log.debug(f"Failed closing uvicorn connection: {e}")
 
         # Do NOT cancel tasks by default.
         # Cancelling these tasks is what produced your traceback.
         if cancel_tasks and tasks:
-            logger.warning(
+            _http_log.warning(
                 f"Last-resort cancelling {len(tasks)} active Uvicorn task(s). "
                 f"This may produce shutdown noise."
             )
@@ -45568,7 +45866,7 @@ def _force_close_uvicorn_connections(server, *, cancel_tasks: bool = False):
                     pass
 
     except Exception as e:
-        logger.debug(f"_force_close_uvicorn_connections ignored error: {e}")
+        _http_log.debug(f"_force_close_uvicorn_connections ignored error: {e}")
 
 
 def _build_mcp_asgi_app():
@@ -45581,12 +45879,12 @@ def _build_mcp_asgi_app():
     """
     http_app_factory = getattr(mcp, "http_app", None)
     if callable(http_app_factory):
-        logger.info("Building MCP ASGI app via mcp.http_app(path='/mcp')")
+        _http_log.info("Building MCP ASGI app via mcp.http_app(path='/mcp')")
         return http_app_factory(path="/mcp")
 
     streamable_http_app_factory = getattr(mcp, "streamable_http_app", None)
     if callable(streamable_http_app_factory):
-        logger.info("Building MCP ASGI app via mcp.streamable_http_app()")
+        _http_log.info("Building MCP ASGI app via mcp.streamable_http_app()")
 
         try:
             return streamable_http_app_factory(path="/mcp")
@@ -45634,7 +45932,7 @@ class ShutdownSafeASGI:
         task.cancel("Server is shutting down")
         done, pending = await asyncio.wait({task}, timeout=self.CANCEL_TIMEOUT)
         if pending:
-            logger.warning(
+            _http_log.warning(
                 "%s %s task did not stop within %.1fs; detaching from request shutdown",
                 self.name,
                 label,
@@ -45692,7 +45990,7 @@ class ShutdownSafeASGI:
             if app_task in done:
                 return await app_task
 
-            logger.info(
+            _http_log.info(
                 "%s HTTP/SSE request ending due to server shutdown",
                 self.name,
             )
@@ -45731,7 +46029,7 @@ class ShutdownSafeASGI:
         except asyncio.CancelledError:
             if not SERVER_SHUTTING_DOWN.is_set():
                 raise
-            logger.info("%s wrapper cancelled during shutdown", self.name)
+            _http_log.info("%s wrapper cancelled during shutdown", self.name)
         finally:
             # Never use an unbounded gather here: a non-cooperative FastMCP
             # session must not hold the Uvicorn server thread open.
@@ -45757,7 +46055,7 @@ def _get_tavily_client() -> TavilyClient:
 
 
 def log_memory_state(label: str):
-    if not MEMORY_DEBUG:
+    if not VE_MEMORY_LOG_DEBUG:
         return
     try:
         import os
@@ -45775,7 +46073,7 @@ def log_memory_state(label: str):
 
         cache_mb = mx.get_cache_memory() / 1024 / 1024
 
-        logger.info(
+        _memory_log.info(
             "[MEMORY] %s: rss=%.1fMB active=%.1fMB peak=%.1fMB cache=%.1fMB",
             label,
             rss_mb,
@@ -45785,7 +46083,7 @@ def log_memory_state(label: str):
         )
 
     except Exception:
-        logger.exception("Failed to collect memory metrics")
+        _memory_log.exception("Failed to collect memory metrics")
 
 
 def test_reasoning_and_channel_do_not_leak():
@@ -48855,7 +49153,7 @@ def run_self_tests():
             test_function()
 
         except Exception:
-            logger.exception(
+            _app_log.exception(
                 "❌ Self-test failed: %s",
                 name,
             )
@@ -48865,12 +49163,12 @@ def run_self_tests():
         else:
             passed += 1
 
-            logger.info(
+            _app_log.info(
                 "✅ Self-test passed: %s",
                 name,
             )
 
-    logger.info(
+    _app_log.info(
         "Self-tests complete: %d/%d passed",
         passed,
         len(tests),
@@ -48910,13 +49208,13 @@ def main():
                 exc_info=True,
             )
         else:
-            logger.info(
+            _m365_log.info(
                 "M365 bridge ready at ws://%s:%d/ws",
                 M365_BRIDGE_HOST,
                 M365_BRIDGE_PORT,
             )
     else:
-        logger.info("M365 bridge disabled because M365_ENTRY_URL is not configured")
+        _m365_log.info("M365 bridge disabled because M365_ENTRY_URL is not configured")
 
     # 1. OpenAI-compatible HTTP gateway
     config = uvicorn.Config(
@@ -48934,11 +49232,11 @@ def main():
         try:
             http_server.run()
         except Exception as e:
-            logger.debug(f"HTTP gateway thread exited with error: {e}")
+            _http_log.debug(f"HTTP gateway thread exited with error: {e}")
 
     http_thread = threading.Thread(target=run_http_gateway, daemon=False)
     http_thread.start()
-    logger.info(f"🚀 HTTP API Gateway serving on port {HTTP_PORT}")
+    _http_log.info(f"🚀 HTTP API Gateway serving on port {HTTP_PORT}")
 
     # Optional Xiaomi bridge; disabled unless XIAOAI_ENABLED=1.
     start_xiaoai_bridge()
@@ -48953,7 +49251,7 @@ def main():
     route_monitor_ok = start_audio_route_monitor()
 
     if not route_monitor_ok:
-        logger.warning(
+        _tts_log.warning(
             "CoreAudio route monitor is unavailable; "
             "TTS will use on-demand output recovery"
         )
@@ -48977,7 +49275,7 @@ def main():
 
     try:
         if use_http:
-            logger.info(
+            _http_log.info(
                 f"⚡ Starting FastMCP ASGI Streamable HTTP on port {MCP_PORT}..."
             )
 
@@ -49003,12 +49301,12 @@ def main():
                 try:
                     mcp_http_server.run()
                 except Exception as e:
-                    logger.debug(f"MCP HTTP server thread exited with error: {e}")
+                    _http_log.debug(f"MCP HTTP server thread exited with error: {e}")
 
             mcp_http_thread = threading.Thread(target=run_mcp_http, daemon=False)
             mcp_http_thread.start()
 
-            logger.info(
+            _http_log.info(
                 f"🔗 FastMCP ASGI server serving on http://127.0.0.1:{MCP_PORT}/mcp"
             )
 
@@ -49017,29 +49315,31 @@ def main():
                 time.sleep(0.5)
 
         else:
-            logger.info("🔌 Starting FastMCP Server over STDIO (Claude Plugin Mode)...")
+            _app_log.info(
+                "🔌 Starting FastMCP Server over STDIO (Claude Plugin Mode)..."
+            )
             mcp.run()
 
     except (KeyboardInterrupt, SystemExit):
-        logger.info("🛑 接收到终止信号，正在触发安全退出流...")
+        _app_log.info("🛑 接收到终止信号，正在触发安全退出流...")
 
     except Exception as e:
-        logger.error(f"❌ Server error: {e}")
+        _http_log.error(f"❌ Server error: {e}")
 
     finally:
-        logger.info("🧹 正在清理资源...")
+        _app_log.info("🧹 正在清理资源...")
 
         # 0. Stop the Xiaomi watcher/streams while the local OpenAI API is alive.
         try:
             stop_xiaoai_bridge()
         except Exception as e:
-            logger.debug(f"stop_xiaoai_bridge ignored error: {e}")
+            _app_log.debug(f"stop_xiaoai_bridge ignored error: {e}")
 
         # Stop the local wake-word voice chat subsystem (no-op if disabled).
         try:
             stop_voice_chat_subsystem()
         except Exception as e:
-            logger.debug(f"stop_voice_chat_subsystem ignored error: {e}")
+            _app_log.debug(f"stop_voice_chat_subsystem ignored error: {e}")
 
         # 1. 进入 shutdown 状态：拒绝新的 tool call / stream
         SERVER_SHUTTING_DOWN.set()
@@ -49049,12 +49349,12 @@ def main():
             ("deepseek", DEEPSEEK_BROWSER_RUNTIME.begin_shutdown),
             ("m365", M365_BROWSER_RUNTIME.request_shutdown),
         ):
-            logger.info("Shutdown signal stage: requesting %s", provider_name)
+            _shutdown_log.info("Shutdown signal stage: requesting %s", provider_name)
             completed, _result = _run_shutdown_call_bounded(
                 f"{provider_name}-shutdown-request", request_shutdown, timeout=1.0
             )
             if not completed:
-                logger.error(
+                _shutdown_log.error(
                     "Shutdown signal stage timed out for %s; continuing", provider_name
                 )
 
@@ -49087,7 +49387,7 @@ def main():
                     mcp_http_thread.join(timeout=6.0)
 
                     if mcp_http_thread.is_alive():
-                        logger.warning(
+                        _http_log.warning(
                             "MCP HTTP server thread did not exit; force closing active connections"
                         )
 
@@ -49100,7 +49400,7 @@ def main():
                         mcp_http_thread.join(timeout=2.0)
 
             except Exception as e:
-                logger.debug(f"force close MCP uvicorn ignored error: {e}")
+                _http_log.debug(f"force close MCP uvicorn ignored error: {e}")
 
         # 2. 再关闭 OpenAI-compatible HTTP gateway
         try:
@@ -49109,31 +49409,33 @@ def main():
                 cancel_tasks=False,
             )
         except Exception as e:
-            logger.debug(f"force close HTTP gateway ignored error: {e}")
+            _http_log.debug(f"force close HTTP gateway ignored error: {e}")
 
         try:
             http_server.should_exit = True
             http_thread.join(timeout=5.0)
 
             if http_thread.is_alive():
-                logger.warning("HTTP gateway thread did not exit within timeout")
+                _http_log.warning("HTTP gateway thread did not exit within timeout")
         except Exception as e:
-            logger.debug(f"HTTP gateway shutdown ignored error: {e}")
+            _http_log.debug(f"HTTP gateway shutdown ignored error: {e}")
 
         # 3. 清理应用资源
-        logger.info("Main shutdown debug stage begin: cleanup_service")
+        _shutdown_log.info("Main shutdown debug stage begin: cleanup_service")
         stage_started_at = time.monotonic()
         try:
             cleanup_service()
         except Exception as e:
-            logger.exception("cleanup_service failed during main shutdown: %s", e)
+            _shutdown_log.exception(
+                "cleanup_service failed during main shutdown: %s", e
+            )
         finally:
-            logger.info(
+            _shutdown_log.info(
                 "Main shutdown debug stage end: cleanup_service elapsed=%.3fs",
                 time.monotonic() - stage_started_at,
             )
 
-        logger.info("Main shutdown debug stage begin: stop_llm_worker")
+        _shutdown_log.info("Main shutdown debug stage begin: stop_llm_worker")
         stage_started_at = time.monotonic()
         try:
 
@@ -49145,13 +49447,15 @@ def main():
                 stop_llm_worker_for_shutdown,
                 timeout=1.5,
             )
-            logger.info(
+            _shutdown_log.info(
                 "Main shutdown debug stage end: stop_llm_worker completed=%s elapsed=%.3fs",
                 completed,
                 time.monotonic() - stage_started_at,
             )
         except Exception as e:
-            logger.exception("stop_llm_worker failed during main shutdown: %s", e)
+            _shutdown_log.exception(
+                "stop_llm_worker failed during main shutdown: %s", e
+            )
 
         # 4. 不要 mass-cancel asyncio.all_tasks()
         try:
@@ -49162,10 +49466,10 @@ def main():
             ):
                 _main_event_loop.close()
         except Exception as e:
-            logger.debug(f"Loop close ignored error: {e}")
+            _app_log.debug(f"Loop close ignored error: {e}")
 
         _log_shutdown_thread_snapshot("main-finally-end")
-        logger.info("✨ 服务器已完全关闭，所有资源均已释放。")
+        _app_log.info("✨ 服务器已完全关闭，所有资源均已释放。")
 
 
 app = Starlette(
