@@ -393,7 +393,7 @@ models:
 | Enter                | Stop active dictation           |
 | Esc                  | Skip the current speech item    |
 | Double Esc           | Cancel active playback          |
-| Double Right CMD     | Start or stop voice chat        |
+| Double Right CMD     | Start or pause voice chat       |
 
 ## Browser Authentication Security
 
@@ -407,7 +407,7 @@ models:
 ## Architecture
 
 ```text
-   XiaoAI / OpenAI / MCP / Hotkeys
+  XiaoAI / OpenAI / MCP / Hotkeys / Voice Chat
                 |
                 v
         Voice Edge Core
@@ -434,15 +434,13 @@ models:
 Enable only the diagnostics needed for the active provider:
 
 ```bash
-export DOUBAO_DEBUG=1
-export QWEN_DEBUG=1
-export DEEPSEEK_DEBUG=1
-export DEEPSEEK_LOG_STREAM_CHUNKS=1
-export M365_DEBUG=1
-export M365_RELAY_TRACE=1
-export M365_ATTACHMENT_DEBUG=1
-export XIAOAI_POLL_DEBUG=1
-export XIAOAI_PLAYER_STATUS_DEBUG=1
+export VE_DOUBAO_LOG_DEBUG=1
+export VE_QWEN_LOG_DEBUG=1
+export VE_DEEPSEEK_LOG_DEBUG=1
+export VE_DEEPSEEK_LOG_STREAM_CHUNKS=1
+export VE_M365_LOG_DEBUG=1
+export VE_M365_LOG_RELAY_TRACE=1
+export VE_M365_LOG_ATTACHMENT=1
 ```
 
 Do not share logs until secrets such as cookies, access tokens, refresh tokens, authorization headers, and temporary download credentials have been removed.

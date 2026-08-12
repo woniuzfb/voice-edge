@@ -387,7 +387,7 @@ models:
 | Enter              | 停止当前听写         |
 | Esc                | 跳过当前语音项       |
 | 双击 Esc           | 取消当前播放         |
-| 双击右 CMD         | 开始或停止 聊天      |
+| 双击右 CMD         | 开始或暂停 聊天      |
 
 ## 浏览器认证安全
 
@@ -401,7 +401,7 @@ models:
 ## 架构
 
 ```text
-     小爱同学 / OpenAI / MCP / 快捷键
+    小爱同学 / OpenAI / MCP / 快捷键 / 聊天
                   |
                   v
           Voice Edge 核心
@@ -428,15 +428,13 @@ models:
 仅启用当前提供商所需的诊断开关：
 
 ```bash
-export DOUBAO_DEBUG=1
-export QWEN_DEBUG=1
-export DEEPSEEK_DEBUG=1
-export DEEPSEEK_LOG_STREAM_CHUNKS=1
-export M365_DEBUG=1
-export M365_RELAY_TRACE=1
-export M365_ATTACHMENT_DEBUG=1
-export XIAOAI_POLL_DEBUG=1
-export XIAOAI_PLAYER_STATUS_DEBUG=1
+export VE_DOUBAO_LOG_DEBUG=1
+export VE_QWEN_LOG_DEBUG=1
+export VE_DEEPSEEK_LOG_DEBUG=1
+export VE_DEEPSEEK_LOG_STREAM_CHUNKS=1
+export VE_M365_LOG_DEBUG=1
+export VE_M365_LOG_RELAY_TRACE=1
+export VE_M365_LOG_ATTACHMENT=1
 ```
 
 分享日志前，必须移除 Cookie、访问令牌、刷新令牌、Authorization Header 和临时下载凭据等敏感信息。
