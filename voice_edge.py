@@ -13,7 +13,8 @@ Voice Edge
 - Double-tap Right CMD to start or pause voice chat
 
 Usage:
-    python voice_edge.py [--http] [--self-test]
+    python voice_edge.py [--http] [--self-test] [--mi-login] [--ble-scan] [--ble-listen]
+    python voice_edge.py --mi-list [name_keyword|full] [false|true] [0|1]
 """
 
 from __future__ import annotations
@@ -34,6 +35,7 @@ import atexit
 import base64
 import binascii
 import concurrent.futures
+import fcntl
 import hashlib
 import hmac
 import inspect
@@ -50,6 +52,7 @@ import signal
 # embedded below; only aiohttp remains external. The bridge is disabled unless
 # XIAOAI_ENABLED=1, so the core voice_edge service still starts without it.
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -57,15 +60,15 @@ import threading
 import time
 import urllib.parse
 import uuid
-from collections import deque, OrderedDict
+from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from http.cookies import SimpleCookie
 from itertools import count, pairwise
 from pathlib import Path
-from pypinyin import Style, lazy_pinyin
 from typing import (
+    TYPE_CHECKING,
     Annotated,
     Any,
     AsyncGenerator,
@@ -77,7 +80,6 @@ from typing import (
     Literal,
     Optional,
     Sequence,
-    TYPE_CHECKING,
     TypedDict,
     Union,
     cast,
@@ -86,75 +88,57 @@ from typing import (
 import aiohttp
 import edge_tts
 import numpy as np
+import uvicorn
+from aiohttp import web as aiohttp_web
+from bleak import BleakScanner
+from Crypto.Cipher import AES
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives.ciphers.aead import AESCCM
+from mcp.server.fastmcp import FastMCP
+from mlx_lm.sample_utils import make_sampler
+from pydantic import Field
+from pypinyin import Style, lazy_pinyin
+from starlette.applications import Starlette
+from starlette.background import BackgroundTask
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import ClientDisconnect
+from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
+from starlette.routing import Route
+from tavily import TavilyClient
 
-# sounddevice 是在下面的看门狗线程里运行时导入并赋值给模块级变量 `sd` 的，静态类型
-# 检查器因此把 `sd` 看成普通变量，`-> sd.InputStream` 之类注解会报
-# reportInvalidTypeForm。给类型检查器一个【独立、绝不在运行时被重新赋值】的模块别名
-# `_sd_typing`(不能复用 `sd`，否则与下面的运行时 `sd = ...` 赋值同名冲突，静态检查器仍
-# 把它判成变量)。因文件顶部有 `from __future__ import annotations`，注解是惰性字符串，
-# 运行时永不求值，故 `-> _sd_typing.InputStream` 在运行时零副作用、也不需要真正导入。
-if TYPE_CHECKING:
-    import sounddevice as _sd_typing
+# Try to import scipy for resampling
+try:
+    from scipy.signal import resample_poly
 
-# sounddevice 导入时会立即调用 Pa_Initialize(触碰 CoreAudio)。若 HAL 因异常退出残留
-# 而卡死(典型: 旧实例在清理中途被杀), 该导入会无限挂起且没有任何日志 —— 表现为
-# “应用启动后无输出、0% CPU、杀不掉也查不到原因”。
-# 用看门狗线程限时: 超时则向 stderr 打出明确修复指引并退出, launchd KeepAlive 会
-# 自动重试; HAL 恢复(如 sudo killall coreaudiod)后即正常启动。
-_VE_SOUNDDEVICE_IMPORT_TIMEOUT = float(
-    os.environ.get("VE_SOUNDDEVICE_IMPORT_TIMEOUT", "25")
-)
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
 
-_sd_import_result: dict = {}
+try:
+    import Quartz
 
+    HAS_QUARTZ = True
+except Exception:
+    HAS_QUARTZ = False
 
-def _ve_sd_import_worker() -> None:
-    try:
-        import sounddevice as _sd
+try:
+    import AppKit
 
-        _sd_import_result["sd"] = _sd
-    except BaseException as exc:  # 导入失败要原样上抛
-        _sd_import_result["error"] = exc
+    NSEvent = AppKit.NSEvent  # pyright: ignore[reportAttributeAccessIssue]
+    NSPasteboard = AppKit.NSPasteboard  # pyright: ignore[reportAttributeAccessIssue]
+    NSPasteboardTypeString = AppKit.NSPasteboardTypeString  # pyright: ignore[reportAttributeAccessIssue]
+    NSSystemDefined = AppKit.NSSystemDefined  # pyright: ignore[reportAttributeAccessIssue]
+    HAS_APPKIT = True
+except (ImportError, AttributeError):
+    NSEvent = None
+    NSSystemDefined = None
+    NSPasteboard = None
+    NSPasteboardTypeString = None
+    HAS_APPKIT = False
 
-
-_sd_import_thread = threading.Thread(
-    target=_ve_sd_import_worker,
-    name="sounddevice-import",
-    daemon=True,
-)
-_sd_import_thread.start()
-_sd_import_thread.join(timeout=_VE_SOUNDDEVICE_IMPORT_TIMEOUT)
-if "sd" in _sd_import_result:
-    sd = _sd_import_result["sd"]
-elif "error" in _sd_import_result:
-    raise _sd_import_result["error"]
-else:
-    # 导入卡死 = CoreAudio HAL 大概率已挂。直接打印到 stderr(此时日志系统未就绪),
-    # 然后退出让 launchd 重试; 不要留一个半死的进程等着被人强杀(强杀才会把 HAL 搞挂)。
-    sys.stderr.write(
-        "\n[voice_edge] FATAL: sounddevice 导入超过 %.0fs(CoreAudio HAL 可能已卡死).\n"
-        "  修复: sudo killall coreaudiod, launchd 会自动重试启动.\n\n"
-        % _VE_SOUNDDEVICE_IMPORT_TIMEOUT
-    )
-    sys.stderr.flush()
-    os._exit(1)
-
-# 这些三方库不依赖 sounddevice，故意排在上面的 sounddevice 看门狗导入之后：先在
-# 看门狗内导入触碰 CoreAudio 的 sounddevice，HAL 卡死时能在超时内被检测到，而不必
-# 先花时间加载 uvicorn/starlette/mlx 等重模块。此顺序是有意为之，用 noqa 抑制 E402。
-import uvicorn  # noqa: E402
-from aiohttp import web as aiohttp_web  # noqa: E402
-from mcp.server.fastmcp import FastMCP  # noqa: E402
-from mlx_lm.sample_utils import make_sampler  # noqa: E402
-from pydantic import Field  # noqa: E402
-from starlette.applications import Starlette  # noqa: E402
-from starlette.background import BackgroundTask  # noqa: E402
-from starlette.middleware import Middleware  # noqa: E402
-from starlette.middleware.cors import CORSMiddleware  # noqa: E402
-from starlette.requests import ClientDisconnect  # noqa: E402
-from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse  # noqa: E402
-from starlette.routing import Route  # noqa: E402
-from tavily import TavilyClient  # noqa: E402
+if sys.version_info < (3, 11):
+    raise RuntimeError("voice_edge.py requires Python 3.11 or newer")
 
 
 # ============================================================================
@@ -464,10 +448,6 @@ _FUNCTIONAL_LOG_LEVELS = (
     (_vlm_log, VE_VLM_LOG_DEBUG),
     (_xiaoai_log, VE_XIAOAI_LOG_DEBUG),
 )
-for _functional_log, _debug_enabled in _FUNCTIONAL_LOG_LEVELS:
-    _functional_log.setLevel(logging.DEBUG if _debug_enabled else logging.INFO)
-del _functional_log, _debug_enabled
-
 
 # ==================== Configuration ====================
 
@@ -857,6 +837,25 @@ EXPOSE_AUX_MODELS_IN_MODELS_API = True
 MCP_PORT = 5001
 HTTP_PORT = 5000
 
+VE_BLE_REMOTE_ENABLED = os.getenv("VE_BLE_REMOTE_ENABLED", "0") == "1"
+VE_BLE_REMOTE_MAC = os.getenv("VE_BLE_REMOTE_MAC", "")
+VE_BLE_REMOTE_KEY = os.getenv("VE_BLE_REMOTE_KEY", "")
+VE_BLE_REMOTE_SERVICE_UUID = os.getenv(
+    "VE_BLE_REMOTE_SERVICE_UUID", "0000fe95-0000-1000-8000-00805f9b34fb"
+)
+_BLE_REMOTE_SERVICE_UUID_NORM = VE_BLE_REMOTE_SERVICE_UUID.strip().casefold()
+_BLE_REMOTE_ACTIONS = {
+    bytes.fromhex(os.getenv("VE_BLE_REMOTE_BACKWARD", "0c4e0101")): "seek_backward",
+    bytes.fromhex(os.getenv("VE_BLE_REMOTE_FORWARD", "0c4e0102")): "seek_forward",
+    bytes.fromhex(os.getenv("VE_BLE_REMOTE_PAUSE", "0e4e0101")): "pause",
+    bytes.fromhex(os.getenv("VE_BLE_REMOTE_PLAY", "0e4e0102")): "play",
+}
+_BLE_REMOTE_SUBSCRIBERS: set[queue.Queue] = set()
+_BLE_REMOTE_SUBSCRIBERS_LOCK = threading.Lock()
+_BLE_REMOTE_THREAD: threading.Thread | None = None
+_BLE_REMOTE_THREAD_LOCK = threading.Lock()
+_BLE_REMOTE_STOP = threading.Event()
+
 
 EMPTY_AUDIO_F32 = np.empty(0, dtype=np.float32)
 
@@ -1132,103 +1131,6 @@ _AUDIO_INPUT_DEVICE_IDS_SEEN = False
 _AUDIO_DEFAULT_INPUT_ID = None
 
 
-def _ve_update_input_device_ids(event):
-    """用 route-monitor 事件里的 input_device_ids 刷新已知输入设备集合, 并在"上次刷新过的
-    输入设备已不在表中"时失效去重标记。
-
-    向后兼容: 仅当事件确实带 input_device_ids(list)时才动作。旧版 Swift 二进制不带该字段
-    -> Python 不更新集合、不做移除判定, 退回既有 default_input=None 兜底路径。
-    (若字段缺失就把集合当空, 会让 `标记 not in 空集` 恒真 -> 每个 devices 事件都重置,
-    过度失效反而更糟, 故必须以字段存在为前提。)
-    """
-    global _AUDIO_INPUT_DEVICE_IDS
-    global _AUDIO_INPUT_DEVICE_IDS_SEEN
-    raw = event.get("input_device_ids")
-    if not isinstance(raw, list):
-        return
-    try:
-        ids = frozenset(int(x) for x in raw)
-    except (TypeError, ValueError):
-        _audio_log.debug("route-monitor input_device_ids not all ints: %r", raw)
-        return
-    _AUDIO_INPUT_DEVICE_IDS = ids
-    # 二进制确实在发该字段 -> 允许把"空集"当权威"无麦"信号(sticky, 进程内不回退)。
-    _AUDIO_INPUT_DEVICE_IDS_SEEN = True
-    if (
-        _VE_LAST_REFRESHED_INPUT_ID is not None
-        and _VE_LAST_REFRESHED_INPUT_ID not in ids
-    ):
-        # 标记的输入设备已不在设备表 -> 它真的被移除了(不是同设备 profile 抖动)。失效
-        # 去重标记, 使其重连必强制刷新一次露出新麦。这条比 default_input=None 兜底更可靠:
-        # CoreAudio 属性监听回调会合并, 快速断开重连时中间的 None 中间态可能根本不回调,
-        # 而 devices 事件是更可靠的移除信号。
-        _ve_note_input_device_removed()
-
-
-def _ve_note_input_device_removed():
-    """输入设备移除(CoreAudio 报告 default input 为 None)时, 让"上次已为哪个输入 id
-    刷新过"的去重标记失效。
-
-    Bug: 关耳机时 default_input 事件带 input_id=None, 而 _schedule/route 分支的
-    `if input_id is not None` 守卫使 AUDIO_ROUTE_LAST_INPUT_ID 残留上次的旧值(如 165)。
-    重连中间态若 nudge 读到该残留值, 又恰等于 _VE_LAST_REFRESHED_INPUT_ID(165), 就被
-    误判为"同一设备 profile 抖动"而不刷新 -> 新麦进不了 PortAudio 表 -> KWS 不恢复。
-    "移除即忘记": 设备一旦移除就清掉去重标记, 使任何重连都会强制刷新一次露出新麦。
-    profile 抖动不会触发本函数(抖动的 input_id 非 None), 故不影响抖动不打断 KWS。
-    """
-    global _VE_LAST_REFRESHED_INPUT_ID
-    if _VE_LAST_REFRESHED_INPUT_ID is not None:
-        _audio_log.warning(
-            "Voice chat: input device removed; reset refresh dedup marker (was id=%r)",
-            _VE_LAST_REFRESHED_INPUT_ID,
-        )
-        _VE_LAST_REFRESHED_INPUT_ID = None
-
-
-PORTAUDIO_LIFECYCLE_LOCK = threading.RLock()
-
-
-# PortAudio abort/stop/close 的超时上限(秒)。蓝牙耳机连接/移除/profile 切换瞬间, 这些
-# 调用可能在 PortAudio C 层永久阻塞; 超时即放弃并泄漏该流, 避免焊死调用线程。正常关闭
-# 远快于此值。
-_PA_CLOSE_TIMEOUT = max(0.5, float(os.getenv("VE_PA_CLOSE_TIMEOUT", "2.0")))
-
-
-def _pa_call_with_timeout(fn, *, timeout, label):
-    """在带超时的 daemon 线程里执行一个可能阻塞的 PortAudio 调用(abort/stop/close)。
-
-    蓝牙设备连接/移除/profile 切换瞬间, 对相关设备流调
-    Pa_AbortStream / Pa_StopStream / Pa_CloseStream 可能在 PortAudio C 层永久阻塞, 而
-    Python 无法中断已进入的 C 调用。若在 owner(TTS 消费者)或 KWS 线程里直接调, 会把整个
-    线程焊死 -> 恢复停摆、KWS 不监听、连退出都不干净。
-
-    这里把该调用丢到一次性 daemon 线程执行, 调用方 join(timeout):
-      - 正常: 及时完成, 返回 True。
-      - 超时: 放弃等待, 返回 False; 该流对象被"泄漏"(不再触碰, 留待进程退出或下次
-        PortAudio terminate/reinit 统一清理)。代价是短暂多占一个句柄, 但换来绝不焊死
-        调用线程 —— 恢复与 KWS 得以继续推进。
-    """
-    done = threading.Event()
-
-    def _runner():
-        try:
-            fn()
-        except Exception as exc:
-            _audio_log.debug("PortAudio call %s raised: %r", label, exc)
-        finally:
-            done.set()
-
-    threading.Thread(target=_runner, name="PaBlockingCall", daemon=True).start()
-    if done.wait(timeout=timeout):
-        return True
-    _audio_log.error(
-        "PortAudio call %s did not return within %.1fs; abandoning (stream leaked)",
-        label,
-        timeout,
-    )
-    return False
-
-
 # ==================== Interactive Question Recording ====================
 
 # 🔧 新增：全局状态标记，防止多个 listener 冲突
@@ -1368,13 +1270,6 @@ TAVILY_MAX_TOTAL_CHARS = 5_000
 
 FFMPEG_BIN = os.path.realpath(os.path.expanduser("/opt/homebrew/bin/ffmpeg"))
 
-if not (os.path.isfile(FFMPEG_BIN) and os.access(FFMPEG_BIN, os.X_OK)):
-    raise RuntimeError(
-        "ffmpeg was not found or is not executable: "
-        f"{FFMPEG_BIN}. Update FFMPEG_BIN in the configuration section "
-        "to the correct executable path."
-    )
-
 
 # 🌟 Voice Aliases Mapping
 VOICE_ALIASES = {
@@ -1415,41 +1310,183 @@ Critical rules:
 - Output only the final answer visible to the user.
 """.strip()
 
-# Try to import scipy for resampling
-try:
-    from scipy.signal import resample_poly
 
-    HAS_SCIPY = True
-except ImportError:
-    HAS_SCIPY = False
-
-
-try:
-    import Quartz
-
-    HAS_QUARTZ = True
-except Exception:
-    HAS_QUARTZ = False
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:%(name)s:%(message)s [line %(lineno)d] %(asctime)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
-try:
-    import AppKit
+# sounddevice 是在下面的看门狗线程里运行时导入并赋值给模块级变量 `sd` 的，静态类型
+# 检查器因此把 `sd` 看成普通变量，`-> sd.InputStream` 之类注解会报
+# reportInvalidTypeForm。给类型检查器一个【独立、绝不在运行时被重新赋值】的模块别名
+# `_sd_typing`(不能复用 `sd`，否则与下面的运行时 `sd = ...` 赋值同名冲突，静态检查器仍
+# 把它判成变量)。因文件顶部有 `from __future__ import annotations`，注解是惰性字符串，
+# 运行时永不求值，故 `-> _sd_typing.InputStream` 在运行时零副作用、也不需要真正导入。
+if TYPE_CHECKING:
+    import sounddevice as _sd_typing
 
-    NSEvent = AppKit.NSEvent  # pyright: ignore[reportAttributeAccessIssue]
-    NSPasteboard = AppKit.NSPasteboard  # pyright: ignore[reportAttributeAccessIssue]
-    NSPasteboardTypeString = AppKit.NSPasteboardTypeString  # pyright: ignore[reportAttributeAccessIssue]
-    NSSystemDefined = AppKit.NSSystemDefined  # pyright: ignore[reportAttributeAccessIssue]
-    HAS_APPKIT = True
-except (ImportError, AttributeError):
-    NSEvent = None
-    NSSystemDefined = None
-    NSPasteboard = None
-    NSPasteboardTypeString = None
-    HAS_APPKIT = False
+# sounddevice 导入时会立即调用 Pa_Initialize(触碰 CoreAudio)。若 HAL 因异常退出残留
+# 而卡死(典型: 旧实例在清理中途被杀), 该导入会无限挂起且没有任何日志 —— 表现为
+# “应用启动后无输出、0% CPU、杀不掉也查不到原因”。
+# 用看门狗线程限时: 超时则向 stderr 打出明确修复指引并退出, launchd KeepAlive 会
+# 自动重试; HAL 恢复(如 sudo killall coreaudiod)后即正常启动。
+_VE_SOUNDDEVICE_IMPORT_TIMEOUT = float(
+    os.environ.get("VE_SOUNDDEVICE_IMPORT_TIMEOUT", "25")
+)
+
+_sd_import_result: dict = {}
 
 
-if sys.version_info < (3, 11):
-    raise RuntimeError("voice_edge.py requires Python 3.11 or newer")
+def _ve_sd_import_worker() -> None:
+    try:
+        import sounddevice as _sd
+
+        _sd_import_result["sd"] = _sd
+    except BaseException as exc:  # 导入失败要原样上抛
+        _sd_import_result["error"] = exc
+
+
+# Runtime lazy import: use Any because the module is populated dynamically by the
+# watchdog thread; Optional would incorrectly flag every post-initialization access.
+sd: Any = None
+
+
+def _initialize_sounddevice() -> None:
+    """Import sounddevice only after main() has selected the runtime command."""
+    global sd
+    if sd is not None:
+        return
+    _sd_import_result.clear()
+    import_thread = threading.Thread(
+        target=_ve_sd_import_worker,
+        name="sounddevice-import",
+        daemon=True,
+    )
+    import_thread.start()
+    import_thread.join(timeout=_VE_SOUNDDEVICE_IMPORT_TIMEOUT)
+    if "sd" in _sd_import_result:
+        sd = _sd_import_result["sd"]
+        return
+    if "error" in _sd_import_result:
+        raise _sd_import_result["error"]
+    raise RuntimeError(
+        "sounddevice import exceeded %.0fs; CoreAudio HAL may be stuck. "
+        "Run 'sudo killall coreaudiod' and restart Voice Edge."
+        % _VE_SOUNDDEVICE_IMPORT_TIMEOUT
+    )
+
+
+def _validate_ffmpeg_runtime() -> None:
+    if not (os.path.isfile(FFMPEG_BIN) and os.access(FFMPEG_BIN, os.X_OK)):
+        raise RuntimeError(
+            "ffmpeg was not found or is not executable: "
+            f"{FFMPEG_BIN}. Update FFMPEG_BIN in the configuration section "
+            "to the correct executable path."
+        )
+
+
+def _configure_functional_log_levels() -> None:
+    for functional_log, debug_enabled in _FUNCTIONAL_LOG_LEVELS:
+        functional_log.setLevel(logging.DEBUG if debug_enabled else logging.INFO)
+
+
+def _ve_update_input_device_ids(event):
+    """用 route-monitor 事件里的 input_device_ids 刷新已知输入设备集合, 并在"上次刷新过的
+    输入设备已不在表中"时失效去重标记。
+
+    向后兼容: 仅当事件确实带 input_device_ids(list)时才动作。旧版 Swift 二进制不带该字段
+    -> Python 不更新集合、不做移除判定, 退回既有 default_input=None 兜底路径。
+    (若字段缺失就把集合当空, 会让 `标记 not in 空集` 恒真 -> 每个 devices 事件都重置,
+    过度失效反而更糟, 故必须以字段存在为前提。)
+    """
+    global _AUDIO_INPUT_DEVICE_IDS
+    global _AUDIO_INPUT_DEVICE_IDS_SEEN
+    raw = event.get("input_device_ids")
+    if not isinstance(raw, list):
+        return
+    try:
+        ids = frozenset(int(x) for x in raw)
+    except (TypeError, ValueError):
+        _audio_log.debug("route-monitor input_device_ids not all ints: %r", raw)
+        return
+    _AUDIO_INPUT_DEVICE_IDS = ids
+    # 二进制确实在发该字段 -> 允许把"空集"当权威"无麦"信号(sticky, 进程内不回退)。
+    _AUDIO_INPUT_DEVICE_IDS_SEEN = True
+    if (
+        _VE_LAST_REFRESHED_INPUT_ID is not None
+        and _VE_LAST_REFRESHED_INPUT_ID not in ids
+    ):
+        # 标记的输入设备已不在设备表 -> 它真的被移除了(不是同设备 profile 抖动)。失效
+        # 去重标记, 使其重连必强制刷新一次露出新麦。这条比 default_input=None 兜底更可靠:
+        # CoreAudio 属性监听回调会合并, 快速断开重连时中间的 None 中间态可能根本不回调,
+        # 而 devices 事件是更可靠的移除信号。
+        _ve_note_input_device_removed()
+
+
+def _ve_note_input_device_removed():
+    """输入设备移除(CoreAudio 报告 default input 为 None)时, 让"上次已为哪个输入 id
+    刷新过"的去重标记失效。
+
+    Bug: 关耳机时 default_input 事件带 input_id=None, 而 _schedule/route 分支的
+    `if input_id is not None` 守卫使 AUDIO_ROUTE_LAST_INPUT_ID 残留上次的旧值(如 165)。
+    重连中间态若 nudge 读到该残留值, 又恰等于 _VE_LAST_REFRESHED_INPUT_ID(165), 就被
+    误判为"同一设备 profile 抖动"而不刷新 -> 新麦进不了 PortAudio 表 -> KWS 不恢复。
+    "移除即忘记": 设备一旦移除就清掉去重标记, 使任何重连都会强制刷新一次露出新麦。
+    profile 抖动不会触发本函数(抖动的 input_id 非 None), 故不影响抖动不打断 KWS。
+    """
+    global _VE_LAST_REFRESHED_INPUT_ID
+    if _VE_LAST_REFRESHED_INPUT_ID is not None:
+        _audio_log.warning(
+            "Voice chat: input device removed; reset refresh dedup marker (was id=%r)",
+            _VE_LAST_REFRESHED_INPUT_ID,
+        )
+        _VE_LAST_REFRESHED_INPUT_ID = None
+
+
+PORTAUDIO_LIFECYCLE_LOCK = threading.RLock()
+
+
+# PortAudio abort/stop/close 的超时上限(秒)。蓝牙耳机连接/移除/profile 切换瞬间, 这些
+# 调用可能在 PortAudio C 层永久阻塞; 超时即放弃并泄漏该流, 避免焊死调用线程。正常关闭
+# 远快于此值。
+_PA_CLOSE_TIMEOUT = max(0.5, float(os.getenv("VE_PA_CLOSE_TIMEOUT", "2.0")))
+
+
+def _pa_call_with_timeout(fn, *, timeout, label):
+    """在带超时的 daemon 线程里执行一个可能阻塞的 PortAudio 调用(abort/stop/close)。
+
+    蓝牙设备连接/移除/profile 切换瞬间, 对相关设备流调
+    Pa_AbortStream / Pa_StopStream / Pa_CloseStream 可能在 PortAudio C 层永久阻塞, 而
+    Python 无法中断已进入的 C 调用。若在 owner(TTS 消费者)或 KWS 线程里直接调, 会把整个
+    线程焊死 -> 恢复停摆、KWS 不监听、连退出都不干净。
+
+    这里把该调用丢到一次性 daemon 线程执行, 调用方 join(timeout):
+      - 正常: 及时完成, 返回 True。
+      - 超时: 放弃等待, 返回 False; 该流对象被"泄漏"(不再触碰, 留待进程退出或下次
+        PortAudio terminate/reinit 统一清理)。代价是短暂多占一个句柄, 但换来绝不焊死
+        调用线程 —— 恢复与 KWS 得以继续推进。
+    """
+    done = threading.Event()
+
+    def _runner():
+        try:
+            fn()
+        except Exception as exc:
+            _audio_log.debug("PortAudio call %s raised: %r", label, exc)
+        finally:
+            done.set()
+
+    threading.Thread(target=_runner, name="PaBlockingCall", daemon=True).start()
+    if done.wait(timeout=timeout):
+        return True
+    _audio_log.error(
+        "PortAudio call %s did not return within %.1fs; abandoning (stream leaked)",
+        label,
+        timeout,
+    )
+    return False
 
 
 # ###########################################################################
@@ -24765,7 +24802,7 @@ class M365BrowserRuntime:
 
     async def _serve(self):
         try:
-            from aiohttp import web, WSMsgType
+            from aiohttp import WSMsgType, web
         except ImportError:
             _m365_log.error("M365 bridge requires aiohttp")
             self._server_started.set()
@@ -25091,6 +25128,14 @@ class M365BrowserRuntime:
                 # answer deltas (all progress, or a non-prefix stall).
                 trace_inbound_msgs = 0
                 trace_inbound_types: dict = {}
+                request_started_at = time.monotonic()
+                last_liveness_at = request_started_at
+                last_inbound_type = "request-start"
+                last_liveness_source = "request-start"
+                progress_frames = 0
+                code_keepalive_frames = 0
+                reasoning_frames = 0
+                delta_frames = 0
 
                 def _log_producer_summary(signal: str) -> None:
                     if not VE_M365_LOG_RELAY_TRACE:
@@ -25198,11 +25243,40 @@ class M365BrowserRuntime:
                             )
                             return
                         if now > idle_deadline:
+                            idle_for = max(0.0, now - last_liveness_at)
+                            elapsed = max(0.0, now - request_started_at)
+                            deadline_overrun = max(0.0, now - idle_deadline)
+                            _m365_log.warning(
+                                "M365 idle timeout id=%s elapsed=%.1fs idle_for=%.1fs "
+                                "budget=%.1fs deadline_overrun=%.1fs last_inbound=%s "
+                                "last_liveness=%s inbound_msgs=%d progress=%d "
+                                "code_keepalive=%d reasoning=%d delta=%d "
+                                "attachments=%d attachment_bytes=%d queue_size=%d",
+                                rid,
+                                elapsed,
+                                idle_for,
+                                request_idle_seconds,
+                                deadline_overrun,
+                                last_inbound_type,
+                                last_liveness_source,
+                                trace_inbound_msgs,
+                                progress_frames,
+                                code_keepalive_frames,
+                                reasoning_frames,
+                                delta_frames,
+                                len(outbound_attachments),
+                                sum(
+                                    max(0, int(item.get("size") or 0))
+                                    for item in outbound_attachments
+                                ),
+                                relay_queue.qsize(),
+                            )
                             _log_producer_summary("idle-timeout")
                             emit({"type": "error", "message": "M365 idle timeout"})
                             return
                         continue
                     mtype = str(msg.get("type") or "")
+                    last_inbound_type = mtype or "<empty>"
                     if VE_M365_LOG_RELAY_TRACE:
                         trace_inbound_msgs += 1
                         _tk = _m365_trace_inbound_key(mtype, msg)
@@ -25226,8 +25300,20 @@ class M365BrowserRuntime:
                         # Progress is a typed M365 protocol event, not answer
                         # content. It refreshes liveness but never changes the
                         # append-only text already delivered to Continue.
+                        progress_frames += 1
+                        if msg.get("codeExecuting") is True:
+                            code_keepalive_frames += 1
+                            last_liveness_source = "M365_PROGRESS(code-executing)"
+                        else:
+                            content_type = str(msg.get("contentType") or "").strip()
+                            last_liveness_source = (
+                                "M365_PROGRESS(" + content_type + ")"
+                                if content_type
+                                else "M365_PROGRESS"
+                            )
+                        last_liveness_at = time.monotonic()
                         got_any = True
-                        idle_deadline = time.monotonic() + request_idle_seconds
+                        idle_deadline = last_liveness_at + request_idle_seconds
                         # Forward a liveness ping to the SSE consumer. A reasoning
                         # model can stream progress-only for a long "thinking"
                         # period before the first answer delta.
@@ -25243,6 +25329,9 @@ class M365BrowserRuntime:
                             except queue.Full:
                                 pass
                     elif mtype == "M365_DELTA" and not is_reasoning:
+                        delta_frames += 1
+                        last_liveness_at = time.monotonic()
+                        last_liveness_source = "M365_DELTA"
                         got_any = True
                         # 归一化三种引用编码（<cite>/\ue200…\ue201/【N-xxx】），流式安全、
                         # 保持前缀单调（详见 _m365_strip_cite）。
@@ -25277,6 +25366,9 @@ class M365BrowserRuntime:
                                 rid,
                             )
                     elif is_reasoning:
+                        reasoning_frames += 1
+                        last_liveness_at = time.monotonic()
+                        last_liveness_source = "M365_REASONING"
                         got_any = True
                         text = str(
                             msg.get("reasoning")
@@ -26290,24 +26382,23 @@ async def _direct_m365_chat_response(
 
 # ==================== Initialize ====================
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("voice")
 
-# Functional logger namespaces. Keep unrelated subsystems independently filterable.
 
-# ==================== Third-party log levels ====================
-# Third-party MCP request lifecycle logs remain warning-only.
-logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
-logging.getLogger("mcp.server.streamable_http_manager").setLevel(logging.WARNING)
-
-preload_whisper_model_if_requested()
-_transcription_log.info(
-    "Live microphone transcription: Apple Speech; "
-    "file/HTTP transcription: faster-whisper (lazy=%s)",
-    not WHISPER_PRELOAD,
-)
-
-_llm_log.info(f"MLX LLM model will be loaded in dedicated LLM worker: {LLM_MODEL_ID}")
+def _initialize_logging_and_preloads() -> None:
+    _configure_functional_log_levels()
+    logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
+    logging.getLogger("mcp.server.streamable_http_manager").setLevel(logging.WARNING)
+    preload_whisper_model_if_requested()
+    _transcription_log.info(
+        "Live microphone transcription: Apple Speech; "
+        "file/HTTP transcription: faster-whisper (lazy=%s)",
+        not WHISPER_PRELOAD,
+    )
+    _llm_log.info(
+        "MLX LLM model will be loaded in dedicated LLM worker: %s",
+        LLM_MODEL_ID,
+    )
 
 
 mlx_llm_model = None
@@ -26605,6 +26696,7 @@ def cleanup_service():
         return
 
     _cleanup_started.set()
+    _stop_ble_remote_scanner()
     cleanup_started_at = time.monotonic()
     _shutdown_log.info("Shutdown debug: cleanup_service begin")
     _log_shutdown_thread_snapshot("cleanup-start")
@@ -27201,8 +27293,10 @@ def signal_handler(signum, frame):
     raise KeyboardInterrupt
 
 
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
+def _install_process_signal_handlers() -> None:
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
 
 # ==================== Native HUD Overlay ====================
 
@@ -27849,7 +27943,8 @@ def _atexit_minimal_cleanup() -> None:
         pass
 
 
-atexit.register(_atexit_minimal_cleanup)
+def _register_process_cleanup() -> None:
+    atexit.register(_atexit_minimal_cleanup)
 
 
 def _llm_stop_markers() -> List[str]:
@@ -36646,6 +36741,16 @@ class XiaoAIMiIOClient:
             raise RuntimeError(f"Invalid XiaomiIO response: {result!r}")
         return result["result"]
 
+    async def beacon_key(self, did: str) -> Optional[str]:
+        result = await self.miio_request(
+            "/v2/device/blt_get_beaconkey",
+            {"did": str(did), "pdid": 1},
+        )
+        if not isinstance(result, dict):
+            return None
+        value = result.get("beaconkey")
+        return str(value) if value else None
+
     async def miot_action(self, did: str, siid: int, aiid: int, args: list):
         result = await self.miio_request(
             "/miotspec/action",
@@ -36732,10 +36837,173 @@ class XiaoAIMiIOClient:
         return code
 
 
+_MIIO_LOCAL_PORT = 54321
+_MIIO_LOCAL_HELLO = b"\x21\x31\x00\x20" + b"\xff" * 28
+
+
+def _miio_local_pad(data: bytes) -> bytes:
+    length = 16 - len(data) % 16
+    return data + bytes([length]) * length
+
+
+def _miio_local_unpad(data: bytes) -> bytes:
+    if not data:
+        return data
+    length = data[-1]
+    if not 1 <= length <= 16 or data[-length:] != bytes([length]) * length:
+        raise ValueError("Invalid local MiIO padding")
+    return data[:-length]
+
+
+class _EmbeddedMiIODatagramProtocol(asyncio.DatagramProtocol):
+    def __init__(self):
+        self.queue = asyncio.Queue()
+
+    def datagram_received(self, data: bytes, addr) -> None:
+        del addr
+        self.queue.put_nowait(data)
+
+    def error_received(self, exc: Exception) -> None:
+        self.queue.put_nowait(exc)
+
+
+class EmbeddedMiIOLocalService:
+    """Serialized LAN MiIO client; failures are surfaced for cloud fallback."""
+
+    def __init__(self, ip: str, token: str, *, timeout: float, retries: int):
+        self.ip = ip
+        self.timeout = timeout
+        self.retries = max(1, retries)
+        try:
+            self.token = bytes.fromhex(token)
+        except ValueError as exc:
+            raise ValueError("XIAOAI_LOCAL_TOKEN must be hexadecimal") from exc
+        if len(self.token) != 16:
+            raise ValueError("XIAOAI_LOCAL_TOKEN must decode to 16 bytes")
+        self.key = hashlib.md5(self.token).digest()
+        self.iv = hashlib.md5(self.key + self.token).digest()
+        self._device_id = None
+        self._stamp = 0
+        self._stamp_time = 0.0
+        self._id = 0
+        self._lock = asyncio.Lock()
+
+    async def _exchange(self, packet: bytes) -> bytes:
+        loop = asyncio.get_running_loop()
+        transport, protocol = await loop.create_datagram_endpoint(
+            _EmbeddedMiIODatagramProtocol,
+            remote_addr=(self.ip, _MIIO_LOCAL_PORT),
+        )
+        try:
+            for attempt in range(self.retries):
+                transport.sendto(packet)
+                try:
+                    response = await asyncio.wait_for(
+                        protocol.queue.get(), timeout=self.timeout
+                    )
+                except asyncio.TimeoutError:
+                    if attempt + 1 == self.retries:
+                        raise
+                    continue
+                if isinstance(response, Exception):
+                    raise response
+                if len(response) < 32 or response[:2] != b"\x21\x31":
+                    raise ValueError("Invalid local MiIO packet")
+                return response
+            raise asyncio.TimeoutError
+        finally:
+            transport.close()
+
+    async def _hello(self) -> None:
+        response = await self._exchange(_MIIO_LOCAL_HELLO)
+        if len(response) < 16:
+            raise ValueError("Truncated local MiIO hello")
+        _magic, _length, _unknown, device_id, stamp = struct.unpack(
+            ">HHIII", response[:16]
+        )
+        self._device_id = device_id
+        self._stamp = stamp
+        self._stamp_time = time.monotonic()
+
+    async def send(self, method: str, params=None):
+        async with self._lock:
+            try:
+                if self._device_id is None:
+                    await self._hello()
+                self._id += 1
+                payload = json.dumps(
+                    {"id": self._id, "method": method, "params": params or []},
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode()
+                encrypted = AES.new(self.key, AES.MODE_CBC, self.iv).encrypt(
+                    _miio_local_pad(payload)
+                )
+                stamp = self._stamp + int(time.monotonic() - self._stamp_time)
+                header = struct.pack(
+                    ">HHIII",
+                    0x2131,
+                    32 + len(encrypted),
+                    0,
+                    self._device_id,
+                    stamp,
+                )
+                checksum = hashlib.md5(header + self.token + encrypted).digest()
+                response = await self._exchange(header + checksum + encrypted)
+                body = response[32:]
+                if not body:
+                    return None
+                plain = AES.new(self.key, AES.MODE_CBC, self.iv).decrypt(body)
+                result = json.loads(_miio_local_unpad(plain).decode())
+                if "error" in result:
+                    raise RuntimeError(f"Local MiIO {method}: {result['error']}")
+                return result.get("result")
+            except Exception:
+                self._device_id = None
+                raise
+
+
+def _xiaoai_local_endpoint() -> tuple[str, str]:
+    ip = os.getenv("XIAOAI_LOCAL_IP", "").strip()
+    token = os.getenv("XIAOAI_LOCAL_TOKEN", "").strip()
+    combined = os.getenv("MI_LOCAL", "").strip()
+    if combined and (not ip or not token):
+        candidate_ip, sep, candidate_token = combined.partition(":")
+        if sep:
+            ip = ip or candidate_ip.strip()
+            token = token or candidate_token.strip()
+    return ip, token
+
+
 @dataclass(slots=True)
 class XiaoAIConfig:
     enabled: bool = XIAOAI_ENABLED
     account: str = field(default_factory=lambda: os.getenv("MI_USER", "").strip())
+    local_ip: str = field(default_factory=lambda: _xiaoai_local_endpoint()[0])
+    local_token: str = field(default_factory=lambda: _xiaoai_local_endpoint()[1])
+    local_timeout: float = field(
+        default_factory=lambda: max(
+            0.1, float(os.getenv("XIAOAI_LOCAL_TIMEOUT", "0.8"))
+        )
+    )
+    local_retries: int = field(
+        default_factory=lambda: max(1, int(os.getenv("XIAOAI_LOCAL_RETRIES", "1")))
+    )
+    local_status_poll_interval: float = field(
+        default_factory=lambda: max(
+            0.1, float(os.getenv("XIAOAI_LOCAL_STATUS_POLL_INTERVAL", "0.25"))
+        )
+    )
+    local_status_stale_after: float = field(
+        default_factory=lambda: max(
+            0.5, float(os.getenv("XIAOAI_LOCAL_STATUS_STALE_AFTER", "1.5"))
+        )
+    )
+    local_pause_confirm_timeout: float = field(
+        default_factory=lambda: max(
+            0.5, float(os.getenv("XIAOAI_LOCAL_PAUSE_CONFIRM_TIMEOUT", "3.0"))
+        )
+    )
     password: str = field(default_factory=lambda: os.getenv("MI_PASS", "").strip())
     hardware: str = field(
         default_factory=lambda: os.getenv("XIAOAI_HARDWARE", "LX06").strip()
@@ -37235,7 +37503,10 @@ class XiaoAIAudioServer:
                 await response.write(chunk)
             try:
                 await response.write_eof()
-            except (ConnectionResetError, RuntimeError):
+            except (ConnectionError, RuntimeError):
+                # ``write_eof`` may surface a low-level BrokenPipeError as the
+                # built-in ConnectionError("Connection lost") after the
+                # Xiaomi client has already closed the audio stream.
                 pass
             return response
         except (ConnectionResetError, aiohttp.ClientConnectionResetError) as exc:  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
@@ -37505,6 +37776,20 @@ class XiaoGPTBridge:
         self.miio_service = None
         self.device_id = ""
         self.watcher_task = None
+        self.local_status_task = None
+        self.local_miio = None
+        self.local_play_state = None
+        self.local_play_state_at = 0.0
+        self.local_play_generation = 0
+        self.local_native_pause_generation = 0
+        self.local_native_pause_task = None
+        self.local_status_errors = 0
+        self.local_status_event = asyncio.Event()
+        # Cloud latest-ask polling is demand-driven while LAN MiIO is healthy.
+        # It starts open so startup/no-first-sample behaves like the old cloud
+        # watcher, and the local watcher closes it after the first healthy idle.
+        self.cloud_poll_event = asyncio.Event()
+        self.cloud_poll_event.set()
         self.poll_count = 0
         self.poll_success_count = 0
         self.poll_error_count = 0
@@ -37530,6 +37815,11 @@ class XiaoGPTBridge:
     async def run(self):
         try:
             await self._startup()
+            if self.local_miio is not None:
+                self.local_status_task = asyncio.create_task(
+                    self._watch_local_player_status(),
+                    name="xiaoai-local-player-status",
+                )
             self.watcher_task = asyncio.create_task(self._watch_conversations())
             await self.stop_event.wait()
         finally:
@@ -37612,6 +37902,25 @@ class XiaoGPTBridge:
             )
         self.mina_service = XiaoAIMiNAClient(self.account_client)
         self.miio_service = XiaoAIMiIOClient(self.account_client)
+        if self.config.local_ip and self.config.local_token:
+            self.local_miio = EmbeddedMiIOLocalService(
+                self.config.local_ip,
+                self.config.local_token,
+                timeout=self.config.local_timeout,
+                retries=self.config.local_retries,
+            )
+            _xiaoai_log.info(
+                "XiaoAI local MiIO enabled: ip=%s poll=%.2fs timeout=%.2fs retries=%d",
+                self.config.local_ip,
+                self.config.local_status_poll_interval,
+                self.config.local_timeout,
+                self.config.local_retries,
+            )
+        elif self.config.local_ip or self.config.local_token:
+            _xiaoai_log.warning(
+                "XiaoAI local MiIO disabled: set both XIAOAI_LOCAL_IP and "
+                "XIAOAI_LOCAL_TOKEN, or MI_LOCAL=IP:TOKEN"
+            )
         await self._initialize_device()
         await self._replace_poll_session()
         _xiaoai_log.debug(
@@ -37714,10 +38023,16 @@ class XiaoGPTBridge:
 
     async def _shutdown(self):
         await self._cancel_relisten()
-        if self.watcher_task is not None:
-            self.watcher_task.cancel()
-            await asyncio.gather(self.watcher_task, return_exceptions=True)
-            self.watcher_task = None
+        for task_name in (
+            "watcher_task",
+            "local_status_task",
+            "local_native_pause_task",
+        ):
+            task = getattr(self, task_name)
+            if task is not None:
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+                setattr(self, task_name, None)
         await self.cancel_active_turn("bridge_shutdown")
         await self.audio_server.stop()
         for session in (self.poll_session, self.mi_session):
@@ -37754,6 +38069,8 @@ class XiaoGPTBridge:
         retryable_api_codes = {999}
 
         while not self.stop_event.is_set():
+            if not await self._wait_for_cloud_poll_permission():
+                return
             started = time.monotonic()
             extra_backoff = 0.0
             try:
@@ -38135,8 +38452,9 @@ class XiaoGPTBridge:
         self.last_accepted_query_at = now
         _xiaoai_log.debug("XiaoAI ask: %s", forwarded)
 
-        # Mute the built-in answer immediately, before cancellation/turn setup.
-        await self._stop_xiaomi_player()
+        # Prefer the continuously sampled local state and UDP play_pause.
+        # A timeout, stale sample, or missed edge uses the original cloud stop.
+        await self._interrupt_native_answer()
         await self.start_turn(
             forwarded,
             player_already_stopped=True,
@@ -39161,6 +39479,239 @@ class XiaoGPTBridge:
                 timeout,
             )
 
+    def _local_state_is_fresh(self) -> bool:
+        return (
+            self.local_play_state in (0, 1)
+            and time.monotonic() - self.local_play_state_at
+            <= self.config.local_status_stale_after
+        )
+
+    async def _wait_for_cloud_poll_permission(self) -> bool:
+        """Allow MiNA ask polling only on local play activity or LAN failure."""
+        while not self.stop_event.is_set():
+            # No local endpoint, no successful sample yet, a stale sample, or
+            # any current UDP failure preserves the original cloud polling.
+            if self.local_miio is None:
+                return True
+            if self.local_status_errors or not self._local_state_is_fresh():
+                return True
+            # Native answers run with no active Edge turn. Edge-TTS playback
+            # also reports 1, but must not wake the ask poller for our own audio.
+            if self.local_play_state == 1 and self.active_turn is None:
+                return True
+
+            self.cloud_poll_event.clear()
+            # Close the clear/check race before sleeping.
+            if self.local_status_errors or not self._local_state_is_fresh():
+                self.cloud_poll_event.set()
+                continue
+            if self.local_play_state == 1 and self.active_turn is None:
+                self.cloud_poll_event.set()
+                continue
+            try:
+                await asyncio.wait_for(self.cloud_poll_event.wait(), timeout=0.5)
+            except asyncio.TimeoutError:
+                # The timeout is only a stale-state safety check. Healthy idle
+                # does not issue a cloud request.
+                pass
+        return False
+
+    async def _watch_local_player_status(self):
+        local = self.local_miio
+        if local is None:
+            return
+        interval = self.config.local_status_poll_interval
+        while not self.stop_event.is_set():
+            started = time.monotonic()
+            try:
+                result = await local.send("get_prop", ["speaker_SpeakerRate"])
+                value = result[0] if isinstance(result, list) and result else None
+                if value not in (0, 1):
+                    raise ValueError(f"unexpected speaker_SpeakerRate: {result!r}")
+                previous = self.local_play_state
+                self.local_play_state = int(value)
+                self.local_play_state_at = time.monotonic()
+                self.local_status_errors = 0
+                native_play_started = previous != 1 and value == 1
+                if native_play_started:
+                    self.local_play_generation += 1
+
+                # Start native pause and cloud ask retrieval concurrently.
+                # The edge remains the trigger, so persistent status=1 cannot
+                # toggle play_pause repeatedly. Voice Edge's own answer has an
+                # active turn and must never be interrupted here.
+                if native_play_started and self.active_turn is None:
+                    generation = self.local_play_generation
+                    previous_pause_task = self.local_native_pause_task
+                    if (
+                        previous_pause_task is not None
+                        and not previous_pause_task.done()
+                    ):
+                        previous_pause_task.cancel()
+                    self.local_native_pause_task = asyncio.create_task(
+                        self._pause_native_generation(generation),
+                        name=f"xiaoai-local-pause-{generation}",
+                    )
+
+                self.local_status_event.set()
+                # Release get_latest_ask immediately. The pause task runs in
+                # parallel, and record handling joins that exact generation
+                # before deciding whether the cloud stop fallback is required.
+                self.cloud_poll_event.set()
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                self.local_status_errors += 1
+                self.local_status_event.set()
+                # A single missing LAN response immediately re-enables the old
+                # cloud watcher. The next valid local sample closes it again if
+                # the speaker is healthy and idle.
+                self.cloud_poll_event.set()
+                _xiaoai_log.debug(
+                    "XiaoAI local status unavailable: consecutive=%d error=%s",
+                    self.local_status_errors,
+                    str(exc).replace("\n", " ")[:300],
+                )
+            delay = max(0.0, interval - (time.monotonic() - started))
+            try:
+                await asyncio.wait_for(self.stop_event.wait(), timeout=delay)
+            except asyncio.TimeoutError:
+                pass
+
+    async def _wait_local_play_state(self, target: int, wait_seconds: float) -> bool:
+        if self.local_miio is None or wait_seconds <= 0:
+            return False
+        deadline = time.monotonic() + wait_seconds
+        while not self.stop_event.is_set():
+            if self._local_state_is_fresh() and self.local_play_state == target:
+                return True
+            if self.local_status_errors and not self._local_state_is_fresh():
+                return False
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            self.local_status_event.clear()
+            if self._local_state_is_fresh() and self.local_play_state == target:
+                return True
+            try:
+                await asyncio.wait_for(
+                    self.local_status_event.wait(), timeout=min(remaining, 0.5)
+                )
+            except asyncio.TimeoutError:
+                pass
+        return False
+
+    async def _local_send_ok(self, method: str, params: list) -> bool:
+        if self.local_miio is None:
+            return False
+        try:
+            result = await self.local_miio.send(method, params)
+            if result and result[0] == "ok":
+                return True
+            raise RuntimeError(f"unexpected result: {result!r}")
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            _xiaoai_log.debug(
+                "XiaoAI local MiIO %s failed; cloud fallback available: %s",
+                method,
+                str(exc).replace("\n", " ")[:300],
+            )
+            return False
+
+    async def _pause_native_generation(self, generation: int) -> bool:
+        try:
+            paused = await self._local_send_ok("play_pause", [])
+            if paused:
+                self.local_native_pause_generation = generation
+                _xiaoai_log.debug(
+                    "XiaoAI native answer pause sent concurrently: generation=%d",
+                    generation,
+                )
+            else:
+                _xiaoai_log.debug(
+                    "XiaoAI concurrent local pause failed: generation=%d; "
+                    "cloud stop fallback remains available",
+                    generation,
+                )
+            return paused
+        except asyncio.CancelledError:
+            raise
+
+    async def _interrupt_native_answer(self):
+        if self.local_miio is not None:
+            generation = self.local_play_generation
+            pause_task = self.local_native_pause_task
+            if (
+                pause_task is not None
+                and not pause_task.done()
+                and pause_task.get_name() == f"xiaoai-local-pause-{generation}"
+            ):
+                # Cloud ask retrieval and local pause were started together.
+                # Join only this generation here, without having delayed the
+                # get_latest_ask request itself.
+                await asyncio.gather(pause_task, return_exceptions=True)
+
+            if generation > 0 and self.local_native_pause_generation == generation:
+                # The concurrent local pause already handled this generation.
+                # Do not toggle play_pause again.
+                if await self._wait_local_play_state(
+                    0, self.config.local_pause_confirm_timeout
+                ):
+                    _xiaoai_log.debug(
+                        "XiaoAI immediate local pause confirmed: generation=%d",
+                        generation,
+                    )
+                    return
+                _xiaoai_log.warning(
+                    "XiaoAI immediate local pause not confirmed idle; "
+                    "using cloud fallback"
+                )
+            else:
+                # Local polling may have missed the edge or failed. Retain one
+                # best-effort local attempt before the original cloud stop.
+                observed = await self._wait_local_play_state(
+                    1, self.config.native_play_start_timeout
+                )
+                if observed and await self._local_send_ok("play_pause", []):
+                    if await self._wait_local_play_state(
+                        0, self.config.local_pause_confirm_timeout
+                    ):
+                        _xiaoai_log.debug(
+                            "XiaoAI native answer paused over local MiIO fallback"
+                        )
+                        return
+                    _xiaoai_log.warning(
+                        "XiaoAI local pause not confirmed idle; using cloud fallback"
+                    )
+                elif not observed:
+                    _xiaoai_log.debug(
+                        "XiaoAI local playing edge unavailable/missed; "
+                        "using cloud fallback"
+                    )
+        await self._stop_xiaomi_player()
+
+    async def _relisten_after_native_answer_local(self) -> bool:
+        if self.local_miio is None:
+            return False
+        if not await self._wait_local_play_state(
+            1, self.config.native_play_start_timeout
+        ):
+            return False
+        if not await self._wait_local_play_state(
+            0, self.config.native_play_end_timeout
+        ):
+            return False
+        if self.config.native_tail_guard > 0:
+            await asyncio.sleep(self.config.native_tail_guard)
+        if self.active_turn is not None or self.stop_event.is_set():
+            return True
+        _xiaoai_log.debug(
+            "XiaoAI native playback finished via local MiIO; opening follow-up"
+        )
+        await self._start_relisten_cycle(player_idle_confirmed=True)
+        return True
+
     async def _stop_xiaomi_player(self):
         if not self.mina_service or not self.device_id:
             return
@@ -39177,6 +39728,11 @@ class XiaoGPTBridge:
             _xiaoai_log.debug("Xiaomi player_stop failed", exc_info=True)
 
     async def _relisten_after_native_answer(self):
+        if await self._relisten_after_native_answer_local():
+            return
+        _xiaoai_log.debug(
+            "XiaoAI local native tracking unavailable; using MiNA fallback"
+        )
         mina_service = self.mina_service
         if mina_service is None:
             _xiaoai_log.warning(
@@ -39289,7 +39845,17 @@ class XiaoGPTBridge:
             await asyncio.gather(task, return_exceptions=True)
 
     async def _wait_player_idle_before_wakeup(self) -> bool:
-        """Wait for player idle before sending a wake/listen action."""
+        """Prefer local playback state and retain the original MiNA fallback."""
+        if self.local_miio is not None:
+            if await self._wait_local_play_state(
+                0, self.config.playback_status_max_wait
+            ):
+                if self.config.playback_tail_guard > 0:
+                    await asyncio.sleep(self.config.playback_tail_guard)
+                return True
+            _xiaoai_log.debug(
+                "XiaoAI local pre-wakeup state unavailable; using MiNA fallback"
+            )
         mina_service = self.mina_service
         if mina_service is None or not self.device_id:
             return True
@@ -39379,6 +39945,20 @@ class XiaoGPTBridge:
             self.suppress_records_until,
             time.monotonic() + self.config.wakeup_suppress_seconds,
         )
+        local_wakeup_method = (
+            "custom_directives" if self.config.wakeup_mode == "directive" else "wakeup"
+        )
+        local_wakeup_params = (
+            [XIAOAI_WAKEUP_KEYWORD] if self.config.wakeup_mode == "directive" else []
+        )
+        if await self._local_send_ok(local_wakeup_method, local_wakeup_params):
+            _xiaoai_log.debug(
+                "Xiaomi local MiIO wakeup sent: mode=%s method=%s params=%r",
+                self.config.wakeup_mode,
+                local_wakeup_method,
+                local_wakeup_params,
+            )
+            return
         miio_service = self.miio_service
         if miio_service is None:
             _xiaoai_log.warning("Cannot wake XiaoAI: MIoT service is not initialized")
@@ -41958,7 +42538,9 @@ class VoiceChatSubsystem:
         # (IS_DICTATION_ACTIVE + Apple Speech 进程单例) 对齐, 关掉竞态窗口。
         with DICTATION_LOCK:
             if IS_DICTATION_ACTIVE:
-                _dictation_log.debug("Voice chat wake ignored: dictation already active")
+                _dictation_log.debug(
+                    "Voice chat wake ignored: dictation already active"
+                )
                 return
             IS_DICTATION_ACTIVE = True
 
@@ -42693,6 +43275,365 @@ def rerank_documents(query: str, documents: List[str]) -> str:
         },
         ensure_ascii=False,
         indent=2,
+    )
+
+
+# ==================== BLE MiBeacon remote ====================
+
+
+def _ble_remote_decrypt_frame(frame: bytes) -> tuple[int, bytes] | None:
+    """Authenticate one MiBeacon frame and return its counter and plaintext."""
+
+    key_hex = re.sub(r"[^0-9a-fA-F]", "", VE_BLE_REMOTE_KEY)
+    mac_hex = re.sub(r"[^0-9a-fA-F]", "", VE_BLE_REMOTE_MAC)
+    if len(key_hex) != 32 or len(mac_hex) != 12:
+        raise ValueError("VE_BLE_REMOTE_KEY or VE_BLE_REMOTE_MAC is invalid")
+    expected_mac = bytes.fromhex(mac_hex)[::-1]
+    if len(frame) < 18 or frame[5:11] != expected_mac:
+        return None
+
+    counter = frame[4]
+    nonce = frame[5:11] + frame[2:5] + frame[-7:-4]
+    try:
+        plaintext = AESCCM(bytes.fromhex(key_hex), tag_length=4).decrypt(
+            nonce, frame[11:-7] + frame[-4:], b"\x11"
+        )
+    except InvalidTag:
+        return None
+    return counter, plaintext
+
+
+def _ble_remote_decode_frame(frame: bytes) -> dict[str, Any] | None:
+    """Decode a known remote action from one authenticated MiBeacon frame."""
+
+    decoded = _ble_remote_decrypt_frame(frame)
+    if decoded is None:
+        return None
+    counter, plaintext = decoded
+    action = _BLE_REMOTE_ACTIONS.get(plaintext)
+    if action is None:
+        return None
+    return {
+        "type": "BLE_REMOTE",
+        "action": action,
+        "counter": counter,
+        "plaintext": plaintext.hex(),
+    }
+
+
+def _ble_advertisement_service_data(advertisement: Any) -> dict[str, bytes]:
+    return {
+        str(uuid).lower(): bytes(value)
+        for uuid, value in advertisement.service_data.items()
+    }
+
+
+def _ble_scan_is_remote_candidate(name: str, advertisement: Any) -> bool:
+    """Match the same remote hints used by the standalone scan.py helper."""
+
+    keywords = ("yeelink", "ylyk", "remote", "rc", "miot", "xiaomi")
+    lower_name = name.casefold()
+    service_data = _ble_advertisement_service_data(advertisement)
+    is_named_remote = any(keyword in lower_name for keyword in keywords)
+    is_mibeacon = any(
+        uuid.startswith("0000fe9f") or uuid.startswith("0000fe95")
+        for uuid in service_data
+    )
+    manufacturer_text = str(advertisement.manufacturer_data).casefold()
+    return is_named_remote or is_mibeacon or "yeel" in manufacturer_text
+
+
+async def _run_ble_scan_cli() -> None:
+    """Continuously list each nearby BLE device once, highlighting remotes."""
+
+    print("🔍 开始扫描周围的 BLE 蓝牙设备...", flush=True)
+    print("👉 【重要】请现在频繁按压你的遥控器按键，以便发出广播！\n", flush=True)
+    print(f"{'MAC 地址 / UUID':<38} | {'信号 RSSI':<9} | {'设备名称':<20}")
+    print("-" * 75, flush=True)
+    seen_addresses: set[str] = set()
+
+    def detection_callback(device: Any, advertisement: Any) -> None:
+        address = str(getattr(device, "address", "") or "unknown")
+        if address in seen_addresses:
+            return
+        seen_addresses.add(address)
+        name = str(
+            getattr(device, "name", None)
+            or getattr(advertisement, "local_name", None)
+            or "未知设备"
+        )
+        rssi = getattr(advertisement, "rssi", None)
+        rssi_text = f"{rssi} dBm" if rssi is not None else "未知"
+        if _ble_scan_is_remote_candidate(name, advertisement):
+            print(
+                f"🎯 [找到疑似遥控器!] {address:<25} | {rssi_text:<9} | {name}",
+                flush=True,
+            )
+            service_uuids = sorted(_ble_advertisement_service_data(advertisement))
+            print(f"   └── 广播数据 Service Data: {service_uuids}", flush=True)
+        else:
+            print(
+                f"   [普通 BLE 设备]   {address:<25} | {rssi_text:<9} | {name}",
+                flush=True,
+            )
+
+    scanner = BleakScanner(detection_callback=detection_callback)
+    await scanner.start()
+    try:
+        await asyncio.Event().wait()
+    finally:
+        await scanner.stop()
+
+
+async def _run_ble_listen_cli() -> None:
+    """Print decrypted button payload hex values for one MiBeacon remote."""
+
+    target = VE_BLE_REMOTE_MAC.strip().casefold()
+    service_uuid = _BLE_REMOTE_SERVICE_UUID_NORM
+    if not target or not service_uuid:
+        raise ValueError(
+            "--ble-listen requires VE_BLE_REMOTE_MAC and VE_BLE_REMOTE_SERVICE_UUID"
+        )
+    key_hex = re.sub(r"[^0-9a-fA-F]", "", VE_BLE_REMOTE_KEY)
+    if len(key_hex) != 32:
+        raise ValueError(
+            "--ble-listen requires a 16-byte VE_BLE_REMOTE_KEY to decrypt "
+            "MiBeacon button payloads"
+        )
+
+    seen: deque[tuple[int, bytes]] = deque(maxlen=64)
+
+    def on_advertisement(device: Any, advertisement: Any) -> None:
+        if str(getattr(device, "address", "")).strip().casefold() != target:
+            return
+        frame = _ble_advertisement_service_data(advertisement).get(service_uuid)
+        if frame is None:
+            return
+        decoded = _ble_remote_decrypt_frame(frame)
+        if decoded is None:
+            return
+        counter, plaintext = decoded
+        signature = (counter, frame[-7:])
+        if signature in seen:
+            return
+        seen.append(signature)
+        action = _BLE_REMOTE_ACTIONS.get(plaintext)
+        suffix = f" action={action}" if action is not None else ""
+        print(f"{plaintext.hex()}{suffix}", flush=True)
+
+    print(
+        f"BLE listen started for {VE_BLE_REMOTE_MAC} service={service_uuid}",
+        file=sys.stderr,
+        flush=True,
+    )
+    scanner = BleakScanner(detection_callback=on_advertisement)
+    await scanner.start()
+    try:
+        await asyncio.Event().wait()
+    finally:
+        await scanner.stop()
+
+
+def _run_ble_cli_from_argv(argv: list[str]) -> bool:
+    commands = [option for option in ("--ble-scan", "--ble-listen") if option in argv]
+    if not commands:
+        return False
+    if len(commands) != 1 or argv != commands:
+        print(
+            "Usage: python voice_edge.py (--ble-scan | --ble-listen)",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+    try:
+        asyncio.run(
+            _run_ble_scan_cli()
+            if commands[0] == "--ble-scan"
+            else _run_ble_listen_cli()
+        )
+    except KeyboardInterrupt:
+        print("BLE monitoring stopped", file=sys.stderr)
+        raise SystemExit(0) from None
+    except Exception as exc:
+        print(f"BLE monitoring failed: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    raise SystemExit(0)
+
+
+def _ble_remote_publish(event: dict[str, Any]) -> None:
+    with _BLE_REMOTE_SUBSCRIBERS_LOCK:
+        subscribers = tuple(_BLE_REMOTE_SUBSCRIBERS)
+    for subscriber in subscribers:
+        try:
+            subscriber.put_nowait(event)
+        except queue.Full:
+            try:
+                subscriber.get_nowait()
+            except queue.Empty:
+                pass
+            try:
+                subscriber.put_nowait(event)
+            except queue.Full:
+                pass
+
+
+def _ble_remote_scanner_thread() -> None:
+    async def run_scanner() -> None:
+
+        seen: deque[tuple[int, bytes]] = deque(maxlen=64)
+
+        def on_advertisement(_device: Any, advertisement: Any) -> None:
+            service_data = {
+                str(k).lower(): bytes(v) for k, v in advertisement.service_data.items()
+            }
+            frame = service_data.get(_BLE_REMOTE_SERVICE_UUID_NORM)
+            if frame is None:
+                return
+            event = _ble_remote_decode_frame(frame)
+            if event is None:
+                return
+            signature = (event["counter"], frame[-7:])
+            if signature in seen:
+                return
+            seen.append(signature)
+            _ble_remote_publish(event)
+            _app_log.debug(
+                "BLE remote action=%s counter=%d plaintext=%s",
+                event["action"],
+                event["counter"],
+                event["plaintext"],
+            )
+
+        scanner = BleakScanner(detection_callback=on_advertisement)
+        stop_event = asyncio.Event()
+        event_loop = asyncio.get_running_loop()
+
+        def forward_stop_request() -> None:
+            _BLE_REMOTE_STOP.wait()
+            event_loop.call_soon_threadsafe(stop_event.set)
+
+        stop_forwarder = threading.Thread(
+            target=forward_stop_request,
+            name="BleMiBeaconRemoteStop",
+            daemon=True,
+        )
+        stop_forwarder.start()
+
+        await scanner.start()
+        _app_log.info("BLE remote scanner started for MAC %s", VE_BLE_REMOTE_MAC)
+        try:
+            await stop_event.wait()
+        finally:
+            await scanner.stop()
+
+    try:
+        asyncio.run(run_scanner())
+    except Exception as exc:
+        _app_log.exception("BLE remote scanner stopped: %s", exc)
+        _ble_remote_publish({"type": "BLE_REMOTE_ERROR", "message": str(exc)})
+
+
+def _ensure_ble_remote_scanner() -> None:
+    global _BLE_REMOTE_THREAD
+    if not VE_BLE_REMOTE_ENABLED or _BLE_REMOTE_STOP.is_set():
+        return
+    key_hex = re.sub(r"[^0-9a-fA-F]", "", VE_BLE_REMOTE_KEY)
+    mac_hex = re.sub(r"[^0-9a-fA-F]", "", VE_BLE_REMOTE_MAC)
+    if len(key_hex) != 32 or len(mac_hex) != 12:
+        _app_log.error(
+            "BLE remote scanner disabled: VE_BLE_REMOTE_KEY must be 32 hex "
+            "characters and VE_BLE_REMOTE_MAC must be 12 hex characters"
+        )
+        return
+    if not _BLE_REMOTE_SERVICE_UUID_NORM:
+        _app_log.error(
+            "BLE remote scanner disabled: VE_BLE_REMOTE_SERVICE_UUID is empty"
+        )
+        return
+    with _BLE_REMOTE_THREAD_LOCK:
+        if _BLE_REMOTE_THREAD is not None and _BLE_REMOTE_THREAD.is_alive():
+            return
+        _BLE_REMOTE_THREAD = threading.Thread(
+            target=_ble_remote_scanner_thread, name="BleMiBeaconRemote", daemon=True
+        )
+        _BLE_REMOTE_THREAD.start()
+
+
+def _stop_ble_remote_scanner() -> None:
+    first_stop = not _BLE_REMOTE_STOP.is_set()
+    _BLE_REMOTE_STOP.set()
+    if first_stop:
+        # Wake every long-lived StreamingResponse before Uvicorn begins its
+        # graceful shutdown. Otherwise each response can remain blocked in
+        # queue.get() until its 15-second keepalive timeout and Uvicorn cancels
+        # the ASGI task after timeout_graceful_shutdown.
+        _ble_remote_publish({"type": "BLE_REMOTE_SHUTDOWN"})
+    thread = _BLE_REMOTE_THREAD
+    if thread is not None and thread.is_alive():
+        thread.join(timeout=2.0)
+
+
+async def ble_remote_events_api(request):
+    """Stream BLE button events as newline-delimited JSON."""
+    client_host = request.client.host if request.client is not None else None
+    debug = request.query_params.get("debug") == "1"
+    if debug:
+        _http_log.info(
+            "BLE remote event stream request: client=%s debug=%s enabled=%s",
+            client_host,
+            debug,
+            VE_BLE_REMOTE_ENABLED,
+        )
+    if client_host not in {"127.0.0.1", "::1"}:
+        _http_log.warning("BLE remote event stream rejected: client=%s", client_host)
+        return JSONResponse({"error": "local access only"}, status_code=403)
+    if not VE_BLE_REMOTE_ENABLED:
+        _http_log.warning("BLE remote event stream rejected: BLE remote disabled")
+        return JSONResponse({"error": "BLE remote disabled"}, status_code=503)
+
+    subscriber: queue.Queue = queue.Queue(maxsize=32)
+    with _BLE_REMOTE_SUBSCRIBERS_LOCK:
+        _BLE_REMOTE_SUBSCRIBERS.add(subscriber)
+    _ensure_ble_remote_scanner()
+    if debug:
+        _http_log.info("BLE remote event stream connected: client=%s", client_host)
+
+    async def stream():
+        try:
+            yield b'{"type":"BLE_REMOTE_READY"}\n'
+            while True:
+                try:
+                    event = await asyncio.to_thread(subscriber.get, True, 15.0)
+                except queue.Empty:
+                    yield b'{"type":"KEEPALIVE"}\n'
+                    continue
+                if event.get("type") == "BLE_REMOTE_SHUTDOWN":
+                    if debug:
+                        _http_log.info(
+                            "BLE remote event stream closing for shutdown: client=%s",
+                            client_host,
+                        )
+                    break
+                if debug:
+                    _http_log.info(
+                        "BLE remote event stream send: client=%s type=%s action=%s counter=%s",
+                        client_host,
+                        event.get("type"),
+                        event.get("action"),
+                        event.get("counter"),
+                    )
+                yield json.dumps(event, separators=(",", ":")).encode() + b"\n"
+        finally:
+            with _BLE_REMOTE_SUBSCRIBERS_LOCK:
+                _BLE_REMOTE_SUBSCRIBERS.discard(subscriber)
+            if debug:
+                _http_log.info(
+                    "BLE remote event stream disconnected: client=%s", client_host
+                )
+
+    return StreamingResponse(
+        stream(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
 
 
@@ -49175,12 +50116,240 @@ def run_self_tests():
     )
 
 
+def _parse_mi_list_cli(argv: list[str]) -> Optional[tuple[str, bool, int]]:
+    if "--mi-list" not in argv:
+        return None
+    index = argv.index("--mi-list")
+    values = argv[index + 1 :]
+    if any(value.startswith("--") for value in values):
+        raise ValueError("--mi-list must be the final command-line option")
+    if len(values) > 3:
+        raise ValueError(
+            "Usage: --mi-list [name_keyword|full] "
+            "[getVirtualModel=false|true] [getHuamiDevices=0|1]"
+        )
+    keyword = values[0].strip() if values else ""
+    virtual_text = values[1].strip().lower() if len(values) > 1 else "false"
+    huami_text = values[2].strip() if len(values) > 2 else "0"
+    if virtual_text not in ("false", "true"):
+        raise ValueError("getVirtualModel must be false or true")
+    if huami_text not in ("0", "1"):
+        raise ValueError("getHuamiDevices must be 0 or 1")
+    return keyword, virtual_text == "true", int(huami_text)
+
+
+async def _run_mi_list_cli(
+    name_keyword: str, get_virtual_model: bool, get_huami_devices: int
+) -> int:
+    token_path = Path.home() / ".mi.token"
+    timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=20)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        account = EmbeddedMiAccount(
+            session,
+            os.getenv("MI_USER", "").strip(),
+            os.getenv("MI_PASS", "").strip(),
+            token_path,
+            otp_callback=_xiaoai_otp_input,
+        )
+        if not account.has_service_token("xiaomiio"):
+            if not account.username or not account._password:
+                raise RuntimeError(
+                    "No cached xiaomiio token in ~/.mi.token; set MI_USER and MI_PASS once"
+                )
+            if not await account.login("xiaomiio"):
+                raise RuntimeError(
+                    account.login_error or "Xiaomi xiaomiio login failed"
+                )
+        service = XiaoAIMiIOClient(
+            account, region=os.getenv("MI_REGION", "cn").strip().lower()
+        )
+        devices = await service.device_list(
+            get_virtual_model=get_virtual_model,
+            get_huami_devices=get_huami_devices,
+        )
+        full = name_keyword.casefold() == "full"
+        keyword = "" if full else name_keyword.casefold()
+        selected = [
+            d
+            for d in devices
+            if not keyword or keyword in str(d.get("name", "")).casefold()
+        ]
+        output = []
+        for device in selected:
+            item = (
+                dict(device)
+                if full
+                else {
+                    key: device.get(key)
+                    for key in ("name", "did", "mac", "localip", "token", "model")
+                    if device.get(key) not in (None, "")
+                }
+            )
+            did = str(device.get("did") or "")
+            if did.startswith("blt."):
+                try:
+                    beacon_key = await service.beacon_key(did)
+                except Exception as exc:
+                    item["ble_key_error"] = str(exc)
+                else:
+                    if beacon_key:
+                        item["ble_key"] = beacon_key
+            output.append(item)
+        print(json.dumps(output, ensure_ascii=False, indent=2))
+        return 0
+
+
+def _run_mi_list_from_argv(argv: list[str]) -> bool:
+    try:
+        parsed = _parse_mi_list_cli(argv)
+        if parsed is None:
+            return False
+        result = asyncio.run(_run_mi_list_cli(*parsed))
+    except Exception as exc:
+        print(f"--mi-list failed: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    raise SystemExit(result)
+
+
+def _prompt_mi_login_value(label: str, env_name: str, *, secret: bool = False) -> str:
+    env_value = os.getenv(env_name, "").strip()
+    prompt = f"{label} [{env_name}]: " if env_value else f"{label}: "
+    if secret:
+        from getpass import getpass
+
+        entered = getpass(prompt)
+    else:
+        entered = input(prompt)
+    value = str(entered or "").strip() or env_value
+    if not value:
+        raise RuntimeError(f"{env_name} was not provided")
+    return value
+
+
+async def _mi_login_otp_input(otp_method: str) -> str:
+    code = await asyncio.to_thread(
+        input,
+        f"Xiaomi {otp_method} OTP: ",
+    )
+    code = str(code or "").strip()
+    if not code:
+        raise RuntimeError("Xiaomi OTP was not provided")
+    return code
+
+
+async def _run_mi_login_cli(username: str, password: str) -> int:
+    token_path = Path.home() / ".mi.token"
+    timeout = aiohttp.ClientTimeout(total=30, connect=10, sock_read=20)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        account = EmbeddedMiAccount(
+            session,
+            username,
+            password,
+            token_path,
+            otp_callback=_mi_login_otp_input,
+        )
+        # Refresh both service tokens used by this script into the same store.
+        for sid in ("xiaomiio", "micoapi"):
+            if not await account.login(sid):
+                raise RuntimeError(
+                    account.login_error or f"Xiaomi login failed for sid={sid}"
+                )
+    print(f"Xiaomi login succeeded; tokens saved to {token_path}")
+    return 0
+
+
+def _run_mi_login_from_argv(argv: list[str]) -> bool:
+    if "--mi-login" not in argv:
+        return False
+    if argv != ["--mi-login"]:
+        print("Usage: python voice_edge.py --mi-login", file=sys.stderr)
+        raise SystemExit(2)
+    try:
+        username = _prompt_mi_login_value("MI_USER", "MI_USER")
+        password = _prompt_mi_login_value("MI_PASS", "MI_PASS", secret=True)
+        result = asyncio.run(_run_mi_login_cli(username, password))
+    except (EOFError, KeyboardInterrupt):
+        print("--mi-login cancelled", file=sys.stderr)
+        raise SystemExit(1) from None
+    except Exception as exc:
+        print(f"--mi-login failed: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    raise SystemExit(result)
+
+
+_PROCESS_INSTANCE_LOCK_FD: int | None = None
+
+
+def _validate_command_line(argv: list[str]) -> None:
+    """Reject unknown options and unsupported option combinations before startup."""
+
+    accepted = {"--http", "--self-test"}
+    if not argv or (set(argv) <= accepted and len(argv) == len(set(argv))):
+        return
+    if argv in (["--mi-login"], ["--ble-scan"], ["--ble-listen"]):
+        return
+    if argv and argv[0] == "--mi-list" and 1 <= len(argv) <= 4:
+        if not any(value.startswith("--") for value in argv[1:]):
+            return
+    print(
+        "Usage:\n"
+        "  python voice_edge.py [--http] [--self-test]\n"
+        "  python voice_edge.py --mi-login\n"
+        "  python voice_edge.py --mi-list [name_keyword|full] [false|true] [0|1]\n"
+        "  python voice_edge.py --ble-scan\n"
+        "  python voice_edge.py --ble-listen",
+        file=sys.stderr,
+    )
+    raise SystemExit(2)
+
+
+def _acquire_process_instance_lock() -> None:
+    """Hold a non-blocking process lock so a second Voice Edge cannot start."""
+
+    global _PROCESS_INSTANCE_LOCK_FD
+    lock_path = Path(tempfile.gettempdir()) / f"voice-edge-{os.getuid()}.lock"
+    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        os.close(fd)
+        print("Voice Edge is already running", file=sys.stderr)
+        raise SystemExit(1) from None
+    except BaseException:
+        os.close(fd)
+        raise
+    os.ftruncate(fd, 0)
+    os.write(fd, f"{os.getpid()}\n".encode("ascii"))
+    _PROCESS_INSTANCE_LOCK_FD = fd
+
+
+def _initialize_main_runtime() -> None:
+    """Perform all process side effects after main() has selected its command."""
+    _initialize_logging_and_preloads()
+    _initialize_sounddevice()
+    _validate_ffmpeg_runtime()
+    _install_process_signal_handlers()
+    _register_process_cleanup()
+
+
 def main():
     global _main_event_loop
+
+    # Validate and lock before any command initializes BLE, audio, models,
+    # logging, browser runtimes, workers, or other process-wide resources.
+    argv = sys.argv[1:]
+    _validate_command_line(argv)
 
     if "--self-test" in sys.argv:
         run_self_tests()
         return
+
+    _run_ble_cli_from_argv(argv)
+    _run_mi_login_from_argv(argv)
+    _run_mi_list_from_argv(argv)
+
+    _acquire_process_instance_lock()
+    _initialize_main_runtime()
 
     try:
         _main_event_loop = asyncio.get_running_loop()
@@ -49368,6 +50537,12 @@ def main():
         except Exception:
             pass
 
+        # End the BLE scanner and wake its persistent NDJSON responses before
+        # asking Uvicorn to close connections. This mirrors the existing TTS
+        # queue shutdown-marker pattern and lets StreamingResponse finish
+        # normally instead of being cancelled at the graceful timeout.
+        _stop_ble_remote_scanner()
+
         # 给流式 response / MCP session 一点时间看到 shutdown flag
         deadline = time.monotonic() + 1.0
 
@@ -49476,6 +50651,7 @@ app = Starlette(
     routes=[
         Route("/", endpoint=home, methods=["GET"]),
         Route("/health", endpoint=health, methods=["GET"]),
+        Route("/ble-remote/events", endpoint=ble_remote_events_api, methods=["GET"]),
         Route(
             "/internal/audio/runtime",
             endpoint=audio_runtime_status_api,

@@ -30,6 +30,9 @@ dependencies = [
     "tavily-python>=0.7.26",
     "uvicorn>=0.51.0",
     "pypinyin>=0.55.0",
+    "cryptography>=49.0.0",
+    "bleak>=3.0.2",
+    "pycryptodome>=3.23.0",
 ]
 
 [project.scripts]
