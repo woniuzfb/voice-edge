@@ -23673,13 +23673,66 @@ def _m365_strip_inline_files_for_identity(text: str) -> str:
     return _M365_IDENTITY_FILE_PLACEHOLDER_RE.sub(_fold_bracket, scan_text)
 
 
+# Mirror of the client's stripInlineImageBase64 history normalization
+# (continue messageContent.ts): from the second turn onward the client replays
+# history with every inline-image data-URI "![alt](data:...)" collapsed to a
+# bare "![alt]" marker — for BOTH user and assistant messages. The identity
+# must be computed on the same normalized text, or the turn that GENERATED the
+# image (full base64 in history) and every later turn (stripped marker) hash
+# to different keys and the M365 conversation silently forks. Only "data:"
+# URLs are stripped; ordinary link images stay identity-bearing.
+_M365_INLINE_DATA_IMAGE_RE = re.compile(
+    r"(?P<head>!\[[^\]\n]*\])\([ \t]*data:",
+    re.IGNORECASE,
+)
+
+
+def _m365_strip_inline_data_images(text: str) -> str:
+    """Collapse every "![alt](data:...)" to "![alt]", mirroring the client.
+
+    The data-URI payload may itself contain "(" / ")" (e.g. non-base64
+    "data:...;utf8," payloads), so the closing paren is found by bracket-depth
+    tracking from the opening "(" exactly like the client — a regex that stops
+    at the first ")" would truncate early and leave a drifting payload tail in
+    the identity. An unterminated image is left untouched.
+    """
+    value = str(text or "")
+    pieces: list[str] = []
+    cursor = 0
+    for match in _M365_INLINE_DATA_IMAGE_RE.finditer(value):
+        if match.start() < cursor:
+            continue  # inside an already-consumed image payload
+        depth = 0
+        end = -1
+        for index in range(match.end("head"), len(value)):
+            char = value[index]
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    end = index + 1
+                    break
+        if end < 0:
+            continue  # unterminated: leave the text as-is
+        pieces.append(value[cursor : match.start()])
+        pieces.append(match.group("head"))
+        cursor = end
+    if not pieces:
+        return value
+    pieces.append(value[cursor:])
+    return "".join(pieces)
+
+
 def _m365_identity_normalize(text: str) -> str:
     """Whitespace-tolerant identity text for conversation keying.
 
     Collapses inline <file_content> blocks (and client "[file: /path]" replay
-    placeholders) to path-only placeholders, then folds whitespace so blank
-    lines and trailing/duplicated spaces cannot change the key across turns (a
-    client may re-emit the frozen head with cosmetically different whitespace).
+    placeholders) to path-only placeholders, collapses inline-image data-URIs
+    to bare "![alt]" markers (mirroring the client's history normalization),
+    then folds whitespace so blank lines and trailing/duplicated spaces cannot
+    change the key across turns (a client may re-emit the frozen head with
+    cosmetically different whitespace).
 
     A dedicated step folds whitespace *immediately adjacent* to the \\x00
     placeholder sentinels. Without it, the number of blank lines a client puts
@@ -23689,7 +23742,9 @@ def _m365_identity_normalize(text: str) -> str:
     path can never contain \\x00, so every \\x00 is a true placeholder boundary
     and stripping whitespace around it is always safe.
     """
-    stripped = _m365_strip_inline_files_for_identity(text)
+    stripped = _m365_strip_inline_data_images(
+        _m365_strip_inline_files_for_identity(text)
+    )
     # Canonicalize whitespace hugging placeholder sentinels so inter-file and
     # prose-to-file spacing (spaces, tabs, or any number of newlines) cannot
     # alter the identity. Placeholder count, order, and paths are preserved.
@@ -23712,7 +23767,9 @@ def _m365_first_user_and_assistant(messages: list) -> tuple[str, str]:
     a later turn. Both turns therefore strip inline file blocks down to a
     path-only placeholder and fold whitespace via _m365_identity_normalize, so
     the identity depends on the user-authored text and WHICH files were
-    attached, never on the (possibly re-read/reformatted) file body.
+    attached, never on the (possibly re-read/reformatted) file body. Inline
+    data-URI images are likewise collapsed to bare "![alt]" markers, mirroring
+    the client's stripInlineImageBase64 history normalization.
     """
     first_user = ""
     first_assistant = ""
@@ -24497,83 +24554,46 @@ def _client_extract_prompt(messages: list) -> str:
     return ""
 
 
-# M365 引用（citation）在不同帧里以【三种不同编码】出现——这是“正文冻结在首个引用处 +
-# 占位符残留”的根因（有 content-m365.js 的 stripCites 为证，非推测）：
-#   ① 已解析·私有区形式   \ue200cite\ue202…\ue201   —— 权威 type2-final result.message 用此形
-#   ② 未解析·占位符       【N-xxx】(如 【1-turn1file1】) —— 流式帧先出现、之后被原地重写为 ①
-#   ③ 工件引用标记        <cite>REFID</cite>          —— 用户在 Continue 里看到的残留占位符
-# content-m365.js 的 stripCites 只在“扩展内部前缀比较”时归一化 ①②，却把【原始】文本 post 给
-# Python（M365_DELTA.text = totalText()）。于是 Python 逐帧看到的引用编码不一致：流式帧是 ②，
-# 权威 type2-final 是 ①。此前 Python 只归一化 ③，对 ①② 视而不见 → 归一后两帧不一致 →
-# type2-final 相对已发文本非前缀（日志 current=497 incoming=654 且 incoming 更长，正是①未被
-# 剥离而多出的引用字符）→ 被 non-prefix 丢弃 → 正文冻结在首个引用分歧处，随后 appendText
-# 拼到冻结点之后（best 末段=855KB=冻结正文+两张图 data-URI）。
-# 修复：对【全部三种编码】做一致归一化（一律删除），使流式与权威帧归一后前缀相容；
-# 既消除三类占位符、又不再丢正文。归一必须流式安全：只删“完整跨度”，并扣住结尾“在途”的半个跨度。
+# Normalize the three M365 citation encodings plus host-protocol inline images.
+# Ordinary Markdown (links, brackets, code samples) must never enter this path.
 _M365_CITE_REFID = r"[A-Za-z0-9][A-Za-z0-9_:\-]*"
-_M365_CITE_CLOSE_PREFIX = r"(?:<(?:/(?:c(?:i(?:t(?:e)?)?)?)?)?)?"  # </cite 的严格前缀
-# —— 完整跨度：位置稳定、可安全整体删除 ——
+# —— 完整跨度：位置稳定、可安全整体删除。全部限定单行：引用编码是服务器下发的
+#    原子 token，永不跨行；不这么限，散文里一个孤零零的 "【1-" 会和几百字符之后
+#    真正的 【N-x】 拼成巨型跨度被整体删除（= 吞正文）。——
 _M365_CITE_COMPLETE_RES = (
-    re.compile(r"<cite\b[^>]*>" + _M365_CITE_REFID + r"</cite>", re.IGNORECASE),  # ③
+    re.compile(r"<cite\b[^\n>]*>" + _M365_CITE_REFID + r"</cite>", re.IGNORECASE),  # ③
+    re.compile("\ue200[^\ue201\n]*\ue201"),  # ① 私有区已解析（单行原子 token）
     re.compile(
-        "\ue200[\\s\\S]*?\ue201"
-    ),  # ① 私有区已解析（非贪婪，任意内部结构都吃掉）
-    re.compile(
-        r"【\d+-[^】]*】"
+        r"【\d+-[^】\n]*】"
     ),  # ② 未解析占位符 【N-xxx】（要求“数字-”，不误伤中文【重要】等）
     # ④ 宿主协议内联图 markdown：![alt](attachment://…) / ![alt](sandbox:…)。
-    # 这是模型在正文里手写的“内联图预览”，attachment:// 是 Copilot 宿主内部协议，
-    # Continue 加载不了（显示成占位符/坏图）。真图走 appendText 的
-    # data-URI，故正文里这类图 markdown 是冗余且坏的，删掉。只删 attachment:/sandbox:
-    # 协议，普通 http(s)/data: 图片一律保留。
-    re.compile(r"!\[[^\]]*\]\(\s*(?:attachment:|sandbox:)[^)]*\)", re.IGNORECASE),
-    # ⑤ 引用宿主 markdown 链接：[name](…)，其中 URL 指向引用产物宿主——
-    #    asyncgw…/v1/objects/…（AMS 产物）或 *.sharepoint.com…?csf=/web=（SharePoint
-    #    分享链接）。这是引用的“第 5 种编码”：流式 writeAtCursor 把引用渲染成这种
-    #    markdown 链接，而权威 type2-final 把【同一个】引用渲染成 ①\ue200…\ue201。
-    #    ①被本清单删空，故这里也把等价的引用链接删空，两帧归一后前缀相容——否则
-    #    流式残留链接、final 删空 → 在引用处分叉 → 含正文尾巴的 final 被 relay 判
-    #    非前缀丢弃（正文冻结在“文件在这:[name](”）。真链接仍走
-    #    appendText 带外下发，故正文里这条是冗余。(?<!!) 避免碰图片 ![…]；只删引用
-    #    宿主，普通 http(s) 链接与无 csf/web 的普通 sharepoint 链接一律保留。
+    # attachment:// 是 Copilot 宿主内部协议，Continue 加载不了（坏图占位）；真图走
+    # appendText 的 data-URI，正文里这类图 markdown 冗余且坏，删掉。只删 attachment:/
+    # sandbox: 协议，普通 http(s)/data: 图片一律保留。URL 用宽字符集（除 ) 和换行）：
+    # 尾部扣留（④ 在途分支）本就是宽字符集，CJK 路径的宿主图会被 JS/Python 扣到闭合，
+    # 这里必须同宽删除——否则扣完不删，坏图占位泄漏进正文（内联图"中断"的现形之一）。
     re.compile(
-        r"(?<!!)\[[^\]\r\n]*\]\(\s*https?://[^)\s]*"
-        r"(?:asyncgw[^)\s]*/v1/objects/[^)\s]*"
-        r"|[^)\s]*\.sharepoint\.com/[^)\s]*(?:[?&](?:csf|web)=)[^)\s]*)"
-        r"\s*\)",
+        r"!\[[^\]\n]*\]\([ \t]*(?:attachment:|sandbox:)[^)\n]*\)",
         re.IGNORECASE,
     ),
 )
-# —— 结尾“在途”跨度（锚定文末 \Z）：删完整跨度后可能剩半个引用，扣住一帧等下一帧补全，
-#    避免先发半个再回收（破坏 relay 前缀单调、触发丢弃）——
-_M365_CITE_TAIL_RES = (
-    re.compile(r"<cite\b[^>]*\Z", re.IGNORECASE),  # ③ 开标签在途 <cite / <cite type="im
-    re.compile(  # ③ '>'后 REFID/闭合标签在途 <cite>turn12 / <cite>turn12image18</cit
-        r"<cite\b[^>]*>(?:"
-        + _M365_CITE_REFID
-        + r")?"
-        + _M365_CITE_CLOSE_PREFIX
-        + r"\Z",
-        re.IGNORECASE,
-    ),
-    re.compile("\ue200[^\ue201]*\\Z"),  # ① \ue200… 尚未见到 \ue201
-    re.compile(r"【\d+-?[^】]*\Z"),  # ② 【N- 尚未见到 】
-    re.compile(r"【\d*\Z"),  # ② 【 / 【N 正在成形（仅数字，不误伤 【中文…）
-    # ④ 未闭合的内联图 markdown（三阶段）：扣住到闭合 ')' 出现的那一帧，届时若为
-    # attachment:/sandbox: 被上面完整跨度删除，若为普通 http(s)/data: 则作普通文本补发。
-    # 扣住所有未闭合 ![…] 只延迟一帧显示、绝不丢字（下一帧长出后立即补发）。
-    re.compile(r"!\[[^\]]*\Z"),  # ![alt 还没 ]
-    re.compile(r"!\[[^\]]*\]\Z"),  # ![alt] 刚到 ]，还没 (
-    re.compile(r"!\[[^\]]*\]\([^)]*\Z"),  # ![alt]( 之后还没 )
-    # ⑤ 未闭合的引用链接(三阶段,镜像上面的图片扣尾,但无前导 "!"，且 (?<!!) 避开
-    #    图片 ![…])：扣住在途的 [name / [name] / [name](… 直到闭合 ")" 出现的那一帧,
-    #    届时若 URL 为引用宿主则被上面 ⑤ 完整跨度删空,若为普通链接则原样补发。必须
-    #    从 "[" 起就扣住(而非等到 "](")：否则会先把 "[name]" 原样发出、下一帧删链接
-    #    时 best 变短 → 触发 relay 非前缀丢弃。扣住只延迟一帧、绝不丢字。[^\]\r\n] 里
-    #    含换行由 [^…] 处理;(?<!!) 确保 ![alt] 图片只走上面的图片扣尾、不被这里重复处理。
-    re.compile(r"(?<!!)\[[^\]\r\n]*\Z"),  # [name 还没 ]
-    re.compile(r"(?<!!)\[[^\]\r\n]*\]\Z"),  # [name] 还没 (
-    re.compile(r"(?<!!)\[[^\]\r\n]*\]\([^)]*\Z"),  # [name]( 之后还没 )
+# —— 结尾“在途”跨度（锚定文末 \Z）：删完整跨度后可能剩半个引用，扣住一帧等下一帧
+#    补全，避免先发半个再回收（破坏 relay 前缀单调、触发丢弃）。单条正则、取最左
+#    匹配即扣留点；②③ 各分支不跨换行（引用编码恒为单行，换行即证明是字面文本，
+#    立即放行，杜绝旧版 “<cite\n\n… 被永久扣留” 的死角）。——
+_M365_CITE_TAIL_RE = re.compile(
+    r"(?:"
+    "\ue200[^\ue201\n]*"  # ① \ue200… 尚未见到 \ue201
+    r"|【\d+-?[^】\n]*"  # ② 【N / 【N- / 【N-x 尚未见到 】
+    r"|【"  # ② 裸 【 正在成形（仅当它就是最后一个字符；【中文 不匹配）
+    r"|<cite\b[^\n>]*(?:>(?:"
+    + _M365_CITE_REFID
+    + r")?(?:</?[a-z]*)?)?"  # ③ <cite 开标签/REFID/半闭标签各阶段
+    r"|<(?:c(?:i(?:t(?:e)?)?)?)?"  # ③ 字面 "<"…"<cit" 正在成形（裸 "<" 也扣：若下一帧补成完整 <cite> 被整体删除，先发出的 "<" 会造成前缀回退）
+    r"|!\[[^\]\n]*(?:\](?:\([^)\n]*)?)?"  # ④ ![alt / ![alt] / ![alt](… 扣到 ) 闭合或换行（届时若是 attachment:/sandbox: 被 ④ 删除，普通图片原样补发）
+    r"|!"  # ④ 裸 ! 是 ![ 的前缀，扣一帧（否则先发出的 ! 会在图片被删时回退；终态不扣）
+    r")\Z",
+    re.IGNORECASE,
 )
 
 
@@ -24582,11 +24602,45 @@ _M365_CITE_TAIL_RES = (
 # 语义边界:REFID 为【必需】,故裸 <cite>(用户可能字面写的)不被误删,维持既有
 # “字面 <cite> 不误伤”承诺;而 <cite>turn69file21</c 这类明确是被切断的坏引用
 # (流式永不会再补全,因为已是终态),原样泄漏严格劣于删除,故仅在 final 删它。
-# 中间帧(final=False)仍由 _M365_CITE_TAIL_RES 扣住等待补全,不走这里。
+# 中间帧(final=False)仍由 _M365_CITE_TAIL_RE 扣住等待补全,不走这里。
 _M365_CITE_FINAL_UNCLOSED_RE = re.compile(
-    r"<cite\b[^>]*>" + _M365_CITE_REFID + _M365_CITE_CLOSE_PREFIX + r"\Z",
+    r"<cite\b[^\n>]*>" + _M365_CITE_REFID + r"(?:</?[a-z]*)?\Z",
     re.IGNORECASE,
 )
+
+
+def _m365_code_intervals(text: str) -> list[tuple[int, int]]:
+    """Find Markdown backtick spans, including an unterminated final span.
+
+    注意：文末未闭合跨度【必须】始终算代码——这是删除作用域的单调性要求，
+    与 JS 稳定器的扣留放行是两层不同职责。若未闭合时按散文删除其中的
+    引用/图片形状，闭合符到达那一帧该跨度变成真代码、内容恢复，清洗结果
+    会变长回去 = 前缀回退 → relay 丢弃。JS 侧扣留
+    放行（孤立反引号不当代码扣留）只是发布时机决策、只增不删，不受影响。
+    """
+    intervals: list[tuple[int, int]] = []
+    opener: Optional[re.Match[str]] = None
+    for match in re.finditer(r"`+", text):
+        if opener is None:
+            opener = match
+        elif len(match.group()) == len(opener.group()):
+            intervals.append((opener.start(), match.end()))
+            opener = None
+    if opener is not None:
+        intervals.append((opener.start(), len(text)))
+    return intervals
+
+
+def _m365_sub_outside_code(text: str, transform) -> str:
+    """Apply a citation transform to prose, preserving code literally."""
+    pieces: list[str] = []
+    cursor = 0
+    for start, end in _m365_code_intervals(text):
+        pieces.append(transform(text[cursor:start]))
+        pieces.append(text[start:end])
+        cursor = end
+    pieces.append(transform(text[cursor:]))
+    return "".join(pieces)
 
 
 def _m365_strip_cite(cumulative: str, final: bool = False) -> str:
@@ -24597,56 +24651,51 @@ def _m365_strip_cite(cumulative: str, final: bool = False) -> str:
     关键：流式帧(②)与权威 type2-final(①)必须归一到【同一】结果，才能前缀相容、不丢正文。
 
     参数 final：
-      False（流式中间帧）——除删完整跨度外，还“扣住”结尾在途的半个跨度/短前缀，等下一帧
-        补全后再决定，避免先发半个再回收（破坏前缀单调）。扣住只延迟一帧、绝不丢字。
-      True（权威终态帧 DONE）——【只删完整跨度，不扣任何在途尾巴】。终态后不再有后续帧，
-        若还扣住尾巴就成了永久丢字（如答案正好以 '!' 或 '<' 结尾）。终态宁可原样保留一个
-        无害的尾字符，也绝不吞掉真正文——这是“绝不丢字”优先于“清得干净”的取舍。
+      False（流式中间帧）：
+        删除完整引用跨度，并暂存结尾处确定属于引用协议的未完成前缀，等待下一帧补全。
+        不暂存普通 Markdown 链接、图片、方括号、圆括号或其他通用文本字符。
+      True（权威终态帧 DONE）：
+        删除完整引用跨度，并清理结尾处带 REFID 的截断 <cite> 引用。
+        不暂存任何可能属于正常正文的尾部字符。
 
     删除对象：
-      ① \ue200…\ue201（私有区已解析）② 【N-xxx】（未解析占位符）③ <cite>REFID</cite>
-      ④ ![alt](attachment://…) / ![alt](sandbox:…)（宿主协议内联图；真图走 appendText）
-    不误伤：字面 `<cite>`、中文 【重要】、数学 a<b、普通 http(s)/data: 图片。
+      ① \ue200…\ue201（私有区已解析）
+      ② 【N-xxx】（未解析占位符）
+      ③ <cite>REFID</cite>
+      ④ ![alt](attachment://…) / ![alt](sandbox:…)（宿主协议内联图；真图走 appendText
+         的 data-URI，正文里的 attachment:// 是坏图占位，删掉；普通 http(s)/data:
+         图片一律保留）
+
+    普通 Markdown 链接、方括号、代码范围、字面 `<cite>`、中文【重要】和数学表达式均
+    不参与清理；反引号代码范围中的引用/图片形状也按原文保留。流式态额外扣住文末
+    半个引用/内联图构造（含裸 "<" 与裸 "!"——它们是 <cite / ![ 的前缀，不扣会在
+    下一帧整体删除时造成前缀回退）。
     """
     if not cumulative:
         return cumulative
-    # 早退优化：仅当既无任何触发字符、且（流式态下）结尾也不是待扣的 "!" 时才短路。
-    # 注意必须把“结尾单个 !”纳入（它是 "![" 的更短前缀，流式态需扣一帧），否则会先把
-    # "!" 原样发出、下一帧长成 "![" 再扣使 best 变短 → non-prefix。终态不扣尾，故不含此项。
-    _has_trigger = (
-        "<" in cumulative
-        or "\ue200" in cumulative
-        or "【" in cumulative
-        or "![" in cumulative
-        or "[" in cumulative  # ⑤ 引用链接/在途链接扣尾需要 "[" 触发
-    )
-    if not _has_trigger and (final or not cumulative.endswith("!")):
-        return cumulative
-    text = cumulative
-    for rgx in _M365_CITE_COMPLETE_RES:
-        text = rgx.sub("", text)
+
+    # Markdown is not a citation protocol.  Normalizing or holding ordinary
+    # ``[...](...)`` links here made them look like mutable citations and stalled
+    # the relay at the first '['.  Only the four encodings above are stripped, and
+    # only outside code spans.
+    def strip_complete(prose: str) -> str:
+        for rgx in _M365_CITE_COMPLETE_RES:
+            prose = rgx.sub("", prose)
+        return prose
+
+    text = _m365_sub_outside_code(cumulative, strip_complete)
+    code_intervals = _m365_code_intervals(cumulative)
+    tail_is_code = bool(code_intervals and code_intervals[-1][1] == len(cumulative))
     if final:
-        # 终态：不扣“在途尾巴”这类【可能是正文】的歧义尾字符（如结尾 "!"/"<"）——
-        # 那样会永久丢字。但【带 REFID 的未闭合 <cite】不是歧义正文,它形状明确是被
-        # 切断的坏引用、且终态后不会再补全,故此处精准删除它(裸 <cite> 无 REFID 不匹配,
-        # 仍保留)。这修复了权威终态帧上 "<cite>REFID</c" 泄漏成可见文本的缺口。
-        text = _M365_CITE_FINAL_UNCLOSED_RE.sub("", text)
+        return _m365_sub_outside_code(
+            text, lambda prose: _M365_CITE_FINAL_UNCLOSED_RE.sub("", prose)
+        )
+    if tail_is_code:
         return text
-    cut = len(text)
-    for rgx in _M365_CITE_TAIL_RES:
-        m = rgx.search(text)
-        if m is not None and m.start() < cut:
-            cut = m.start()
-    lt = text.rfind("<")
-    if lt != -1 and lt < cut:
-        tail = text[lt:].lower()
-        if tail != "<cite" and "<cite".startswith(tail):
-            cut = lt
-    # 结尾是 "![" 的更短前缀（单个 "!"）：扣一帧。否则逐字符流里会先发 "!"、下一帧长成
-    # "![" 再扣，反使 best 变短触发 non-prefix。终态(final=True 已 return)不受此影响。
-    if cut > 0 and text[cut - 1] == "!":
-        cut -= 1
-    return text[:cut]
+    # 扣住文末半个引用/内联图构造（单条正则的最左匹配即扣留点）；普通 Markdown
+    # 链接 […](…)、方括号、圆括号等字符从不参与扣留（见 tests/ 的逐字符回归）。
+    match = _M365_CITE_TAIL_RE.search(text)
+    return text[: match.start()] if match is not None else text
 
 
 def _m365_done_is_authoritative(message: dict) -> bool:
@@ -48809,18 +48858,9 @@ def test_m365_strip_cite_final_strips_truncated_refid_cite_only():
     assert s("正文<cite>", final=False) == "正文"
 
 
-def test_m365_strip_cite_normalizes_citation_host_links_no_text_loss():
-    # REGRESSION for the "reply frozen at 文件在这:[name](" text-loss bug. The
-    # streaming writeAtCursor frame renders a citation as an inline markdown link
-    # [name](sharepoint-or-asyncgw-url); the authoritative type2-final frame
-    # renders the SAME citation as the private-use \ue200…\ue201 form, which
-    # _m365_strip_cite deletes. If the streaming link is NOT normalized to the
-    # same empty span, the two frames diverge at the citation and the final
-    # snapshot (which carries the answer TAIL) is dropped by the relay as
-    # non-prefix — freezing the reply at the link. This test locks: (a) citation
-    # -host links normalize to empty in BOTH frames so they stay prefix-
-    # compatible; (b) normal links / code brackets are never touched; (c) a
-    # char-by-char stream never drops a frame nor loses the answer tail.
+def test_m365_strip_cite_keeps_markdown_links_and_code_literal():
+    # Markdown is display text, not a citation transport. A URL may take many
+    # snapshots to complete; therefore no stage may hold or delete it.
     def emulate(cumulative_frames, final_text):
         # Mirror the relay's append-only prefix rule over cumulative snapshots.
         best = ""
@@ -48846,29 +48886,25 @@ def test_m365_strip_cite_normalizes_citation_host_links_no_text_loss():
     def cumulative(text):
         return [text[:i] for i in range(1, len(text) + 1)]
 
-    # (a) a citation-host markdown link is deleted (SharePoint share link with
-    # the csf/web params, and the raw AMS asyncgw/v1/objects link).
+    # Download/citation-shaped links are also visible text and stream normally.
     sp_link = "[voice_edge.py](https://x.sharepoint.com/a/voice_edge.py?csf=1&web=1)"
-    assert _m365_strip_cite(sp_link, final=True) == ""
+    assert _m365_strip_cite(sp_link, final=True) == sp_link
     ams_link = (
         "[voice_edge.py](https://us-prod.asyncgw.teams.microsoft.com/v1/objects/"
         "0-eus-d6-x/views/original/voice_edge.py)"
     )
-    assert _m365_strip_cite(ams_link, final=True) == ""
-    # (b) a normal link and a plain SharePoint link WITHOUT the share params are
-    # preserved; code brackets are untouched.
+    assert _m365_strip_cite(ams_link, final=True) == ams_link
+    # Normal links, images, and code brackets are preserved.
     normal = "见 [示例](https://example.com/page) 说明"
     assert _m365_strip_cite(normal, final=True) == normal
     sp_plain = "[site](https://x.sharepoint.com/sites/foo)"
     assert _m365_strip_cite(sp_plain, final=True) == sp_plain
-    # (c) the exact reproduction: streaming renders two file links (truncated at
-    # the first "(" mid-stream), final renders them as \ue200…\ue201. The answer
-    # tail after the links must survive with ZERO non-prefix drops.
+    # Every character of two links and the subsequent heading is streamable.
     stream_full = (
         "文件在这:[voice_edge.py](https://x.sharepoint.com/a.py?csf=1&web=1) 和 "
         "[content-m365.js](https://x.sharepoint.com/b.js?csf=1&web=1)。\n\n## 尾巴正文"
     )
-    final = "文件在这:\ue200c1\ue201 和 \ue200c2\ue201。\n\n## 尾巴正文"
+    final = stream_full
     best, dropped = emulate(cumulative(stream_full), final)
     assert dropped == 0, dropped
     assert "## 尾巴正文" in best
@@ -48887,6 +48923,64 @@ def test_m365_strip_cite_normalizes_citation_host_links_no_text_loss():
         _m365_strip_cite("看 <cite> 和 【重要】提示", final=True)
         == "看 <cite> 和 【重要】提示"
     )
+
+
+def test_m365_markdown_fixture_snapshots_are_monotonic():
+    """The regression fixtures must never make the relay reject a snapshot."""
+    fixture_dir = Path(__file__).with_name("tests")
+    for fixture in sorted(fixture_dir.glob("*.md")):
+        source = fixture.read_text(encoding="utf-8")
+        best = ""
+        for offset in range(1, len(source) + 1):
+            current = _m365_strip_cite(source[:offset], final=False)
+            assert current.startswith(best), (
+                fixture.name,
+                offset,
+                best[-80:],
+                current[-80:],
+            )
+            best = current
+        final = _m365_strip_cite(source, final=True)
+        assert final.startswith(best), fixture.name
+        assert "##" in final, fixture.name
+
+    literal = "`<cite>sample-file</cite> 【1-sample-file】 [x](https://x.invalid)`"
+    assert _m365_strip_cite(literal, final=True) == literal
+
+
+def test_m365_stream_pinned_rewrite_frames_stay_monotonic():
+    """JS 稳定器钉版后的发出流，经 _m365_strip_cite 必须前缀单调、零丢弃。
+
+    回归场景（tests/test-m365-stream.js 的 Python 侧镜像）：M365 把下载链接的
+    临时 URL 原地改写成正式 URL、把【N-x】占位符原地解析为私有区形态；JS 钉版
+    保留首发字节，Python 只见前缀一致的累计快照。任何一帧 non-prefix 都会触发
+    relay 丢弃 = 正文被吞（"卡在第一个下载链接"的生产 bug）。
+    """
+    temp = (
+        "正文开始\n\n## 下载\n\n"
+        "- [下载 报告](https://h.asyncgw.test/v1/objects/temp-a)\n"
+        "- [下载 数据](https://h.asyncgw.test/v1/objects/temp-b)\n\n"
+        "## xxx\n\n下载后的正文。【1-turn1file1】继续。\n"
+    )
+    # 钉版后的发出流 = temp 的逐字符前缀（URL 改写被 JS 钉版吸收，保持首发形态）
+    best = ""
+    stall = 0
+    for i in range(1, len(temp) + 1):
+        cur = _m365_strip_cite(temp[:i], final=False)
+        assert cur.startswith(best), (i, best[-40:], cur[-40:])
+        stall = stall + 1 if len(cur) == len(best) else 0
+        assert stall <= 40, ("hold window too large", i, stall)
+        best = cur
+    final = _m365_strip_cite(temp, final=True)
+    assert final.startswith(best)
+    best = final
+    # 占位符被删除；AMS 链接原样保留；## xxx 与尾部正文全量送达
+    assert "【1-turn1file1】" not in best
+    assert best.endswith("继续。\n")
+    assert "## xxx" in best and "temp-a" in best and "temp-b" in best
+    # 巨型跨度回归：散文里孤零零的 "【1-" 不得与跨行后真正的 【N-x】 拼成
+    # 巨型占位符被整体删除（引用编码恒为单行）。
+    assert _m365_strip_cite("【1-\n\n正文【1-x】尾", final=False) == "【1-\n\n正文尾"
 
 
 def test_m365_done_requires_authoritative_completion_signal():
@@ -49621,6 +49715,87 @@ def test_m365_conversation_key_ignores_file_body_and_whitespace():
     assert m_subset != m1
 
 
+def test_m365_conversation_key_strips_inline_data_images():
+    # Regression guard for the client's stripInlineImageBase64 history
+    # normalization (continue messageContent.ts): from turn 2 onward the client
+    # replays the first assistant reply with every inline-image data-URI
+    # collapsed to a bare "![alt]" marker. The conversation identity must be
+    # computed on the same normalized text, or the turn that GENERATED the
+    # image (full base64 in history) and every later turn (stripped marker)
+    # hash to different keys and the M365 conversation silently forks.
+    tone = "precise"
+    image = "![\u622a\u56fe](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAE=)"
+    turn_generated = [
+        {"role": "user", "content": "\u753b\u4e00\u5f20\u56fe"},
+        {"role": "assistant", "content": "\u597d\u4e86\n" + image},
+    ]
+    turn_replayed = [
+        {"role": "user", "content": "\u753b\u4e00\u5f20\u56fe"},
+        {"role": "assistant", "content": "\u597d\u4e86\n![\u622a\u56fe]"},
+        {"role": "user", "content": "\u7ee7\u7eed"},
+    ]
+    full_generated, _ = _m365_conversation_key(tone, turn_generated)
+    full_replayed, _ = _m365_conversation_key(tone, turn_replayed)
+    assert full_generated and full_generated == full_replayed
+
+    # Same rule for the FIRST USER turn (the client stripped user-message
+    # inline images even before this change): a replayed "![alt]" must map to
+    # the chat whose turn 1 carried the full base64.
+    _, boot_full = _m365_conversation_key(
+        tone, [{"role": "user", "content": "\u770b\u8fd9\u4e2a\n" + image}]
+    )
+    _, boot_marker = _m365_conversation_key(
+        tone, [{"role": "user", "content": "\u770b\u8fd9\u4e2a\n![\u622a\u56fe]"}]
+    )
+    assert boot_full == boot_marker
+
+    # Only data: URLs are stripped; ordinary link images stay identity-bearing
+    # (a chat about a different linked image is a different chat).
+    _, boot_linked = _m365_conversation_key(
+        tone,
+        [
+            {
+                "role": "user",
+                "content": "\u770b\u56fe\n![\u67b6\u6784\u56fe](https://example.com/a.png)",
+            }
+        ],
+    )
+    _, boot_linked_b = _m365_conversation_key(
+        tone,
+        [
+            {
+                "role": "user",
+                "content": "\u770b\u56fe\n![\u67b6\u6784\u56fe](https://example.com/b.png)",
+            }
+        ],
+    )
+    _, boot_bare = _m365_conversation_key(
+        tone, [{"role": "user", "content": "\u770b\u56fe\n![\u67b6\u6784\u56fe]"}]
+    )
+    assert boot_linked != boot_linked_b
+    assert boot_linked != boot_bare
+
+    # The payload may itself contain parentheses (non-base64 data URIs); the
+    # closing paren is found by bracket-depth tracking, not by the first ")".
+    nested = "![s](data:image/svg+xml;utf8,<svg>(icon)</svg>)"
+    turn_a = [
+        {"role": "user", "content": "u"},
+        {"role": "assistant", "content": "a\n" + nested + "\ntail"},
+    ]
+    turn_b = [
+        {"role": "user", "content": "u"},
+        {"role": "assistant", "content": "a\n![s]\ntail"},
+    ]
+    key_a, _ = _m365_conversation_key(tone, turn_a)
+    key_b, _ = _m365_conversation_key(tone, turn_b)
+    assert key_a and key_a == key_b
+
+    # An unterminated image marker is left as literal text (never swallowed).
+    dangling = "![x](data:image/png;base64,AAAA"
+    normalized = _m365_identity_normalize("pre\n" + dangling)
+    assert "data:image/png;base64,AAAA" in normalized
+
+
 def test_browser_relay() -> None:
     reg = {
         "LLM:m365-claude-opus": {"relay_prompt": True, "supports_tools": True},
@@ -49984,6 +50159,7 @@ def run_self_tests():
     tests = [
         test_m365_done_requires_authoritative_completion_signal,
         test_m365_conversation_key_ignores_file_body_and_whitespace,
+        test_m365_conversation_key_strips_inline_data_images,
         test_m365_inline_file_survives_every_single_split_boundary,
         test_m365_inline_files_survive_all_line_boundary_splits,
         test_continue_attachment_notice_deleted_when_glued,
@@ -50074,8 +50250,10 @@ def run_self_tests():
         test_browser_relay,
         test_extract_balanced_json_handles_nesting_strings_and_escapes,
         test_parse_json_tool_block_recovers_truncated_missing_closers_safely,
-        test_m365_strip_cite_normalizes_citation_host_links_no_text_loss,
+        test_m365_strip_cite_keeps_markdown_links_and_code_literal,
         test_m365_strip_cite_final_strips_truncated_refid_cite_only,
+        test_m365_markdown_fixture_snapshots_are_monotonic,
+        test_m365_stream_pinned_rewrite_frames_stay_monotonic,
         test_cline_envelope_suppress_returns_close_when_opened,
         test_cline_envelope_strips_model_emitted_envelope_stream_and_nonstream,
         test_m365_stream_classic_cline_self_wrap_yields_single_envelope,
