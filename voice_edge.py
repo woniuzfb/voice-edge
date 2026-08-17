@@ -13,7 +13,7 @@ Voice Edge
 - Double-tap Right CMD to start or pause voice chat
 
 Usage:
-    python voice_edge.py [--http] [--self-test] [--mi-login] [--ble-scan] [--ble-listen]
+    python voice_edge.py [--http] [--self-test] [--fix-env-registry] [--mi-login] [--ble-scan] [--ble-listen]
     python voice_edge.py --mi-list [name_keyword|full] [false|true] [0|1]
 """
 
@@ -31,6 +31,7 @@ os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
 os.environ["MallocStackLogging"] = "0"
 
 import asyncio
+import ast
 import atexit
 import base64
 import binascii
@@ -149,208 +150,203 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L104
-#    VE_VLM_KV_BITS                         3.5                                          L495
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L500
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L504
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L505
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L919
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L924
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L927
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L931
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L940
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L948
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1003
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1193
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L39695
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L40344
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L40356
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1332
+#    VE_VLM_KV_BITS                         3.5                                          L471
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L476
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L481
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L482
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L915
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L920
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L923
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L927
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L936
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L944
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L999
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1450
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L40282
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L40931
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L40943
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L380
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L381
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L382
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L383
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L385
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L389
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L392
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L393
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L394
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L395
-#    VE_HUD_LOG_DEBUG                           "0"                                      L396
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L397
-#    VE_KWS_LOG_DEBUG                           "0"                                      L398
-#    VE_LLM_LOG_DEBUG                           "0"                                      L399
-#    VE_M365_LOG_DEBUG                          "0"                                      L400
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L402
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L406
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L409
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L410
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L411
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L412
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L413
-#    VE_TTS_LOG_DEBUG                           "0"                                      L414
-#    VE_VLM_LOG_DEBUG                           "0"                                      L415
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L416
+#    VE_APP_LOG_DEBUG                           "0"                                      L361
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L362
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L363
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L364
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L365
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L369
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L373
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L374
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L375
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L376
+#    VE_HUD_LOG_DEBUG                           "0"                                      L377
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L378
+#    VE_KWS_LOG_DEBUG                           "0"                                      L379
+#    VE_LLM_LOG_DEBUG                           "0"                                      L380
+#    VE_M365_LOG_DEBUG                          "0"                                      L381
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L382
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L386
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L390
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L391
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L392
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L393
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L394
+#    VE_TTS_LOG_DEBUG                           "0"                                      L395
+#    VE_VLM_LOG_DEBUG                           "0"                                      L396
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L397
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L39581
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L39604
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L39631
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L39690
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L40233
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L40236
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L40244
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L40256
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L40258
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L40267
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L40273
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L40279
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L40295
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L40300
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L40307
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L40314
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L40323
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L40330
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L40378
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L42144
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L42145
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L42146
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L40168
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L40191
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L40218
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L40277
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L40820
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L40823
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L40831
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L40843
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L40845
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L40854
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L40860
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L40866
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L40882
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L40887
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L40894
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L40901
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L40910
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L40917
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L40965
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L42733
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L42734
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L42735
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13506
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13508
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L13509
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13515
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13517
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13520
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13528
-#    QWEN_COOKIE_HEADER                     ""                                           L13532
-#    QWEN_TOKENS                            ""                                           L13540
-#    QWEN_TOKEN                             ""                                           L13541
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13542
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13544
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L13545
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13551
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13553
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13556
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13564
+#    QWEN_COOKIE_HEADER                     ""                                           L13568
+#    QWEN_TOKENS                            ""                                           L13576
+#    QWEN_TOKEN                             ""                                           L13577
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L601
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15175
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L15176
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15178
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15180
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15182
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15185
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15188
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15191
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15312
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15315
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L578
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15211
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L15212
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15214
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15216
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15218
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15221
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15224
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15227
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15348
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15351
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17860
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17861
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17867
-#    DOUBAO_FP                              "doubao_voice_edge"                          L17868
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17876
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17878
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17881
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17883
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17885
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L17889
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L17916
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L17919
-#    DOUBAO_WEB_AID                         "497858"                                     L17921
-#    DOUBAO_WEB_REGION                      "CN"                                         L17922
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L17923
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L17924
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L17926
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L17963
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L17956
-#    DOUBAO_COOKIE_HEADER                   ""                                           L18191
-#    DOUBAO_SESSION_IDS                     ""                                           L18233
-#    DOUBAO_SESSION_ID                      ""                                           L18237
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18748
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18757
-#    DOUBAO_SESSION_ID_SS                   ""                                           L18939
-#    DOUBAO_SID_TT                          ""                                           L18942
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17896
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17897
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17903
+#    DOUBAO_FP                              "doubao_voice_edge"                          L17904
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17912
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17914
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17917
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17919
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17921
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L17925
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L17952
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L17955
+#    DOUBAO_WEB_AID                         "497858"                                     L17957
+#    DOUBAO_WEB_REGION                      "CN"                                         L17958
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L17959
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L17960
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L17962
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L17999
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L17991
+#    DOUBAO_COOKIE_HEADER                   ""                                           L18227
+#    DOUBAO_SESSION_IDS                     ""                                           L18269
+#    DOUBAO_SESSION_ID                      ""                                           L18273
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18784
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18793
+#    DOUBAO_SESSION_ID_SS                   ""                                           L18975
+#    DOUBAO_SID_TT                          ""                                           L18978
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L23328
-#    SHAREPOINT_HOME_URL                    ""                                           L23329
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23330
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23331
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23358
-#    M365_BRIDGE_PORT                       "5002"                                       L23359
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23360
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L23361
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23363
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23366
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L23369
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L23371
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23391
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23398
-#    M365_CONV_MAP_MAX                      "1024"                                       L23567
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L23832
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L23850
+#    M365_ENTRY_URL                         ""                                           L23364
+#    SHAREPOINT_HOME_URL                    ""                                           L23365
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23366
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23367
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23394
+#    M365_BRIDGE_PORT                       "5002"                                       L23395
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23396
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L23397
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23399
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23402
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L23405
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L23407
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23427
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23434
+#    M365_CONV_MAP_MAX                      "1024"                                       L23603
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L23925
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L23943
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L35603
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L35812
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L35874
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L35896
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L35903
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L35998
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36000
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36004
-#    MI_USER                                ""                                           L36735
-#    MI_PASS                                ""                                           L36736
-#    XIAOAI_HARDWARE                        "LX06"                                       L36738
-#    MI_DID                                 ""                                           L36740
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L36743
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L36747
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L36750
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L36756
-#    XIAOAI_NATIVE_STATUS_POLL_INTERVAL     "0.25"                                       L36766
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L36771
-#    XIAOAI_NATIVE_PLAY_END_TIMEOUT         "30.0"                                       L36776
-#    XIAOAI_NATIVE_IDLE_CONFIRMATIONS       "1"                                          L36781
-#    XIAOAI_NATIVE_STATUS_FALLBACK_DELAY    "3.0"                                        L36786
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L36806
-#    XIAOAI_VOICE                           "zh"                                         L36808
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L36810
-#    XIAOAI_MAX_TOKENS                      "500"                                        L36813
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L36816
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L36819
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L36823
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L36827
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L36832
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L36837
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L36842
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L36847
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L36852
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L36860
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L36865
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L36870
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L36875
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L36880
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L36885
-#    XIAOAI_NATIVE_TAIL_GUARD               "0.20"                                       L36891
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L36895
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L36898
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L36902
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L36906
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L36910
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L36915
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L36920
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L36924
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L36927
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L36930
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L36933
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L36936
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L36939
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L36942
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L36945
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L36952
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L36958
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L36962
+#    XIAOAI_ENABLED                         "0"                                          L35746
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L35955
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36017
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36039
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36046
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L36141
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36143
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36147
+#    MI_USER                                ""                                           L37026
+#    MI_PASS                                ""                                           L37052
+#    XIAOAI_HARDWARE                        "LX06"                                       L37054
+#    MI_DID                                 ""                                           L37056
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L37059
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L37063
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L37066
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L37072
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L37082
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L37102
+#    XIAOAI_VOICE                           "zh"                                         L37104
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L37106
+#    XIAOAI_MAX_TOKENS                      "500"                                        L37109
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L37112
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L37115
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L37119
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L37123
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L37128
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L37133
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L37138
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L37143
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L37148
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L37156
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L37161
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L37166
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L37171
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L37176
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L37181
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L37186
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L37189
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L37193
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L37197
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L37201
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L37206
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L37211
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L37215
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L37218
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L37221
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L37224
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L37227
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L37230
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L37233
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L37236
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L37243
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L37249
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L37253
 #
-# 合计 186 个唯一环境变量。
+# 合计 181 个唯一环境变量。
 # ============================================================================
 
 
@@ -37036,7 +37032,7 @@ class XiaoAIConfig:
         )
     )
     local_retries: int = field(
-        default_factory=lambda: max(1, int(os.getenv("XIAOAI_LOCAL_RETRIES", "1")))
+        default_factory=lambda: max(1, int(os.getenv("XIAOAI_LOCAL_RETRIES", "2")))
     )
     local_status_poll_interval: float = field(
         default_factory=lambda: max(
@@ -37081,29 +37077,9 @@ class XiaoAIConfig:
             "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天",
         )
     )
-    native_status_poll_interval: float = field(
-        default_factory=lambda: max(
-            0.1, float(os.getenv("XIAOAI_NATIVE_STATUS_POLL_INTERVAL", "0.25"))
-        )
-    )
     native_play_start_timeout: float = field(
         default_factory=lambda: max(
             0.0, float(os.getenv("XIAOAI_NATIVE_PLAY_START_TIMEOUT", "3.0"))
-        )
-    )
-    native_play_end_timeout: float = field(
-        default_factory=lambda: max(
-            1.0, float(os.getenv("XIAOAI_NATIVE_PLAY_END_TIMEOUT", "30.0"))
-        )
-    )
-    native_idle_confirmations: int = field(
-        default_factory=lambda: max(
-            1, int(os.getenv("XIAOAI_NATIVE_IDLE_CONFIRMATIONS", "1"))
-        )
-    )
-    native_status_fallback_delay: float = field(
-        default_factory=lambda: max(
-            0.0, float(os.getenv("XIAOAI_NATIVE_STATUS_FALLBACK_DELAY", "3.0"))
         )
     )
     stop_phrases: tuple[str, ...] = field(
@@ -37206,11 +37182,6 @@ class XiaoAIConfig:
         )
     )
     player_status_debug: bool = field(default_factory=lambda: VE_XIAOAI_LOG_DEBUG)
-    native_tail_guard: float = field(
-        default_factory=lambda: max(
-            0.0, float(os.getenv("XIAOAI_NATIVE_TAIL_GUARD", "0.20"))
-        )
-    )
     audio_bind_host: str = field(
         default_factory=lambda: os.getenv("XIAOAI_AUDIO_BIND_HOST", "0.0.0.0").strip()
     )
@@ -37784,6 +37755,9 @@ class XiaoAITurn:
     doubao_conversation_id: str = ""
     doubao_request_committed: bool = False
     auth_replay: bool = False
+    # Non-empty when a Xiaomi first_answers TTS answer is replayed directly
+    # through Edge-TTS instead of being sent to the model.
+    direct_answer: str = ""
     cancel_event: asyncio.Event = field(default_factory=asyncio.Event)
     phase: XiaoAITurnPhase = XiaoAITurnPhase.STARTING
     task: Optional[asyncio.Task] = None
@@ -37812,7 +37786,9 @@ class XiaoGPTBridge:
         self.conversation_generation = 0
         self.active_turn = None
         self.next_epoch = 0
-        self.last_timestamp = int(time.time() * 1000)
+        # Cloud record timestamps are not on the local wall-clock timeline.
+        # Prime the watermark from the first API snapshot of each local trigger.
+        self.last_timestamp = 0
         self.seen_utterances = deque(maxlen=64)
         self.history = []
         self.doubao_conversation_id = ""
@@ -37835,10 +37811,12 @@ class XiaoGPTBridge:
         self.local_status_errors = 0
         self.local_status_event = asyncio.Event()
         # Cloud latest-ask polling is demand-driven while LAN MiIO is healthy.
-        # It starts open so startup/no-first-sample behaves like the old cloud
-        # watcher, and the local watcher closes it after the first healthy idle.
+        # A generation counter makes a native-play edge durable even when the
+        # concurrent local pause changes the level back to idle before the cloud
+        # watcher gets CPU time. Startup waits for the first LAN sample.
         self.cloud_poll_event = asyncio.Event()
-        self.cloud_poll_event.set()
+        self.cloud_poll_generation = 0
+        self.cloud_poll_consumed_generation = 0
         self.poll_count = 0
         self.poll_success_count = 0
         self.poll_error_count = 0
@@ -37851,8 +37829,6 @@ class XiaoGPTBridge:
         self.last_accepted_query = ""
         self.last_accepted_query_at = 0.0
         self.suppress_records_until = 0.0
-        self.relisten_task = None
-        self.relisten_generation = 0
         # A verification failure keeps exactly one latest user question.  Each
         # successful Firefox auth/conversation sync may replay it once.  If the
         # replay is challenged again it remains pending for the next explicit
@@ -37975,14 +37951,13 @@ class XiaoGPTBridge:
         _xiaoai_log.debug(
             "XiaoAI ready: hardware=%s device_id=%s keywords=%r "
             "new_conversation=%r dialog_mode=always relisten=after_every_answer "
-            "native_keywords=%r native_status_poll=%.2fs tavily_tool=%s "
+            "native_keywords=%r tavily_tool=%s "
             "wakeup_mode=%s wakeup_command=%s wakeup_args=%r",
             self.config.hardware,
             self.device_id,
             self.config.keywords,
             self.config.new_conversation,
             self.config.native_keywords,
-            self.config.native_status_poll_interval,
             self.config.tavily_tool_enabled,
             self.config.wakeup_action[2],
             self.config.wakeup_action[0],
@@ -38071,7 +38046,6 @@ class XiaoGPTBridge:
                 return False
 
     async def _shutdown(self):
-        await self._cancel_relisten()
         for task_name in (
             "watcher_task",
             "local_status_task",
@@ -38128,12 +38102,23 @@ class XiaoGPTBridge:
                 self.poll_auth_recovery_failures = 0
                 if record:
                     _xiaoai_log.debug(
-                        "XiaoAI new record accepted: query=%r request_id=%r time=%r",
+                        "XiaoAI new record accepted: query=%r answers=%r request_id=%r time=%r",
                         record.get("query"),
+                        record.get("answers"),
                         record.get("requestId"),
                         record.get("time"),
                     )
-                    await self._handle_record(record)
+                    try:
+                        await self._handle_record(record)
+                    finally:
+                        # _get_latest_record already committed this identity to
+                        # the de-duplication watermark. Consume the generation
+                        # even if record handling fails; otherwise the pending
+                        # generation polls forever with no retryable record.
+                        self.cloud_poll_consumed_generation = max(
+                            self.cloud_poll_consumed_generation,
+                            self.cloud_poll_generation,
+                        )
             except asyncio.CancelledError:
                 _xiaoai_log.debug("XiaoAI conversation watcher cancelled")
                 raise
@@ -38352,43 +38337,99 @@ class XiaoGPTBridge:
             first = records[0] if records and isinstance(records[0], dict) else None
             _xiaoai_log.debug(
                 "XiaoAI poll decoded: poll=%d api_code=%r records=%d "
-                "first_query=%r first_time=%r first_request_id=%r",
+                "first_query=%r first_answers=%r first_time=%r first_request_id=%r",
                 self.poll_count,
                 api_code,
                 len(records),
                 first.get("query") if first else None,
+                first.get("answers") if first else None,
                 first.get("time") if first else None,
                 first.get("requestId") if first else None,
             )
         if not records:
             return None
 
-        record = records[0]
-        if not isinstance(record, dict):
-            _xiaoai_log.warning("XiaoAI first record is not an object: %r", record)
+        if self.last_timestamp == 0:
+            # Only process startup needs a snapshot baseline. For every later
+            # local-play generation, last_timestamp already represents the last
+            # accepted cloud record. Priming again here would absorb a follow-up
+            # that was already committed by the time the first poll completed.
+            baseline_timestamp = 0
+            for item in records:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    timestamp = int(item.get("time") or 0)
+                except (TypeError, ValueError):
+                    timestamp = 0
+                request_id = str(item.get("requestId") or "")
+                baseline_timestamp = max(baseline_timestamp, timestamp)
+                self.seen_utterances.append((request_id, timestamp))
+            self.last_timestamp = baseline_timestamp
+            self.last_poll_record_time = baseline_timestamp
+            _xiaoai_log.debug(
+                "XiaoAI poll baseline primed: reason=startup records=%d "
+                "last_timestamp=%s; polling continues",
+                len(records),
+                self.last_timestamp,
+            )
             return None
-        timestamp = int(record.get("time") or 0)
-        request_id = str(record.get("requestId") or "")
-        identity = (request_id, timestamp)
+
+        # The API returns up to two records, but records[0] is not guaranteed to
+        # be the newest one. Inspect every returned object and select the newest
+        # unseen record newer than our watermark. Otherwise an old first entry
+        # can hide the current utterance in records[1].
+        candidates = []
+        for index, item in enumerate(records):
+            if not isinstance(item, dict):
+                _xiaoai_log.warning(
+                    "XiaoAI record is not an object: index=%d value=%r", index, item
+                )
+                continue
+            try:
+                timestamp = int(item.get("time") or 0)
+            except (TypeError, ValueError):
+                timestamp = 0
+            request_id = str(item.get("requestId") or "")
+            identity = (request_id, timestamp)
+            if timestamp <= self.last_timestamp:
+                if should_heartbeat:
+                    _xiaoai_log.debug(
+                        "XiaoAI record skipped as old: index=%d record_time=%s "
+                        "last_timestamp=%s query=%r",
+                        index,
+                        timestamp,
+                        self.last_timestamp,
+                        item.get("query"),
+                    )
+                continue
+            if identity in self.seen_utterances:
+                if should_heartbeat:
+                    _xiaoai_log.debug(
+                        "XiaoAI record skipped as duplicate: index=%d identity=%r",
+                        index,
+                        identity,
+                    )
+                continue
+            candidates.append((timestamp, index, identity, item))
+
+        if not candidates:
+            return None
+
+        timestamp, index, identity, record = max(
+            candidates, key=lambda candidate: (candidate[0], -candidate[1])
+        )
         self.last_poll_record_time = timestamp
-        if timestamp <= self.last_timestamp:
-            if should_heartbeat:
-                _xiaoai_log.debug(
-                    "XiaoAI record ignored as old: record_time=%s last_timestamp=%s "
-                    "query=%r",
-                    timestamp,
-                    self.last_timestamp,
-                    record.get("query"),
-                )
-            return None
-        if identity in self.seen_utterances:
-            if should_heartbeat:
-                _xiaoai_log.debug(
-                    "XiaoAI record ignored as duplicate: identity=%r", identity
-                )
-            return None
         self.last_timestamp = timestamp
         self.seen_utterances.append(identity)
+        if should_heartbeat:
+            _xiaoai_log.debug(
+                "XiaoAI record selected: index=%d record_time=%s query=%r eligible=%d",
+                index,
+                timestamp,
+                record.get("query"),
+                len(candidates),
+            )
         return record
 
     async def _handle_record(self, record):
@@ -38405,35 +38446,38 @@ class XiaoGPTBridge:
             keyword and query.casefold().startswith(keyword.casefold())
             for keyword in self.config.keywords
         )
-        native_keyword = None
-        if not explicit_keyword:
-            native_keyword = next(
-                (
-                    keyword
-                    for keyword in self.config.native_keywords
-                    if keyword and keyword.casefold() in query.casefold()
-                ),
-                None,
-            )
+
+        # The local watcher has already sent play_pause before this cloud record
+        # arrives. Join/confirm that same generation once before choosing the
+        # only two business paths: direct Edge-TTS or model handling.
+        await self._interrupt_native_answer()
+        first_answer_text = self._first_answer_tts_text(record)
+        native_keyword = next(
+            (
+                keyword
+                for keyword in self.config.native_keywords
+                if keyword and keyword.casefold() in first_answer_text.casefold()
+            ),
+            None,
+        )
         if native_keyword is not None:
-            # Keep Xiaomi's native answer untouched, then open exactly one new
-            # listening window after native playback reaches idle.
-            await self._cancel_relisten()
+            # Replay Xiaomi's short factual answer through the normal Edge-TTS
+            # turn pipeline. active_turn is installed before playback starts, so
+            # the LAN watcher cannot pause our audio.
             _xiaoai_log.debug(
-                "XiaoAI native answer: query=%r matched=%r; relisten=once",
+                "XiaoAI first answer routed to Edge-TTS: query=%r answer=%r matched=%r",
                 query,
+                first_answer_text,
                 native_keyword,
             )
-            self.relisten_task = asyncio.create_task(
-                self._relisten_after_native_answer(),
-                name="xiaoai-native-answer-relisten",
+            await self.start_turn(
+                query,
+                player_already_stopped=True,
+                direct_answer=first_answer_text,
             )
             return
 
         # Any non-synthetic query proves that the microphone captured speech.
-        # Stop timed re-wakeup before processing it, so a scheduled wake action
-        # cannot interrupt the new user turn.
-        await self._cancel_relisten()
 
         if now < self.suppress_records_until:
             _xiaoai_log.debug("XiaoAI record suppressed after wakeup: %r", query)
@@ -38501,13 +38545,29 @@ class XiaoGPTBridge:
         self.last_accepted_query_at = now
         _xiaoai_log.debug("XiaoAI ask: %s", forwarded)
 
-        # Prefer the continuously sampled local state and UDP play_pause.
-        # A timeout, stale sample, or missed edge uses the original cloud stop.
-        await self._interrupt_native_answer()
         await self.start_turn(
             forwarded,
             player_already_stopped=True,
         )
+
+    @staticmethod
+    def _first_answer_tts_text(record) -> str:
+        answers = record.get("answers") if isinstance(record, dict) else None
+        if not isinstance(answers, list):
+            return ""
+        for answer in answers:
+            if (
+                not isinstance(answer, dict)
+                or str(answer.get("type") or "").upper() != "TTS"
+            ):
+                continue
+            tts = answer.get("tts")
+            if not isinstance(tts, dict):
+                continue
+            text = str(tts.get("text") or "").strip()
+            if text:
+                return text
+        return ""
 
     def _strip_keyword(self, query):
         for keyword in sorted(self.config.keywords, key=len, reverse=True):
@@ -38521,8 +38581,8 @@ class XiaoGPTBridge:
         *,
         player_already_stopped=False,
         auth_replay=False,
+        direct_answer="",
     ):
-        await self._cancel_relisten()
         async with self.conversation_lock:
             conversation_generation = self.conversation_generation
             doubao_conversation_id = self.doubao_conversation_id
@@ -38535,6 +38595,7 @@ class XiaoGPTBridge:
                 conversation_generation=conversation_generation,
                 doubao_conversation_id=doubao_conversation_id,
                 auth_replay=bool(auth_replay),
+                direct_answer=str(direct_answer or "").strip(),
             )
             self.active_turn = turn
             if old:
@@ -38608,8 +38669,18 @@ class XiaoGPTBridge:
             turn.tts_task = asyncio.create_task(
                 self._tts_worker(turn, speech_queue, encoder)
             )
+            producer = (
+                self._publish_direct_answer(turn, speech_queue)
+                if turn.direct_answer
+                else self._stream_llm_chunks(turn, speech_queue)
+            )
             turn.llm_task = asyncio.create_task(
-                self._stream_llm_chunks(turn, speech_queue)
+                producer,
+                name=(
+                    f"xiaoai-direct-answer-{turn.epoch}"
+                    if turn.direct_answer
+                    else f"xiaoai-model-answer-{turn.epoch}"
+                ),
             )
 
             def publish_speech_eof(future):
@@ -39202,6 +39273,20 @@ class XiaoGPTBridge:
             if not future.done():
                 future.cancel()
 
+    async def _publish_direct_answer(self, turn, speech_queue):
+        text = clean_text_for_tts(turn.direct_answer)
+        if not text:
+            _xiaoai_log.warning(
+                "XiaoAI direct answer became empty after TTS cleaning; "
+                "falling back to the model"
+            )
+            turn.direct_answer = ""
+            return await self._stream_llm_chunks(turn, speech_queue)
+        if not self._is_current(turn):
+            return
+        turn.generated_text = text
+        await speech_queue.put(text)
+
     async def _stream_llm_chunks(self, turn, speech_queue):
         if self.config.model == "LLM:doubao":
             return await self._stream_doubao_chunks(turn, speech_queue)
@@ -39462,12 +39547,26 @@ class XiaoGPTBridge:
         return False
 
     async def _confirm_model_playback_idle(self, turn) -> None:
-        """Bounded MiNA playback confirmation after the local duration drain."""
+        """Confirm the model/Edge-TTS tail locally, with MiNA as fallback."""
         timeout = self.config.playback_status_max_wait
-        mina_service = self.mina_service
-        if timeout <= 0 or mina_service is None or not self.device_id:
+        if timeout <= 0:
             return
-
+        if self.local_miio is not None:
+            if await self._wait_local_play_state(0, timeout):
+                _xiaoai_log.debug(
+                    "XiaoAI model playback idle confirmed over local MiIO"
+                )
+                if self.config.playback_tail_guard > 0:
+                    await self._wait_interruptibly(
+                        turn, self.config.playback_tail_guard
+                    )
+                return
+            _xiaoai_log.warning(
+                "XiaoAI local model playback idle confirmation unavailable; using MiNA fallback"
+            )
+        mina_service = self.mina_service
+        if mina_service is None or not self.device_id:
+            return
         deadline = time.monotonic() + timeout
         idle_count = 0
         poll_count = 0
@@ -39477,51 +39576,40 @@ class XiaoGPTBridge:
                 status_info = await mina_service.player_get_status(self.device_id)
             except Exception:
                 _xiaoai_log.debug(
-                    "XiaoAI model player status query failed",
-                    exc_info=True,
+                    "XiaoAI model player status query failed", exc_info=True
                 )
                 return
-
             if self.config.player_status_debug:
                 _xiaoai_log.debug(
                     "XiaoAI model playback status_info: poll=%d info=%r",
                     poll_count,
                     status_info,
                 )
-
             status = self._player_status_value(status_info)
-
             if status == 1:
                 idle_count = 0
             elif status in (0, 3):
                 idle_count += 1
                 if idle_count >= self.config.playback_idle_confirmations:
                     _xiaoai_log.debug(
-                        "XiaoAI model playback idle confirmed: polls=%d confirmations=%d",
+                        "XiaoAI model playback idle confirmed over MiNA: polls=%d confirmations=%d",
                         poll_count,
                         idle_count,
                     )
                     if self.config.playback_tail_guard > 0:
                         await self._wait_interruptibly(
-                            turn,
-                            self.config.playback_tail_guard,
+                            turn, self.config.playback_tail_guard
                         )
                     return
             else:
-                # Unsupported/unknown status: trust local duration rather than
-                # adding the complete timeout to every answer.
                 _xiaoai_log.debug(
-                    "XiaoAI model playback status unsupported: %r",
-                    status_info,
+                    "XiaoAI model playback status unsupported: %r", status_info
                 )
                 return
-
             if not await self._wait_interruptibly(
-                turn,
-                self.config.playback_status_poll_interval,
+                turn, self.config.playback_status_poll_interval
             ):
                 return
-
         if self._is_current(turn):
             _xiaoai_log.warning(
                 "XiaoAI model playback status confirmation timed out after %.2fs",
@@ -39536,32 +39624,29 @@ class XiaoGPTBridge:
         )
 
     async def _wait_for_cloud_poll_permission(self) -> bool:
-        """Allow MiNA ask polling only on local play activity or LAN failure."""
+        """Claim one durable cloud poll request or fall back after LAN failure."""
         while not self.stop_event.is_set():
-            # No local endpoint, no successful sample yet, a stale sample, or
-            # any current UDP failure preserves the original cloud polling.
             if self.local_miio is None:
                 return True
-            if self.local_status_errors or not self._local_state_is_fresh():
+            if self.local_status_errors:
                 return True
-            # Native answers run with no active Edge turn. Edge-TTS playback
-            # also reports 1, but must not wake the ask poller for our own audio.
-            if self.local_play_state == 1 and self.active_turn is None:
+            if self.cloud_poll_consumed_generation < self.cloud_poll_generation:
                 return True
-
+            if self.local_play_state is not None and not self._local_state_is_fresh():
+                return True
             self.cloud_poll_event.clear()
-            # Close the clear/check race before sleeping.
-            if self.local_status_errors or not self._local_state_is_fresh():
+            if self.local_status_errors:
                 self.cloud_poll_event.set()
                 continue
-            if self.local_play_state == 1 and self.active_turn is None:
+            if self.cloud_poll_consumed_generation < self.cloud_poll_generation:
+                self.cloud_poll_event.set()
+                continue
+            if self.local_play_state is not None and not self._local_state_is_fresh():
                 self.cloud_poll_event.set()
                 continue
             try:
                 await asyncio.wait_for(self.cloud_poll_event.wait(), timeout=0.5)
             except asyncio.TimeoutError:
-                # The timeout is only a stale-state safety check. Healthy idle
-                # does not issue a cloud request.
                 pass
         return False
 
@@ -39590,6 +39675,7 @@ class XiaoGPTBridge:
                 # toggle play_pause repeatedly. Voice Edge's own answer has an
                 # active turn and must never be interrupted here.
                 if native_play_started and self.active_turn is None:
+                    self.cloud_poll_generation += 1
                     generation = self.local_play_generation
                     previous_pause_task = self.local_native_pause_task
                     if (
@@ -39603,9 +39689,8 @@ class XiaoGPTBridge:
                     )
 
                 self.local_status_event.set()
-                # Release get_latest_ask immediately. The pause task runs in
-                # parallel, and record handling joins that exact generation
-                # before deciding whether the cloud stop fallback is required.
+                # Wake the cloud watcher. The generation token above survives
+                # the concurrent pause changing speaker state back to idle.
                 self.cloud_poll_event.set()
             except asyncio.CancelledError:
                 raise
@@ -39619,7 +39704,7 @@ class XiaoGPTBridge:
                 _xiaoai_log.debug(
                     "XiaoAI local status unavailable: consecutive=%d error=%s",
                     self.local_status_errors,
-                    str(exc).replace("\n", " ")[:300],
+                    f"{type(exc).__name__}: {exc}".replace("\n", " ")[:300],
                 )
             delay = max(0.0, interval - (time.monotonic() - started))
             try:
@@ -39650,13 +39735,18 @@ class XiaoGPTBridge:
                 pass
         return False
 
-    async def _local_send_ok(self, method: str, params: list) -> bool:
+    async def _local_send_ok(
+        self, method: str, params: list, prop: bool = False
+    ) -> bool | Any:
         if self.local_miio is None:
             return False
         try:
             result = await self.local_miio.send(method, params)
-            if result and result[0] == "ok":
-                return True
+            if result:
+                if result[0] == "ok":
+                    return True
+                elif prop:
+                    return result[0] if len(result) == 1 else result
             raise RuntimeError(f"unexpected result: {result!r}")
         except asyncio.CancelledError:
             raise
@@ -39664,13 +39754,13 @@ class XiaoGPTBridge:
             _xiaoai_log.debug(
                 "XiaoAI local MiIO %s failed; cloud fallback available: %s",
                 method,
-                str(exc).replace("\n", " ")[:300],
+                f"{type(exc).__name__}: {exc}".replace("\n", " ")[:300],
             )
             return False
 
     async def _pause_native_generation(self, generation: int) -> bool:
         try:
-            paused = await self._local_send_ok("play_pause", [])
+            paused = bool(await self._local_send_ok("play_pause", []))
             if paused:
                 self.local_native_pause_generation = generation
                 _xiaoai_log.debug(
@@ -39740,27 +39830,6 @@ class XiaoGPTBridge:
                     )
         await self._stop_xiaomi_player()
 
-    async def _relisten_after_native_answer_local(self) -> bool:
-        if self.local_miio is None:
-            return False
-        if not await self._wait_local_play_state(
-            1, self.config.native_play_start_timeout
-        ):
-            return False
-        if not await self._wait_local_play_state(
-            0, self.config.native_play_end_timeout
-        ):
-            return False
-        if self.config.native_tail_guard > 0:
-            await asyncio.sleep(self.config.native_tail_guard)
-        if self.active_turn is not None or self.stop_event.is_set():
-            return True
-        _xiaoai_log.debug(
-            "XiaoAI native playback finished via local MiIO; opening follow-up"
-        )
-        await self._start_relisten_cycle(player_idle_confirmed=True)
-        return True
-
     async def _stop_xiaomi_player(self):
         if not self.mina_service or not self.device_id:
             return
@@ -39775,123 +39844,6 @@ class XiaoGPTBridge:
             await self.mina_service.player_stop(self.device_id)
         except Exception:
             _xiaoai_log.debug("Xiaomi player_stop failed", exc_info=True)
-
-    async def _relisten_after_native_answer(self):
-        if await self._relisten_after_native_answer_local():
-            return
-        _xiaoai_log.debug(
-            "XiaoAI local native tracking unavailable; using MiNA fallback"
-        )
-        mina_service = self.mina_service
-        if mina_service is None:
-            _xiaoai_log.warning(
-                "Cannot relisten: Xiaomi MiNA service is not initialized"
-            )
-            return
-        try:
-            poll = self.config.native_status_poll_interval
-            start_deadline = time.monotonic() + self.config.native_play_start_timeout
-            observed_playing = False
-            status_supported = False
-
-            # A conversation record can arrive before Xiaomi's native TTS
-            # changes mediaplayer status. Wait briefly for status=1.
-            while time.monotonic() < start_deadline:
-                if self.stop_event.is_set():
-                    return
-                try:
-                    status_info = await mina_service.player_get_status(self.device_id)
-                except Exception:
-                    _xiaoai_log.debug(
-                        "XiaoAI native player status query failed",
-                        exc_info=True,
-                    )
-                    status_info = None
-                if self.config.player_status_debug:
-                    _xiaoai_log.debug(
-                        "XiaoAI native playback status_info: phase=start info=%r",
-                        status_info,
-                    )
-                if isinstance(status_info, dict):
-                    status_supported = True
-                    status = self._player_status_value(status_info)
-                    if status == 1:
-                        observed_playing = True
-                        break
-                await asyncio.sleep(poll)
-
-            if observed_playing:
-                end_deadline = time.monotonic() + self.config.native_play_end_timeout
-                idle_count = 0
-                while time.monotonic() < end_deadline:
-                    if self.stop_event.is_set():
-                        return
-                    try:
-                        status_info = await mina_service.player_get_status(
-                            self.device_id
-                        )
-                    except Exception:
-                        _xiaoai_log.debug(
-                            "XiaoAI native player status query failed",
-                            exc_info=True,
-                        )
-                        status_info = None
-                    if self.config.player_status_debug:
-                        _xiaoai_log.debug(
-                            "XiaoAI native playback status_info: phase=end info=%r",
-                            status_info,
-                        )
-                    status = self._player_status_value(status_info)
-                    if status == 1:
-                        idle_count = 0
-                    elif status in (0, 3):
-                        idle_count += 1
-                        if idle_count >= self.config.native_idle_confirmations:
-                            break
-                    await asyncio.sleep(poll)
-                else:
-                    _xiaoai_log.warning(
-                        "XiaoAI native playback status timeout; opening follow-up"
-                    )
-            else:
-                # Some firmware does not expose short native TTS in
-                # mediaplayer status. Retain a bounded fallback only for that
-                # unsupported/no-playing-observed case.
-                _xiaoai_log.debug(
-                    "XiaoAI native play state not observed: status_supported=%s",
-                    status_supported,
-                )
-                if self.config.native_status_fallback_delay > 0:
-                    await asyncio.sleep(self.config.native_status_fallback_delay)
-
-            if self.config.native_tail_guard > 0:
-                deadline = time.monotonic() + self.config.native_tail_guard
-                while not self.stop_event.is_set():
-                    remaining = deadline - time.monotonic()
-                    if remaining <= 0:
-                        break
-                    await asyncio.sleep(min(0.1, remaining))
-
-            if self.active_turn is not None or self.stop_event.is_set():
-                return
-            _xiaoai_log.debug(
-                "XiaoAI native playback finished; opening follow-up listening"
-            )
-            await self._start_relisten_cycle(player_idle_confirmed=True)
-        except asyncio.CancelledError:
-            raise
-        finally:
-            current = asyncio.current_task()
-            if self.relisten_task is current:
-                self.relisten_task = None
-
-    async def _cancel_relisten(self):
-        self.relisten_generation += 1
-        task = self.relisten_task
-        self.relisten_task = None
-        if task is not None and task is not asyncio.current_task() and not task.done():
-            task.cancel()
-            await asyncio.gather(task, return_exceptions=True)
 
     async def _wait_player_idle_before_wakeup(self) -> bool:
         """Prefer local playback state and retain the original MiNA fallback."""
@@ -39967,12 +39919,10 @@ class XiaoGPTBridge:
     ):
         """Open exactly one follow-up listening window.
 
-        Model answers call this after playback.consumer_done plus the
-        locally calculated audible drain. Native answers call it after
-        _relisten_after_native_answer observes MiNA player idle. Each answer
-        opens one listening window; no persistent mode flag is required.
+        Model and direct Edge-TTS answers call this after playback has
+        reached idle. Each completed answer opens one listening window; no
+        persistent mode flag is required.
         """
-        await self._cancel_relisten()
         if (
             not self.config.mi_did
             or self.active_turn is not None
@@ -39994,20 +39944,25 @@ class XiaoGPTBridge:
             self.suppress_records_until,
             time.monotonic() + self.config.wakeup_suppress_seconds,
         )
-        local_wakeup_method = (
-            "custom_directives" if self.config.wakeup_mode == "directive" else "wakeup"
+
+        # For wake-up sound
+        prop_res = await self._local_send_ok(
+            "get_prop", ["speaker_SpeakerVolume"], prop=True
         )
-        local_wakeup_params = (
-            [XIAOAI_WAKEUP_KEYWORD] if self.config.wakeup_mode == "directive" else []
-        )
-        if await self._local_send_ok(local_wakeup_method, local_wakeup_params):
-            _xiaoai_log.debug(
-                "Xiaomi local MiIO wakeup sent: mode=%s method=%s params=%r",
-                self.config.wakeup_mode,
-                local_wakeup_method,
-                local_wakeup_params,
-            )
+
+        if isinstance(prop_res, int) and not isinstance(prop_res, bool):
+            local_wakeup_volume = prop_res
+        else:
+            local_wakeup_volume = 80
+
+        if self.config.wakeup_mode == "directive":
+            if await self._local_send_ok(
+                "set_speaker_SpeakerVolume", [local_wakeup_volume]
+            ) and await self._local_send_ok("wakeup", []):
+                return
+        elif await self._local_send_ok("wakeup", []):
             return
+
         miio_service = self.miio_service
         if miio_service is None:
             _xiaoai_log.warning("Cannot wake XiaoAI: MIoT service is not initialized")
@@ -40077,7 +40032,7 @@ class XiaoGPTBridge:
             _xiaoai_log.debug("Xiaomi directive wakeup fallback failed", exc_info=True)
 
     def _commit_completed_turn(self, turn):
-        if self.config.model in BROWSER_MODEL_ALIASES:
+        if turn.direct_answer or self.config.model in BROWSER_MODEL_ALIASES:
             return
         answer = turn.generated_text.strip()
         if not answer:
@@ -47076,6 +47031,82 @@ def log_memory_state(label: str):
         _memory_log.exception("Failed to collect memory metrics")
 
 
+def _fix_env_registry_line_numbers(source_path: Path) -> int:
+    """Atomically refresh ENV REGISTRY line references in this source file."""
+    source_path = source_path.resolve()
+    source = source_path.read_text(encoding="utf-8")
+    lines = source.splitlines()
+    registry_start = next(
+        (i for i, line in enumerate(lines) if "环境变量登记表 (ENV REGISTRY)" in line),
+        None,
+    )
+    if registry_start is None:
+        raise RuntimeError("ENV REGISTRY start marker was not found")
+    registry_end = next(
+        (
+            i
+            for i in range(registry_start + 1, len(lines))
+            if lines[i].startswith("# 合计 ")
+        ),
+        None,
+    )
+    if registry_end is None:
+        raise RuntimeError("ENV REGISTRY total marker was not found")
+
+    entry_pattern = re.compile(r"^(#\s+)([A-Z][A-Z0-9_]+)(\s+.*?\s+)L\d+(\s*)$")
+    entries = []
+    for index in range(registry_start + 1, registry_end):
+        match = entry_pattern.match(lines[index])
+        if match:
+            entries.append((index, match))
+    if not entries:
+        raise RuntimeError("ENV REGISTRY contains no line-numbered entries")
+
+    registered_names = {match.group(2) for _, match in entries}
+    runtime_lines = {}
+    tree = ast.parse(source, filename=str(source_path))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not node.args:
+            continue
+        first_arg = node.args[0]
+        if not isinstance(first_arg, ast.Constant) or not isinstance(
+            first_arg.value, str
+        ):
+            continue
+        name = first_arg.value
+        if name in registered_names:
+            runtime_lines[name] = min(runtime_lines.get(name, node.lineno), node.lineno)
+
+    missing = sorted(registered_names - runtime_lines.keys())
+    if missing:
+        raise RuntimeError(
+            "ENV REGISTRY entries have no runtime reader: " + ", ".join(missing)
+        )
+
+    for index, match in entries:
+        name = match.group(2)
+        lines[index] = (
+            f"{match.group(1)}{name}{match.group(3)}"
+            f"L{runtime_lines[name]}{match.group(4)}"
+        )
+    lines[registry_end] = f"# 合计 {len(registered_names)} 个唯一环境变量。"
+    updated = "\n".join(lines) + ("\n" if source.endswith("\n") else "")
+    compile(updated, str(source_path), "exec")
+    if updated == source:
+        print(f"ENV REGISTRY already current: {len(registered_names)} entries")
+        return 0
+
+    temporary = source_path.with_name(f".{source_path.name}.env-registry.tmp")
+    try:
+        temporary.write_text(updated, encoding="utf-8")
+        os.chmod(temporary, source_path.stat().st_mode)
+        os.replace(temporary, source_path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    print(f"ENV REGISTRY updated: {len(registered_names)} entries in {source_path}")
+    return 0
+
+
 def test_reasoning_and_channel_do_not_leak():
     raw = (
         "<|channel>analysis"
@@ -50464,7 +50495,12 @@ def _validate_command_line(argv: list[str]) -> None:
     accepted = {"--http", "--self-test"}
     if not argv or (set(argv) <= accepted and len(argv) == len(set(argv))):
         return
-    if argv in (["--mi-login"], ["--ble-scan"], ["--ble-listen"]):
+    if argv in (
+        ["--mi-login"],
+        ["--ble-scan"],
+        ["--ble-listen"],
+        ["--fix-env-registry"],
+    ):
         return
     if argv and argv[0] == "--mi-list" and 1 <= len(argv) <= 4:
         if not any(value.startswith("--") for value in argv[1:]):
@@ -50475,7 +50511,8 @@ def _validate_command_line(argv: list[str]) -> None:
         "  python voice_edge.py --mi-login\n"
         "  python voice_edge.py --mi-list [name_keyword|full] [false|true] [0|1]\n"
         "  python voice_edge.py --ble-scan\n"
-        "  python voice_edge.py --ble-listen",
+        "  python voice_edge.py --ble-listen\n"
+        "  python voice_edge.py --fix-env-registry",
         file=sys.stderr,
     )
     raise SystemExit(2)
@@ -50521,6 +50558,9 @@ def main():
     if "--self-test" in sys.argv:
         run_self_tests()
         return
+
+    if sys.argv[1:] == ["--fix-env-registry"]:
+        raise SystemExit(_fix_env_registry_line_numbers(Path(__file__)))
 
     _run_ble_cli_from_argv(argv)
     _run_mi_login_from_argv(argv)
