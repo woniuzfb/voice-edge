@@ -255,6 +255,31 @@ export XIAOAI_TAVILY_TOOL_MAX_RESULTS=3
 export XIAOAI_TAVILY_TOOL_TIMEOUT=30
 ```
 
+### 可选 本地 miIO
+
+```bash
+uv run start --mi-list
+
+export XIAOAI_LOCAL_DEVICES = '[
+  {
+    "name": "living-room",
+    "ip": "192.168.1.101",
+    "token": "",
+    "hardware": "LX01",
+    "mi_did": "",
+    "audio_port": 8050
+  },
+  {
+    "name": "bedroom",
+    "ip": "192.168.1.102",
+    "token": "",
+    "hardware": "LX01",
+    "mi_did": "",
+    "audio_port": 8051
+  }
+]'
+```
+
 ## 本机语音助手
 
 ```bash

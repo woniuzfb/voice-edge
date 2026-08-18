@@ -62,7 +62,7 @@ import time
 import urllib.parse
 import uuid
 from collections import OrderedDict, deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from enum import Enum
 from http.cookies import SimpleCookie
@@ -150,203 +150,205 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1332
-#    VE_VLM_KV_BITS                         3.5                                          L471
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L476
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L481
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L482
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L915
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L920
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L923
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L927
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L936
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L944
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L999
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1450
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L40282
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L40931
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L40943
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1334
+#    VE_VLM_KV_BITS                         3.5                                          L473
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L478
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L483
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L484
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L917
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L922
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L925
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L929
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L938
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L946
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1001
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1452
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L40545
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L41194
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L41206
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L361
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L362
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L363
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L364
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L365
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L369
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L373
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L374
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L375
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L376
-#    VE_HUD_LOG_DEBUG                           "0"                                      L377
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L378
-#    VE_KWS_LOG_DEBUG                           "0"                                      L379
-#    VE_LLM_LOG_DEBUG                           "0"                                      L380
-#    VE_M365_LOG_DEBUG                          "0"                                      L381
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L382
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L386
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L390
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L391
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L392
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L393
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L394
-#    VE_TTS_LOG_DEBUG                           "0"                                      L395
-#    VE_VLM_LOG_DEBUG                           "0"                                      L396
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L397
+#    VE_APP_LOG_DEBUG                           "0"                                      L363
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L364
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L365
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L366
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L367
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L371
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L375
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L376
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L377
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L378
+#    VE_HUD_LOG_DEBUG                           "0"                                      L379
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L380
+#    VE_KWS_LOG_DEBUG                           "0"                                      L381
+#    VE_LLM_LOG_DEBUG                           "0"                                      L382
+#    VE_M365_LOG_DEBUG                          "0"                                      L383
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L384
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L388
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L392
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L393
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L394
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L395
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L396
+#    VE_TTS_LOG_DEBUG                           "0"                                      L397
+#    VE_VLM_LOG_DEBUG                           "0"                                      L398
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L399
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L40168
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L40191
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L40218
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L40277
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L40820
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L40823
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L40831
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L40843
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L40845
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L40854
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L40860
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L40866
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L40882
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L40887
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L40894
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L40901
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L40910
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L40917
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L40965
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L42733
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L42734
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L42735
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L40431
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L40454
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L40481
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L40540
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L41083
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L41086
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L41094
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L41106
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L41108
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L41117
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L41123
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L41129
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L41145
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L41150
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L41157
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L41164
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L41173
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L41180
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L41228
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L42996
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L42997
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L42998
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13542
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13544
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L13545
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13551
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13553
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13556
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13564
-#    QWEN_COOKIE_HEADER                     ""                                           L13568
-#    QWEN_TOKENS                            ""                                           L13576
-#    QWEN_TOKEN                             ""                                           L13577
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13544
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13546
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L13547
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13553
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13555
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13558
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13566
+#    QWEN_COOKIE_HEADER                     ""                                           L13570
+#    QWEN_TOKENS                            ""                                           L13578
+#    QWEN_TOKEN                             ""                                           L13579
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L578
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15211
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L15212
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15214
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15216
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15218
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15221
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15224
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15227
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15348
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15351
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L580
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15213
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L15214
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15216
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15218
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15220
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15223
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15226
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15229
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15350
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15353
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17896
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17897
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17903
-#    DOUBAO_FP                              "doubao_voice_edge"                          L17904
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17912
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17914
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17917
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17919
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17921
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L17925
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L17952
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L17955
-#    DOUBAO_WEB_AID                         "497858"                                     L17957
-#    DOUBAO_WEB_REGION                      "CN"                                         L17958
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L17959
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L17960
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L17962
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L17999
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L17991
-#    DOUBAO_COOKIE_HEADER                   ""                                           L18227
-#    DOUBAO_SESSION_IDS                     ""                                           L18269
-#    DOUBAO_SESSION_ID                      ""                                           L18273
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18784
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18793
-#    DOUBAO_SESSION_ID_SS                   ""                                           L18975
-#    DOUBAO_SID_TT                          ""                                           L18978
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17898
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17899
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17905
+#    DOUBAO_FP                              "doubao_voice_edge"                          L17906
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17914
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17916
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17919
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17921
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17923
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L17927
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L17954
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L17957
+#    DOUBAO_WEB_AID                         "497858"                                     L17959
+#    DOUBAO_WEB_REGION                      "CN"                                         L17960
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L17961
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L17962
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L17964
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18001
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L17993
+#    DOUBAO_COOKIE_HEADER                   ""                                           L18229
+#    DOUBAO_SESSION_IDS                     ""                                           L18271
+#    DOUBAO_SESSION_ID                      ""                                           L18275
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18786
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18795
+#    DOUBAO_SESSION_ID_SS                   ""                                           L18977
+#    DOUBAO_SID_TT                          ""                                           L18980
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L23364
-#    SHAREPOINT_HOME_URL                    ""                                           L23365
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23366
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23367
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23394
-#    M365_BRIDGE_PORT                       "5002"                                       L23395
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23396
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L23397
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23399
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23402
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L23405
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L23407
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23427
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23434
-#    M365_CONV_MAP_MAX                      "1024"                                       L23603
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L23925
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L23943
+#    M365_ENTRY_URL                         ""                                           L23366
+#    SHAREPOINT_HOME_URL                    ""                                           L23367
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23368
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23369
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23396
+#    M365_BRIDGE_PORT                       "5002"                                       L23397
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23398
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L23399
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23401
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23404
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L23407
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23415
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L23417
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23437
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23444
+#    M365_CONV_MAP_MAX                      "1024"                                       L23613
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L23935
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L23953
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L35746
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L35955
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36017
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36039
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36046
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L36141
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36143
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36147
-#    MI_USER                                ""                                           L37026
-#    MI_PASS                                ""                                           L37052
-#    XIAOAI_HARDWARE                        "LX06"                                       L37054
-#    MI_DID                                 ""                                           L37056
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L37059
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L37063
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L37066
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L37072
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L37082
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L37102
-#    XIAOAI_VOICE                           "zh"                                         L37104
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L37106
-#    XIAOAI_MAX_TOKENS                      "500"                                        L37109
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L37112
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L37115
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L37119
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L37123
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L37128
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L37133
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L37138
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L37143
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L37148
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L37156
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L37161
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L37166
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L37171
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L37176
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L37181
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L37186
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L37189
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L37193
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L37197
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L37201
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L37206
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L37211
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L37215
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L37218
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L37221
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L37224
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L37227
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L37230
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L37233
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L37236
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L37243
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L37249
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L37253
+#    XIAOAI_ENABLED                         "0"                                          L35789
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L35998
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36060
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36082
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36089
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L36184
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36186
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36190
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L37383
+#    MI_USER                                ""                                           L37109
+#    MI_PASS                                ""                                           L37135
+#    XIAOAI_HARDWARE                        "LX06"                                       L37137
+#    MI_DID                                 ""                                           L37139
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L37142
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L37146
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L37149
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L37155
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L37165
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L37185
+#    XIAOAI_VOICE                           "zh"                                         L37187
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L37189
+#    XIAOAI_MAX_TOKENS                      "500"                                        L37192
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L37195
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L37198
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L37202
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L37206
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L37211
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L37216
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L37221
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L37226
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L37231
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L37239
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L37244
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L37249
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L37254
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L37259
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L37264
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L37269
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L37272
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L37276
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L37280
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L37284
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L37289
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L37294
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L37298
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L37301
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L37304
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L37307
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L37310
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L37313
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L37316
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L37319
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L37326
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L37332
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L37336
 #
-# 合计 181 个唯一环境变量。
+# 合计 183 个唯一环境变量。
 # ============================================================================
 
 
@@ -23404,6 +23406,14 @@ M365_IDLE_SECONDS_PER_MIB = max(
 M365_IDLE_MAX_SECONDS = max(
     M365_IDLE_BASE_SECONDS, float(os.getenv("M365_IDLE_MAX_SECONDS", "900"))
 )
+# Code Interpreter may legitimately emit no Chathub frames for longer than the
+# normal request idle budget. Apply this separate absolute ceiling only after an
+# explicit codeExecuting signal; ordinary stalled requests keep the short idle
+# timeout above.
+M365_CODE_EXECUTION_MAX_SECONDS = max(
+    M365_IDLE_BASE_SECONDS,
+    float(os.getenv("M365_CODE_EXECUTION_MAX_SECONDS", "1800")),
+)
 M365_GETCHATS_TIMEOUT = max(3.0, float(os.getenv("M365_GETCHATS_TIMEOUT", "20")))
 
 
@@ -25179,6 +25189,8 @@ class M365BrowserRuntime:
                 last_liveness_source = "request-start"
                 progress_frames = 0
                 code_keepalive_frames = 0
+                code_execution_active = False
+                code_execution_hard_deadline: Optional[float] = None
                 reasoning_frames = 0
                 delta_frames = 0
 
@@ -25288,6 +25300,28 @@ class M365BrowserRuntime:
                             )
                             return
                         if now > idle_deadline:
+                            # A confirmed Code Interpreter turn gets its own
+                            # absolute ceiling. This prevents the ordinary idle
+                            # watchdog from aborting a silent sandbox run, while
+                            # still bounding a lost terminal event.
+                            if (
+                                code_execution_active
+                                and code_execution_hard_deadline is not None
+                                and now < code_execution_hard_deadline
+                            ):
+                                idle_deadline = min(
+                                    now + request_idle_seconds,
+                                    code_execution_hard_deadline,
+                                )
+                                # Keep the downstream SSE consumer alive too;
+                                # otherwise its own idle watchdog can tear down
+                                # the request while this producer is deliberately
+                                # extending the silent Code Interpreter phase.
+                                try:
+                                    output_queue.put_nowait({"type": "keepalive"})
+                                except queue.Full:
+                                    pass
+                                continue
                             idle_for = max(0.0, now - last_liveness_at)
                             elapsed = max(0.0, now - request_started_at)
                             deadline_overrun = max(0.0, now - idle_deadline)
@@ -25348,6 +25382,11 @@ class M365BrowserRuntime:
                         progress_frames += 1
                         if msg.get("codeExecuting") is True:
                             code_keepalive_frames += 1
+                            if not code_execution_active:
+                                code_execution_active = True
+                                code_execution_hard_deadline = (
+                                    time.monotonic() + M365_CODE_EXECUTION_MAX_SECONDS
+                                )
                             last_liveness_source = "M365_PROGRESS(code-executing)"
                         else:
                             content_type = str(msg.get("contentType") or "").strip()
@@ -25375,6 +25414,10 @@ class M365BrowserRuntime:
                                 pass
                     elif mtype == "M365_DELTA" and not is_reasoning:
                         delta_frames += 1
+                        # Visible answer output ends the silent sandbox phase;
+                        # restore the normal per-request idle policy.
+                        code_execution_active = False
+                        code_execution_hard_deadline = None
                         last_liveness_at = time.monotonic()
                         last_liveness_source = "M365_DELTA"
                         got_any = True
@@ -36193,6 +36236,9 @@ def _xiaomi_transient_device_code(result) -> Optional[int]:
     return device_code_int if device_code_int is not None else -1
 
 
+_XIAOAI_ACCOUNT_LOGIN_LOCK = threading.Lock()
+
+
 class EmbeddedMiAccount:
     """Minimal MiService 3.0.1-compatible Xiaomi account client."""
 
@@ -36230,7 +36276,39 @@ class EmbeddedMiAccount:
         if not self.token.get("deviceId"):
             self.token["deviceId"] = secrets.token_hex(8).upper()
 
-    async def login(self, sid: str) -> bool:
+    async def login(
+        self,
+        sid: str,
+        *,
+        force: bool = False,
+        rejected_service_token: str = "",
+    ) -> bool:
+        await asyncio.to_thread(_XIAOAI_ACCOUNT_LOGIN_LOCK.acquire)
+        try:
+            stored = self.store.load() or {}
+            if isinstance(stored, dict):
+                self.token = stored
+            service = self.token.get(sid) if isinstance(self.token, dict) else None
+            stored_service_token = (
+                str(service[1])
+                if isinstance(service, (list, tuple)) and len(service) >= 2
+                else ""
+            )
+            if self.has_service_token(sid) and (
+                not force
+                or (
+                    rejected_service_token
+                    and stored_service_token != rejected_service_token
+                )
+            ):
+                return True
+            if isinstance(self.token, dict):
+                self.token.pop(sid, None)
+            return await self._login_impl(sid)
+        finally:
+            _XIAOAI_ACCOUNT_LOGIN_LOCK.release()
+
+    async def _login_impl(self, sid: str) -> bool:
         saved_token = self.store.load()
         if not isinstance(saved_token, dict):
             saved_token = dict(self.token) if isinstance(self.token, dict) else None
@@ -36545,7 +36623,11 @@ class EmbeddedMiAccount:
                 parsed_url.hostname or "",
                 parsed_url.path or "",
             )
-            if not await self.login(sid):
+            if not await self.login(
+                sid,
+                force=True,
+                rejected_service_token=str(service[1]),
+            ):
                 raise RuntimeError(
                     self.login_error or f"Xiaomi relogin failed for sid={sid}"
                 )
@@ -37023,6 +37105,7 @@ def _xiaoai_local_endpoint() -> tuple[str, str]:
 @dataclass(slots=True)
 class XiaoAIConfig:
     enabled: bool = XIAOAI_ENABLED
+    name: str = "default"
     account: str = field(default_factory=lambda: os.getenv("MI_USER", "").strip())
     local_ip: str = field(default_factory=lambda: _xiaoai_local_endpoint()[0])
     local_token: str = field(default_factory=lambda: _xiaoai_local_endpoint()[1])
@@ -37292,6 +37375,88 @@ class XiaoAIConfig:
     @property
     def continuous_conversation_recommended(self) -> bool:
         return bool(self.hardware_profile.get("continuous_recommended", False))
+
+
+def _xiaoai_device_configs() -> tuple[XiaoAIConfig, ...]:
+    """Build independent bridge configs from XIAOAI_LOCAL_DEVICES JSON."""
+    base = XiaoAIConfig()
+    raw = os.getenv("XIAOAI_LOCAL_DEVICES", "").strip()
+    if not raw:
+        return (base,)
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("XIAOAI_LOCAL_DEVICES must be valid JSON") from exc
+    if not isinstance(payload, list) or not payload:
+        raise RuntimeError("XIAOAI_LOCAL_DEVICES must be a non-empty JSON array")
+    configs = []
+    names = set()
+    endpoints = set()
+    ports = set()
+    allowed = {"name", "ip", "token", "hardware", "mi_did", "audio_port"}
+    for index, item in enumerate(payload):
+        if not isinstance(item, dict):
+            raise RuntimeError(f"XIAOAI_LOCAL_DEVICES[{index}] must be an object")
+        unknown = sorted(set(item) - allowed)
+        if unknown:
+            raise RuntimeError(
+                f"XIAOAI_LOCAL_DEVICES[{index}] has unknown fields: "
+                + ", ".join(unknown)
+            )
+        name = str(item.get("name") or f"device-{index + 1}").strip()
+        ip = str(item.get("ip") or "").strip()
+        token = str(item.get("token") or "").strip()
+        hardware = str(item.get("hardware") or base.hardware).strip()
+        mi_did = str(item.get("mi_did") or "").strip()
+        if not name or not ip or not token:
+            raise RuntimeError(
+                f"XIAOAI_LOCAL_DEVICES[{index}] requires name, ip, and token"
+            )
+        try:
+            port = int(item.get("audio_port", base.audio_port + index))
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError(
+                f"XIAOAI_LOCAL_DEVICES[{index}].audio_port must be an integer"
+            ) from exc
+        if not 1 <= port <= 65535:
+            raise RuntimeError(
+                f"XIAOAI_LOCAL_DEVICES[{index}].audio_port is out of range"
+            )
+        if name in names:
+            raise RuntimeError(f"Duplicate XiaoAI device name: {name!r}")
+        if (ip, token) in endpoints:
+            raise RuntimeError(f"Duplicate XiaoAI local endpoint: {ip}")
+        if port in ports:
+            raise RuntimeError(f"Duplicate XiaoAI audio port: {port}")
+        names.add(name)
+        endpoints.add((ip, token))
+        ports.add(port)
+        configs.append(
+            replace(
+                base,
+                enabled=base.enabled,
+                name=name,
+                local_ip=ip,
+                local_token=token,
+                hardware=hardware,
+                mi_did=mi_did,
+                audio_port=port,
+            )
+        )
+    hardware_counts = {}
+    for config in configs:
+        hardware_counts[config.hardware] = hardware_counts.get(config.hardware, 0) + 1
+    ambiguous = sorted(
+        config.name
+        for config in configs
+        if hardware_counts.get(config.hardware, 0) > 1 and not config.mi_did
+    )
+    if ambiguous:
+        raise RuntimeError(
+            "XIAOAI_LOCAL_DEVICES requires mi_did when hardware is repeated: "
+            + ", ".join(ambiguous)
+        )
+    return tuple(configs)
 
 
 class XiaoAIHandledTurnError(RuntimeError):
@@ -37817,6 +37982,7 @@ class XiaoGPTBridge:
         self.cloud_poll_event = asyncio.Event()
         self.cloud_poll_generation = 0
         self.cloud_poll_consumed_generation = 0
+        self.cloud_poll_trigger_timestamp_ms = 0
         self.poll_count = 0
         self.poll_success_count = 0
         self.poll_error_count = 0
@@ -37949,10 +38115,11 @@ class XiaoGPTBridge:
         await self._initialize_device()
         await self._replace_poll_session()
         _xiaoai_log.debug(
-            "XiaoAI ready: hardware=%s device_id=%s keywords=%r "
+            "XiaoAI ready: name=%s hardware=%s device_id=%s keywords=%r "
             "new_conversation=%r dialog_mode=always relisten=after_every_answer "
             "native_keywords=%r tavily_tool=%s "
             "wakeup_mode=%s wakeup_command=%s wakeup_args=%r",
+            self.config.name,
             self.config.hardware,
             self.device_id,
             self.config.keywords,
@@ -38005,16 +38172,29 @@ class XiaoGPTBridge:
                 return False
 
             self.poll_auth_recovery_last_at = now
+            current_service = (
+                account_client.token.get("micoapi")
+                if isinstance(account_client.token, dict)
+                else None
+            )
+            rejected_service_token = (
+                str(current_service[1])
+                if isinstance(current_service, (list, tuple))
+                and len(current_service) >= 2
+                else ""
+            )
             saved_token = account_client.store.load()
-            if isinstance(saved_token, dict):
-                account_client.token = saved_token
 
             _xiaoai_log.warning(
                 "XiaoAI polling authentication rejected (HTTP %d); refreshing micoapi credentials",
                 status,
             )
             try:
-                refreshed = await account_client.login("micoapi")
+                refreshed = await account_client.login(
+                    "micoapi",
+                    force=True,
+                    rejected_service_token=rejected_service_token,
+                )
                 if not refreshed:
                     raise RuntimeError(
                         account_client.login_error
@@ -38081,7 +38261,7 @@ class XiaoGPTBridge:
             raise RuntimeError(f"Cannot find Xiaomi hardware {self.config.hardware!r}")
 
     async def _watch_conversations(self):
-        _xiaoai_log.debug("XiaoAI watcher started")
+        _xiaoai_log.debug("[%s] XiaoAI watcher started", self.config.name)
         transient_types = (
             aiohttp.ClientConnectionError,  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
             aiohttp.ServerTimeoutError,  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess, reportArgumentType]
@@ -38102,7 +38282,8 @@ class XiaoGPTBridge:
                 self.poll_auth_recovery_failures = 0
                 if record:
                     _xiaoai_log.debug(
-                        "XiaoAI new record accepted: query=%r answers=%r request_id=%r time=%r",
+                        "[%s] XiaoAI new record accepted: query=%r answers=%r request_id=%r time=%r",
+                        self.config.name,
                         record.get("query"),
                         record.get("answers"),
                         record.get("requestId"),
@@ -38258,9 +38439,10 @@ class XiaoGPTBridge:
         )
         if should_heartbeat:
             _xiaoai_log.debug(
-                "XiaoAI poll request: poll=%d url=%s cookie_names=%s "
+                "[%s] XiaoAI poll request: poll=%d url=%s cookie_names=%s "
                 "speaker_device_id=%s account_device_id_matches_speaker=%s "
                 "last_timestamp=%s",
+                self.config.name,
                 self.poll_count,
                 url,
                 sorted(cookies.keys()),
@@ -38349,11 +38531,15 @@ class XiaoGPTBridge:
         if not records:
             return None
 
-        if self.last_timestamp == 0:
-            # Only process startup needs a snapshot baseline. For every later
-            # local-play generation, last_timestamp already represents the last
-            # accepted cloud record. Priming again here would absorb a follow-up
-            # that was already committed by the time the first poll completed.
+        startup_pending_generation = (
+            self.last_timestamp == 0
+            and self.cloud_poll_consumed_generation < self.cloud_poll_generation
+            and self.cloud_poll_trigger_timestamp_ms > 0
+        )
+        minimum_candidate_timestamp = 0
+        if self.last_timestamp == 0 and not startup_pending_generation:
+            # With no local native-play edge, the first non-empty snapshot is
+            # historical state and must never be replayed after process startup.
             baseline_timestamp = 0
             for item in records:
                 if not isinstance(item, dict):
@@ -38368,12 +38554,45 @@ class XiaoGPTBridge:
             self.last_timestamp = baseline_timestamp
             self.last_poll_record_time = baseline_timestamp
             _xiaoai_log.debug(
-                "XiaoAI poll baseline primed: reason=startup records=%d "
+                "[%s] XiaoAI poll baseline primed: reason=startup records=%d "
                 "last_timestamp=%s; polling continues",
+                self.config.name,
                 len(records),
                 self.last_timestamp,
             )
             return None
+        if startup_pending_generation:
+            # A local 0->1 edge raced the first cloud snapshot. Do not absorb
+            # the whole response: the current utterance may already be present.
+            # Mark only records clearly older than the edge as startup history,
+            # then let the normal candidate selector accept the current one.
+            minimum_candidate_timestamp = max(
+                1, self.cloud_poll_trigger_timestamp_ms - 5000
+            )
+            baseline_timestamp = 0
+            for item in records:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    timestamp = int(item.get("time") or 0)
+                except (TypeError, ValueError):
+                    timestamp = 0
+                if timestamp >= minimum_candidate_timestamp:
+                    continue
+                request_id = str(item.get("requestId") or "")
+                baseline_timestamp = max(baseline_timestamp, timestamp)
+                self.seen_utterances.append((request_id, timestamp))
+            self.last_timestamp = baseline_timestamp
+            self.last_poll_record_time = baseline_timestamp
+            _xiaoai_log.debug(
+                "[%s] XiaoAI startup baseline deferred to pending generation: "
+                "generation=%d trigger_time=%d candidate_from=%d baseline=%d",
+                self.config.name,
+                self.cloud_poll_generation,
+                self.cloud_poll_trigger_timestamp_ms,
+                minimum_candidate_timestamp,
+                baseline_timestamp,
+            )
 
         # The API returns up to two records, but records[0] is not guaranteed to
         # be the newest one. Inspect every returned object and select the newest
@@ -38392,6 +38611,8 @@ class XiaoGPTBridge:
                 timestamp = 0
             request_id = str(item.get("requestId") or "")
             identity = (request_id, timestamp)
+            if minimum_candidate_timestamp and timestamp < minimum_candidate_timestamp:
+                continue
             if timestamp <= self.last_timestamp:
                 if should_heartbeat:
                     _xiaoai_log.debug(
@@ -38465,7 +38686,8 @@ class XiaoGPTBridge:
             # turn pipeline. active_turn is installed before playback starts, so
             # the LAN watcher cannot pause our audio.
             _xiaoai_log.debug(
-                "XiaoAI first answer routed to Edge-TTS: query=%r answer=%r matched=%r",
+                "[%s] XiaoAI first answer routed to Edge-TTS: query=%r answer=%r matched=%r",
+                self.config.name,
                 query,
                 first_answer_text,
                 native_keyword,
@@ -39628,20 +39850,16 @@ class XiaoGPTBridge:
         while not self.stop_event.is_set():
             if self.local_miio is None:
                 return True
-            if self.local_status_errors:
+            local_fallback_ready = self.local_status_errors >= self.config.local_retries
+            if local_fallback_ready:
                 return True
             if self.cloud_poll_consumed_generation < self.cloud_poll_generation:
-                return True
-            if self.local_play_state is not None and not self._local_state_is_fresh():
                 return True
             self.cloud_poll_event.clear()
-            if self.local_status_errors:
+            if self.local_status_errors >= self.config.local_retries:
                 self.cloud_poll_event.set()
                 continue
             if self.cloud_poll_consumed_generation < self.cloud_poll_generation:
-                self.cloud_poll_event.set()
-                continue
-            if self.local_play_state is not None and not self._local_state_is_fresh():
                 self.cloud_poll_event.set()
                 continue
             try:
@@ -39676,6 +39894,7 @@ class XiaoGPTBridge:
                 # active turn and must never be interrupted here.
                 if native_play_started and self.active_turn is None:
                     self.cloud_poll_generation += 1
+                    self.cloud_poll_trigger_timestamp_ms = int(time.time() * 1000)
                     generation = self.local_play_generation
                     previous_pause_task = self.local_native_pause_task
                     if (
@@ -39697,13 +39916,16 @@ class XiaoGPTBridge:
             except Exception as exc:
                 self.local_status_errors += 1
                 self.local_status_event.set()
-                # A single missing LAN response immediately re-enables the old
-                # cloud watcher. The next valid local sample closes it again if
-                # the speaker is healthy and idle.
-                self.cloud_poll_event.set()
+                # Each local send already performs local_retries UDP attempts.
+                # Require that many consecutive failed status samples before
+                # enabling cloud fallback, avoiding a remote request for one
+                # isolated LAN timeout.
+                if self.local_status_errors >= self.config.local_retries:
+                    self.cloud_poll_event.set()
                 _xiaoai_log.debug(
-                    "XiaoAI local status unavailable: consecutive=%d error=%s",
+                    "XiaoAI local status unavailable: consecutive=%d/%d error=%s",
                     self.local_status_errors,
+                    self.config.local_retries,
                     f"{type(exc).__name__}: {exc}".replace("\n", " ")[:300],
                 )
             delay = max(0.0, interval - (time.monotonic() - started))
@@ -39764,7 +39986,8 @@ class XiaoGPTBridge:
             if paused:
                 self.local_native_pause_generation = generation
                 _xiaoai_log.debug(
-                    "XiaoAI native answer pause sent concurrently: generation=%d",
+                    "[%s] XiaoAI native answer pause sent concurrently: generation=%d",
+                    self.config.name,
                     generation,
                 )
             else:
@@ -40060,7 +40283,9 @@ class XiaoAIBridgeThread:
         if not self.config.enabled or (self.thread and self.thread.is_alive()):
             return
         self.thread = threading.Thread(
-            target=self._run, name="xiaoai-bridge", daemon=False
+            target=self._run,
+            name=f"xiaoai-bridge-{self.config.name}",
+            daemon=False,
         )
         self.thread.start()
         self.ready.wait(timeout=5)
@@ -40142,12 +40367,50 @@ class XiaoAIBridgeThread:
         self.thread = None
 
 
-XIAOAI_BRIDGE_THREAD = XiaoAIBridgeThread(XiaoAIConfig())
+class XiaoAIBridgePool:
+    """Lifecycle and auth-refresh fan-out for isolated per-device bridges."""
+
+    def __init__(self, configs: Sequence[XiaoAIConfig]):
+        self.threads = tuple(XiaoAIBridgeThread(config) for config in configs)
+
+    def start(self):
+        started = []
+        try:
+            for bridge_thread in self.threads:
+                if bridge_thread.config.enabled:
+                    bridge_thread.start()
+                    started.append(bridge_thread)
+        except BaseException:
+            for bridge_thread in reversed(started):
+                bridge_thread.stop()
+            raise
+
+    def stop(self, timeout=10.0):
+        for bridge_thread in self.threads:
+            bridge_thread.stop(timeout)
+
+    def notify_doubao_auth_refreshed(
+        self, conversation_id: str, timeout: float = 10.0
+    ) -> dict:
+        results = [
+            bridge_thread.notify_doubao_auth_refreshed(conversation_id, timeout)
+            for bridge_thread in self.threads
+        ]
+        return {
+            "notified": any(bool(result.get("notified")) for result in results),
+            "replayed": any(bool(result.get("replayed")) for result in results),
+            "query_chars": sum(
+                int(result.get("query_chars") or 0) for result in results
+            ),
+            "devices": results,
+        }
+
+
+XIAOAI_BRIDGE_THREAD = XiaoAIBridgePool(_xiaoai_device_configs())
 
 
 def start_xiaoai_bridge():
-    if XIAOAI_BRIDGE_THREAD.config.enabled:
-        XIAOAI_BRIDGE_THREAD.start()
+    XIAOAI_BRIDGE_THREAD.start()
 
 
 def stop_xiaoai_bridge():
