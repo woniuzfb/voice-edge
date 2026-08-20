@@ -453,6 +453,7 @@ models:
 仅启用当前提供商所需的诊断开关：
 
 ```bash
+export VE_XIAOAI_LOG_DEBUG=1
 export VE_DOUBAO_LOG_DEBUG=1
 export VE_QWEN_LOG_DEBUG=1
 export VE_DEEPSEEK_LOG_DEBUG=1
