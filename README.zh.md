@@ -57,7 +57,7 @@ uv run start --http
 默认端口：
 
 - MCP：`5001`
-- HTTP：`5000`
+- HTTP：`5002`
 
 首次启动时，本地组件初始化可能需要更长时间。
 
@@ -342,7 +342,7 @@ models:
   - name: Local
     provider: Local
     model: AUTODETECT
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - chat
     capabilities:
@@ -350,7 +350,7 @@ models:
   - name: LLM:m365-claude-opus
     provider: Local
     model: LLM:m365-claude-opus
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - chat
     defaultCompletionOptions:
@@ -363,7 +363,7 @@ models:
   - name: LLM:m365-chatgpt-5.6
     provider: Local
     model: LLM:m365-chatgpt-5.6
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - chat
     defaultCompletionOptions:
@@ -376,19 +376,19 @@ models:
   - name: embed:jina-v5
     provider: Local
     model: embed:jina-v5
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - embed
   - name: rerank:jina-v3
     provider: Local
     model: embed:jina-v3
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - rerank
   - name: FIM:qwen-2.5-coder-1.5B
     provider: Local
     model: FIM:qwen-2.5-coder-1.5B
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - edit
       - apply
@@ -396,7 +396,7 @@ models:
   - name: FIM:qwen-2.5-coder-7B
     provider: Local
     model: FIM:qwen-2.5-coder-7B
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - edit
       - apply
