@@ -277,7 +277,7 @@ if sys.version_info < (3, 11):
 #    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23441
 #    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23442
 #    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23469
-#    M365_BRIDGE_PORT                       "5002"                                       L23470
+#    M365_BRIDGE_PORT                       "5003"                                       L23470
 #    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23471
 #    M365_IDLE_BASE_SECONDS                 "180"                                        L23472
 #    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23474
@@ -892,7 +892,7 @@ WHISPER_COMPUTE_TYPE = "int8"
 EXPOSE_AUX_MODELS_IN_MODELS_API = True
 
 MCP_PORT = 5001
-HTTP_PORT = 5000
+HTTP_PORT = 5002
 
 VE_BLE_REMOTE_ENABLED = os.getenv("VE_BLE_REMOTE_ENABLED", "0") == "1"
 VE_BLE_REMOTE_MAC = os.getenv("VE_BLE_REMOTE_MAC", "")
@@ -23467,7 +23467,7 @@ def _validate_sharepoint_settings() -> None:
 
 
 M365_BRIDGE_HOST = os.getenv("M365_BRIDGE_HOST", "127.0.0.1").strip()
-M365_BRIDGE_PORT = int(os.getenv("M365_BRIDGE_PORT", "5002"))
+M365_BRIDGE_PORT = int(os.getenv("M365_BRIDGE_PORT", "5003"))
 M365_FIRST_EVENT_TIMEOUT = max(5.0, float(os.getenv("M365_FIRST_EVENT_TIMEOUT", "60")))
 M365_IDLE_BASE_SECONDS = max(5.0, float(os.getenv("M365_IDLE_BASE_SECONDS", "180")))
 M365_IDLE_SECONDS_PER_FILE = max(
@@ -44369,13 +44369,9 @@ def _ble_remote_decrypt_frame(frame: bytes) -> tuple[int, bytes] | None:
     return counter, plaintext
 
 
-def _ble_remote_decode_frame(frame: bytes) -> dict[str, Any] | None:
-    """Decode a known remote action from one authenticated MiBeacon frame."""
+def _ble_remote_event(counter: int, plaintext: bytes) -> dict[str, Any] | None:
+    """Build a remote event for one recognized authenticated payload."""
 
-    decoded = _ble_remote_decrypt_frame(frame)
-    if decoded is None:
-        return None
-    counter, plaintext = decoded
     action = _BLE_REMOTE_ACTIONS.get(plaintext)
     if action is None:
         return None
@@ -44389,9 +44385,26 @@ def _ble_remote_decode_frame(frame: bytes) -> dict[str, Any] | None:
 
 def _ble_advertisement_service_data(advertisement: Any) -> dict[str, bytes]:
     return {
-        str(uuid).lower(): bytes(value)
+        str(uuid).casefold(): bytes(value)
         for uuid, value in advertisement.service_data.items()
     }
+
+
+def _ble_remote_decrypt_advertisement(
+    advertisement: Any,
+) -> tuple[bytes, int, bytes] | None:
+    """Extract and authenticate the configured MiBeacon remote advertisement."""
+
+    frame = _ble_advertisement_service_data(advertisement).get(
+        _BLE_REMOTE_SERVICE_UUID_NORM
+    )
+    if frame is None:
+        return None
+    decoded = _ble_remote_decrypt_frame(frame)
+    if decoded is None:
+        return None
+    counter, plaintext = decoded
+    return frame, counter, plaintext
 
 
 def _ble_scan_is_remote_candidate(name: str, advertisement: Any) -> bool:
@@ -44454,9 +44467,8 @@ async def _run_ble_scan_cli() -> None:
 async def _run_ble_listen_cli() -> None:
     """Print decrypted button payload hex values for one MiBeacon remote."""
 
-    target = VE_BLE_REMOTE_MAC.strip().casefold()
     service_uuid = _BLE_REMOTE_SERVICE_UUID_NORM
-    if not target or not service_uuid:
+    if not VE_BLE_REMOTE_MAC.strip() or not service_uuid:
         raise ValueError(
             "--ble-listen requires VE_BLE_REMOTE_MAC and VE_BLE_REMOTE_SERVICE_UUID"
         )
@@ -44469,16 +44481,11 @@ async def _run_ble_listen_cli() -> None:
 
     seen: deque[tuple[int, bytes]] = deque(maxlen=64)
 
-    def on_advertisement(device: Any, advertisement: Any) -> None:
-        if str(getattr(device, "address", "")).strip().casefold() != target:
-            return
-        frame = _ble_advertisement_service_data(advertisement).get(service_uuid)
-        if frame is None:
-            return
-        decoded = _ble_remote_decrypt_frame(frame)
+    def on_advertisement(_device: Any, advertisement: Any) -> None:
+        decoded = _ble_remote_decrypt_advertisement(advertisement)
         if decoded is None:
             return
-        counter, plaintext = decoded
+        frame, counter, plaintext = decoded
         signature = (counter, frame[-7:])
         if signature in seen:
             return
@@ -44548,16 +44555,14 @@ def _ble_remote_scanner_thread() -> None:
         seen: deque[tuple[int, bytes]] = deque(maxlen=64)
 
         def on_advertisement(_device: Any, advertisement: Any) -> None:
-            service_data = {
-                str(k).lower(): bytes(v) for k, v in advertisement.service_data.items()
-            }
-            frame = service_data.get(_BLE_REMOTE_SERVICE_UUID_NORM)
-            if frame is None:
+            decoded = _ble_remote_decrypt_advertisement(advertisement)
+            if decoded is None:
                 return
-            event = _ble_remote_decode_frame(frame)
+            frame, counter, plaintext = decoded
+            event = _ble_remote_event(counter, plaintext)
             if event is None:
                 return
-            signature = (event["counter"], frame[-7:])
+            signature = (counter, frame[-7:])
             if signature in seen:
                 return
             seen.append(signature)
@@ -45186,7 +45191,7 @@ async def transcribe_api(request):
 
     except ClientDisconnect:
         _transcription_log.info("Transcription API client disconnected")
-        raise
+        return Response(status_code=499)
     except asyncio.CancelledError:
         _transcription_log.info("Transcription API cancelled during shutdown")
         raise
@@ -45394,7 +45399,7 @@ async def speech_api(request):
 
     except ClientDisconnect:
         _http_log.info("Speech API client disconnected")
-        raise
+        return Response(status_code=499)
     except asyncio.CancelledError:
         _http_log.info("Speech API cancelled during shutdown")
         raise
@@ -46170,7 +46175,7 @@ async def completions_api(request):
 
     except ClientDisconnect:
         _llm_log.info("Completions API client disconnected")
-        raise
+        return Response(status_code=499)
     except asyncio.CancelledError:
         _llm_log.info("Completions API cancelled during shutdown")
         raise
@@ -47142,7 +47147,7 @@ async def chat_api(request):
 
     except ClientDisconnect:
         _http_log.info("Chat API client disconnected")
-        raise
+        return Response(status_code=499)
     except asyncio.CancelledError:
         _http_log.info("Chat API cancelled during shutdown")
         raise
@@ -47283,7 +47288,7 @@ async def embeddings_api(request):
 
     except ClientDisconnect:
         _embedding_log.info("Embeddings API client disconnected")
-        raise
+        return Response(status_code=499)
 
     except asyncio.CancelledError:
         _embedding_log.info("Embeddings API cancelled during shutdown")
@@ -47372,7 +47377,7 @@ async def rerank_api(request):
 
     except ClientDisconnect:
         _rerank_log.info("Rerank API client disconnected")
-        raise
+        return Response(status_code=499)
     except asyncio.CancelledError:
         _rerank_log.info("Rerank API cancelled during shutdown")
         raise
@@ -47603,7 +47608,7 @@ async def web_search_api(request):
 
     except ClientDisconnect:
         _http_log.info("Web search client disconnected")
-        raise
+        return Response(status_code=499)
 
     except asyncio.CancelledError:
         _http_log.info("Web search request cancelled")

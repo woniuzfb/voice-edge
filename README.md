@@ -25,8 +25,8 @@ Voice Edge can be used as a local voice assistant, inference gateway, MCP server
 - Microphone permission
 - Accessibility permission
 - Input Monitoring permission
-
-Apple Silicon is recommended for MLX-based inference.
+- [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync)
+- [continue](https://github.com/woniuzfb/continue)
 
 ## Installation
 
@@ -57,7 +57,7 @@ uv run start --http
 Default ports:
 
 - MCP: `5001`
-- HTTP: `5000`
+- HTTP: `5002`
 
 The first startup may take longer while local components initialize.
 
@@ -348,7 +348,7 @@ models:
   - name: Local
     provider: Local
     model: AUTODETECT
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - chat
     capabilities:
@@ -356,7 +356,7 @@ models:
   - name: LLM:m365-claude-opus
     provider: Local
     model: LLM:m365-claude-opus
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - chat
     defaultCompletionOptions:
@@ -369,7 +369,7 @@ models:
   - name: LLM:m365-chatgpt-5.6
     provider: Local
     model: LLM:m365-chatgpt-5.6
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - chat
     defaultCompletionOptions:
@@ -382,19 +382,19 @@ models:
   - name: embed:jina-v5
     provider: Local
     model: embed:jina-v5
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - embed
   - name: rerank:jina-v3
     provider: Local
     model: embed:jina-v3
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - rerank
   - name: FIM:qwen-2.5-coder-1.5B
     provider: Local
     model: FIM:qwen-2.5-coder-1.5B
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - edit
       - apply
@@ -402,7 +402,7 @@ models:
   - name: FIM:qwen-2.5-coder-7B
     provider: Local
     model: FIM:qwen-2.5-coder-7B
-    apiBase: http://localhost:5000/v1/
+    apiBase: http://localhost:5002/v1/
     roles:
       - edit
       - apply
