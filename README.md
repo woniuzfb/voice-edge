@@ -459,6 +459,7 @@ models:
 Enable only the diagnostics needed for the active provider:
 
 ```bash
+export VE_XIAOAI_LOG_DEBUG=1
 export VE_DOUBAO_LOG_DEBUG=1
 export VE_QWEN_LOG_DEBUG=1
 export VE_DEEPSEEK_LOG_DEBUG=1
