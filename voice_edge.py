@@ -150,22 +150,22 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1334
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1344
 #    VE_VLM_KV_BITS                         3.5                                          L473
 #    VE_VLM_KV_GROUP_SIZE                   None                                         L478
 #    VE_VLM_QUANTIZED_KV_START              "0"                                          L483
 #    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L484
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L917
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L922
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L925
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L929
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L938
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L946
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1001
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1452
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L40545
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L41194
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L41206
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L927
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L932
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L935
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L939
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L948
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L956
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1011
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1462
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41265
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L41914
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L41926
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
 #    VE_APP_LOG_DEBUG                           "0"                                      L363
@@ -195,158 +195,158 @@ if sys.version_info < (3, 11):
 #    VE_XIAOAI_LOG_DEBUG                        "0"                                      L399
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L40431
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L40454
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L40481
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L40540
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L41083
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L41086
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L41094
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L41106
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L41108
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L41117
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L41123
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L41129
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L41145
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L41150
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L41157
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L41164
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L41173
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L41180
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L41228
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L42996
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L42997
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L42998
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41151
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41174
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41201
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41260
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L41803
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L41806
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L41814
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L41826
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L41828
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L41837
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L41843
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L41849
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L41865
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L41870
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L41877
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L41884
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L41893
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L41900
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L41948
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43716
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43717
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43718
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13544
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13546
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L13547
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13553
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13555
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13558
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13566
-#    QWEN_COOKIE_HEADER                     ""                                           L13570
-#    QWEN_TOKENS                            ""                                           L13578
-#    QWEN_TOKEN                             ""                                           L13579
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13568
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13570
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L13571
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13577
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13579
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13582
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13590
+#    QWEN_COOKIE_HEADER                     ""                                           L13594
+#    QWEN_TOKENS                            ""                                           L13602
+#    QWEN_TOKEN                             ""                                           L13603
 #
 #  【DeepSeek】
 #    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L580
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15213
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L15214
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15216
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15218
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15220
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15223
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15226
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15229
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15350
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15353
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15237
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L15238
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15240
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15242
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15244
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15247
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15250
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15253
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15374
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15377
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17898
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17899
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17905
-#    DOUBAO_FP                              "doubao_voice_edge"                          L17906
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17914
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17916
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17919
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17921
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17923
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L17927
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L17954
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L17957
-#    DOUBAO_WEB_AID                         "497858"                                     L17959
-#    DOUBAO_WEB_REGION                      "CN"                                         L17960
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L17961
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L17962
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L17964
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18001
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L17993
-#    DOUBAO_COOKIE_HEADER                   ""                                           L18229
-#    DOUBAO_SESSION_IDS                     ""                                           L18271
-#    DOUBAO_SESSION_ID                      ""                                           L18275
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18786
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18795
-#    DOUBAO_SESSION_ID_SS                   ""                                           L18977
-#    DOUBAO_SID_TT                          ""                                           L18980
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17922
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17923
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17929
+#    DOUBAO_FP                              "doubao_voice_edge"                          L17930
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17938
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17940
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17943
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17945
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17947
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L17951
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L17978
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L17981
+#    DOUBAO_WEB_AID                         "497858"                                     L17983
+#    DOUBAO_WEB_REGION                      "CN"                                         L17984
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L17985
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L17986
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L17988
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18025
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18017
+#    DOUBAO_COOKIE_HEADER                   ""                                           L18253
+#    DOUBAO_SESSION_IDS                     ""                                           L18295
+#    DOUBAO_SESSION_ID                      ""                                           L18299
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18810
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18819
+#    DOUBAO_SESSION_ID_SS                   ""                                           L19001
+#    DOUBAO_SID_TT                          ""                                           L19004
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L23366
-#    SHAREPOINT_HOME_URL                    ""                                           L23367
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23368
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23369
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23396
-#    M365_BRIDGE_PORT                       "5002"                                       L23397
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23398
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L23399
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23401
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23404
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L23407
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23415
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L23417
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23437
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23444
-#    M365_CONV_MAP_MAX                      "1024"                                       L23613
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L23935
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L23953
+#    M365_ENTRY_URL                         ""                                           L23390
+#    SHAREPOINT_HOME_URL                    ""                                           L23391
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23392
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23393
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23420
+#    M365_BRIDGE_PORT                       "5002"                                       L23421
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23422
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L23423
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23425
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23428
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L23431
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23439
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L23441
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23461
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23468
+#    M365_CONV_MAP_MAX                      "1024"                                       L23637
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24284
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24302
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L35789
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L35998
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36060
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36082
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36089
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L36184
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36186
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36190
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L37383
-#    MI_USER                                ""                                           L37109
-#    MI_PASS                                ""                                           L37135
-#    XIAOAI_HARDWARE                        "LX06"                                       L37137
-#    MI_DID                                 ""                                           L37139
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L37142
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L37146
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L37149
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L37155
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L37165
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L37185
-#    XIAOAI_VOICE                           "zh"                                         L37187
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L37189
-#    XIAOAI_MAX_TOKENS                      "500"                                        L37192
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L37195
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L37198
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L37202
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L37206
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L37211
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L37216
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L37221
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L37226
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L37231
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L37239
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L37244
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L37249
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L37254
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L37259
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L37264
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L37269
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L37272
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L37276
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L37280
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L37284
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L37289
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L37294
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L37298
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L37301
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L37304
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L37307
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L37310
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L37313
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L37316
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L37319
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L37326
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L37332
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L37336
+#    XIAOAI_ENABLED                         "0"                                          L36509
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36718
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36780
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36802
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36809
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L36904
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36906
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36910
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L38103
+#    MI_USER                                ""                                           L37829
+#    MI_PASS                                ""                                           L37855
+#    XIAOAI_HARDWARE                        "LX06"                                       L37857
+#    MI_DID                                 ""                                           L37859
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L37862
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L37866
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L37869
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L37875
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L37885
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L37905
+#    XIAOAI_VOICE                           "zh"                                         L37907
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L37909
+#    XIAOAI_MAX_TOKENS                      "500"                                        L37912
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L37915
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L37918
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L37922
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L37926
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L37931
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L37936
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L37941
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L37946
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L37951
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L37959
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L37964
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L37969
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L37974
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L37979
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L37984
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L37989
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L37992
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L37996
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38000
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38004
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38009
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38014
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38018
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38021
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38024
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38027
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38030
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38033
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L38036
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38039
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38046
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38052
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L38056
 #
 # 合计 183 个唯一环境变量。
 # ============================================================================
@@ -588,6 +588,8 @@ BROWSER_MODEL_METADATA = {
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": True,
         "relay_prompt": True,
+        "deepseek_harness": True,
+        "deepseek_harness_tools": False,
     },
     "LLM:m365-claude-sonnet": {
         "owned_by": "m365-copilot-browser",
@@ -595,6 +597,8 @@ BROWSER_MODEL_METADATA = {
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": True,
         "relay_prompt": True,
+        "deepseek_harness": True,
+        "deepseek_harness_tools": False,
     },
     "LLM:m365-chatgpt-5.6": {
         "owned_by": "m365-copilot-browser",
@@ -602,6 +606,8 @@ BROWSER_MODEL_METADATA = {
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": True,
         "relay_prompt": True,
+        "deepseek_harness": True,
+        "deepseek_harness_tools": False,
     },
     "LLM:m365-chatgpt-5.6-quick": {
         "owned_by": "m365-copilot-browser",
@@ -609,6 +615,8 @@ BROWSER_MODEL_METADATA = {
         "capabilities": ["chat", "reasoning", "web", "work"],
         "supports_tools": True,
         "relay_prompt": True,
+        "deepseek_harness": True,
+        "deepseek_harness_tools": False,
     },
     "LLM:m365-chatgpt-5.5": {
         "owned_by": "m365-copilot-browser",
@@ -616,6 +624,8 @@ BROWSER_MODEL_METADATA = {
         "capabilities": ["chat", "web", "work"],
         "supports_tools": True,
         "relay_prompt": True,
+        "deepseek_harness": True,
+        "deepseek_harness_tools": False,
     },
     "LLM:doubao": {
         "owned_by": "doubao-browser",
@@ -2835,6 +2845,16 @@ class PreparedTurn:
     # read this instead of re-detecting (e.g. m365 gates its attempt_completion
     # envelope on client_kind == "cline").
     client_kind: str = "plain"
+    # The user's fresh turn text (relay-extracted, envelope-stripped) — the
+    # exact body compose_turn_text sends for a fresh turn. "" when this
+    # submission is a tool-result continuation (the stale user text must not
+    # be re-mirrored) or when the turn carries attachments only.
+    user_text: str = ""
+    # True when this submission opens a fresh user turn (no pending tool
+    # results). user_text=="" alone cannot distinguish an attachment-only
+    # fresh turn from a continuation, and the mirror must re-embed inline
+    # images only on fresh turns.
+    fresh_user_turn: bool = False
 
     def new_transpiler(self):
         """A fresh stream transpiler for this model's tool config, or None when
@@ -2905,6 +2925,8 @@ class BrowserRelay:
                 policy=RelayPolicy(),  # all-False: pure passthrough
                 tools_active=False,
                 client_kind=turn.client_kind,
+                user_text=turn.user_text,
+                fresh_user_turn=not turn.is_tool_continuation,
             )
 
         policy = self.policy_for(model_id)
@@ -2942,6 +2964,8 @@ class BrowserRelay:
             allowed_names=allowed_names,
             tool_choice_mode=tool_choice_mode,
             client_kind=turn.client_kind,
+            user_text=turn.user_text if not turn.is_tool_continuation else "",
+            fresh_user_turn=not turn.is_tool_continuation,
         )
 
     @staticmethod
@@ -23920,14 +23944,339 @@ def _m365_remember_conversation(
     _m365_http_set_conversation_id(cid, tone)
 
 
-def _m365_message_text(content) -> str:
-    if isinstance(content, list):
-        return "\n".join(
-            str(part.get("text", ""))
-            for part in content
-            if isinstance(part, dict) and part.get("type") in {"text", "input_text"}
-        ).strip()
-    return str(content or "").strip()
+# ==================== DeepSeek Harness bridge (M365 models) ====================
+# When a model opts in via BROWSER_MODEL_METADATA["deepseek_harness"] and the
+# plugin endpoint is configured, each request is bound to a Harness session
+# through the conversation identity (_m365_conversation_key) and model steps
+# are mirrored into the session log. Tool schemas are merged into the relayed
+# tool set (and Harness tool calls are executed by the plugin instead of being
+# returned to Continue) ONLY when the per-model "deepseek_harness_tools"
+# switch is True — it defaults to False, so the default bridge is a passive
+# session logger. The bridge boundary is strict: the plugin never returns
+# model context, and this file never asks for any — the model request, the
+# tool loop, and the Continue-visible output stay owned here.
+VOICE_EDGE_HARNESS_URL = os.getenv("VOICE_EDGE_HARNESS_URL", "").strip().rstrip("/")
+VOICE_EDGE_HARNESS_TOKEN = os.getenv("VOICE_EDGE_HARNESS_TOKEN", "").strip()
+VOICE_EDGE_HARNESS_TIMEOUT = max(
+    3.0, float(os.getenv("VOICE_EDGE_HARNESS_TIMEOUT", "30"))
+)
+VOICE_EDGE_HARNESS_MAX_STEPS = max(
+    1, int(os.getenv("VOICE_EDGE_HARNESS_MAX_STEPS", "8"))
+)
+# Tool executions outlive the sync budget (the plugin's own default tool
+# timeout is 120s), so the execute call gets its own floor.
+VOICE_EDGE_HARNESS_TOOL_TIMEOUT = max(
+    VOICE_EDGE_HARNESS_TIMEOUT,
+    float(os.getenv("VOICE_EDGE_HARNESS_TOOL_TIMEOUT", "150")),
+)
+# The user-message mirror sends the final prompt verbatim; the plugin's
+# maxBodyBytes request-body cap is the single size bound.
+
+
+def _harness_enabled(model_name: str) -> bool:
+    """True only for metadata-opted-in models with a configured endpoint.
+    Everything else takes the historical direct path byte-for-byte."""
+    if not (VOICE_EDGE_HARNESS_URL and VOICE_EDGE_HARNESS_TOKEN):
+        return False
+    return bool((BROWSER_MODEL_METADATA.get(model_name) or {}).get("deepseek_harness"))
+
+
+def _harness_tools_enabled(model_name: str) -> bool:
+    """deepseek_harness_tools metadata switch (default False). When off, the
+    bridge still binds the session and mirrors turns, but NO Harness tool
+    schemas are injected into the relayed prompt: the model is never told
+    about the tools, and the ownership name set stays empty so no parsed
+    tool call can ever be classified as harness-owned (hence never executed
+    by the plugin)."""
+    return bool(
+        (BROWSER_MODEL_METADATA.get(model_name) or {}).get("deepseek_harness_tools")
+    )
+
+
+async def _harness_post(path: str, payload: dict, timeout_seconds: float = 0.0) -> dict:
+    """One JSON round-trip to the Harness voice-edge plugin. Raises on
+    transport or HTTP error; each caller picks its own failure stance."""
+    if not VOICE_EDGE_HARNESS_URL:
+        raise RuntimeError("harness bridge is not configured")
+    effective = timeout_seconds if timeout_seconds > 0 else VOICE_EDGE_HARNESS_TIMEOUT
+    async with aiohttp.ClientSession(
+        timeout=aiohttp.ClientTimeout(total=effective),
+        headers={
+            "authorization": f"Bearer {VOICE_EDGE_HARNESS_TOKEN}",
+            "content-type": "application/json",
+        },
+    ) as session:
+        async with session.post(
+            f"{VOICE_EDGE_HARNESS_URL}{path}", json=payload
+        ) as response:
+            data = await response.json(content_type=None)
+            if response.status >= 400:
+                message = (
+                    data.get("error", {}).get("message")
+                    if isinstance(data, dict)
+                    else None
+                )
+                raise RuntimeError(
+                    f"harness {path} -> HTTP {response.status}: {message or data}"
+                )
+            if not isinstance(data, dict):
+                raise RuntimeError(f"harness {path} -> non-object response")
+            return data
+
+
+async def _harness_user_message(bridge: dict, model_name: str, prompt: str) -> None:
+    """Record the user's fresh turn text as the turn's user message, verbatim
+    — no truncation. The text is the relay-extracted prompt body (the FIRST
+    extractor's output, not a second parser), minus transport framing, so
+    the mirror shows the conversation the model saw. Fail-open like every
+    mirror tap."""
+    bridge["sequence"] += 1
+    payload: dict = {
+        "conversation_key": bridge["key"],
+        "type": "voice-edge/sync",
+        "request_id": uuid.uuid4().hex,
+        "model": model_name,
+        "messages": [
+            {
+                "role": "user",
+                "text": prompt,
+            }
+        ],
+    }
+    if bridge.get("boot_key"):
+        payload["boot_key"] = bridge["boot_key"]
+    if bridge.get("full_key"):
+        payload["full_key"] = bridge["full_key"]
+    try:
+        await _harness_post("/event", payload)
+    except Exception as exc:
+        _m365_log.warning("[harness] user message mirror failed: %s", exc)
+
+
+def _harness_tools_to_openai(tools: list, client_names: set) -> tuple[list, set]:
+    """Convert Harness tool schemas into OpenAI function tools for relay
+    injection. A name colliding with a client-provided tool stays CLIENT-owned
+    (client wins), so the bridge can never hijack an MCP/IDE tool."""
+    converted: list = []
+    names: set = set()
+    for tool in tools or []:
+        if not isinstance(tool, dict):
+            continue
+        name = str(tool.get("name") or "").strip()
+        if not name or name in client_names:
+            continue
+        parameters = tool.get("parameters")
+        converted.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": str(tool.get("description") or ""),
+                    "parameters": (
+                        parameters
+                        if isinstance(parameters, dict)
+                        else {"type": "object", "properties": {}}
+                    ),
+                },
+            }
+        )
+        names.add(name)
+    return converted, names
+
+
+def _harness_client_tool_names(body: dict) -> set:
+    names: set = set()
+    for tool in (body or {}).get("tools") or []:
+        if not isinstance(tool, dict):
+            continue
+        fn = tool.get("function")
+        if isinstance(fn, dict):
+            name = str(fn.get("name") or "").strip()
+            if name:
+                names.add(name)
+    return names
+
+
+async def _harness_begin(
+    model_name: str, body: dict, messages: list, tone: str
+) -> Optional[dict]:
+    """Bind this client conversation to a Harness session and fetch the
+    agent-scoped Harness tool schemas. Bind records nothing — every mirror
+    append is a separate explicit tap by the caller. Fail-open: any error
+    logs and returns None, and the request then runs exactly as it did
+    before the bridge."""
+    full_key, boot_key = _m365_conversation_key(tone, messages)
+    conversation_key = full_key or boot_key
+    if not conversation_key:
+        return None
+    try:
+        response = await _harness_post(
+            "/session/bind",
+            {
+                "conversation_key": conversation_key,
+                "boot_key": boot_key,
+                "full_key": full_key,
+                "model": model_name,
+            },
+        )
+    except Exception as exc:
+        _m365_log.warning(
+            "[harness] session bind failed; continuing without bridge: %s", exc
+        )
+        return None
+    raw_tools = response.get("tools")
+    if _harness_tools_enabled(model_name):
+        openai_tools, names = _harness_tools_to_openai(
+            raw_tools if isinstance(raw_tools, list) else [],
+            _harness_client_tool_names(body),
+        )
+    else:
+        # deepseek_harness_tools switch (default False): bind and mirror
+        # only. Empty injection set AND empty ownership names — no schema
+        # reaches the prompt and no parsed call is harness-executed.
+        openai_tools, names = [], set()
+    try:
+        sequence = int(response.get("sequence") or 0)
+    except (TypeError, ValueError):
+        # A malformed optional sequence must not violate the bridge's
+        # fail-open contract or take down the M365 request path.
+        sequence = 0
+    return {
+        "key": str(response.get("conversation_key") or conversation_key),
+        "session_id": str(response.get("harness_session_id") or ""),
+        "sequence": sequence,
+        "openai_tools": openai_tools,
+        "names": names,
+        "boot_key": boot_key or "",
+        "full_key": full_key or "",
+    }
+
+
+async def _harness_mirror_event(
+    bridge: dict,
+    *,
+    kind: str,
+    text: str = "",
+    reasoning: str = "",
+    tool_calls: Optional[list] = None,
+    finish_reason: str = "",
+) -> None:
+    """Mirror one model step into the Harness session log. Mirror failures are
+    logged and dropped — the client-visible stream is never hostage to the
+    bridge."""
+    bridge["sequence"] += 1
+    payload: dict = {
+        "conversation_key": bridge["key"],
+        "type": "voice-edge/model-event",
+        "sequence": bridge["sequence"],
+        "kind": kind,
+    }
+    if text:
+        payload["text"] = text
+    if reasoning:
+        payload["reasoning"] = reasoning
+    if tool_calls:
+        payload["tool_calls"] = [
+            {
+                "id": str(call.get("id") or ""),
+                "name": str((call.get("function") or {}).get("name") or ""),
+                "arguments": str((call.get("function") or {}).get("arguments") or ""),
+            }
+            for call in tool_calls
+        ]
+    if finish_reason:
+        payload["finish_reason"] = finish_reason
+    try:
+        await _harness_post("/event", payload)
+    except Exception as exc:
+        _m365_log.warning("[harness] model event mirror failed: %s", exc)
+
+
+def _harness_split_calls(calls: list, harness_names: set) -> tuple[list, list]:
+    """Split parsed tool calls into (harness-owned, client-owned)."""
+    harness_calls = [
+        c
+        for c in calls
+        if str((c.get("function") or {}).get("name") or "") in harness_names
+    ]
+    client_calls = [
+        c
+        for c in calls
+        if str((c.get("function") or {}).get("name") or "") not in harness_names
+    ]
+    return harness_calls, client_calls
+
+
+async def _harness_execute_tool(bridge: dict, call: dict) -> "ToolResult":
+    """Execute one Harness tool call through the plugin and shape the outcome
+    as the ToolResult the relay's tool-results block expects. Transport and
+    tool errors both become error result TEXT so the model can react."""
+    fn = call.get("function") or {}
+    name = str(fn.get("name") or "")
+    call_id = str(call.get("id") or "")
+    raw_arguments = fn.get("arguments")
+    arguments: object = {}
+    if isinstance(raw_arguments, str) and raw_arguments.strip():
+        try:
+            arguments = json.loads(raw_arguments)
+        except ValueError:
+            arguments = {"_raw": raw_arguments}
+    elif isinstance(raw_arguments, (dict, list)):
+        arguments = raw_arguments
+    try:
+        response = await _harness_post(
+            "/tool/execute",
+            {
+                "conversation_key": bridge["key"],
+                "call_id": call_id,
+                "name": name,
+                "arguments": arguments,
+            },
+            timeout_seconds=VOICE_EDGE_HARNESS_TOOL_TIMEOUT,
+        )
+        result = response.get("tool_result") or {}
+        text = str(result.get("text") or "")
+        if result.get("isError"):
+            text = f"[harness tool error] {text}"
+    except Exception as exc:
+        text = f"[harness tool transport error] {exc}"
+    return ToolResult(name=name, call_id=call_id, content=text)
+
+
+def _harness_client_refusal(call: dict) -> "ToolResult":
+    """Synthetic error result for a CLIENT-owned tool call that arrived in the
+    same batch as Harness calls: the client executes its own tools on the next
+    OpenAI turn, so co-hosted calls are asked to retry separately."""
+    fn = call.get("function") or {}
+    return ToolResult(
+        name=str(fn.get("name") or ""),
+        call_id=str(call.get("id") or ""),
+        content=(
+            "[voice-edge] this tool is executed by the client, but it was "
+            "called in the same step as Harness-hosted tools, which are "
+            "handled internally. Call it again in a separate step."
+        ),
+    )
+
+
+async def _harness_finish(bridge: Optional[dict], status: str = "completed") -> None:
+    """Close the turn in the Harness session (finish marker + durability
+    checkpoint). Fire-and-log like the mirror."""
+    if not bridge:
+        return
+    bridge["sequence"] += 1
+    try:
+        await _harness_post(
+            "/event",
+            {
+                "conversation_key": bridge["key"],
+                "type": "voice-edge/finish",
+                "sequence": bridge["sequence"],
+                "status": status,
+            },
+        )
+    except Exception as exc:
+        _m365_log.warning("[harness] turn finish failed: %s", exc)
 
 
 M365_UPLOAD_MAX_BYTES = max(
@@ -24338,6 +24687,9 @@ async def _client_collect_attachments(messages: list) -> list[dict]:
                 "mimeType": effective_mime,
                 "size": len(data),
                 "data": base64.b64encode(data).decode("ascii"),
+                # Preserve the originating multimodal content slot so Harness
+                # can mirror text and images in the exact order the user sent.
+                "content_index": index,
             }
         )
     _m365_attachment_debug(
@@ -24535,6 +24887,58 @@ class ClineEnvelope:
         if not self.active or self._suppressed:
             return str(text or "")
         return _cline_wrap_result(text)
+
+
+def _harness_inline_image_markdown(attachments: list[dict]) -> str:
+    """Rebuild the user's inline images as markdown data URIs for the mirror.
+
+    The m365 egress uploads them for the vision model (attachment channel),
+    so the extracted turn text carries no trace; the Harness mirror records
+    what the user actually sent. kind=="file" attachments (documents) stay
+    out — no faithful chat rendering exists for them.
+    """
+    return "".join(
+        f"\n\n![{a['name']}](data:{a['mimeType']};base64,{a['data']})"
+        for a in attachments
+        if a.get("kind") == "image"
+    )
+
+
+def _harness_ordered_user_content(message: dict, attachments: list[dict]) -> str:
+    """Mirror a fresh multimodal user turn without moving its inline images.
+
+    Text is cleaned by the same prompt extractor used for the model-facing user
+    body. Successfully collected image parts are replaced in their original
+    content-list slots with markdown data URIs; documents remain attachment-only.
+    """
+    content = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(content, list):
+        return _client_prompt_from_message(message) + _harness_inline_image_markdown(
+            attachments
+        )
+
+    images_by_index = {
+        a.get("content_index"): a
+        for a in attachments
+        if a.get("kind") == "image" and isinstance(a.get("content_index"), int)
+    }
+    logical_parts: list[str] = []
+    for index, part in enumerate(content):
+        if not isinstance(part, dict):
+            continue
+        kind = str(part.get("type") or "").strip().lower()
+        if kind in {"text", "input_text"}:
+            logical_parts.append(str(part.get("text") or ""))
+            continue
+        image = images_by_index.get(index)
+        if image is not None:
+            logical_parts.append(
+                f"\n\n![{image['name']}]"
+                f"(data:{image['mimeType']};base64,{image['data']})\n\n"
+            )
+    return _client_prompt_from_message(
+        {"role": "user", "content": "".join(logical_parts)}
+    )
 
 
 def _client_extract_prompt(messages: list) -> str:
@@ -25875,6 +26279,28 @@ async def _direct_m365_chat_response(
     # supports_tools is True for the tool-capable m365 models,
     # so <tool_use_instructions> ARE injected and Seam #2 (below) is live;
     _m365_bypass = BrowserRelay.should_bypass(body)
+    # Seam #3 (Harness bridge): when the model opted in via metadata and the
+    # plugin endpoint is configured, bind this conversation to a Harness
+    # session and — only while the per-model deepseek_harness_tools switch
+    # (default False) is on — merge the agent-scoped Harness tool schemas
+    # into the body the relay composes, so tool instructions AND the
+    # transpiler's allowed_names cover them. With the switch off the bridge
+    # still binds and mirrors, but injects nothing and owns no tool names.
+    # Bind is content-free; the user-message mirror taps the FINAL prompt
+    # below, after prepare(). Uses the ORIGINAL messages (the conversation
+    # identity pre-dates the offload rewrite below).
+    # Fail-open: a bridge outage leaves body/messages untouched and the turn
+    # runs exactly as it did before the bridge existed.
+    _harness: Optional[dict] = None
+    if not _m365_bypass and _harness_enabled(model_name):
+        _harness = await _harness_begin(
+            model_name, body, messages, M365_BROWSER_MODEL_TONES[model_name]
+        )
+        if _harness is not None and _harness["openai_tools"]:
+            body = {
+                **body,
+                "tools": [*(body.get("tools") or []), *_harness["openai_tools"]],
+            }
     # Offload oversized client tool results (big MCP read_file outputs, etc.) to
     # SharePoint attachments BEFORE composing the prompt, so a couple of large
     # results don't crowd the user's request out of Copilot's context window.
@@ -25912,6 +26338,13 @@ async def _direct_m365_chat_response(
             {"error": {"message": str(exc), "type": "m365_file_error"}},
             status_code=400,
         )
+    # Snapshot the fresh user turn before offloaded tool-result attachments join
+    # this list. Multimodal content is rebuilt from the original content slots,
+    # so images remain between the same surrounding text instead of moving to
+    # the end of the mirrored message.
+    _mirror_user_content = _harness_ordered_user_content(
+        _client_latest_user_message(messages), attachments
+    )
     # Append the offloaded tool-result attachments (built above from oversized
     # MCP results) so they upload alongside the user's inline files and the
     # longer request-idle allowance below accounts for their bytes too.
@@ -25923,6 +26356,18 @@ async def _direct_m365_chat_response(
         return JSONResponse(
             {"error": f"No text or file provided for {model_name}"}, status_code=400
         )
+    # Mirror the user turn NOW: `user_text` is the relay-extracted turn body —
+    # the same text `prompt` carries between its transport framing (relayed
+    # system prose, <tool_use_instructions> XML). Mirroring the body, not the
+    # composed prompt, keeps the user bubble readable while staying
+    # extractor-identical to what the model received. The user's inline images
+    # ride the m365 attachment egress instead of the text, so they are
+    # re-embedded here as markdown data URIs — the mirror records the user's
+    # actual turn, the model keeps its native channel. Continuations mirror
+    # nothing (stale text and already-mirrored images must not re-appear).
+    if _harness is not None and _m365_prepared.fresh_user_turn:
+        if _mirror_user_content:
+            await _harness_user_message(_harness, model_name, _mirror_user_content)
     tone = M365_BROWSER_MODEL_TONES[model_name]
     request_idle_seconds = _m365_request_idle_seconds(attachments)
     # Whether Continue asked for reasoning to be surfaced. Mirrors the request
@@ -26025,6 +26470,11 @@ async def _direct_m365_chat_response(
     )
 
     async def events():
+        # Harness tool steps resubmit a follow-up prompt into the SAME M365
+        # conversation, replacing the stream resources below; the single
+        # consume loop then reads the new queue unchanged. nonlocal because the
+        # names live on the enclosing handler (shared with the non-stream path).
+        nonlocal future, event_queue, consumer_stopped, output_overflowed
         role_sent = False
         thinking_hint_sent = False
         # Seam #2 (tool interception). ACTIVE for supports_tools=True models:
@@ -26037,6 +26487,35 @@ async def _direct_m365_chat_response(
         # interact — the tool_call branch below intentionally emits NO envelope.
         _m365_tool_tp = _m365_prepared.new_transpiler()
         deadline = time.monotonic() + M365_FIRST_EVENT_TIMEOUT
+        # Harness bridge per-turn state (all inert when _harness is None):
+        # the actual M365 ConversationId for follow-up submits, the internal
+        # tool-step counter, and the current step's visible text / reasoning
+        # accumulators for the model-event mirror.
+        _harness_step = 0
+        _stream_cid = ""
+        _step_text: list = []
+        _step_reasoning: list = []
+
+        async def _harness_mirror_step(
+            finish_reason: str, calls: Optional[list] = None
+        ) -> None:
+            if _harness is None:
+                return
+            await _harness_mirror_event(
+                _harness,
+                kind="step",
+                text="".join(_step_text),
+                reasoning="".join(_step_reasoning),
+                tool_calls=calls,
+                finish_reason=finish_reason,
+            )
+            _step_text.clear()
+            _step_reasoning.clear()
+
+        async def _harness_close(status: str) -> None:
+            if _harness is not None:
+                await _harness_finish(_harness, status)
+
         # [consumer trace] running total of answer characters actually yielded
         # into the SSE response toward Continue. Compare against the producer's
         # emitted_chars/best_digest: if they match, every byte left Python intact
@@ -26088,6 +26567,10 @@ async def _direct_m365_chat_response(
                                     }
                                 }
                             )
+                        await _harness_mirror_step(
+                            "error" if terminal_error else "stop"
+                        )
+                        await _harness_close("error" if terminal_error else "completed")
                         yield _make_chat_finish_chunk(
                             prompt_id=completion_id,
                             created=created,
@@ -26106,6 +26589,7 @@ async def _direct_m365_chat_response(
                             }
                         )
                         future.cancel()
+                        await _harness_close("error")
                         break
                     continue
                 kind = event.get("type")
@@ -26134,11 +26618,14 @@ async def _direct_m365_chat_response(
                 if kind == "conversation":
                     cid = str(event.get("conversation_id") or "")
                     if cid:
+                        _stream_cid = cid
                         _remember_conversation(cid)
                     continue
                 if kind == "reasoning":
                     content = str(event.get("content") or "")
                     if content:
+                        if _harness is not None:
+                            _step_reasoning.append(content)
                         yield _make_chat_reasoning_chunk(
                             prompt_id=completion_id,
                             created=created,
@@ -26170,6 +26657,12 @@ async def _direct_m365_chat_response(
                         # whole chunk was model envelope tag(s) or a held-back
                         # partial tag; nothing to yield this frame.
                         continue
+                    if _harness is not None:
+                        # Mirror accumulates the VISIBLE text only (transpiler
+                        # passthrough, model envelope tags stripped) — exactly
+                        # what Continue sees, before the transport's own
+                        # envelope prefix is prepended below.
+                        _step_text.append(content)
                     if VE_M365_LOG_RELAY_TRACE:
                         # Count the answer delta actually yielded (raw answer
                         # text, model envelope tags already stripped; the
@@ -26198,6 +26691,7 @@ async def _direct_m365_chat_response(
                 elif kind == "done":
                     cid = str(event.get("conversation_id") or "")
                     if cid:
+                        _stream_cid = cid
                         _remember_conversation(cid)
                     if _m365_tool_tp is not None:
                         # Seam #2 terminal (dormant while tp is None). A parsed
@@ -26205,6 +26699,118 @@ async def _direct_m365_chat_response(
                         # instead of a normal stop; otherwise any held-back tail
                         # (no tool block) is flushed as a final content delta.
                         _m365_calls = _m365_tool_tp.finish_tool_calls()
+                        if _m365_calls and _harness is not None:
+                            # Seam #3 terminal: Harness-owned calls are executed
+                            # by the plugin and NEVER reach Continue; the results
+                            # go back into the same M365 conversation as a
+                            # <tool_results> follow-up and the loop continues on
+                            # the new stream. Client-owned calls in the same
+                            # batch get a synthetic refusal result (the client
+                            # executes its own tools on the next OpenAI turn, so
+                            # a co-hosted call is asked to retry separately).
+                            _h_calls, _c_calls = _harness_split_calls(
+                                _m365_calls, _harness["names"]
+                            )
+                            if _h_calls:
+                                await _harness_mirror_step(
+                                    "tool_calls", calls=_m365_calls
+                                )
+                                if _harness_step >= VOICE_EDGE_HARNESS_MAX_STEPS:
+                                    _m365_log.warning(
+                                        "[harness] tool step limit %d reached; "
+                                        "ending turn",
+                                        VOICE_EDGE_HARNESS_MAX_STEPS,
+                                    )
+                                    _limit_note = (
+                                        "\n[voice-edge] Harness tool step limit "
+                                        f"({VOICE_EDGE_HARNESS_MAX_STEPS}) reached; "
+                                        "stopping the internal tool loop."
+                                    )
+                                    yield _chat_sse_data(
+                                        {
+                                            "id": completion_id,
+                                            "object": "chat.completion.chunk",
+                                            "created": created,
+                                            "model": model_name,
+                                            "choices": [
+                                                {
+                                                    "index": 0,
+                                                    "delta": (
+                                                        {
+                                                            "role": "assistant",
+                                                            "content": _limit_note,
+                                                        }
+                                                        if not role_sent
+                                                        else {"content": _limit_note}
+                                                    ),
+                                                    "finish_reason": None,
+                                                }
+                                            ],
+                                        }
+                                    )
+                                    role_sent = True
+                                    await _harness_close("max-steps")
+                                    yield _chat_sse_data(
+                                        {
+                                            "id": completion_id,
+                                            "object": "chat.completion.chunk",
+                                            "created": created,
+                                            "model": model_name,
+                                            "choices": [
+                                                {
+                                                    "index": 0,
+                                                    "delta": {},
+                                                    "finish_reason": "stop",
+                                                }
+                                            ],
+                                            "conversation_id": cid,
+                                        }
+                                    )
+                                    yield _SSE_DONE_FRAME
+                                    return
+                                _harness_step += 1
+                                _results = []
+                                # Tool execution can legitimately run for up to
+                                # VOICE_EDGE_HARNESS_TOOL_TIMEOUT. Keep the SSE
+                                # connection active while preserving the existing
+                                # serial execution and result ordering semantics.
+                                for _c in _h_calls:
+                                    _tool_task = asyncio.create_task(
+                                        _harness_execute_tool(_harness, _c)
+                                    )
+                                    try:
+                                        while not _tool_task.done():
+                                            _done, _pending = await asyncio.wait(
+                                                {_tool_task}, timeout=15.0
+                                            )
+                                            if not _done:
+                                                yield ": keepalive\n\n"
+                                        _results.append(await _tool_task)
+                                    finally:
+                                        if not _tool_task.done():
+                                            _tool_task.cancel()
+                                _results.extend(
+                                    _harness_client_refusal(_c) for _c in _c_calls
+                                )
+                                _follow = build_tool_results_block(_results)
+                                # Release the finished producer BEFORE swapping
+                                # stream resources; its done event already
+                                # arrived, so this never truncates output.
+                                consumer_stopped.set()
+                                (
+                                    future,
+                                    event_queue,
+                                    consumer_stopped,
+                                    output_overflowed,
+                                ) = M365_BROWSER_RUNTIME.submit_chat_stream(
+                                    _follow,
+                                    _stream_cid or conversation_id,
+                                    tone,
+                                    [],
+                                )
+                                _m365_tool_tp = _m365_prepared.new_transpiler()
+                                deadline = time.monotonic() + M365_FIRST_EVENT_TIMEOUT
+                                continue
                         if _m365_calls:
                             # tool_call turn: no Cline envelope (future-proof for
                             # when m365 supports_tools is enabled).
@@ -26280,6 +26886,8 @@ async def _direct_m365_chat_response(
                                     "conversation_id": cid,
                                 }
                             )
+                            await _harness_mirror_step("tool_calls", calls=_m365_calls)
+                            await _harness_close("tool_calls")
                             yield _SSE_DONE_FRAME
                             return
                         _resid = _m365_tool_tp.flush_pending()
@@ -26288,6 +26896,9 @@ async def _direct_m365_chat_response(
                         # supports_tools=True models run the transpiler.
                         _resid = _m365_env.strip_envelope_tags(_resid)
                         if _resid:
+                            # The residual is client-visible output and belongs
+                            # to the current mirrored model step as well.
+                            _step_text.append(_resid)
                             yield _chat_sse_data(
                                 {
                                     "id": completion_id,
@@ -26331,6 +26942,8 @@ async def _direct_m365_chat_response(
                             }
                         )
                         role_sent = True
+                    await _harness_mirror_step("stop")
+                    await _harness_close("completed")
                     yield _chat_sse_data(
                         {
                             "id": completion_id,
@@ -26346,6 +26959,8 @@ async def _direct_m365_chat_response(
                     yield _SSE_DONE_FRAME
                     return
                 elif kind == "error":
+                    await _harness_mirror_step("error")
+                    await _harness_close("error")
                     yield _chat_sse_data(
                         {
                             "error": {
@@ -26374,6 +26989,17 @@ async def _direct_m365_chat_response(
     best = ""
     reasoning = ""
     conv = ""
+    # Harness bridge state for the non-streaming tool loop. The transpiler
+    # runs ONLY when the bridge is active: legacy non-stream never parsed
+    # tool blocks and returned the raw text (fence included), so when the
+    # final step carries client-owned calls the RAW accumulation is returned
+    # and that legacy shape survives byte-for-byte.
+    _harness_step = 0
+    _ns_tp = _m365_prepared.new_transpiler() if _harness is not None else None
+    _visible_steps: list = []  # passthrough text of completed harness steps
+    _step_visible: list = []  # passthrough text of the current step
+    _step_reasoning: list = []  # current-step reasoning for the mirror
+    _final_text: Optional[str] = None  # set when the bridge owns the content
     deadline = time.monotonic() + M365_FIRST_EVENT_TIMEOUT
     try:
         while True:
@@ -26386,13 +27012,16 @@ async def _direct_m365_chat_response(
                     except concurrent.futures.CancelledError:
                         pass
                     except Exception as exc:
+                        await _harness_finish(_harness, "error")
                         return JSONResponse(
                             {"error": {"message": str(exc), "type": "m365_error"}},
                             status_code=502,
                         )
+                    await _harness_finish(_harness, "completed")
                     break
                 if time.monotonic() >= deadline:
                     future.cancel()
+                    await _harness_finish(_harness, "error")
                     return JSONResponse(
                         {
                             "error": {
@@ -26417,16 +27046,105 @@ async def _direct_m365_chat_response(
                     conv = cid
                     _remember_conversation(cid)
             elif kind == "reasoning":
-                reasoning += str(event.get("content") or "")
+                _reason_piece = str(event.get("content") or "")
+                reasoning += _reason_piece
+                if _harness is not None:
+                    _step_reasoning.append(_reason_piece)
             elif kind == "delta":
-                best += str(event.get("content") or "")
+                _piece = str(event.get("content") or "")
+                best += _piece
+                if _ns_tp is not None:
+                    _passed = "".join(_ns_tp.push(_piece))
+                    if _passed:
+                        _step_visible.append(_passed)
             elif kind == "done":
                 cid = str(event.get("conversation_id") or "")
                 if cid:
                     conv = cid
                     _remember_conversation(cid)
+                if _ns_tp is not None and _harness is not None:
+                    _ns_calls = _ns_tp.finish_tool_calls()
+                    _h_calls, _c_calls = (
+                        _harness_split_calls(_ns_calls, _harness["names"])
+                        if _ns_calls
+                        else ([], [])
+                    )
+                    if _h_calls:
+                        # Same contract as the streaming loop: Harness calls
+                        # execute internally, client co-hosted calls get a
+                        # synthetic refusal, results re-enter the SAME M365
+                        # conversation as a <tool_results> follow-up.
+                        await _harness_mirror_event(
+                            _harness,
+                            kind="step",
+                            text="".join(_step_visible),
+                            reasoning="".join(_step_reasoning),
+                            tool_calls=_ns_calls,
+                            finish_reason="tool_calls",
+                        )
+                        _visible_steps.append("".join(_step_visible))
+                        _step_visible.clear()
+                        _step_reasoning.clear()
+                        if _harness_step >= VOICE_EDGE_HARNESS_MAX_STEPS:
+                            _m365_log.warning(
+                                "[harness] tool step limit %d reached; ending turn",
+                                VOICE_EDGE_HARNESS_MAX_STEPS,
+                            )
+                            _final_text = "".join(_visible_steps) + (
+                                "\n[voice-edge] Harness tool step limit "
+                                f"({VOICE_EDGE_HARNESS_MAX_STEPS}) reached; "
+                                "stopping the internal tool loop."
+                            )
+                            await _harness_finish(_harness, "max-steps")
+                            break
+                        _harness_step += 1
+                        _results = [
+                            await _harness_execute_tool(_harness, _c) for _c in _h_calls
+                        ]
+                        _results.extend(_harness_client_refusal(_c) for _c in _c_calls)
+                        _follow = build_tool_results_block(_results)
+                        consumer_stopped.set()
+                        (
+                            future,
+                            event_queue,
+                            consumer_stopped,
+                            output_overflowed,
+                        ) = M365_BROWSER_RUNTIME.submit_chat_stream(
+                            _follow, conv or conversation_id, tone, []
+                        )
+                        _ns_tp = _m365_prepared.new_transpiler()
+                        best = ""
+                        deadline = time.monotonic() + M365_FIRST_EVENT_TIMEOUT
+                        continue
+                    if _c_calls:
+                        # Client-owned calls only: keep the LEGACY non-stream
+                        # shape — the raw text, tool fence included.
+                        _final_text = "".join(_visible_steps) + best
+                        await _harness_mirror_event(
+                            _harness,
+                            kind="step",
+                            text=best,
+                            reasoning="".join(_step_reasoning),
+                            tool_calls=_ns_calls,
+                            finish_reason="tool_calls",
+                        )
+                        await _harness_finish(_harness, "tool_calls")
+                        break
+                    _resid = _ns_tp.flush_pending()
+                    if _resid:
+                        _step_visible.append(_resid)
+                    _final_text = "".join(_visible_steps) + "".join(_step_visible)
+                    await _harness_mirror_event(
+                        _harness,
+                        kind="step",
+                        text="".join(_step_visible),
+                        reasoning="".join(_step_reasoning),
+                        finish_reason="stop",
+                    )
+                    await _harness_finish(_harness, "completed")
                 break
             elif kind == "error":
+                await _harness_finish(_harness, "error")
                 return JSONResponse(
                     {
                         "error": {
@@ -26448,7 +27166,9 @@ async def _direct_m365_chat_response(
                         "index": 0,
                         "message": {
                             "role": "assistant",
-                            "content": _m365_env.wrap(best),
+                            "content": _m365_env.wrap(
+                                _final_text if _final_text is not None else best
+                            ),
                             **({"reasoning_content": reasoning} if reasoning else {}),
                         },
                         "finish_reason": "stop",
@@ -50449,8 +51169,254 @@ def test_browser_relay() -> None:
     print("browser relay: ALL SELF-TESTS PASSED")
 
 
+def test_harness_metadata_opt_in_is_m365_only():
+    for model in M365_BROWSER_MODEL_TONES:
+        assert BROWSER_MODEL_METADATA[model]["deepseek_harness"] is True
+    for model, meta in BROWSER_MODEL_METADATA.items():
+        if model not in M365_BROWSER_MODEL_TONES:
+            assert "deepseek_harness" not in meta
+
+
+def test_harness_enabled_requires_flag_and_endpoint():
+    # Endpoint unconfigured -> always off, even for opted-in models.
+    assert _harness_enabled("LLM:m365-claude-opus") is False
+    assert _harness_enabled("LLM:doubao") is False
+    old_url = VOICE_EDGE_HARNESS_URL
+    old_token = VOICE_EDGE_HARNESS_TOKEN
+    try:
+        globals()["VOICE_EDGE_HARNESS_URL"] = "http://127.0.0.1:3080/api/voice-edge"
+        globals()["VOICE_EDGE_HARNESS_TOKEN"] = "t"
+        assert _harness_enabled("LLM:m365-claude-opus") is True
+        assert _harness_enabled("LLM:m365-chatgpt-5.5") is True
+        # Non-opted-in browser models stay on the direct path.
+        assert _harness_enabled("LLM:doubao") is False
+        assert _harness_enabled("LLM:deepseek") is False
+        # Token missing -> off even with a URL.
+        globals()["VOICE_EDGE_HARNESS_TOKEN"] = ""
+        assert _harness_enabled("LLM:m365-claude-opus") is False
+    finally:
+        globals()["VOICE_EDGE_HARNESS_URL"] = old_url
+        globals()["VOICE_EDGE_HARNESS_TOKEN"] = old_token
+
+
+def test_harness_tools_to_openai_conversion_and_collision():
+    tools = [
+        {
+            "name": "bash",
+            "description": "run a command",
+            "parameters": {
+                "type": "object",
+                "properties": {"cmd": {"type": "string"}},
+            },
+        },
+        {"name": "read_file", "description": "client-owned collision"},
+        {"name": ""},
+        "junk",
+        {"name": "no_params"},
+    ]
+    converted, names = _harness_tools_to_openai(tools, {"read_file"})
+    # the colliding client tool, the empty name, and the non-dict are dropped
+    assert [t["function"]["name"] for t in converted] == ["bash", "no_params"]
+    assert names == {"bash", "no_params"}
+    assert converted[0]["function"]["description"] == "run a command"
+    assert converted[0]["function"]["parameters"]["properties"]["cmd"] == {
+        "type": "string"
+    }
+    # missing parameters -> object schema stub so the relay never sees null
+    assert converted[1]["function"]["parameters"] == {
+        "type": "object",
+        "properties": {},
+    }
+
+
+def test_harness_split_calls_partitions_by_name():
+    calls = [
+        {"id": "1", "function": {"name": "bash", "arguments": "{}"}},
+        {"id": "2", "function": {"name": "read_file", "arguments": "{}"}},
+        {"id": "3", "function": {}},
+    ]
+    harness, client = _harness_split_calls(calls, {"bash"})
+    assert [c["id"] for c in harness] == ["1"]
+    assert [c["id"] for c in client] == ["2", "3"]
+    assert _harness_split_calls([], {"bash"}) == ([], [])
+
+
+def test_harness_user_message_mirrors_user_turn_text_verbatim():
+    import asyncio
+
+    captured: list = []
+
+    async def fake_post(path: str, payload: dict, timeout_seconds: float = 0.0) -> dict:
+        captured.append((path, payload))
+        return {"synced": True}
+
+    global _harness_post
+    original = _harness_post
+    _harness_post = fake_post
+    try:
+        bridge = {
+            "key": "full-1",
+            "sequence": 0,
+            "boot_key": "boot-1",
+            "full_key": "full-1",
+        }
+        asyncio.run(_harness_user_message(bridge, "LLM:m365-x", "final prompt"))
+    finally:
+        _harness_post = original
+    path, payload = captured[0]
+    assert path == "/event"
+    assert payload["type"] == "voice-edge/sync"
+    assert payload["messages"] == [{"role": "user", "text": "final prompt"}]
+    assert payload["boot_key"] == "boot-1"
+    assert payload["full_key"] == "full-1"
+    assert bridge["sequence"] == 1
+
+
+def test_prepared_user_text_excludes_framing_and_continuations():
+    reg = {"LLM:m365-x": {"relay_prompt": True, "supports_tools": True}}
+    relay = BrowserRelay(reg)
+    tool_body = {
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "read_file",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            }
+        ]
+    }
+    msgs = [
+        {"role": "system", "content": "SECRET IDE PROMPT"},
+        {"role": "user", "content": "read the config"},
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "c1",
+                    "type": "function",
+                    "function": {"name": "read_file", "arguments": "{}"},
+                }
+            ],
+        },
+        {"role": "tool", "tool_call_id": "c1", "content": "DATA"},
+    ]
+    # Fresh turn: user_text is the relay-extracted body — the composed prompt
+    # carries the framing, the mirror field must not.
+    fresh = relay.prepare("LLM:m365-x", tool_body, msgs[:2])
+    assert fresh.user_text == "read the config"
+    assert fresh.fresh_user_turn is True
+    assert "<client_system_prompt>" in fresh.text
+    assert "<tool_use_instructions>" in fresh.text
+    assert "<" not in fresh.user_text
+    # Tool-result continuation: the stale user text must not re-surface, and
+    # the fresh-turn gate (which lets attachment-only turns mirror their
+    # images) must be closed.
+    cont = relay.prepare("LLM:m365-x", tool_body, msgs)
+    assert cont.user_text == ""
+    assert cont.fresh_user_turn is False
+
+
+def test_harness_inline_image_markdown_rebuilds_user_images():
+    attachments = [
+        {
+            "kind": "image",
+            "name": "image-1.png",
+            "mimeType": "image/png",
+            "size": 9,
+            "data": "iVBORw0K",
+        },
+        {
+            "kind": "file",
+            "name": "doc.pdf",
+            "mimeType": "application/pdf",
+            "size": 4,
+            "data": "AAAA",
+        },
+    ]
+    assert (
+        _harness_inline_image_markdown(attachments)
+        == "\n\n![image-1.png](data:image/png;base64,iVBORw0K)"
+    )
+    assert _harness_inline_image_markdown([]) == ""
+    assert _harness_inline_image_markdown([{"kind": "file"}]) == ""
+
+
+def test_harness_ordered_user_content_preserves_image_positions():
+    message = {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "before"},
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,AA=="}},
+            {"type": "text", "text": "middle"},
+            {"type": "input_image", "image_url": "data:image/jpeg;base64,/9g="},
+            {"type": "text", "text": "after"},
+        ],
+    }
+    attachments = [
+        {
+            "kind": "image",
+            "name": "first.png",
+            "mimeType": "image/png",
+            "data": "AA==",
+            "content_index": 1,
+        },
+        {
+            "kind": "image",
+            "name": "second.jpg",
+            "mimeType": "image/jpeg",
+            "data": "/9g=",
+            "content_index": 3,
+        },
+    ]
+    mirrored = _harness_ordered_user_content(message, attachments)
+    first = "![first.png](data:image/png;base64,AA==)"
+    second = "![second.jpg](data:image/jpeg;base64,/9g=)"
+    assert mirrored.index("before") < mirrored.index(first)
+    assert mirrored.index(first) < mirrored.index("middle")
+    assert mirrored.index("middle") < mirrored.index(second)
+    assert mirrored.index(second) < mirrored.index("after")
+
+
+def test_harness_client_refusal_marks_the_call():
+    refusal = _harness_client_refusal(
+        {"id": "c9", "function": {"name": "read_file", "arguments": "{}"}}
+    )
+    assert refusal.name == "read_file"
+    assert refusal.call_id == "c9"
+    assert "separate step" in refusal.content
+
+
+def test_harness_tool_results_block_matches_relay_wire_format():
+    # The follow-up prompt for the internal tool loop must be byte-identical
+    # to what compose_turn_text sends for client tool continuations — the
+    # model was instructed against exactly this format.
+    results = [
+        ToolResult(name="bash", call_id="c1", content="ok"),
+        _harness_client_refusal(
+            {"id": "c2", "function": {"name": "read_file", "arguments": "{}"}}
+        ),
+    ]
+    block = build_tool_results_block(results)
+    assert block.startswith("<tool_results>\n<tool_result")
+    assert 'name="bash" call_id="c1"' in block
+    assert 'name="read_file" call_id="c2"' in block
+    assert block.endswith("</tool_results>")
+
+
 def run_self_tests():
     tests = [
+        test_harness_metadata_opt_in_is_m365_only,
+        test_harness_enabled_requires_flag_and_endpoint,
+        test_harness_tools_to_openai_conversion_and_collision,
+        test_harness_split_calls_partitions_by_name,
+        test_harness_user_message_mirrors_user_turn_text_verbatim,
+        test_prepared_user_text_excludes_framing_and_continuations,
+        test_harness_inline_image_markdown_rebuilds_user_images,
+        test_harness_ordered_user_content_preserves_image_positions,
+        test_harness_client_refusal_marks_the_call,
+        test_harness_tool_results_block_matches_relay_wire_format,
         test_m365_done_requires_authoritative_completion_signal,
         test_m365_conversation_key_ignores_file_body_and_whitespace,
         test_m365_conversation_key_strips_inline_data_images,
