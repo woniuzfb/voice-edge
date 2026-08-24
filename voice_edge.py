@@ -150,209 +150,215 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1393
-#    VE_VLM_KV_BITS                         3.5                                          L477
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L482
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L487
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L488
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L976
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L981
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L984
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L988
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L997
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1005
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1060
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1511
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41344
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L41993
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42005
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1399
+#    VE_VLM_KV_BITS                         3.5                                          L483
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L488
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L493
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L494
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L982
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L987
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L990
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L994
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1003
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1011
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1066
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1517
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41436
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42085
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42097
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18116
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18113
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18079
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18094
+#    AUTH_SYNC_ENABLED                      "1"                                          L18067
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18068
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L367
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L368
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L369
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L370
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L371
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L375
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L379
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L380
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L381
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L382
-#    VE_HUD_LOG_DEBUG                           "0"                                      L383
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L384
-#    VE_KWS_LOG_DEBUG                           "0"                                      L385
-#    VE_LLM_LOG_DEBUG                           "0"                                      L386
-#    VE_M365_LOG_DEBUG                          "0"                                      L387
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L388
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L392
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L396
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L397
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L398
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L399
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L400
-#    VE_TTS_LOG_DEBUG                           "0"                                      L401
-#    VE_VLM_LOG_DEBUG                           "0"                                      L402
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L403
+#    VE_APP_LOG_DEBUG                           "0"                                      L373
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L374
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L375
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L376
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L377
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L381
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L385
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L386
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L387
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L388
+#    VE_HUD_LOG_DEBUG                           "0"                                      L389
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L390
+#    VE_KWS_LOG_DEBUG                           "0"                                      L391
+#    VE_LLM_LOG_DEBUG                           "0"                                      L392
+#    VE_M365_LOG_DEBUG                          "0"                                      L393
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L394
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L398
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L402
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L403
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L404
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L405
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L406
+#    VE_TTS_LOG_DEBUG                           "0"                                      L407
+#    VE_VLM_LOG_DEBUG                           "0"                                      L408
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L409
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41230
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41253
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41280
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41339
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L41882
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L41885
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L41893
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L41905
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L41907
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L41916
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L41922
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L41928
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L41944
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L41949
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L41956
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L41963
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L41972
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L41979
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42027
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43795
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43796
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43797
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41322
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41345
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41372
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41431
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L41974
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L41977
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L41985
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L41997
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L41999
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42008
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42014
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42020
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42036
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42041
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42048
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42055
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42064
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42071
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42119
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43887
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43888
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43889
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13617
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13619
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L13620
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13626
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13628
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13631
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13639
-#    QWEN_COOKIE_HEADER                     ""                                           L13643
-#    QWEN_TOKENS                            ""                                           L13651
-#    QWEN_TOKEN                             ""                                           L13652
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13623
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13625
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L13626
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13632
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13634
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13637
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13645
+#    QWEN_COOKIE_HEADER                     ""                                           L13649
+#    QWEN_TOKENS                            ""                                           L13657
+#    QWEN_TOKEN                             ""                                           L13658
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L586
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15286
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L15287
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15289
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15291
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15293
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15296
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15299
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15302
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15423
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15426
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L592
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15292
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L15293
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15295
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15297
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15299
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15302
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15305
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15308
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15429
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15432
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17971
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17972
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17978
-#    DOUBAO_FP                              "doubao_voice_edge"                          L17979
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17987
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17989
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17992
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L17994
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L17996
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18000
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18027
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18030
-#    DOUBAO_WEB_AID                         "497858"                                     L18032
-#    DOUBAO_WEB_REGION                      "CN"                                         L18033
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18034
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18035
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18037
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18074
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18066
-#    DOUBAO_COOKIE_HEADER                   ""                                           L18302
-#    DOUBAO_SESSION_IDS                     ""                                           L18344
-#    DOUBAO_SESSION_ID                      ""                                           L18348
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18859
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18868
-#    DOUBAO_SESSION_ID_SS                   ""                                           L19050
-#    DOUBAO_SID_TT                          ""                                           L19053
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17977
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17978
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17984
+#    DOUBAO_FP                              "doubao_voice_edge"                          L17985
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17993
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17995
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17998
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18000
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18002
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18006
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18033
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18036
+#    DOUBAO_WEB_AID                         "497858"                                     L18038
+#    DOUBAO_WEB_REGION                      "CN"                                         L18039
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18040
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18041
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18043
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18092
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18084
+#    DOUBAO_COOKIE_HEADER                   ""                                           L18394
+#    DOUBAO_SESSION_IDS                     ""                                           L18436
+#    DOUBAO_SESSION_ID                      ""                                           L18440
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18951
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18960
+#    DOUBAO_SESSION_ID_SS                   ""                                           L19142
+#    DOUBAO_SID_TT                          ""                                           L19145
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L23439
-#    SHAREPOINT_HOME_URL                    ""                                           L23440
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23441
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23442
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23469
-#    M365_BRIDGE_PORT                       "5003"                                       L23470
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23471
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L23472
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23474
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23477
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L23480
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23488
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L23490
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23510
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23517
-#    M365_CONV_MAP_MAX                      "1024"                                       L23686
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24333
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24351
+#    M365_ENTRY_URL                         ""                                           L23529
+#    SHAREPOINT_HOME_URL                    ""                                           L23530
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23531
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23532
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23559
+#    M365_BRIDGE_PORT                       "5003"                                       L23560
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23561
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L23562
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23564
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23567
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L23570
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23578
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L23580
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23600
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23607
+#    M365_CONV_MAP_MAX                      "1024"                                       L23776
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24423
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24441
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L36568
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36778
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36840
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36862
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36869
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L36964
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L36966
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L36970
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L38163
-#    MI_USER                                ""                                           L37889
-#    MI_PASS                                ""                                           L37915
-#    XIAOAI_HARDWARE                        "LX06"                                       L37917
-#    MI_DID                                 ""                                           L37919
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L37922
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L37926
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L37929
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L37932
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L37938
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L37949
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L37954
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L37935
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L37945
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L37965
-#    XIAOAI_VOICE                           "zh"                                         L37967
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L37969
-#    XIAOAI_MAX_TOKENS                      "500"                                        L37972
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L37975
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L37978
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L37982
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L37986
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L37991
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L37996
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38001
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38006
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38011
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38019
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38024
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38029
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38034
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38039
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38044
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38049
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L38052
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38056
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38060
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38064
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38069
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38074
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38078
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38081
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38084
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38087
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38090
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38093
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L38096
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38099
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38106
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38112
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L38116
+#    XIAOAI_ENABLED                         "0"                                          L36660
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36870
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36932
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36954
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36961
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37056
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37058
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37062
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L38255
+#    MI_USER                                ""                                           L37981
+#    MI_PASS                                ""                                           L38007
+#    XIAOAI_HARDWARE                        "LX06"                                       L38009
+#    MI_DID                                 ""                                           L38011
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38014
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38018
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L38021
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38024
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38030
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38041
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38046
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38027
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38037
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L38057
+#    XIAOAI_VOICE                           "zh"                                         L38059
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L38061
+#    XIAOAI_MAX_TOKENS                      "500"                                        L38064
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L38067
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38070
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38074
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38078
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38083
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38088
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38093
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38098
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38103
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38111
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38116
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38121
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38126
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38131
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38136
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38141
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L38144
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38148
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38152
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38156
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38161
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38166
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38170
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38173
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38176
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38179
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38182
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38185
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L38188
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38191
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38198
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38204
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L38208
 #
-# 合计 187 个唯一环境变量。
+# 合计 193 个唯一环境变量。
 # ============================================================================
 
 
@@ -16606,7 +16612,7 @@ class DeepSeekBrowserRuntime:
             raise RuntimeError("DeepSeek browser page is not initialized")
         authorization = _deepseek_request_auth()["authorization"]
         _auth_log.debug(
-            "page_request begin method=%s path=%s auth=%s hif=%s",
+            "Auth sync page_request begin method=%s path=%s auth=%s hif=%s",
             method,
             path,
             bool(authorization),
@@ -16676,7 +16682,7 @@ class DeepSeekBrowserRuntime:
                     root = {}
                 authenticated = int(root.get("code", -1)) == 0
             _auth_log.debug(
-                "login.check attempt=%d status=%s authenticated=%s url=%s",
+                "Auth sync login.check attempt=%d status=%s authenticated=%s url=%s",
                 attempt,
                 result.get("status"),
                 authenticated,
@@ -16719,7 +16725,7 @@ class DeepSeekBrowserRuntime:
                                 token,
                             )
                             _auth_log.warning(
-                                "login API authenticated but SPA route guard remained on /sign_in; hydrated userToken and retrying"
+                                "Auth sync login API authenticated but SPA route guard remained on /sign_in; hydrated userToken and retrying"
                             )
                             await page.reload(
                                 wait_until="domcontentloaded", timeout=60000
@@ -17314,7 +17320,7 @@ class DeepSeekBrowserRuntime:
                 authorization,
             )
             _auth_log.debug(
-                "auth.apply cookies=%d auth=%s", len(cookies), bool(authorization)
+                "Auth sync apply cookies=%d auth=%s", len(cookies), bool(authorization)
             )
             await page.goto(
                 DEEPSEEK_WEB_BASE_URL + "/",
@@ -18055,12 +18061,24 @@ DOUBAO_OPTIONAL_COOKIE_ENV = {
 }
 
 
-# Local-only Firefox authentication synchronization.  The WebExtension sends
-# structured cookies through Firefox Native Messaging to a Unix-domain socket;
+# Local-only Firefox/Chrome authentication synchronization.  The WebExtension sends
+# structured cookies through Native Messaging to a Unix-domain socket;
 # raw credential values are never logged.
-FIREFOX_AUTH_SYNC_ENABLED = os.getenv(
-    "FIREFOX_AUTH_SYNC_ENABLED", "1"
-).strip().lower() in {"1", "true", "yes", "on"}
+AUTH_SYNC_ENABLED = _ve_env_flag("AUTH_SYNC_ENABLED", "1")
+AUTH_SYNC_NATIVE_HOST_NAME = os.getenv(
+    "AUTH_SYNC_NATIVE_HOST_NAME", "com.voice_edge.auth_bridge"
+).strip()
+AUTH_SYNC_NATIVE_HOST_DIR = Path.home() / ".voice-edge" / "native-host"
+AUTH_SYNC_NATIVE_HOST_PATH = AUTH_SYNC_NATIVE_HOST_DIR / "auth_bridge.py"
+AUTH_SYNC_BRIDGE_SOURCE = '#!/usr/bin/env python3\nimport json\nimport os\nimport socket\nimport struct\nimport sys\nimport threading\nimport time\n\nSOCKET_PATH = os.path.realpath(os.path.expanduser(\n    os.environ.get("FIREFOX_AUTH_SYNC_SOCKET", "~/.voice-edge/auth-sync.sock")\n))\nMAX_NATIVE_MESSAGE = 4 * 1024 * 1024\n_WRITE_LOCK = threading.Lock()\n_STOP = threading.Event()\n_SOCKET_LOCK = threading.RLock()\n_SOCKET = None\n\n\ndef _read_exact(stream, size):\n    chunks = []\n    remaining = int(size)\n    while remaining:\n        data = stream.read(remaining)\n        if not data:\n            return None\n        chunks.append(data)\n        remaining -= len(data)\n    return b"".join(chunks)\n\n\ndef _read_native_message():\n    header = _read_exact(sys.stdin.buffer, 4)\n    if header is None:\n        return None\n    length = struct.unpack("=I", header)[0]\n    if length <= 0 or length > MAX_NATIVE_MESSAGE:\n        raise ValueError("invalid native message length")\n    payload = _read_exact(sys.stdin.buffer, length)\n    if payload is None:\n        return None\n    value = json.loads(payload.decode("utf-8"))\n    if not isinstance(value, dict):\n        raise ValueError("native message must be a JSON object")\n    return value\n\n\ndef _send_native_message(message):\n    payload = json.dumps(message, ensure_ascii=False, separators=(",", ":")).encode("utf-8")\n    if len(payload) > MAX_NATIVE_MESSAGE:\n        payload = json.dumps({"type": "AUTH_ERROR", "message": "native response is too large"}).encode("utf-8")\n    with _WRITE_LOCK:\n        sys.stdout.buffer.write(struct.pack("=I", len(payload)))\n        sys.stdout.buffer.write(payload)\n        sys.stdout.buffer.flush()\n\n\ndef _set_socket(sock):\n    global _SOCKET\n    with _SOCKET_LOCK:\n        _SOCKET = sock\n\n\ndef _get_socket():\n    with _SOCKET_LOCK:\n        return _SOCKET\n\n\ndef _discard_socket(sock):\n    global _SOCKET\n    with _SOCKET_LOCK:\n        if _SOCKET is sock:\n            _SOCKET = None\n    try:\n        sock.close()\n    except OSError:\n        pass\n\n\ndef _connect_socket():\n    while not _STOP.is_set():\n        existing = _get_socket()\n        if existing is not None:\n            return existing\n        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n        try:\n            sock.connect(SOCKET_PATH)\n            sock.settimeout(1.0)\n            _set_socket(sock)\n            return sock\n        except OSError:\n            try:\n                sock.close()\n            except OSError:\n                pass\n            time.sleep(1.0)\n    return None\n\n\ndef _socket_reader():\n    buffer = b""\n    while not _STOP.is_set():\n        sock = _connect_socket()\n        if sock is None:\n            return\n        try:\n            data = sock.recv(65536)\n            if not data:\n                raise OSError("Voice Edge auth socket closed")\n            buffer += data\n            if len(buffer) > MAX_NATIVE_MESSAGE:\n                raise ValueError("Voice Edge socket response is too large")\n            while b"\\n" in buffer:\n                line, buffer = buffer.split(b"\\n", 1)\n                if not line.strip():\n                    continue\n                _send_native_message(json.loads(line.decode("utf-8")))\n        except socket.timeout:\n            continue\n        except Exception as exc:\n            _discard_socket(sock)\n            buffer = b""\n            if not isinstance(exc, OSError):\n                _send_native_message({"type": "AUTH_ERROR", "message": str(exc).replace("\\n", " ")[:500]})\n\n\ndef _send_to_voice_edge(message):\n    payload = json.dumps(message, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\\n"\n    for _attempt in range(2):\n        sock = _connect_socket()\n        if sock is None:\n            break\n        try:\n            sock.sendall(payload)\n            return True\n        except OSError:\n            _discard_socket(sock)\n    _send_native_message({"type": "AUTH_ERROR", "message": "Voice Edge auth socket is unavailable"})\n    return False\n\n\ndef main():\n    threading.Thread(target=_socket_reader, name="voice-edge-auth-socket-reader", daemon=True).start()\n    try:\n        while True:\n            try:\n                message = _read_native_message()\n            except Exception as exc:\n                _send_native_message({"type": "AUTH_ERROR", "message": str(exc).replace("\\n", " ")[:500]})\n                continue\n            if message is None:\n                break\n            _send_to_voice_edge(message)\n    finally:\n        _STOP.set()\n        sock = _get_socket()\n        if sock is not None:\n            _discard_socket(sock)\n\n\nif __name__ == "__main__":\n    main()\n'
+
+
+# Firefox Native Messaging bootstrap. Firefox extensions cannot install native
+# hosts themselves, so Voice Edge installs/repairs its user-local stdio bridge
+# and host manifest during service startup.
+FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED = _ve_env_flag(
+    "FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED", "1"
+)
 FIREFOX_AUTH_SYNC_SOCKET = os.path.realpath(
     os.path.expanduser(
         os.getenv(
@@ -18073,31 +18091,47 @@ FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES = max(
     65536,
     int(os.getenv("FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES", "2097152")),
 )
-
-
-# Firefox Native Messaging bootstrap. Firefox extensions cannot install native
-# hosts themselves, so Voice Edge installs/repairs its user-local stdio bridge
-# and host manifest during service startup.
 FIREFOX_AUTH_SYNC_EXTENSION_ID = os.getenv(
     "FIREFOX_AUTH_SYNC_EXTENSION_ID", "voice-edge-auth-sync@local"
 ).strip()
-FIREFOX_AUTH_SYNC_NATIVE_HOST_NAME = "com.voice_edge.auth_bridge"
-FIREFOX_AUTH_SYNC_NATIVE_HOST_DIR = Path.home() / ".voice-edge" / "native-host"
-FIREFOX_AUTH_SYNC_NATIVE_HOST_PATH = (
-    FIREFOX_AUTH_SYNC_NATIVE_HOST_DIR / "auth_bridge.py"
-)
 FIREFOX_AUTH_SYNC_MANIFEST_PATH = (
     Path.home()
     / "Library"
     / "Application Support"
     / "Mozilla"
     / "NativeMessagingHosts"
-    / f"{FIREFOX_AUTH_SYNC_NATIVE_HOST_NAME}.json"
+    / f"{AUTH_SYNC_NATIVE_HOST_NAME}.json"
 )
-FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED = os.getenv(
-    "FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED", "1"
-).strip().lower() in {"1", "true", "yes", "on"}
-FIREFOX_AUTH_SYNC_BRIDGE_SOURCE = '#!/usr/bin/env python3\nimport json\nimport os\nimport socket\nimport struct\nimport sys\nimport threading\nimport time\n\nSOCKET_PATH = os.path.realpath(os.path.expanduser(\n    os.environ.get("FIREFOX_AUTH_SYNC_SOCKET", "~/.voice-edge/auth-sync.sock")\n))\nMAX_NATIVE_MESSAGE = 4 * 1024 * 1024\n_WRITE_LOCK = threading.Lock()\n_STOP = threading.Event()\n_SOCKET_LOCK = threading.RLock()\n_SOCKET = None\n\n\ndef _read_exact(stream, size):\n    chunks = []\n    remaining = int(size)\n    while remaining:\n        data = stream.read(remaining)\n        if not data:\n            return None\n        chunks.append(data)\n        remaining -= len(data)\n    return b"".join(chunks)\n\n\ndef _read_native_message():\n    header = _read_exact(sys.stdin.buffer, 4)\n    if header is None:\n        return None\n    length = struct.unpack("=I", header)[0]\n    if length <= 0 or length > MAX_NATIVE_MESSAGE:\n        raise ValueError("invalid native message length")\n    payload = _read_exact(sys.stdin.buffer, length)\n    if payload is None:\n        return None\n    value = json.loads(payload.decode("utf-8"))\n    if not isinstance(value, dict):\n        raise ValueError("native message must be a JSON object")\n    return value\n\n\ndef _send_native_message(message):\n    payload = json.dumps(message, ensure_ascii=False, separators=(",", ":")).encode("utf-8")\n    if len(payload) > MAX_NATIVE_MESSAGE:\n        payload = json.dumps({"type": "AUTH_ERROR", "message": "native response is too large"}).encode("utf-8")\n    with _WRITE_LOCK:\n        sys.stdout.buffer.write(struct.pack("=I", len(payload)))\n        sys.stdout.buffer.write(payload)\n        sys.stdout.buffer.flush()\n\n\ndef _set_socket(sock):\n    global _SOCKET\n    with _SOCKET_LOCK:\n        _SOCKET = sock\n\n\ndef _get_socket():\n    with _SOCKET_LOCK:\n        return _SOCKET\n\n\ndef _discard_socket(sock):\n    global _SOCKET\n    with _SOCKET_LOCK:\n        if _SOCKET is sock:\n            _SOCKET = None\n    try:\n        sock.close()\n    except OSError:\n        pass\n\n\ndef _connect_socket():\n    while not _STOP.is_set():\n        existing = _get_socket()\n        if existing is not None:\n            return existing\n        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n        try:\n            sock.connect(SOCKET_PATH)\n            sock.settimeout(1.0)\n            _set_socket(sock)\n            return sock\n        except OSError:\n            try:\n                sock.close()\n            except OSError:\n                pass\n            time.sleep(1.0)\n    return None\n\n\ndef _socket_reader():\n    buffer = b""\n    while not _STOP.is_set():\n        sock = _connect_socket()\n        if sock is None:\n            return\n        try:\n            data = sock.recv(65536)\n            if not data:\n                raise OSError("Voice Edge auth socket closed")\n            buffer += data\n            if len(buffer) > MAX_NATIVE_MESSAGE:\n                raise ValueError("Voice Edge socket response is too large")\n            while b"\\n" in buffer:\n                line, buffer = buffer.split(b"\\n", 1)\n                if not line.strip():\n                    continue\n                _send_native_message(json.loads(line.decode("utf-8")))\n        except socket.timeout:\n            continue\n        except Exception as exc:\n            _discard_socket(sock)\n            buffer = b""\n            if not isinstance(exc, OSError):\n                _send_native_message({"type": "AUTH_ERROR", "message": str(exc).replace("\\n", " ")[:500]})\n\n\ndef _send_to_voice_edge(message):\n    payload = json.dumps(message, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\\n"\n    for _attempt in range(2):\n        sock = _connect_socket()\n        if sock is None:\n            break\n        try:\n            sock.sendall(payload)\n            return True\n        except OSError:\n            _discard_socket(sock)\n    _send_native_message({"type": "AUTH_ERROR", "message": "Voice Edge auth socket is unavailable"})\n    return False\n\n\ndef main():\n    threading.Thread(target=_socket_reader, name="voice-edge-auth-socket-reader", daemon=True).start()\n    try:\n        while True:\n            try:\n                message = _read_native_message()\n            except Exception as exc:\n                _send_native_message({"type": "AUTH_ERROR", "message": str(exc).replace("\\n", " ")[:500]})\n                continue\n            if message is None:\n                break\n            _send_to_voice_edge(message)\n    finally:\n        _STOP.set()\n        sock = _get_socket()\n        if sock is not None:\n            _discard_socket(sock)\n\n\nif __name__ == "__main__":\n    main()\n'
+
+
+# Chrome/Chromium Native Messaging bootstrap. The bridge script, Unix socket
+# and AuthSyncServer are shared with Firefox verbatim; only the host manifest
+# differs (Chrome keys the allow-list by extension ORIGIN via `allowed_origins`
+# instead of Firefox's `allowed_extensions`, and installs under a different
+# per-user directory). The Chrome extension ID is fixed by the `key` field in
+# manifest.chrome.json, so it can be pinned here.
+CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED = _ve_env_flag(
+    "CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED", "1"
+)
+CHROME_AUTH_SYNC_EXTENSION_ID = os.getenv(
+    "CHROME_AUTH_SYNC_EXTENSION_ID", "lbhjpomjdikihplfkgdmdkgjdjnklmak"
+).strip()
+# Chrome and Chromium read native-host manifests from parallel per-user dirs.
+# Install into every channel present so the bridge works regardless of which
+# Chromium-family browser loads the extension.
+CHROME_AUTH_SYNC_MANIFEST_DIRS = (
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "Google"
+    / "Chrome"
+    / "NativeMessagingHosts",
+    Path.home()
+    / "Library"
+    / "Application Support"
+    / "Chromium"
+    / "NativeMessagingHosts",
+)
 
 
 def _write_private_file_if_changed(path: Path, content: bytes, mode: int) -> bool:
@@ -18135,54 +18169,112 @@ def _write_private_file_if_changed(path: Path, content: bytes, mode: int) -> boo
     return changed
 
 
-def ensure_firefox_auth_sync_native_host() -> dict:
-    """Install or repair the per-user Firefox Native Messaging host."""
-    enabled = bool(FIREFOX_AUTH_SYNC_ENABLED and FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED)
-    result = {
-        "enabled": enabled,
-        "supported": sys.platform == "darwin",
-        "changed": False,
-        "host_path": str(FIREFOX_AUTH_SYNC_NATIVE_HOST_PATH),
-        "manifest_path": str(FIREFOX_AUTH_SYNC_MANIFEST_PATH),
-    }
-    if not enabled:
-        _auth_log.info("Firefox auth-sync native host bootstrap is disabled")
-        return result
-    if sys.platform != "darwin":
-        _auth_log.warning(
-            "Firefox auth-sync native host auto-install supports macOS only; platform=%s",
-            sys.platform,
-        )
-        return result
-    if not FIREFOX_AUTH_SYNC_EXTENSION_ID:
-        raise RuntimeError("FIREFOX_AUTH_SYNC_EXTENSION_ID cannot be empty")
-
-    bridge_changed = _write_private_file_if_changed(
-        FIREFOX_AUTH_SYNC_NATIVE_HOST_PATH,
-        FIREFOX_AUTH_SYNC_BRIDGE_SOURCE.encode("utf-8"),
-        0o700,
-    )
-    manifest = {
-        "name": FIREFOX_AUTH_SYNC_NATIVE_HOST_NAME,
-        "description": "Local Voice Edge authentication bridge",
-        "path": str(FIREFOX_AUTH_SYNC_NATIVE_HOST_PATH),
-        "type": "stdio",
-        "allowed_extensions": [FIREFOX_AUTH_SYNC_EXTENSION_ID],
-    }
-    manifest_changed = _write_private_file_if_changed(
-        FIREFOX_AUTH_SYNC_MANIFEST_PATH,
+def _write_native_host_manifest(manifest: dict, manifest_path: Path) -> bool:
+    """Serialize and atomically publish one browser's host manifest."""
+    return _write_private_file_if_changed(
+        manifest_path,
         (
             json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
         ).encode("utf-8"),
         0o600,
     )
-    result["changed"] = bool(bridge_changed or manifest_changed)
-    _auth_log.info(
-        "Firefox auth-sync native host ready: changed=%s host=%s manifest=%s",
-        result["changed"],
-        FIREFOX_AUTH_SYNC_NATIVE_HOST_PATH,
-        FIREFOX_AUTH_SYNC_MANIFEST_PATH,
+
+
+def ensure_auth_sync_native_host() -> dict:
+    """Install or repair the per-user Native Messaging host for Firefox AND
+    Chromium-family browsers.
+
+    The stdio bridge script and the Unix socket it talks to are identical
+    across browsers, so it is written once. Only the host manifest differs:
+
+      * Firefox keys the allow-list by add-on ID   (`allowed_extensions`) and
+        installs under .../Mozilla/NativeMessagingHosts/.
+      * Chrome/Chromium key it by extension ORIGIN (`allowed_origins`) and
+        install under .../Google/Chrome|Chromium/NativeMessagingHosts/.
+
+    The historical name is kept so the startup call site is unchanged.
+    """
+    ff_enabled = bool(AUTH_SYNC_ENABLED and FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED)
+    chrome_enabled = bool(AUTH_SYNC_ENABLED and CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED)
+    supported = sys.platform == "darwin"
+    result = {
+        "enabled": bool(ff_enabled or chrome_enabled),
+        "supported": supported,
+        "changed": False,
+        "host_path": str(AUTH_SYNC_NATIVE_HOST_PATH),
+        # Back-compat: this key historically held the single Firefox manifest
+        # path. Keep it pointing at Firefox; per-browser detail is in
+        # `manifest_paths` below.
+        "manifest_path": str(FIREFOX_AUTH_SYNC_MANIFEST_PATH),
+        "firefox": {"enabled": ff_enabled, "changed": False},
+        "chrome": {"enabled": chrome_enabled, "changed": False, "manifest_paths": []},
+    }
+    if not (ff_enabled or chrome_enabled):
+        _auth_log.info("Auth sync native host bootstrap is disabled")
+        return result
+    if not supported:
+        _auth_log.warning(
+            "Auth sync native host auto-install supports macOS only; platform=%s",
+            sys.platform,
+        )
+        return result
+
+    # The bridge script is shared, so write it once for whichever browser(s)
+    # are enabled.
+    bridge_changed = _write_private_file_if_changed(
+        AUTH_SYNC_NATIVE_HOST_PATH,
+        AUTH_SYNC_BRIDGE_SOURCE.encode("utf-8"),
+        0o700,
     )
+
+    any_changed = bool(bridge_changed)
+
+    # --- Firefox host manifest -------------------------------------------
+    if ff_enabled:
+        if not FIREFOX_AUTH_SYNC_EXTENSION_ID:
+            raise RuntimeError("FIREFOX_AUTH_SYNC_EXTENSION_ID cannot be empty")
+        ff_manifest = {
+            "name": AUTH_SYNC_NATIVE_HOST_NAME,
+            "description": "Local Voice Edge authentication bridge",
+            "path": str(AUTH_SYNC_NATIVE_HOST_PATH),
+            "type": "stdio",
+            "allowed_extensions": [FIREFOX_AUTH_SYNC_EXTENSION_ID],
+        }
+        ff_changed = _write_native_host_manifest(
+            ff_manifest, FIREFOX_AUTH_SYNC_MANIFEST_PATH
+        )
+        result["firefox"]["changed"] = ff_changed
+        any_changed = any_changed or ff_changed
+        _auth_log.info(
+            "Auth sync Firefox native host ready: changed=%s manifest=%s",
+            ff_changed,
+            FIREFOX_AUTH_SYNC_MANIFEST_PATH,
+        )
+
+    # --- Chrome/Chromium host manifest(s) --------------------------------
+    if chrome_enabled:
+        if not CHROME_AUTH_SYNC_EXTENSION_ID:
+            raise RuntimeError("CHROME_AUTH_SYNC_EXTENSION_ID cannot be empty")
+        chrome_manifest = {
+            "name": AUTH_SYNC_NATIVE_HOST_NAME,
+            "description": "Local Voice Edge authentication bridge",
+            "path": str(AUTH_SYNC_NATIVE_HOST_PATH),
+            "type": "stdio",
+            "allowed_origins": [f"chrome-extension://{CHROME_AUTH_SYNC_EXTENSION_ID}/"],
+        }
+        for manifest_dir in CHROME_AUTH_SYNC_MANIFEST_DIRS:
+            manifest_path = manifest_dir / f"{AUTH_SYNC_NATIVE_HOST_NAME}.json"
+            chrome_changed = _write_native_host_manifest(chrome_manifest, manifest_path)
+            result["chrome"]["manifest_paths"].append(str(manifest_path))
+            result["chrome"]["changed"] = result["chrome"]["changed"] or chrome_changed
+            any_changed = any_changed or chrome_changed
+            _auth_log.info(
+                "Auth sync Chrome native host ready: changed=%s manifest=%s",
+                chrome_changed,
+                manifest_path,
+            )
+
+    result["changed"] = any_changed
     return result
 
 
@@ -22469,7 +22561,7 @@ class AuthSyncServer:
         self._client_threads: set[threading.Thread] = set()
 
     def start(self) -> None:
-        if not FIREFOX_AUTH_SYNC_ENABLED or self._thread is not None:
+        if not AUTH_SYNC_ENABLED or self._thread is not None:
             return
         parent = os.path.dirname(self.path)
         os.makedirs(parent, mode=0o700, exist_ok=True)
@@ -22493,12 +22585,12 @@ class AuthSyncServer:
             daemon=True,
         )
         self._thread.start()
-        _auth_log.info("Firefox auth sync listening on %s", self.path)
+        _auth_log.info("Auth sync listening on %s", self.path)
 
     def _serve(self) -> None:
         sock = self._sock
         if sock is None:
-            _auth_log.error("Firefox auth-sync socket is not initialized")
+            _auth_log.error("Auth sync socket is not initialized")
             return
         while not self._stop.is_set():
             try:
@@ -22511,9 +22603,7 @@ class AuthSyncServer:
             with self._clients_lock:
                 self._clients.add(client)
                 client_count = len(self._clients)
-            _auth_log.info(
-                "Firefox auth-sync client connected clients=%d", client_count
-            )
+            _auth_log.info("Auth sync client connected clients=%d", client_count)
             client_thread = threading.Thread(
                 target=self._handle_client,
                 args=(client,),
@@ -22568,7 +22658,7 @@ class AuthSyncServer:
                             else _auth_log.info
                         )
                         _recv_log(
-                            "Firefox auth-sync recv type=%s provider=%s cookies=%d",
+                            "Auth sync recv type=%s provider=%s cookies=%d",
                             message.get("type"),
                             message.get("provider"),
                             len(message.get("cookies") or []),
@@ -22581,7 +22671,7 @@ class AuthSyncServer:
                             else _auth_log.info
                         )
                         _reply_log(
-                            "Firefox auth-sync reply type=%s provider=%s success=%s validated=%s",
+                            "Auth sync reply type=%s provider=%s success=%s validated=%s",
                             response.get("type"),
                             response.get("provider"),
                             response.get("success"),
@@ -22634,7 +22724,7 @@ class AuthSyncServer:
             _auth_log.debug if _bcast_type in _QUIET_SYNC_TYPES else _auth_log.info
         )
         _bcast_log(
-            "Firefox auth-sync broadcast type=%s provider=%s clients=%d",
+            "Auth sync broadcast type=%s provider=%s clients=%d",
             message.get("type"),
             message.get("provider"),
             len(clients),
@@ -22772,7 +22862,7 @@ class AuthSyncServer:
             alive = [thread for thread in self._client_threads if thread.is_alive()]
         if alive:
             _auth_log.warning(
-                "Firefox auth-sync shutdown left %d client thread(s) alive",
+                "Auth sync shutdown left %d client thread(s) alive",
                 len(alive),
             )
         try:
@@ -27283,22 +27373,22 @@ async def cleanup_async_resources(
     - asyncio 任务只能协作式取消，无法强制终止。
     - wait_seconds 到期后不会继续无限等待残留任务。
     """
-    _shutdown_log.info("🧹 清理异步资源...")
+    _app_log.info("🧹 清理异步资源...")
 
     try:
         running_loop = asyncio.get_running_loop()
     except RuntimeError:
-        _shutdown_log.warning("异步资源清理跳过：当前线程没有运行中的事件循环")
+        _shutdown_log.debug("异步资源清理跳过：当前线程没有运行中的事件循环")
         return
 
     main_loop = _main_event_loop
 
     if main_loop is None:
-        _shutdown_log.info("异步资源清理跳过：主事件循环尚未初始化")
+        _shutdown_log.debug("异步资源清理跳过：主事件循环尚未初始化")
         return
 
     if main_loop.is_closed():
-        _shutdown_log.info("异步资源清理跳过：主事件循环已经关闭")
+        _shutdown_log.debug("异步资源清理跳过：主事件循环已经关闭")
         return
 
     if running_loop is not main_loop:
@@ -27322,10 +27412,10 @@ async def cleanup_async_resources(
         return
 
     if not tasks:
-        _shutdown_log.info("✅ 无待处理异步任务")
+        _shutdown_log.debug("✅ 无待处理异步任务")
         return
 
-    _shutdown_log.info(
+    _shutdown_log.debug(
         "正在取消 %d 个待处理异步任务...",
         len(tasks),
     )
@@ -27456,7 +27546,7 @@ async def cleanup_async_resources(
         except Exception:
             pass
 
-    _shutdown_log.info(
+    _shutdown_log.debug(
         "✅ 异步资源清理结束：total=%d done=%d cancelled=%d failed=%d pending=%d",
         len(tasks),
         len(done),
@@ -27549,7 +27639,7 @@ def _log_shutdown_thread_snapshot(label: str):
         f"{thread.name}(daemon={thread.daemon},alive={thread.is_alive()})"
         for thread in threading.enumerate()
     ]
-    _shutdown_log.info(
+    _shutdown_log.debug(
         "Shutdown debug thread snapshot [%s]: count=%d threads=%s",
         label,
         len(threads),
@@ -27565,13 +27655,13 @@ def cleanup_service():
     _cleanup_started.set()
     _stop_ble_remote_scanner()
     cleanup_started_at = time.monotonic()
-    _shutdown_log.info("Shutdown debug: cleanup_service begin")
+    _shutdown_log.debug("Shutdown debug: cleanup_service begin")
     _log_shutdown_thread_snapshot("cleanup-start")
 
     # Signal the listening socket synchronously, then detach all lock acquisition and joins.
     # Auth client threads may own the logging or clients lock during interpreter shutdown;
     # neither may delay the main teardown transaction.
-    _auth_log.info("Shutdown debug stage begin: auth-sync-stop-request")
+    _shutdown_log.debug("Shutdown debug stage begin: auth-sync-stop-request")
     try:
         AUTH_SYNC_SERVER.request_stop()
     except BaseException:
@@ -27589,14 +27679,14 @@ def cleanup_service():
             name="ShutdownAuthSyncStop",
             daemon=True,
         ).start()
-        _auth_log.info(
+        _shutdown_log.debug(
             "Shutdown debug stage end: auth-sync-stop-request dispatched=True"
         )
     except BaseException:
         # Do not enter logging.exception here; a logging handler may be held by the auth thread.
         pass
 
-    _m365_log.info("Shutdown stage: stopping M365 browser bridge")
+    _shutdown_log.debug("Shutdown stage: stopping M365 browser bridge")
 
     def stop_m365_browser_for_shutdown():
         return M365_BROWSER_RUNTIME.begin_shutdown(timeout=3.0)
@@ -27607,13 +27697,13 @@ def cleanup_service():
         timeout=4.0,
     )
     if not (m365_call_completed and m365_result):
-        _m365_log.error(
+        _shutdown_log.error(
             "M365 browser bridge did not reach full shutdown; continuing final cleanup"
         )
     else:
-        _m365_log.info("Shutdown stage complete: M365 browser bridge stopped")
+        _shutdown_log.debug("Shutdown stage complete: M365 browser bridge stopped")
 
-    _doubao_log.debug("Shutdown stage: stopping Doubao browser backend")
+    _shutdown_log.debug("Shutdown stage: stopping Doubao browser backend")
 
     def stop_doubao_runtime_for_shutdown():
         return DOUBAO_RUNTIME.stop(timeout=4.0)
@@ -27625,11 +27715,11 @@ def cleanup_service():
     )
     doubao_stopped = bool(doubao_call_completed and doubao_result)
     if not doubao_stopped:
-        _doubao_log.error(
+        _shutdown_log.error(
             "Doubao browser backend did not reach full shutdown; continuing final cleanup"
         )
     else:
-        _doubao_log.debug("Shutdown stage complete: Doubao browser backend stopped")
+        _shutdown_log.debug("Shutdown stage complete: Doubao browser backend stopped")
 
     try:
         if audio_runtime.phase not in {
@@ -27643,14 +27733,14 @@ def cleanup_service():
     except Exception:
         _audio_log.exception("Failed to enter audio STOPPING state")
 
-    _shutdown_log.info("👋 正在关闭服务，清理硬件资源...")
+    _app_log.info("👋 正在关闭服务，清理硬件资源...")
 
     # Prevent a delayed TTS callback from touching the HUD while or after the
     # HUD helper is being closed.
     try:
         _cancel_tts_hud_hide()
     except Exception:
-        _hud_log.debug(
+        _shutdown_log.debug(
             "Failed cancelling delayed HUD hide during cleanup",
             exc_info=True,
         )
@@ -27672,7 +27762,7 @@ def cleanup_service():
     try:
         abort_tts_response()
     except Exception:
-        _tts_log.exception("Failed to abort pending TTS response during shutdown")
+        _shutdown_log.exception("Failed to abort pending TTS response during shutdown")
 
     # Cancel the active TTS producer.
     try:
@@ -27695,7 +27785,7 @@ def cleanup_service():
         )
 
         if pcm_cleared:
-            _shutdown_log.info(
+            _shutdown_log.debug(
                 "清除了 %d 个待播放 PCM 项目",
                 pcm_cleared,
             )
@@ -27742,7 +27832,7 @@ def cleanup_service():
                 pass
 
     if cleared_count:
-        _shutdown_log.info(
+        _shutdown_log.debug(
             "清除了 %d 个待播放项目",
             cleared_count,
         )
@@ -27754,7 +27844,7 @@ def cleanup_service():
             timeout=1.0,
         )
     except queue.Full:
-        _tts_log.warning("Unable to enqueue TTS shutdown marker")
+        _shutdown_log.warning("Unable to enqueue TTS shutdown marker")
 
     thread = TTS_CONSUMER_THREAD
 
@@ -27768,7 +27858,7 @@ def cleanup_service():
     consumer_stopped = thread is None or not thread.is_alive()
 
     if not consumer_stopped:
-        _tts_log.error(
+        _shutdown_log.error(
             "TTS consumer remains alive after shutdown "
             "join timeout; AudioRuntime must remain STOPPING: "
             "thread=%s ident=%s",
@@ -27776,14 +27866,14 @@ def cleanup_service():
             thread.ident if thread is not None else None,
         )
 
-    _audio_log.debug("Audio shutdown stage: stopping route monitor")
+    _shutdown_log.debug("Audio shutdown stage: stopping route monitor")
     try:
         route_monitor_stopped = stop_audio_route_monitor(clear_pending=True)
     except Exception:
         route_monitor_stopped = False
-        _audio_log.exception("Failed to stop audio route monitor")
+        _shutdown_log.exception("Failed to stop audio route monitor")
 
-    _audio_log.debug("Audio shutdown stage: closing persistent output")
+    _shutdown_log.debug("Audio shutdown stage: closing persistent output")
 
     # Only application shutdown closes the persistent PortAudio stream.
     completed, close_result = _run_shutdown_call_bounded(
@@ -27801,7 +27891,7 @@ def cleanup_service():
     pending_snapshot = _snapshot_pending_output_close_bounded()
     had_pending_close = pending_snapshot is True
     if pending_snapshot is None:
-        _audio_log.warning(
+        _shutdown_log.warning(
             "Persistent output pending-close state is unknown; closure cannot be confirmed"
         )
 
@@ -27821,7 +27911,7 @@ def cleanup_service():
     resolved_snapshot = _snapshot_pending_output_close_bounded()
     pending_close_resolved = resolved_snapshot is False
     if resolved_snapshot is None:
-        _audio_log.warning(
+        _shutdown_log.warning(
             "Persistent output close resolution is unknown; treating stream as unresolved"
         )
 
@@ -27834,7 +27924,7 @@ def cleanup_service():
         had_pending_close and pending_close_resolved
     )
 
-    _audio_log.debug(
+    _shutdown_log.debug(
         "Persistent output shutdown closure: "
         "initial_closed=%s "
         "had_pending_close=%s "
@@ -27848,19 +27938,19 @@ def cleanup_service():
         stream_closed,
     )
 
-    _tts_log.debug("Audio shutdown stage: stopping Edge-TTS event loop")
+    _shutdown_log.debug("Audio shutdown stage: stopping Edge-TTS event loop")
     try:
         async_loop_stopped = stop_tts_async_loop()
     except Exception:
         async_loop_stopped = False
-        _tts_log.exception("Failed to stop Edge-TTS asyncio loop")
+        _shutdown_log.exception("Failed to stop Edge-TTS asyncio loop")
 
     stream_references_detached = (
         OUTPUT_STREAM is None and OUTPUT_CALLBACK_CONTEXT is None
     )
 
     if not stream_references_detached:
-        _audio_log.error(
+        _shutdown_log.error(
             "Persistent output global references remain published after shutdown"
         )
 
@@ -27880,7 +27970,7 @@ def cleanup_service():
                 "service audio cleanup completed",
             )
         else:
-            _audio_log.error(
+            _shutdown_log.error(
                 "Audio shutdown did not reach closure; "
                 "remaining in STOPPING: "
                 "consumer_stopped=%s "
@@ -27893,7 +27983,7 @@ def cleanup_service():
                 stream_closed,
             )
 
-    _audio_log.debug(
+    _shutdown_log.debug(
         "Shutdown debug: audio subsystem closure evaluated closed=%s", shutdown_closed
     )
     _log_shutdown_thread_snapshot("after-audio-runtime-stop")
@@ -27905,14 +27995,14 @@ def cleanup_service():
     # Application shutdown may stop all remaining PortAudio
     # streams globally after the dedicated TTS consumer and
     # persistent output stream have already been stopped.
-    _audio_log.debug("Shutdown debug stage begin: sounddevice-stop")
+    _shutdown_log.debug("Shutdown debug stage begin: sounddevice-stop")
     stage_started_at = time.monotonic()
     sd_completed, _ = _run_shutdown_call_bounded(
         "sounddevice-stop",
         sd.stop,
         timeout=min(2.0, AUDIO_SHUTDOWN_CALL_TIMEOUT),
     )
-    _audio_log.debug(
+    _shutdown_log.debug(
         "Shutdown debug stage end: sounddevice-stop completed=%s elapsed=%.3fs",
         sd_completed,
         time.monotonic() - stage_started_at,
@@ -27921,7 +28011,7 @@ def cleanup_service():
     # AppKit/Quartz teardown can block inside NativeHUD._lock or process IPC. HUD is
     # non-essential during shutdown, so request close on a detached daemon and never wait.
     # Avoid logging from the worker: logging handlers may also be tearing down.
-    _hud_log.info("Shutdown debug stage begin: hud-close-request")
+    _shutdown_log.debug("Shutdown debug stage begin: hud-close-request")
 
     def close_hud_detached() -> None:
         try:
@@ -27935,37 +28025,39 @@ def cleanup_service():
             name="ShutdownHUDClose",
             daemon=True,
         ).start()
-        _hud_log.info("Shutdown debug stage end: hud-close-request dispatched=True")
+        _shutdown_log.debug(
+            "Shutdown debug stage end: hud-close-request dispatched=True"
+        )
     except Exception:
-        _hud_log.exception("Failed dispatching detached HUD close during shutdown")
+        _shutdown_log.exception("Failed dispatching detached HUD close during shutdown")
 
-    _shutdown_log.info("Shutdown debug stage begin: reset-question-recording")
+    _shutdown_log.debug("Shutdown debug stage begin: reset-question-recording")
     stage_started_at = time.monotonic()
     try:
         reset_question_recording_state()
-        _shutdown_log.info(
+        _shutdown_log.debug(
             "Shutdown debug stage end: reset-question-recording elapsed=%.3fs",
             time.monotonic() - stage_started_at,
         )
     except Exception:
-        _dictation_log.exception(
+        _shutdown_log.exception(
             "Failed to reset question recording state during shutdown"
         )
 
     async_cleanup_future = None
 
-    _shutdown_log.info("Shutdown debug stage begin: async-resource-cleanup")
+    _shutdown_log.debug("Shutdown debug stage begin: async-resource-cleanup")
     async_stage_started_at = time.monotonic()
     loop = _main_event_loop
 
     if loop is None:
-        _shutdown_log.info("未记录主事件循环，跳过额外的协程资源清理")
+        _shutdown_log.debug("未记录主事件循环，跳过额外的协程资源清理")
 
     elif loop.is_closed():
-        _shutdown_log.info("主事件循环已经关闭，跳过额外的协程资源清理")
+        _shutdown_log.debug("主事件循环已经关闭，跳过额外的协程资源清理")
 
     elif not loop.is_running():
-        _shutdown_log.info("主事件循环已经停止，跳过额外的协程资源清理")
+        _shutdown_log.debug("主事件循环已经停止，跳过额外的协程资源清理")
 
     else:
         cleanup_coro = cleanup_async_resources(
@@ -28004,7 +28096,7 @@ def cleanup_service():
         except Exception:
             _shutdown_log.exception("异步资源清理执行失败")
 
-    _shutdown_log.info(
+    _shutdown_log.debug(
         "Shutdown debug stage end: async-resource-cleanup elapsed=%.3fs future=%s",
         time.monotonic() - async_stage_started_at,
         async_cleanup_future is not None,
@@ -28021,7 +28113,7 @@ def cleanup_service():
         # Stage 1: graceful recognition finalization
         # -------------------------------------------------
         try:
-            _shutdown_log.info(
+            _shutdown_log.debug(
                 "Requesting Apple Speech helper graceful "
                 "finalization during service shutdown: "
                 "pid=%s",
@@ -28045,7 +28137,7 @@ def cleanup_service():
             helper_exited = True
 
         except Exception:
-            _dictation_log.exception(
+            _shutdown_log.exception(
                 "Failed requesting Apple Speech graceful finalization: pid=%s",
                 apple_proc.pid,
             )
@@ -28076,7 +28168,7 @@ def cleanup_service():
                 helper_exited = True
 
             except subprocess.TimeoutExpired:
-                _dictation_log.error(
+                _shutdown_log.error(
                     "Apple Speech helper remained alive "
                     "after its SIGTERM hard-exit window: "
                     "pid=%s",
@@ -28087,7 +28179,7 @@ def cleanup_service():
                 helper_exited = True
 
             except Exception:
-                _dictation_log.exception(
+                _shutdown_log.exception(
                     "Apple Speech SIGTERM stage failed: pid=%s",
                     apple_proc.pid,
                 )
@@ -28099,7 +28191,7 @@ def cleanup_service():
         # -------------------------------------------------
         if not helper_exited and apple_proc.poll() is None:
             try:
-                _dictation_log.critical(
+                _shutdown_log.critical(
                     "Apple Speech helper is still alive "
                     "after SIGUSR1 and SIGTERM; sending "
                     "last-resort SIGKILL to prevent an "
@@ -28116,14 +28208,14 @@ def cleanup_service():
                 helper_exited = True
 
             except subprocess.TimeoutExpired:
-                _dictation_log.critical(
+                _shutdown_log.critical(
                     "Apple Speech helper did not report "
                     "exit even after SIGKILL: pid=%s",
                     apple_proc.pid,
                 )
 
             except Exception:
-                _dictation_log.exception(
+                _shutdown_log.exception(
                     "Last-resort Apple Speech SIGKILL failed: pid=%s",
                     apple_proc.pid,
                 )
@@ -28132,14 +28224,14 @@ def cleanup_service():
     if apple_proc is not None and apple_proc.poll() is not None:
         _clear_apple_speech_process_if_exited(apple_proc)
     elif apple_proc is not None:
-        _dictation_log.critical(
+        _shutdown_log.critical(
             "Apple Speech helper remains alive while "
             "the parent service is exiting: pid=%s",
             apple_proc.pid,
         )
 
     _log_shutdown_thread_snapshot("cleanup-end")
-    _shutdown_log.info(
+    _shutdown_log.debug(
         "Shutdown debug: cleanup_service end elapsed=%.3fs "
         "doubao_stopped=%s audio_closed=%s",
         time.monotonic() - cleanup_started_at,
@@ -28149,7 +28241,7 @@ def cleanup_service():
 
 
 def signal_handler(signum, frame):
-    _shutdown_log.info(
+    _shutdown_log.debug(
         "Received signal %s; requesting shutdown",
         signum,
     )
@@ -30035,7 +30127,7 @@ def _detach_llm_worker_models_for_process_exit():
     MLX_VLM_DRAFTER_ID = None
     MLX_VLM_DRAFTER_TARGET_ID = None
 
-    _llm_log.info(
+    _llm_log.debug(
         "Detached LLM worker models for process exit: retained_objects=%d",
         len(_LLM_PROCESS_EXIT_MODEL_RETENTION),
     )
@@ -31928,7 +32020,7 @@ def llm_control_fifo_worker():
                 _llm_log.debug(f"LLM control FIFO error: {e}")
                 time.sleep(0.5)
 
-    _llm_log.info("LLM control FIFO worker stopped")
+    _llm_log.debug("LLM control FIFO worker stopped")
 
 
 def start_llm_control_fifo_worker():
@@ -32110,7 +32202,7 @@ def _llm_worker_loop():
 
         try:
             if job is None:
-                _llm_log.info("LLM worker received shutdown signal")
+                _llm_log.debug("LLM worker received shutdown signal")
                 _detach_llm_worker_models_for_process_exit()
                 break
 
@@ -32578,7 +32670,7 @@ def _llm_worker_loop():
                 pass
 
     LLM_WORKER_STOPPED.set()
-    _llm_log.info("LLM worker thread stopped")
+    _llm_log.debug("LLM worker thread stopped")
 
 
 def start_llm_worker():
@@ -32786,7 +32878,7 @@ def stop_llm_worker(
         )
 
     else:
-        _llm_log.info("LLM worker stopped cleanly")
+        _llm_log.debug("LLM worker stopped cleanly")
 
 
 def resolve_generation_model_for_job(
@@ -34269,7 +34361,7 @@ def _start_apple_speech_reaper(
                     )
                     continue
 
-                _shutdown_log.info(
+                _shutdown_log.debug(
                     "Apple Speech helper exited after delayed cleanup: "
                     "pid=%s, returncode=%s",
                     proc.pid,
@@ -34572,7 +34664,7 @@ def _run_apple_speech_dictation(
             if proc.poll() is not None:
                 return True
 
-            _shutdown_log.info(
+            _shutdown_log.debug(
                 "Stopping Apple Speech helper gracefully: %s, pid=%s",
                 reason,
                 proc.pid,
@@ -34582,7 +34674,7 @@ def _run_apple_speech_dictation(
 
             try:
                 proc.wait(timeout=timeout)
-                _shutdown_log.info(
+                _shutdown_log.debug(
                     "Apple Speech helper exited gracefully: pid=%s, returncode=%s",
                     proc.pid,
                     proc.returncode,
@@ -51897,8 +51989,9 @@ def main():
 
     start_llm_worker()
     start_llm_control_fifo_worker()
-    ensure_firefox_auth_sync_native_host()
+    ensure_auth_sync_native_host()
     AUTH_SYNC_SERVER.start()
+
     if M365_ENTRY_URL:
         try:
             M365_BROWSER_RUNTIME.start()
@@ -52049,7 +52142,7 @@ def main():
             ("deepseek", DEEPSEEK_BROWSER_RUNTIME.begin_shutdown),
             ("m365", M365_BROWSER_RUNTIME.request_shutdown),
         ):
-            _shutdown_log.info("Shutdown signal stage: requesting %s", provider_name)
+            _shutdown_log.debug("Shutdown signal stage: requesting %s", provider_name)
             completed, _result = _run_shutdown_call_bounded(
                 f"{provider_name}-shutdown-request", request_shutdown, timeout=1.0
             )
@@ -52127,7 +52220,7 @@ def main():
             _http_log.debug(f"HTTP gateway shutdown ignored error: {e}")
 
         # 3. 清理应用资源
-        _shutdown_log.info("Main shutdown debug stage begin: cleanup_service")
+        _shutdown_log.debug("Main shutdown debug stage begin: cleanup_service")
         stage_started_at = time.monotonic()
         try:
             cleanup_service()
@@ -52136,12 +52229,12 @@ def main():
                 "cleanup_service failed during main shutdown: %s", e
             )
         finally:
-            _shutdown_log.info(
+            _shutdown_log.debug(
                 "Main shutdown debug stage end: cleanup_service elapsed=%.3fs",
                 time.monotonic() - stage_started_at,
             )
 
-        _shutdown_log.info("Main shutdown debug stage begin: stop_llm_worker")
+        _shutdown_log.debug("Main shutdown debug stage begin: stop_llm_worker")
         stage_started_at = time.monotonic()
         try:
 
@@ -52153,7 +52246,7 @@ def main():
                 stop_llm_worker_for_shutdown,
                 timeout=1.5,
             )
-            _shutdown_log.info(
+            _shutdown_log.debug(
                 "Main shutdown debug stage end: stop_llm_worker completed=%s elapsed=%.3fs",
                 completed,
                 time.monotonic() - stage_started_at,
