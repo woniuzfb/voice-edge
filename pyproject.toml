@@ -33,6 +33,7 @@ dependencies = [
     "cryptography>=49.0.0",
     "bleak>=3.0.2",
     "pycryptodome>=3.23.0",
+    "modelscope-hub>=0.2.0",
 ]
 
 [project.scripts]
