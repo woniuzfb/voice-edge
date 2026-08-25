@@ -15,23 +15,13 @@ Voice Edge
 Usage:
     python voice_edge.py [--http] [--self-test] [--fix-env-registry] [--mi-login] [--ble-scan] [--ble-listen]
     python voice_edge.py --mi-list [name_keyword|full] [false|true] [0|1]
+    python voice_edge.py --modelscope <org/model>
 """
 
 from __future__ import annotations
 
-import os
-from builtins import BaseExceptionGroup
-
-# Never let Hugging Face dependent libraries access the network.
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-
-# Optional: disable telemetry and noisy allocator diagnostics.
-os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
-os.environ["MallocStackLogging"] = "0"
-
-import asyncio
 import ast
+import asyncio
 import atexit
 import base64
 import binascii
@@ -43,15 +33,14 @@ import inspect
 import json
 import logging
 import math
+import os
 import queue
 import random
 import re
 import secrets
+import shutil
 import signal
 
-# Optional Xiaomi speaker bridge dependency. The minimal Xiaomi control plane is
-# embedded below; only aiohttp remains external. The bridge is disabled unless
-# XIAOAI_ENABLED=1, so the core voice_edge service still starts without it.
 import socket
 import struct
 import subprocess
@@ -61,6 +50,7 @@ import threading
 import time
 import urllib.parse
 import uuid
+from builtins import BaseExceptionGroup
 from collections import OrderedDict, deque
 from dataclasses import dataclass, field, replace
 from datetime import datetime
@@ -96,7 +86,6 @@ from Crypto.Cipher import AES
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from mcp.server.fastmcp import FastMCP
-from mlx_lm.sample_utils import make_sampler
 from pydantic import Field
 from pypinyin import Style, lazy_pinyin
 from starlette.applications import Starlette
@@ -108,7 +97,6 @@ from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingR
 from starlette.routing import Route
 from tavily import TavilyClient
 
-# Try to import scipy for resampling
 try:
     from scipy.signal import resample_poly
 
@@ -368,8 +356,6 @@ def _ve_env_flag(name: str, default: str = "0") -> bool:
     return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
 
 
-# Every functional logger has an independent DEBUG gate. Disabled categories
-# stay at WARNING so warning/error records remain visible without INFO noise.
 VE_APP_LOG_DEBUG = _ve_env_flag("VE_APP_LOG_DEBUG")
 VE_AUTH_LOG_DEBUG = _ve_env_flag("VE_AUTH_LOG_DEBUG")
 VE_AUDIO_LOG_DEBUG = _ve_env_flag("VE_AUDIO_LOG_DEBUG")
@@ -30145,7 +30131,6 @@ def _load_jina_official_mlx_reranker_in_worker(model_id: str):
     _rerank_log.info(f"Loading official Jina MLX reranker: {model_id}")
 
     import importlib.util
-    import inspect
 
     from huggingface_hub import snapshot_download
 
@@ -31750,7 +31735,6 @@ def resolve_local_hf_snapshot(
 
         return str(resolved)
 
-    # Interpret the value as a Hugging Face repo id and resolve from cache.
     from huggingface_hub import snapshot_download
     from huggingface_hub.errors import LocalEntryNotFoundError
 
@@ -32196,6 +32180,8 @@ def _llm_worker_loop():
 
     LLM_WORKER_READY.set()
     _llm_log.info("LLM worker thread started")
+
+    from mlx_lm.sample_utils import make_sampler
 
     while True:
         job = LLM_JOB_QUEUE.get()
@@ -51813,6 +51799,165 @@ async def _run_mi_list_cli(
         return 0
 
 
+# Top-level entries that belong to the Hugging Face hub layout itself and must
+# never be swept into a snapshot directory during reorganization.
+_HF_HUB_RESERVED_ENTRIES = frozenset({"trees", "blobs", "refs", "snapshots"})
+
+
+def _hf_cache_home() -> Path:
+    """Return the Hugging Face cache home, mirroring huggingface_hub resolution.
+
+    Honors ``HF_HOME`` when set and otherwise falls back to ``~/.cache/huggingface``.
+    """
+
+    hf_home = os.environ.get("HF_HOME", "").strip()
+    if hf_home:
+        return Path(hf_home).expanduser()
+    return Path.home() / ".cache" / "huggingface"
+
+
+def _resolve_hf_head_revision(model_name: str) -> str:
+    """Resolve the remote HEAD commit hash for a HF repo via ``huggingface_hub.HfApi``.
+
+    An access token is read from the usual environment variable when present so
+    private repos resolve, without a token the request is made anonymously.
+    """
+
+    try:
+        from huggingface_hub import HfApi
+    except ImportError as exc:
+        raise RuntimeError(
+            "huggingface_hub is required to resolve the Hugging Face HEAD revision; "
+            "install it with 'pip install huggingface_hub'"
+        ) from exc
+
+    token = os.environ.get("HUGGINGFACEHUB_API_TOKEN", "").strip() or None
+
+    try:
+        info = HfApi(token=token).model_info(model_name)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to resolve Hugging Face HEAD for {model_name}: {exc}"
+        ) from exc
+
+    revision = str(getattr(info, "sha", "") or "").strip()
+    if not revision:
+        raise RuntimeError(f"Failed to resolve Hugging Face HEAD for {model_name}")
+    return revision
+
+
+def _move_into_snapshot(entry: Path, snapshot_dir: Path) -> None:
+    """Move one top-level entry into ``snapshot_dir`` (GNU ``gmv -t`` equivalent).
+
+    Any pre-existing target with the same name (e.g. from an interrupted prior
+    run) is removed first so the freshly downloaded copy wins, and the move stays
+    within the same hub directory so it is a cheap rename on the same filesystem.
+    """
+
+    target = snapshot_dir / entry.name
+    if target.is_symlink() or target.is_file():
+        target.unlink()
+    elif target.is_dir():
+        shutil.rmtree(target)
+    shutil.move(str(entry), str(target))
+
+
+def _download_modelscope_into_hf_cache(model_name: str) -> int:
+    """Download a repo via the ModelScope Python API and lay it out as an HF hub snapshot.
+
+    It resolves the HF HEAD revision, short-circuits when a valid snapshot already exists,
+    downloads with ``modelscope.hub.snapshot_download. snapshot_download(model_name,
+    local_dir=<hub_dir>)``, then reorganizes the flat download into
+    ``<hub_dir>/snapshots/<revision>`` and writes ``<hub_dir>/refs/main``.
+    Returns a process exit code.
+    """
+
+    model_name = str(model_name or "").strip()
+    if not model_name or model_name.startswith("-") or "/" not in model_name:
+        print(
+            f"--modelscope requires a repo id like 'org/model', got: {model_name!r}",
+            file=sys.stderr,
+        )
+        return 2
+
+    hf_dir = _hf_cache_home() / "hub" / f"models--{model_name.replace('/', '--')}"
+
+    revision = _resolve_hf_head_revision(model_name)
+    snapshot_dir = hf_dir / "snapshots" / revision
+    refs_main = hf_dir / "refs" / "main"
+
+    # Skip re-downloading when refs/main already points at this revision and the
+    # snapshot directory looks complete (config.json present).
+    if refs_main.is_file():
+        existing = refs_main.read_text(encoding="utf-8", errors="ignore").strip()
+        if (
+            existing
+            and existing == revision
+            and snapshot_dir.is_dir()
+            and (snapshot_dir / "config.json").is_file()
+        ):
+            print(f"Existing valid snapshot: {revision}")
+            return 0
+
+    print(f"Downloading {model_name} from ModelScope into {hf_dir} ...")
+
+    try:
+        from modelscope_hub import HubApi
+    except ImportError as exc:
+        raise RuntimeError(
+            "modelscope-hub is not installed; install it with 'pip install modelscope-hub'"
+        ) from exc
+
+    token = os.environ.get("MODELSCOPE_API_TOKEN", "").strip() or None
+
+    try:
+        api = HubApi(token=token)
+        api.download_repo(model_name, repo_type="model", local_dir=str(hf_dir))
+    except Exception as exc:
+        raise RuntimeError(
+            f"modelscope download failed for {model_name}: {exc}"
+        ) from exc
+
+    # Reorganize the flat download into the HF hub snapshot layout.
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+    for entry in list(hf_dir.iterdir()):
+        if entry.name in _HF_HUB_RESERVED_ENTRIES:
+            continue
+        _move_into_snapshot(entry, snapshot_dir)
+
+    refs_main.parent.mkdir(parents=True, exist_ok=True)
+    refs_main.write_text(revision, encoding="utf-8")
+
+    print(f"Prepared Hugging Face snapshot: {snapshot_dir}")
+    print(f"refs/main -> {revision}")
+    return 0
+
+
+def _run_modelscope_from_argv(argv: list[str]) -> bool:
+    """Handle ``--modelscope <repo_id>`` and exit; otherwise return False."""
+
+    if "--modelscope" not in argv:
+        return False
+
+    idx = argv.index("--modelscope")
+    rest = argv[idx + 1 :]
+    if not rest or rest[0].startswith("--"):
+        print("Usage: python voice_edge.py --modelscope <org/model>", file=sys.stderr)
+        raise SystemExit(2)
+
+    model_name = rest[0]
+
+    try:
+        result = _download_modelscope_into_hf_cache(model_name)
+    except (EOFError, KeyboardInterrupt):
+        print("--modelscope cancelled", file=sys.stderr)
+        raise SystemExit(1) from None
+    except Exception as exc:
+        print(f"--modelscope failed: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    raise SystemExit(result)
+
+
 def _run_mi_list_from_argv(argv: list[str]) -> bool:
     try:
         parsed = _parse_mi_list_cli(argv)
@@ -51910,11 +52055,15 @@ def _validate_command_line(argv: list[str]) -> None:
     if argv and argv[0] == "--mi-list" and 1 <= len(argv) <= 4:
         if not any(value.startswith("--") for value in argv[1:]):
             return
+    if argv and argv[0] == "--modelscope" and len(argv) == 2:
+        if not argv[1].startswith("--"):
+            return
     print(
         "Usage:\n"
         "  python voice_edge.py [--http] [--self-test]\n"
         "  python voice_edge.py --mi-login\n"
         "  python voice_edge.py --mi-list [name_keyword|full] [false|true] [0|1]\n"
+        "  python voice_edge.py --modelscope <org/model>\n"
         "  python voice_edge.py --ble-scan\n"
         "  python voice_edge.py --ble-listen\n"
         "  python voice_edge.py --fix-env-registry",
@@ -51970,6 +52119,13 @@ def main():
     _run_ble_cli_from_argv(argv)
     _run_mi_login_from_argv(argv)
     _run_mi_list_from_argv(argv)
+
+    os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+
+    _run_modelscope_from_argv(argv)
+
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
     _acquire_process_instance_lock()
     _initialize_main_runtime()
