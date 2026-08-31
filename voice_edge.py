@@ -138,213 +138,213 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1399
-#    VE_VLM_KV_BITS                         3.5                                          L483
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L488
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L493
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L494
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L982
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L987
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L990
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L994
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1003
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1011
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1066
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1517
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41436
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42085
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42097
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18116
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18113
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18079
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18094
-#    AUTH_SYNC_ENABLED                      "1"                                          L18067
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18068
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1429
+#    VE_VLM_KV_BITS                         3.5                                          L469
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L474
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L479
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L480
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L1012
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L1017
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L1020
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L1024
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1033
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1041
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1096
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1547
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41463
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42112
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42124
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18146
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18143
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18109
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18124
+#    AUTH_SYNC_ENABLED                      "1"                                          L18097
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18098
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L373
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L374
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L375
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L376
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L377
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L381
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L385
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L386
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L387
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L388
-#    VE_HUD_LOG_DEBUG                           "0"                                      L389
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L390
-#    VE_KWS_LOG_DEBUG                           "0"                                      L391
-#    VE_LLM_LOG_DEBUG                           "0"                                      L392
-#    VE_M365_LOG_DEBUG                          "0"                                      L393
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L394
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L398
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L402
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L403
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L404
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L405
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L406
-#    VE_TTS_LOG_DEBUG                           "0"                                      L407
-#    VE_VLM_LOG_DEBUG                           "0"                                      L408
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L409
+#    VE_APP_LOG_DEBUG                           "0"                                      L359
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L360
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L361
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L362
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L363
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L367
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L371
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L372
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L373
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L374
+#    VE_HUD_LOG_DEBUG                           "0"                                      L375
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L376
+#    VE_KWS_LOG_DEBUG                           "0"                                      L377
+#    VE_LLM_LOG_DEBUG                           "0"                                      L378
+#    VE_M365_LOG_DEBUG                          "0"                                      L379
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L380
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L384
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L388
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L389
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L390
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L391
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L392
+#    VE_TTS_LOG_DEBUG                           "0"                                      L393
+#    VE_VLM_LOG_DEBUG                           "0"                                      L394
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L395
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41322
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41345
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41372
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41431
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L41974
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L41977
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L41985
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L41997
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L41999
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42008
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42014
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42020
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42036
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42041
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42048
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42055
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42064
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42071
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42119
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43887
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43888
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43889
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41349
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41372
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41399
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41458
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42001
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42004
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42012
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42024
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42026
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42035
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42041
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42047
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42063
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42068
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42075
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42082
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42091
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42098
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42146
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43914
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43915
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43916
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13623
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13625
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L13626
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13632
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13634
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13637
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13645
-#    QWEN_COOKIE_HEADER                     ""                                           L13649
-#    QWEN_TOKENS                            ""                                           L13657
-#    QWEN_TOKEN                             ""                                           L13658
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13653
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13655
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L13656
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13662
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13664
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13667
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13675
+#    QWEN_COOKIE_HEADER                     ""                                           L13679
+#    QWEN_TOKENS                            ""                                           L13687
+#    QWEN_TOKEN                             ""                                           L13688
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L592
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15292
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L15293
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15295
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15297
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15299
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15302
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15305
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15308
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15429
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15432
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L622
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15322
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L15323
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15325
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15327
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15329
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15332
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15335
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15338
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15459
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15462
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L17977
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L17978
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L17984
-#    DOUBAO_FP                              "doubao_voice_edge"                          L17985
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L17993
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L17995
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L17998
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18000
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18002
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18006
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18033
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18036
-#    DOUBAO_WEB_AID                         "497858"                                     L18038
-#    DOUBAO_WEB_REGION                      "CN"                                         L18039
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18040
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18041
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18043
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18092
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18084
-#    DOUBAO_COOKIE_HEADER                   ""                                           L18394
-#    DOUBAO_SESSION_IDS                     ""                                           L18436
-#    DOUBAO_SESSION_ID                      ""                                           L18440
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18951
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18960
-#    DOUBAO_SESSION_ID_SS                   ""                                           L19142
-#    DOUBAO_SID_TT                          ""                                           L19145
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L18007
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L18008
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L18014
+#    DOUBAO_FP                              "doubao_voice_edge"                          L18015
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L18023
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L18025
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L18028
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18030
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18032
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18036
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18063
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18066
+#    DOUBAO_WEB_AID                         "497858"                                     L18068
+#    DOUBAO_WEB_REGION                      "CN"                                         L18069
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18070
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18071
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18073
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18122
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18114
+#    DOUBAO_COOKIE_HEADER                   ""                                           L18424
+#    DOUBAO_SESSION_IDS                     ""                                           L18466
+#    DOUBAO_SESSION_ID                      ""                                           L18470
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18981
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18990
+#    DOUBAO_SESSION_ID_SS                   ""                                           L19172
+#    DOUBAO_SID_TT                          ""                                           L19175
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L23529
-#    SHAREPOINT_HOME_URL                    ""                                           L23530
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23531
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23532
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23559
-#    M365_BRIDGE_PORT                       "5003"                                       L23560
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23561
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L23562
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23564
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23567
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L23570
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23578
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L23580
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23600
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23607
-#    M365_CONV_MAP_MAX                      "1024"                                       L23776
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24423
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24441
+#    M365_ENTRY_URL                         ""                                           L23559
+#    SHAREPOINT_HOME_URL                    ""                                           L23560
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23561
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23562
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23589
+#    M365_BRIDGE_PORT                       "5003"                                       L23590
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23591
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L23592
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23594
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23597
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L23600
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23608
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L23610
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23630
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23637
+#    M365_CONV_MAP_MAX                      "1024"                                       L23806
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24453
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24471
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L36660
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36870
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36932
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36954
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36961
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37056
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37058
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37062
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L38255
-#    MI_USER                                ""                                           L37981
-#    MI_PASS                                ""                                           L38007
-#    XIAOAI_HARDWARE                        "LX06"                                       L38009
-#    MI_DID                                 ""                                           L38011
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38014
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38018
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L38021
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38024
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38030
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38041
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38046
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38027
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38037
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L38057
-#    XIAOAI_VOICE                           "zh"                                         L38059
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L38061
-#    XIAOAI_MAX_TOKENS                      "500"                                        L38064
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L38067
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38070
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38074
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38078
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38083
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38088
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38093
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38098
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38103
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38111
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38116
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38121
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38126
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38131
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38136
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38141
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L38144
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38148
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38152
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38156
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38161
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38166
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38170
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38173
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38176
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38179
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38182
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38185
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L38188
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38191
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38198
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38204
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L38208
+#    XIAOAI_ENABLED                         "0"                                          L36687
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36897
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36959
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36981
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36988
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37083
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37085
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37089
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L38282
+#    MI_USER                                ""                                           L38008
+#    MI_PASS                                ""                                           L38034
+#    XIAOAI_HARDWARE                        "LX06"                                       L38036
+#    MI_DID                                 ""                                           L38038
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38041
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38045
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L38048
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38051
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38057
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38068
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38073
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38054
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38064
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L38084
+#    XIAOAI_VOICE                           "zh"                                         L38086
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L38088
+#    XIAOAI_MAX_TOKENS                      "500"                                        L38091
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L38094
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38097
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38101
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38105
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38110
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38115
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38120
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38125
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38130
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38138
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38143
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38148
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38153
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38158
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38163
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38168
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L38171
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38175
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38179
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38183
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38188
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38193
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38197
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38200
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38203
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38206
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38209
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38212
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L38215
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38218
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38225
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38231
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L38235
 #
 # 合计 193 个唯一环境变量。
 # ============================================================================
@@ -500,6 +500,50 @@ DEFAULT_LLM_ALIAS = "LLM:default"
 DEFAULT_EMBED_ALIAS = "embed:default"
 DEFAULT_RERANK_ALIAS = "rerank:default"
 DEFAULT_FIM_ALIAS = "FIM:default"
+
+
+# -----------------------------------------------------------------------------
+# OpenRouter relay/provider configuration
+# -----------------------------------------------------------------------------
+# The only OpenRouter setting read from the environment is VE_OPENROUTER_API_KEYS.
+# It accepts a JSON string array, a comma-separated list, or newline-separated keys.
+# All other OpenRouter behavior is configured by the constants below.
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_MODEL_PREFIX = "openrouter:"
+OPENROUTER_ALTERNATE_MODEL_PREFIX = "openrouter/"
+OPENROUTER_DEFAULT_MODEL = "z-ai/glm-5.2:free"
+OPENROUTER_MODEL_CAPABILITIES: dict[str, frozenset[str]] = {
+    "z-ai/glm-5.2:free": frozenset(
+        {"chat", "completions", "stream", "tools", "reasoning"}
+    ),
+    "nvidia/nemotron-3-ultra-550b-a55b:free": frozenset(
+        {"chat", "completions", "stream", "tools", "reasoning"}
+    ),
+    "minimax/minimax-m3:free": frozenset(
+        {"chat", "completions", "stream", "tools", "reasoning"}
+    ),
+    "poolside/laguna-s-2.1:free": frozenset(
+        {"chat", "completions", "stream", "tools", "reasoning"}
+    ),
+}
+OPENROUTER_EXPOSED_MODELS = tuple(OPENROUTER_MODEL_CAPABILITIES)
+OPENROUTER_APP_NAME = "Voice Edge"
+OPENROUTER_CONNECT_TIMEOUT_SECONDS = 15.0
+OPENROUTER_FIRST_EVENT_TIMEOUT_SECONDS = 45.0
+OPENROUTER_STREAM_IDLE_TIMEOUT_SECONDS = 90.0
+OPENROUTER_TOTAL_TIMEOUT_SECONDS = 600.0
+OPENROUTER_MAX_ATTEMPTS = 3
+OPENROUTER_RETRY_BASE_SECONDS = 0.35
+OPENROUTER_KEY_COOLDOWN_SECONDS = 300.0
+OPENROUTER_MAX_INFLIGHT_PER_KEY = 8
+OPENROUTER_KEY_SELECTION_STRATEGY = "round-robin"
+OPENROUTER_KEY_SELECTION_OPTS: tuple[str, ...] = ()
+OPENROUTER_MODEL_ALIASES = {
+    f"{OPENROUTER_MODEL_PREFIX}{model}": model for model in OPENROUTER_EXPOSED_MODELS
+}
+OPENROUTER_HTTP_REFERER = "http://localhost"
+OPENROUTER_GLOBAL_RATE_DELAY_SECONDS = 0.0
+
 
 DICTATION_CORRECTION_MODEL = "LLM:gemma-4-unsloth"
 
@@ -31863,10 +31907,7 @@ def _ensure_vlm_model_loaded(model_id: str):
 
     _vlm_log.info(f"Loading MLX-VLM model in LLM worker: {model_id}")
 
-    try:
-        from mlx_vlm import load as vlm_load
-    except Exception:
-        from mlx_vlm.utils import load as vlm_load
+    from mlx_vlm.utils import load as vlm_load
 
     local_model_path = resolve_local_hf_snapshot(
         model_id,
@@ -44749,13 +44790,38 @@ async def ble_remote_events_api(request):
     async def stream():
         try:
             yield b'{"type":"BLE_REMOTE_READY"}\n'
+            # A client can connect *inside* the shutdown window, i.e. after
+            # _stop_ble_remote_scanner() has already published its one-shot
+            # BLE_REMOTE_SHUTDOWN marker. Such a late subscriber is registered
+            # too late to receive that broadcast, so without this guard it would
+            # block in queue.get() until Uvicorn force-cancels the ASGI task at
+            # timeout_graceful_shutdown, surfacing an uncaught CancelledError
+            # ("Exception in ASGI application") in the logs. Detect the already
+            # -set stop flag and end the stream immediately instead.
+            if _BLE_REMOTE_STOP.is_set():
+                if debug:
+                    _http_log.info(
+                        "BLE remote event stream closing for shutdown: client=%s",
+                        client_host,
+                    )
+                yield b'{"type":"BLE_REMOTE_SHUTDOWN"}\n'
+                return
             while True:
                 try:
                     event = await asyncio.to_thread(subscriber.get, True, 15.0)
                 except queue.Empty:
+                    # Fall through to shutdown if the stop flag was raised while
+                    # we were parked in queue.get() but the wake-up broadcast
+                    # never reached this subscriber (do not rely solely on the
+                    # one-shot BLE_REMOTE_SHUTDOWN event to unblock).
+                    if _BLE_REMOTE_STOP.is_set():
+                        break
                     yield b'{"type":"KEEPALIVE"}\n'
                     continue
-                if event.get("type") == "BLE_REMOTE_SHUTDOWN":
+                if (
+                    event.get("type") == "BLE_REMOTE_SHUTDOWN"
+                    or _BLE_REMOTE_STOP.is_set()
+                ):
                     if debug:
                         _http_log.info(
                             "BLE remote event stream closing for shutdown: client=%s",
@@ -45729,6 +45795,12 @@ async def completions_api(request):
 
         requested_model = body.get("model", None)
 
+        if _openrouter_is_model(requested_model):
+            openrouter_stream = body.get("stream", False) in (True, "true", "True", "1")
+            return await _direct_openrouter_text_completion(
+                dict(body), openrouter_stream
+            )
+
         if is_fim_request:
             requested_model = requested_model or DEFAULT_FIM_ALIAS
 
@@ -46504,6 +46576,864 @@ def _resolve_chat_completion_max_tokens(body: dict, *, default: int = 500) -> in
     return _normalize_max_tokens(requested, default=default)
 
 
+@dataclass(frozen=True)
+class OpenRouterConfig:
+    """OpenRouter configuration; only API keys come from the environment."""
+
+    api_keys: tuple[str, ...]
+    base_url: str = OPENROUTER_BASE_URL
+    model_prefix: str = OPENROUTER_MODEL_PREFIX
+    alternate_model_prefix: str = OPENROUTER_ALTERNATE_MODEL_PREFIX
+    default_model: str = OPENROUTER_DEFAULT_MODEL
+    exposed_models: tuple[str, ...] = OPENROUTER_EXPOSED_MODELS
+    aliases: dict[str, str] = field(
+        default_factory=lambda: dict(OPENROUTER_MODEL_ALIASES)
+    )
+    app_name: str = OPENROUTER_APP_NAME
+    http_referer: str = OPENROUTER_HTTP_REFERER
+    connect_timeout: float = OPENROUTER_CONNECT_TIMEOUT_SECONDS
+    first_event_timeout: float = OPENROUTER_FIRST_EVENT_TIMEOUT_SECONDS
+    stream_idle_timeout: float = OPENROUTER_STREAM_IDLE_TIMEOUT_SECONDS
+    total_timeout: float = OPENROUTER_TOTAL_TIMEOUT_SECONDS
+    max_attempts: int = OPENROUTER_MAX_ATTEMPTS
+    retry_base_seconds: float = OPENROUTER_RETRY_BASE_SECONDS
+    key_cooldown_seconds: float = OPENROUTER_KEY_COOLDOWN_SECONDS
+    max_inflight_per_key: int = OPENROUTER_MAX_INFLIGHT_PER_KEY
+    key_strategy: str = OPENROUTER_KEY_SELECTION_STRATEGY
+    key_options: tuple[str, ...] = OPENROUTER_KEY_SELECTION_OPTS
+    global_rate_delay: float = OPENROUTER_GLOBAL_RATE_DELAY_SECONDS
+
+    @classmethod
+    def load(cls) -> "OpenRouterConfig":
+        return cls(api_keys=tuple(_openrouter_parse_api_keys()))
+
+
+@dataclass(frozen=True)
+class OpenRouterModelSpec:
+    public_id: str
+    upstream_id: str
+    capabilities: frozenset[str] = frozenset({"chat", "completions", "stream"})
+
+    @classmethod
+    def from_public_id(cls, public_id: str) -> "OpenRouterModelSpec":
+        upstream_id = _openrouter_upstream_model(public_id)
+        return cls(
+            public_id=public_id,
+            upstream_id=upstream_id,
+            capabilities=OPENROUTER_MODEL_CAPABILITIES.get(
+                upstream_id,
+                frozenset({"chat", "completions", "stream"}),
+            ),
+        )
+
+    def as_openai_model(self) -> dict[str, Any]:
+        return {
+            "id": self.public_id,
+            "object": "model",
+            "created": 0,
+            "owned_by": "openrouter",
+            "root": self.upstream_id,
+            "capabilities": sorted(self.capabilities),
+        }
+
+
+@dataclass
+class OpenRouterKeyState:
+    secret: str
+    key_id: str
+    inflight: int = 0
+    disabled_until: float = 0.0
+    failures: int = 0
+    last_used: float = 0.0
+
+
+class OpenRouterNoKeyError(RuntimeError):
+    def __init__(self, wait_seconds: float = 0.0):
+        self.wait_seconds = max(0.0, float(wait_seconds))
+        super().__init__(
+            "No OpenRouter API key is available"
+            + (f"; retry in {self.wait_seconds:.0f}s" if self.wait_seconds else "")
+        )
+
+
+def _openrouter_parse_api_keys() -> list[str]:
+    raw = os.getenv("VE_OPENROUTER_API_KEYS", "").strip()
+    if not raw:
+        return []
+    if raw.startswith("["):
+        try:
+            decoded = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                "VE_OPENROUTER_API_KEYS must be JSON or comma/newline separated"
+            ) from exc
+        if not isinstance(decoded, list):
+            raise RuntimeError("VE_OPENROUTER_API_KEYS JSON must be an array")
+        values = [str(value).strip() for value in decoded]
+    else:
+        values = [part.strip() for part in re.split(r"[,\r\n]+", raw)]
+    return list(dict.fromkeys(value for value in values if value))
+
+
+def _openrouter_mask(key: str) -> str:
+    if len(key) <= 8:
+        return "****"
+    return f"{key[:4]}****{key[-4:]}"
+
+
+def _openrouter_is_model(model_name: Any) -> bool:
+    return isinstance(model_name, str) and (
+        model_name.startswith(OPENROUTER_MODEL_PREFIX)
+        or model_name.startswith(OPENROUTER_ALTERNATE_MODEL_PREFIX)
+    )
+
+
+def _openrouter_upstream_model(model_name: str) -> str:
+    if model_name in OPENROUTER_MODEL_ALIASES:
+        return OPENROUTER_MODEL_ALIASES[model_name]
+    if model_name.startswith(OPENROUTER_MODEL_PREFIX):
+        model_name = model_name[len(OPENROUTER_MODEL_PREFIX) :]
+    elif model_name.startswith(OPENROUTER_ALTERNATE_MODEL_PREFIX):
+        model_name = model_name[len(OPENROUTER_ALTERNATE_MODEL_PREFIX) :]
+    return model_name.strip() or OPENROUTER_DEFAULT_MODEL
+
+
+class OpenRouterKeyManager:
+    """Concurrency-aware first/random/round-robin selector with sticky option."""
+
+    def __init__(self, config: OpenRouterConfig):
+        self.config = config
+        self._states = [
+            OpenRouterKeyState(
+                secret=key,
+                key_id=hashlib.sha256(key.encode()).hexdigest()[:10],
+            )
+            for key in config.api_keys
+        ]
+        self._cursor = 0
+        self._last_good_id: str | None = None
+        self._lock = asyncio.Lock()
+
+    async def acquire(self, excluded: set[str] | None = None) -> OpenRouterKeyState:
+        excluded = excluded or set()
+        async with self._lock:
+            now = time.monotonic()
+            candidates = [
+                state
+                for state in self._states
+                if state.key_id not in excluded
+                and state.disabled_until <= now
+                and state.inflight < self.config.max_inflight_per_key
+            ]
+            if not candidates:
+                candidates = [
+                    state
+                    for state in self._states
+                    if state.key_id not in excluded and state.disabled_until <= now
+                ]
+            if not candidates:
+                waits = [
+                    s.disabled_until - now
+                    for s in self._states
+                    if s.disabled_until > now
+                ]
+                raise OpenRouterNoKeyError(min(waits) if waits else 0.0)
+            if "same" in {value.lower() for value in self.config.key_options}:
+                sticky = next(
+                    (s for s in candidates if s.key_id == self._last_good_id), None
+                )
+            else:
+                sticky = None
+            if sticky is not None:
+                chosen = sticky
+            elif self.config.key_strategy == "first":
+                chosen = candidates[0]
+            elif self.config.key_strategy == "random":
+                chosen = secrets.choice(candidates)
+            else:
+                ordered = sorted(
+                    candidates, key=lambda state: self._states.index(state)
+                )
+                chosen = ordered[self._cursor % len(ordered)]
+                self._cursor = (self._cursor + 1) % max(1, len(self._states))
+            chosen.inflight += 1
+            chosen.last_used = now
+            return chosen
+
+    async def release(self, state: OpenRouterKeyState, *, success: bool) -> None:
+        async with self._lock:
+            state.inflight = max(0, state.inflight - 1)
+            if success:
+                state.failures = 0
+                self._last_good_id = state.key_id
+            else:
+                state.failures += 1
+
+    async def penalize(self, state: OpenRouterKeyState) -> None:
+        async with self._lock:
+            state.disabled_until = time.monotonic() + self.config.key_cooldown_seconds
+            if self._last_good_id == state.key_id:
+                self._last_good_id = None
+            _http_log.warning(
+                "OpenRouter key %s cooling down for %.0fs",
+                _openrouter_mask(state.secret),
+                self.config.key_cooldown_seconds,
+            )
+
+
+@dataclass
+class StreamableOutputItem:
+    id: str
+    type: Literal["reasoning", "message", "function_call"]
+    text: str = ""
+    name: str = ""
+    arguments: str = ""
+    call_id: str = ""
+    index: int = 0
+
+
+@dataclass(frozen=True)
+class VoiceEdgeEvent:
+    kind: Literal["reasoning", "message", "function_call", "error", "done", "metadata"]
+    item: StreamableOutputItem | None = None
+    delta: str = ""
+    payload: Any = None
+
+
+class OpenRouterItemAssembler:
+    """Replace-by-id item store that emits only each snapshot's new suffix."""
+
+    def __init__(self, completion_id: str, created: int, model: str):
+        self.completion_id = completion_id
+        self.created = created
+        self.model = model
+        self.items_by_id: OrderedDict[str, StreamableOutputItem] = OrderedDict()
+        self.role_sent = False
+        self.finish_reason: str | None = None
+        self.terminal = False
+
+    def _item(
+        self, item_id: str, item_type: str, index: int = 0
+    ) -> StreamableOutputItem:
+        item = self.items_by_id.get(item_id)
+        if item is None:
+            item = StreamableOutputItem(item_id, cast(Any, item_type), index=index)
+            self.items_by_id[item_id] = item
+        return item
+
+    @staticmethod
+    def _new_suffix(previous: str, updated: str) -> str:
+        if updated.startswith(previous):
+            return updated[len(previous) :]
+        # Upstream OpenAI chunks are deltas. A non-prefix item update is therefore
+        # interpreted as an additional fragment, never as replacement output.
+        return updated
+
+    def push(self, chunk: dict) -> list[VoiceEdgeEvent]:
+        if self.terminal:
+            return []
+        if chunk.get("error") is not None:
+            self.terminal = True
+            return [VoiceEdgeEvent("error", payload=chunk.get("error"))]
+        events: list[VoiceEdgeEvent] = []
+        choices = chunk.get("choices") or []
+        if not choices and chunk.get("usage") is not None:
+            return [VoiceEdgeEvent("metadata", payload={"usage": chunk["usage"]})]
+        for choice in choices:
+            if not isinstance(choice, dict):
+                continue
+            choice_index = int(choice.get("index", 0) or 0)
+            if choice.get("finish_reason") is not None:
+                self.finish_reason = str(choice["finish_reason"])
+            delta = choice.get("delta") or {}
+            if not isinstance(delta, dict):
+                continue
+            reasoning = delta.get("reasoning_content", delta.get("reasoning"))
+            if reasoning:
+                item_id = f"reasoning:{choice_index}"
+                item = self._item(item_id, "reasoning", choice_index)
+                fragment = str(reasoning)
+                new_text = item.text + fragment
+                added = self._new_suffix(item.text, new_text)
+                item.text = new_text
+                if added:
+                    events.append(VoiceEdgeEvent("reasoning", replace(item), added))
+            content = delta.get("content")
+            if content:
+                item_id = f"message:{choice_index}"
+                item = self._item(item_id, "message", choice_index)
+                fragment = str(content)
+                new_text = item.text + fragment
+                added = self._new_suffix(item.text, new_text)
+                item.text = new_text
+                if added:
+                    events.append(VoiceEdgeEvent("message", replace(item), added))
+            for call in delta.get("tool_calls") or []:
+                if not isinstance(call, dict):
+                    continue
+                tool_index = int(call.get("index", 0) or 0)
+                item_id = f"function_call:{choice_index}:{tool_index}"
+                item = self._item(item_id, "function_call", tool_index)
+                if call.get("id"):
+                    item.call_id = str(call["id"])
+                function = call.get("function") or {}
+                if function.get("name"):
+                    item.name = str(function["name"])
+                argument_fragment = str(function.get("arguments") or "")
+                item.arguments += argument_fragment
+                events.append(
+                    VoiceEdgeEvent("function_call", replace(item), argument_fragment)
+                )
+        return events
+
+    def _chunk(self, delta: dict, *, finish_reason: str | None = None) -> dict:
+        if not self.role_sent and delta:
+            delta = {"role": "assistant", **delta}
+            self.role_sent = True
+        return {
+            "id": self.completion_id,
+            "object": "chat.completion.chunk",
+            "created": self.created,
+            "model": self.model,
+            "choices": [{"index": 0, "delta": delta, "finish_reason": finish_reason}],
+        }
+
+    def serialize(self, event: VoiceEdgeEvent) -> dict | None:
+        if event.kind == "reasoning":
+            return self._chunk({"reasoning_content": event.delta})
+        if event.kind == "message":
+            return self._chunk({"content": event.delta})
+        if event.kind == "function_call" and event.item is not None:
+            function: dict[str, str] = {}
+            # Stable snapshots keep name/call id available; only emit them once.
+            name_marker = f"name-sent:{event.item.id}"
+            id_marker = f"id-sent:{event.item.id}"
+            if not hasattr(self, "_sent_markers"):
+                self._sent_markers: set[str] = set()
+            call: dict[str, Any] = {"index": event.item.index, "type": "function"}
+            if id_marker not in self._sent_markers and event.item.call_id:
+                call["id"] = event.item.call_id
+                self._sent_markers.add(id_marker)
+            if name_marker not in self._sent_markers and event.item.name:
+                function["name"] = event.item.name
+                self._sent_markers.add(name_marker)
+            if event.delta:
+                function["arguments"] = event.delta
+            if function:
+                call["function"] = function
+            return self._chunk({"tool_calls": [call]})
+        if event.kind == "metadata" and isinstance(event.payload, dict):
+            return {
+                "id": self.completion_id,
+                "object": "chat.completion.chunk",
+                "created": self.created,
+                "model": self.model,
+                "choices": [],
+                **event.payload,
+            }
+        return None
+
+    def finalize(self) -> dict:
+        reason = self.finish_reason
+        if reason is None:
+            reason = (
+                "tool_calls"
+                if any(
+                    item.type == "function_call" for item in self.items_by_id.values()
+                )
+                else "stop"
+            )
+        return self._chunk({}, finish_reason=reason)
+
+
+class _OpenRouterSSEDecoder:
+    """SSE frame decoder; comments are discarded and [DONE] is terminal."""
+
+    def __init__(self):
+        self.buffer = bytearray()
+        self.done = False
+
+    def feed(self, chunk: bytes) -> list[dict | None]:
+        if self.done:
+            return []
+        self.buffer.extend(chunk)
+        output: list[dict | None] = []
+        while True:
+            raw_buffer = bytes(self.buffer)
+            lf_at = raw_buffer.find(b"\n\n")
+            crlf_at = raw_buffer.find(b"\r\n\r\n")
+            if crlf_at >= 0 and (lf_at < 0 or crlf_at < lf_at):
+                frame_end, delimiter_size = crlf_at, 4
+            elif lf_at >= 0:
+                frame_end, delimiter_size = lf_at, 2
+            else:
+                break
+            frame = raw_buffer[:frame_end].replace(b"\r\n", b"\n")
+            del self.buffer[: frame_end + delimiter_size]
+            data_lines = [
+                line[5:].lstrip()
+                for line in frame.split(b"\n")
+                if line.startswith(b"data:")
+            ]
+            if not data_lines:
+                continue
+            raw = b"\n".join(data_lines)
+            if raw == b"[DONE]":
+                self.done = True
+                output.append(None)
+                self.buffer.clear()
+                break
+            try:
+                payload = json.loads(raw)
+            except Exception:
+                continue
+            if isinstance(payload, dict):
+                output.append(payload)
+        return output
+
+
+class OpenRouterHTTPClient:
+    """Owns transport, key policy and structured chat stream transformation."""
+
+    RETRYABLE = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+    def __init__(self, config: OpenRouterConfig):
+        self.config = config
+        self.keys = OpenRouterKeyManager(config)
+
+    def headers(self, state: OpenRouterKeyState, *, stream: bool) -> dict[str, str]:
+        headers = {
+            "Authorization": f"Bearer {state.secret}",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream" if stream else "application/json",
+            "X-Title": self.config.app_name,
+        }
+        if self.config.http_referer:
+            headers["HTTP-Referer"] = self.config.http_referer
+        return headers
+
+    async def _open(self, path: str, payload: dict, stream: bool):
+        excluded: set[str] = set()
+        attempts = max(1, self.config.max_attempts)
+        last_error = "OpenRouter request failed"
+        # Preserve the most recent REAL upstream error (HTTP status + body) so it
+        # can be shown to the client even when the loop later ends on key
+        # exhaustion/cooldown (OpenRouterNoKeyError). Otherwise that generic
+        # "No OpenRouter API key is available; retry in Ns" message overwrites
+        # OpenRouter's own explanation (e.g. the 429 body that says WHY: free-tier
+        # cap, rate limit, no credits, ...).
+        last_upstream_status: int | None = None
+        last_upstream_body: bytes = b""
+        retry_after_seconds = 0.0
+        for attempt in range(attempts):
+            if len(excluded) >= len(self.config.api_keys):
+                excluded.clear()
+            try:
+                state = await self.keys.acquire(excluded)
+            except OpenRouterNoKeyError as exc:
+                last_error = str(exc)
+                retry_after_seconds = getattr(exc, "wait_seconds", 0.0)
+                break
+            excluded.add(state.key_id)
+            timeout = aiohttp.ClientTimeout(
+                total=None if stream else self.config.total_timeout,
+                connect=self.config.connect_timeout,
+                sock_read=self.config.stream_idle_timeout
+                if stream
+                else self.config.total_timeout,
+            )
+            session = aiohttp.ClientSession(timeout=timeout)
+            try:
+                response = await session.post(
+                    self.config.base_url.rstrip("/") + path,
+                    json=payload,
+                    headers=self.headers(state, stream=stream),
+                )
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                await session.close()
+                await self.keys.release(state, success=False)
+                last_error = str(exc) or exc.__class__.__name__
+                continue
+            if response.status == 429:
+                raw = await response.read()
+                last_error = raw.decode(errors="replace")
+                last_upstream_status = 429
+                last_upstream_body = raw
+                response.release()
+                await session.close()
+                await self.keys.penalize(state)
+                await self.keys.release(state, success=False)
+                if self.config.global_rate_delay:
+                    await asyncio.sleep(self.config.global_rate_delay)
+                continue
+            if response.status >= 400:
+                raw = await response.read()
+                status = response.status
+                last_upstream_status = status
+                last_upstream_body = raw
+                response.release()
+                await session.close()
+                await self.keys.release(state, success=False)
+                if status in self.RETRYABLE and attempt + 1 < attempts:
+                    last_error = raw.decode(errors="replace")
+                    await asyncio.sleep(self.config.retry_base_seconds * (2**attempt))
+                    continue
+                return None, None, None, _openrouter_error_response(status, raw)
+            return session, response, state, None
+        # Loop exhausted (every key retried/cooling) or no key was available.
+        # Prefer surfacing OpenRouter's OWN last error (real status + body) so the
+        # client sees why — annotated with the cooldown hint when the pool is in
+        # cooldown. Fall back to the generic 503 only when no upstream response
+        # was ever seen (e.g. all keys were already cooling before the first try).
+        if last_upstream_status is not None:
+            return (
+                None,
+                None,
+                None,
+                _openrouter_error_response(
+                    last_upstream_status,
+                    last_upstream_body,
+                    retry_after_seconds=retry_after_seconds,
+                ),
+            )
+        return (
+            None,
+            None,
+            None,
+            JSONResponse(
+                {"error": {"message": last_error, "type": "openrouter_upstream_error"}},
+                status_code=503,
+            ),
+        )
+
+    async def complete(self, path: str, payload: dict) -> Response:
+        session, response, state, error = await self._open(path, payload, False)
+        if error is not None:
+            return error
+        assert session is not None and response is not None and state is not None
+        try:
+            raw = await response.read()
+            return Response(
+                raw,
+                status_code=response.status,
+                media_type=response.headers.get("content-type", "application/json"),
+            )
+        finally:
+            response.release()
+            await session.close()
+            await self.keys.release(state, success=True)
+
+    async def chat_stream(
+        self, payload: dict, public_model: str
+    ) -> AsyncGenerator[str, None]:
+        session, response, state, error = await self._open(
+            "/chat/completions", payload, True
+        )
+        if error is not None:
+            body = getattr(error, "body", b"")
+            message = _openrouter_error_message(body)
+            yield _chat_sse_data(
+                {
+                    "error": {
+                        "message": message,
+                        "type": "openrouter_stream_error",
+                        "code": getattr(error, "status_code", None),
+                    }
+                }
+            )
+            yield _SSE_DONE_FRAME
+            return
+        assert session is not None and response is not None and state is not None
+        assembler = OpenRouterItemAssembler(
+            f"chatcmpl-or-{uuid.uuid4().hex}", int(time.time()), public_model
+        )
+        decoder = _OpenRouterSSEDecoder()
+        saw_done = False
+        clean = False
+        try:
+            iterator = response.content.iter_any().__aiter__()
+            first = await asyncio.wait_for(
+                iterator.__anext__(), timeout=self.config.first_event_timeout
+            )
+            chunks = [first]
+
+            async def remaining():
+                for initial in chunks:
+                    yield initial
+                async for value in iterator:
+                    yield value
+
+            async for raw_chunk in remaining():
+                for payload_chunk in decoder.feed(raw_chunk):
+                    if payload_chunk is None:
+                        saw_done = True
+                        break
+                    events = assembler.push(payload_chunk)
+                    for event in events:
+                        if event.kind == "error":
+                            message = (
+                                event.payload.get("message")
+                                if isinstance(event.payload, dict)
+                                else str(event.payload)
+                            )
+                            yield _chat_sse_data(
+                                {
+                                    "id": assembler.completion_id,
+                                    "object": "chat.completion.chunk",
+                                    "created": assembler.created,
+                                    "model": public_model,
+                                    "choices": [
+                                        {
+                                            "index": 0,
+                                            "delta": {},
+                                            "finish_reason": "error",
+                                        }
+                                    ],
+                                    "error": {
+                                        "message": message or "OpenRouter stream error",
+                                        "type": "openrouter_stream_error",
+                                    },
+                                }
+                            )
+                            yield _SSE_DONE_FRAME
+                            return
+                        frame = assembler.serialize(event)
+                        if frame is not None:
+                            yield _chat_sse_data(frame)
+                if saw_done:
+                    break
+            yield _chat_sse_data(assembler.finalize())
+            yield _SSE_DONE_FRAME
+            clean = True
+        except StopAsyncIteration:
+            yield _chat_sse_data(assembler.finalize())
+            yield _SSE_DONE_FRAME
+            clean = True
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            yield _chat_sse_data(
+                {
+                    "id": assembler.completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": assembler.created,
+                    "model": public_model,
+                    "choices": [{"index": 0, "delta": {}, "finish_reason": "error"}],
+                    "error": {
+                        "message": str(exc) or exc.__class__.__name__,
+                        "type": "openrouter_stream_error",
+                    },
+                }
+            )
+            yield _SSE_DONE_FRAME
+        finally:
+            response.release()
+            await session.close()
+            await self.keys.release(state, success=clean)
+
+    async def passthrough_stream(
+        self, path: str, payload: dict
+    ) -> AsyncGenerator[bytes, None]:
+        session, response, state, error = await self._open(path, payload, True)
+        if error is not None:
+            yield getattr(error, "body", b"")
+            return
+        assert session is not None and response is not None and state is not None
+        clean = False
+        try:
+            async for chunk in response.content.iter_any():
+                if chunk:
+                    yield chunk
+            clean = True
+        finally:
+            response.release()
+            await session.close()
+            await self.keys.release(state, success=clean)
+
+
+def _openrouter_request_payload(
+    body: dict, messages: list | None, stream: bool
+) -> dict:
+    payload = {
+        key: value
+        for key, value in body.items()
+        if key not in {"conversation_id", "new_conversation", "source"}
+    }
+    payload["model"] = _openrouter_upstream_model(str(body.get("model", "")))
+    if messages is not None:
+        payload["messages"] = messages
+    payload["stream"] = stream
+    return payload
+
+
+def _openrouter_message_from_error_obj(error: dict) -> str:
+    """Best human-readable message from an OpenRouter `error` object.
+
+    OpenRouter frequently returns a terse top-level message like
+    "Provider returned error" while the ACTUAL cause (rate limit, no credits,
+    the upstream provider's own text) is nested in `error.metadata` — commonly
+    `metadata.raw` (a string or JSON) plus `metadata.provider_name`. Surface
+    those so the client sees why, not just "Provider returned error".
+    """
+    base = str(error.get("message") or "").strip()
+    details: list[str] = []
+    metadata = error.get("metadata")
+    if isinstance(metadata, dict):
+        provider = metadata.get("provider_name") or metadata.get("provider")
+        raw = metadata.get("raw")
+        raw_text = ""
+        if isinstance(raw, (dict, list)):
+            # The provider's raw error is sometimes itself a JSON object with a
+            # nested message.
+            if isinstance(raw, dict):
+                nested = raw.get("error")
+                if isinstance(nested, dict) and nested.get("message"):
+                    raw_text = str(nested["message"])
+                elif raw.get("message"):
+                    raw_text = str(raw["message"])
+            if not raw_text:
+                try:
+                    raw_text = json.dumps(raw, ensure_ascii=False)
+                except Exception:
+                    raw_text = str(raw)
+        elif raw is not None:
+            raw_text = str(raw).strip()
+        if provider:
+            details.append(f"provider={provider}")
+        if raw_text and raw_text not in base:
+            details.append(raw_text)
+    code = error.get("code")
+    if code is not None and str(code) not in base:
+        details.append(f"code={code}")
+    if base and details:
+        return f"{base}: " + "; ".join(details)
+    if details:
+        return "; ".join(details)
+    return base
+
+
+def _openrouter_error_message(body: bytes) -> str:
+    """Human-readable message from an OpenRouter error body.
+
+    The body is usually OpenRouter's JSON ({"error": {"message": ...,
+    "metadata": {...}}}); return the enriched message (including nested
+    metadata detail) when present, else the decoded text, so the streamed
+    error the client sees is OpenRouter's real explanation rather than a raw
+    JSON blob or a generic placeholder.
+    """
+    if not body:
+        return "OpenRouter stream failed"
+    try:
+        parsed = json.loads(body)
+    except Exception:
+        return body.decode(errors="replace") or "OpenRouter stream failed"
+    if isinstance(parsed, dict):
+        error = parsed.get("error")
+        if isinstance(error, dict):
+            message = _openrouter_message_from_error_obj(error)
+            if message:
+                return message
+        if isinstance(error, str) and error:
+            return error
+        if parsed.get("message"):
+            return str(parsed["message"])
+    return body.decode(errors="replace") or "OpenRouter stream failed"
+
+
+def _openrouter_error_response(
+    status: int, raw: bytes, retry_after_seconds: float = 0.0
+) -> JSONResponse:
+    try:
+        payload = json.loads(raw)
+    except Exception:
+        payload = {
+            "error": {
+                "message": raw.decode(errors="replace") or "OpenRouter error",
+                "type": "openrouter_upstream_error",
+            }
+        }
+    # Enrich the terse top-level message with nested metadata detail (provider,
+    # raw provider error, code) so the client sees WHY, not just "Provider
+    # returned error". When the pool is cooling down, also append the retry hint
+    # (instead of replacing OpenRouter's own message with the generic no-key one).
+    if isinstance(payload, dict):
+        error = payload.get("error")
+        if isinstance(error, dict):
+            enriched = _openrouter_message_from_error_obj(error)
+            if enriched:
+                error["message"] = enriched
+            if (
+                retry_after_seconds
+                and "retry in" not in str(error.get("message", "")).lower()
+            ):
+                error["message"] = (
+                    f"{error.get('message') or 'OpenRouter error'} "
+                    f"(all API keys are cooling down; "
+                    f"retry in {retry_after_seconds:.0f}s)"
+                )
+    headers = (
+        {"Retry-After": str(int(retry_after_seconds))} if retry_after_seconds else None
+    )
+    return JSONResponse(payload, status_code=status, headers=headers)
+
+
+async def _direct_openrouter_chat_response(
+    body: dict, messages: list, stream_mode: bool
+):
+    config = OpenRouterConfig.load()
+    if not config.api_keys:
+        return JSONResponse(
+            {
+                "error": {
+                    "message": "VE_OPENROUTER_API_KEYS is not configured",
+                    "type": "openrouter_config_error",
+                }
+            },
+            status_code=503,
+        )
+    client = OpenRouterHTTPClient(config)
+    payload = _openrouter_request_payload(body, messages, stream_mode)
+    public_model = str(
+        body.get("model") or f"{OPENROUTER_MODEL_PREFIX}{config.default_model}"
+    )
+    if not stream_mode:
+        return await client.complete("/chat/completions", payload)
+    return StreamingResponse(
+        client.chat_stream(payload, public_model),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+async def _direct_openrouter_text_completion(body: dict, stream_mode: bool):
+    config = OpenRouterConfig.load()
+    if not config.api_keys:
+        return JSONResponse(
+            {
+                "error": {
+                    "message": "VE_OPENROUTER_API_KEYS is not configured",
+                    "type": "openrouter_config_error",
+                }
+            },
+            status_code=503,
+        )
+    client = OpenRouterHTTPClient(config)
+    payload = _openrouter_request_payload(body, None, stream_mode)
+    if not stream_mode:
+        return await client.complete("/completions", payload)
+    return StreamingResponse(
+        client.passthrough_stream("/completions", payload),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 async def chat_api(request):
     """
     OpenAI-compatible /v1/chat/completions endpoint.
@@ -46621,6 +47551,16 @@ async def chat_api(request):
         browser_source_messages = messages
         messages = normalize_chat_messages_for_template(messages)
         requested_model = body.get("model", DEFAULT_LLM_ALIAS)
+
+        # OpenRouter is a native HTTP upstream. Keep raw multimodal messages and
+        # native OpenAI tool fields intact instead of applying the browser prompt
+        # relay or local-model tool protocol.
+        if _openrouter_is_model(requested_model):
+            return await _direct_openrouter_chat_response(
+                dict(body),
+                list(browser_source_messages),
+                stream_mode,
+            )
 
         # Browser-backed models are plain chat providers. Route them before
         # OpenAI tool validation/instruction injection, stripping tool protocol
@@ -47745,6 +48685,14 @@ async def models_list(request):
             }
         )
 
+    if _openrouter_parse_api_keys():
+        for upstream_id in OPENROUTER_EXPOSED_MODELS:
+            data.append(
+                OpenRouterModelSpec.from_public_id(
+                    f"{OPENROUTER_MODEL_PREFIX}{upstream_id}"
+                ).as_openai_model()
+            )
+
     for alias, model_id in LLM_MODEL_ALIASES.items():
         data.append(
             {
@@ -47810,6 +48758,15 @@ async def models_list(request):
 
 async def models_retrieve(request):
     model_id = request.path_params.get("model_id", "")
+
+    if _openrouter_is_model(model_id):
+        if not _openrouter_parse_api_keys():
+            return JSONResponse(
+                {"error": "OpenRouter is not configured"}, status_code=503
+            )
+        return JSONResponse(
+            OpenRouterModelSpec.from_public_id(model_id).as_openai_model()
+        )
 
     if model_id in BROWSER_MODEL_ALIASES:
         return JSONResponse(

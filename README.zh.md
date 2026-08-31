@@ -373,6 +373,19 @@ models:
       - tool_use
       - image_input
     excludeToolOutputsFromTokenCount: true
+  - name: LLM:m365-chatgpt-5.6-quick
+    provider: Local
+    model: LLM:m365-chatgpt-5.6-quick
+    apiBase: http://localhost:5002/v1/
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 1050000
+      maxTokens: 128000
+    capabilities:
+      - tool_use
+      - image_input
+    excludeToolOutputsFromTokenCount: true
   - name: embed:jina-v5
     provider: Local
     model: embed:jina-v5
