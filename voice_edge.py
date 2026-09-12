@@ -151,9 +151,9 @@ if sys.version_info < (3, 11):
 #    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1041
 #    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1096
 #    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1547
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41463
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42112
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42124
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41475
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42124
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42136
 #    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18146
 #    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18143
 #    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18109
@@ -189,28 +189,28 @@ if sys.version_info < (3, 11):
 #    VE_XIAOAI_LOG_DEBUG                        "0"                                      L395
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41349
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41372
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41399
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41458
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42001
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42004
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42012
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42024
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42026
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42035
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42041
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42047
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42063
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42068
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42075
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42082
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42091
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42098
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42146
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43914
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43915
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43916
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41361
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41384
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41411
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41470
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42013
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42016
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42024
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42036
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42038
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42047
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42053
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42059
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42075
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42080
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42087
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42094
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42103
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42110
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42158
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43926
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43927
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43928
 #
 #  【Qwen】
 #    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13653
@@ -286,65 +286,65 @@ if sys.version_info < (3, 11):
 #    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24471
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L36687
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36897
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36959
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36981
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L36988
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37083
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37085
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37089
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L38282
-#    MI_USER                                ""                                           L38008
-#    MI_PASS                                ""                                           L38034
-#    XIAOAI_HARDWARE                        "LX06"                                       L38036
-#    MI_DID                                 ""                                           L38038
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38041
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38045
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L38048
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38051
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38057
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38068
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38073
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38054
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38064
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L38084
-#    XIAOAI_VOICE                           "zh"                                         L38086
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L38088
-#    XIAOAI_MAX_TOKENS                      "500"                                        L38091
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L38094
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38097
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38101
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38105
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38110
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38115
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38120
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38125
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38130
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38138
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38143
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38148
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38153
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38158
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38163
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38168
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L38171
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38175
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38179
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38183
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38188
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38193
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38197
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38200
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38203
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38206
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38209
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38212
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L38215
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38218
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38225
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38231
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L38235
+#    XIAOAI_ENABLED                         "0"                                          L36699
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36909
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36971
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36993
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L37000
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37095
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37097
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37101
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L38294
+#    MI_USER                                ""                                           L38020
+#    MI_PASS                                ""                                           L38046
+#    XIAOAI_HARDWARE                        "LX06"                                       L38048
+#    MI_DID                                 ""                                           L38050
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38053
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38057
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L38060
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38063
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38069
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38080
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38085
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38066
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38076
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L38096
+#    XIAOAI_VOICE                           "zh"                                         L38098
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L38100
+#    XIAOAI_MAX_TOKENS                      "500"                                        L38103
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L38106
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38109
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38113
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38117
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38122
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38127
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38132
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38137
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38142
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38150
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38155
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38160
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38165
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38170
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38175
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38180
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L38183
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38187
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38191
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38195
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38200
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38205
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38209
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38212
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38215
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38218
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38221
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38224
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L38227
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38230
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38237
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38243
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L38247
 #
 # 合计 193 个唯一环境变量。
 # ============================================================================
@@ -24650,6 +24650,18 @@ def _client_collect_inline_files(message: dict) -> list[dict]:
     for span in spans:
         attachment_index += 1
         extracted_text = scan_text[span["content_start"] : span["content_end"]]
+        # Continue serializes every attachment as:
+        #   <file_content path="...">\n${content}\n</file_content>
+        # The regex intentionally excludes the opening-tag newline, but its
+        # content group still includes the one transport newline immediately
+        # before the closing tag. Remove exactly that one newline. This keeps a
+        # file's own trailing newline intact (it appears as the preceding LF)
+        # while preventing .b64.NNN attachments from gaining a byte and failing
+        # b64_total_bytes / b64_total_sha256 verification after SharePoint upload.
+        if extracted_text.endswith("\r\n"):
+            extracted_text = extracted_text[:-2]
+        elif extracted_text.endswith("\n"):
+            extracted_text = extracted_text[:-1]
         data = extracted_text.encode("utf-8")
         source = "inline"
         resolved_path = ""
