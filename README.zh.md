@@ -12,6 +12,7 @@ Voice Edge 是一个面向 macOS 的本地语音与 AI 平台，集成本地 MLX
 - macOS 原生听写、HUD、全局快捷键与音频路由恢复
 - 小米小爱音箱集成
 - 基于浏览器的 DeepSeek、豆包、Qwen 和 Microsoft 365 Copilot 模型
+- OpenRouter 与 OpenCode（Zen/Go）模型中继，支持多 key 轮询
 - Firefox 辅助的本地认证同步
 - 面向 Microsoft 365 Copilot 附件的可选 SharePoint 上传能力
 
@@ -435,6 +436,36 @@ models:
 - 本地认证同步 Socket 使用仅限当前用户的权限。
 - 生成的 Native Host 文件存放在 `~/.voice-edge`。
 - 对于当前进程，Firefox 同步的凭据优先于环境变量提供的浏览器凭据。
+
+## OpenRouter 与 OpenCode 中继
+
+两个中继都把第三方模型暴露为本地 OpenAI 兼容模型：模型 ID 带各自的 `openrouter:` / `opencode:` 前缀，客户端只用 `/v1/chat/completions`，上游的 Responses、Anthropic Messages、Google generateContent 等协议差异由本地转换。可用模型通过 `GET /v1/models` 查询，未配置 key 的中继不会发布任何模型。
+
+### OpenRouter
+
+```bash
+export VE_OPENROUTER_API_KEYS='["key-one","key-two"]'
+```
+
+- 模型 ID：`openrouter:<上游模型ID>`
+- 多 key 在进程内共享状态：round-robin 轮询。
+
+### OpenCode
+
+```bash
+export VE_OPENCODE_API_KEYS='["key-one","key-two"]'
+
+# 默认 1：只发布 zen 里以 "-free" 结尾的免费模型；设为 0 后发布全部 zen 模型
+export VE_OPENCODE_FREE=1
+
+# 默认 0：设为 1 后再发布 go 模型
+export VE_OPENCODE_GO=0
+```
+
+- 模型 ID：`opencode:zen/<模型ID>`、`opencode:go/<模型ID>`。
+- 多 key 策略与 OpenRouter 相同。
+
+`"publish": True` 无视 `VE_OPENCODE_FREE` / `VE_OPENCODE_GO` 始终发布，`"publish": False` 始终隐藏，不写则按上述两个环境变量判断。
 
 ## 架构
 
