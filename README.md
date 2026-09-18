@@ -12,6 +12,7 @@ Voice Edge is a macOS-focused local voice and AI platform. It combines local MLX
 - Native macOS dictation, HUD, keyboard shortcuts, and audio-route recovery
 - Xiaomi XiaoAI smart-speaker integration
 - Browser-backed DeepSeek, Doubao, Qwen, and Microsoft 365 Copilot models
+- OpenRouter and OpenCode (Zen/Go) model relays with multi-key rotation
 - Firefox-assisted local authentication synchronization
 - Optional SharePoint uploads for Microsoft 365 Copilot attachments
 
@@ -441,6 +442,38 @@ models:
 - The local authentication-sync socket uses user-only permissions.
 - Generated Native Host files are stored under `~/.voice-edge`.
 - Firefox-synchronized credentials take precedence over environment-provided browser credentials for the current process.
+
+## OpenRouter and OpenCode Relays
+
+Both relays expose third-party models as local OpenAI-compatible models: model ids carry the `openrouter:` or `opencode:` prefix and clients only speak `POST /v1/chat/completions`, while upstream differences (Responses, Anthropic Messages, Google generateContent) are translated locally. Use `GET /v1/models` to list what is available; a relay without configured keys publishes nothing.
+
+### OpenRouter
+
+```bash
+export VE_OPENROUTER_API_KEYS='["key-one","key-two"]'
+```
+
+- Model ids: `openrouter:<upstream-model-id>`.
+- Keys share state inside the process: round-robin rotation.
+
+### OpenCode
+
+OpenCode reads exactly three environment variables:
+
+```bash
+export VE_OPENCODE_API_KEYS='["key-one","key-two"]'
+
+# Default 1: publish only Zen models whose id ends in "-free"; set to 0 to publish every Zen model
+export VE_OPENCODE_FREE=1
+
+# Default 0: set to 1 to publish OpenCode Go models as well
+export VE_OPENCODE_GO=0
+```
+
+- Model ids: `opencode:zen/<model-id>` and `opencode:go/<model-id>`.
+- The key policy matches OpenRouter.
+
+`"publish": True` always publishes the model regardless of `VE_OPENCODE_FREE` / `VE_OPENCODE_GO`, `"publish": False` always hides it, and an entry without the field follows those two environment variables.
 
 ## Architecture
 

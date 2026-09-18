@@ -138,215 +138,221 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1429
-#    VE_VLM_KV_BITS                         3.5                                          L469
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L474
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L479
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L480
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L1012
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L1017
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L1020
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L1024
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1033
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1041
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1096
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1547
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41475
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42124
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42136
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18146
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18143
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18109
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18124
-#    AUTH_SYNC_ENABLED                      "1"                                          L18097
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18098
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1683
+#    VE_VLM_KV_BITS                         3.5                                          L475
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L480
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L485
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L486
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L1266
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L1271
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L1274
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L1278
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1287
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1295
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1350
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1801
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41729
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42378
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42390
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18400
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18397
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18363
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18378
+#    AUTH_SYNC_ENABLED                      "1"                                          L18351
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18352
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L359
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L360
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L361
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L362
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L363
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L367
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L371
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L372
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L373
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L374
-#    VE_HUD_LOG_DEBUG                           "0"                                      L375
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L376
-#    VE_KWS_LOG_DEBUG                           "0"                                      L377
-#    VE_LLM_LOG_DEBUG                           "0"                                      L378
-#    VE_M365_LOG_DEBUG                          "0"                                      L379
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L380
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L384
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L388
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L389
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L390
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L391
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L392
-#    VE_TTS_LOG_DEBUG                           "0"                                      L393
-#    VE_VLM_LOG_DEBUG                           "0"                                      L394
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L395
+#    VE_APP_LOG_DEBUG                           "0"                                      L365
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L366
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L367
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L368
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L369
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L373
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L377
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L378
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L379
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L380
+#    VE_HUD_LOG_DEBUG                           "0"                                      L381
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L382
+#    VE_KWS_LOG_DEBUG                           "0"                                      L383
+#    VE_LLM_LOG_DEBUG                           "0"                                      L384
+#    VE_M365_LOG_DEBUG                          "0"                                      L385
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L386
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L390
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L394
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L395
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L396
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L397
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L398
+#    VE_TTS_LOG_DEBUG                           "0"                                      L399
+#    VE_VLM_LOG_DEBUG                           "0"                                      L400
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L401
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41361
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41384
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41411
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41470
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42013
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42016
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42024
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42036
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42038
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42047
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42053
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42059
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42075
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42080
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42087
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42094
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42103
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42110
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42158
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L43926
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L43927
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L43928
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41615
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41638
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41665
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41724
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42267
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42270
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42278
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42290
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42292
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42301
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42307
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42313
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42329
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42334
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42341
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42348
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42357
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42364
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42412
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L44180
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L44181
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L44182
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13653
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13655
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L13656
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13662
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13664
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13667
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13675
-#    QWEN_COOKIE_HEADER                     ""                                           L13679
-#    QWEN_TOKENS                            ""                                           L13687
-#    QWEN_TOKEN                             ""                                           L13688
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13907
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13909
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L13910
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13916
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13918
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13921
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13929
+#    QWEN_COOKIE_HEADER                     ""                                           L13933
+#    QWEN_TOKENS                            ""                                           L13941
+#    QWEN_TOKEN                             ""                                           L13942
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L622
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15322
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L15323
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15325
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15327
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15329
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15332
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15335
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15338
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15459
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15462
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L876
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15576
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L15577
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15579
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15581
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15583
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15586
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15589
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15592
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15713
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15716
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L18007
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L18008
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L18014
-#    DOUBAO_FP                              "doubao_voice_edge"                          L18015
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L18023
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L18025
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L18028
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18030
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18032
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18036
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18063
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18066
-#    DOUBAO_WEB_AID                         "497858"                                     L18068
-#    DOUBAO_WEB_REGION                      "CN"                                         L18069
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18070
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18071
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18073
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18122
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18114
-#    DOUBAO_COOKIE_HEADER                   ""                                           L18424
-#    DOUBAO_SESSION_IDS                     ""                                           L18466
-#    DOUBAO_SESSION_ID                      ""                                           L18470
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L18981
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L18990
-#    DOUBAO_SESSION_ID_SS                   ""                                           L19172
-#    DOUBAO_SID_TT                          ""                                           L19175
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L18261
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L18262
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L18268
+#    DOUBAO_FP                              "doubao_voice_edge"                          L18269
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L18277
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L18279
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L18282
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18284
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18286
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18290
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18317
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18320
+#    DOUBAO_WEB_AID                         "497858"                                     L18322
+#    DOUBAO_WEB_REGION                      "CN"                                         L18323
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18324
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18325
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18327
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18376
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18368
+#    DOUBAO_COOKIE_HEADER                   ""                                           L18678
+#    DOUBAO_SESSION_IDS                     ""                                           L18720
+#    DOUBAO_SESSION_ID                      ""                                           L18724
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L19235
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L19244
+#    DOUBAO_SESSION_ID_SS                   ""                                           L19426
+#    DOUBAO_SID_TT                          ""                                           L19429
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L23559
-#    SHAREPOINT_HOME_URL                    ""                                           L23560
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23561
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23562
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23589
-#    M365_BRIDGE_PORT                       "5003"                                       L23590
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23591
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L23592
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23594
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23597
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L23600
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23608
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L23610
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23630
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23637
-#    M365_CONV_MAP_MAX                      "1024"                                       L23806
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24453
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24471
+#    M365_ENTRY_URL                         ""                                           L23813
+#    SHAREPOINT_HOME_URL                    ""                                           L23814
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23815
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23816
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23843
+#    M365_BRIDGE_PORT                       "5003"                                       L23844
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23845
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L23846
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23848
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23851
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L23854
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23862
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L23864
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23884
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23891
+#    M365_CONV_MAP_MAX                      "1024"                                       L24060
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24707
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24725
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L36699
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L36909
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L36971
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L36993
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L37000
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37095
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37097
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37101
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L38294
-#    MI_USER                                ""                                           L38020
-#    MI_PASS                                ""                                           L38046
-#    XIAOAI_HARDWARE                        "LX06"                                       L38048
-#    MI_DID                                 ""                                           L38050
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38053
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38057
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L38060
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38063
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38069
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38080
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38085
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38066
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38076
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L38096
-#    XIAOAI_VOICE                           "zh"                                         L38098
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L38100
-#    XIAOAI_MAX_TOKENS                      "500"                                        L38103
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L38106
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38109
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38113
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38117
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38122
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38127
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38132
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38137
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38142
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38150
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38155
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38160
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38165
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38170
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38175
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38180
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L38183
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38187
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38191
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38195
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38200
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38205
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38209
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38212
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38215
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38218
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38221
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38224
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L38227
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38230
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38237
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38243
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L38247
+#    XIAOAI_ENABLED                         "0"                                          L36953
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L37163
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L37225
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L37247
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L37254
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37349
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37351
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37355
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L38548
+#    MI_USER                                ""                                           L38274
+#    MI_PASS                                ""                                           L38300
+#    XIAOAI_HARDWARE                        "LX06"                                       L38302
+#    MI_DID                                 ""                                           L38304
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38307
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38311
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L38314
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38317
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38323
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38334
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38339
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38320
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38330
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L38350
+#    XIAOAI_VOICE                           "zh"                                         L38352
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L38354
+#    XIAOAI_MAX_TOKENS                      "500"                                        L38357
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L38360
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38363
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38367
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38371
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38376
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38381
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38386
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38391
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38396
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38404
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38409
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38414
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38419
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38424
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38429
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38434
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L38437
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38441
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38445
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38449
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38454
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38459
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38463
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38466
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38469
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38472
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38475
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38478
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L38481
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38484
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38491
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38497
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L38501
 #
-# 合计 193 个唯一环境变量。
+#  【中继提供商 (OpenRouter / OpenCode)】
+#    VE_OPENROUTER_API_KEYS                 ""                                           L46942
+#    VE_OPENCODE_API_KEYS                   ""                                           L47863
+#    VE_OPENCODE_FREE                       "1"                                          L47901
+#    VE_OPENCODE_GO                         "0"                                          L47906
+#
+# 合计 197 个唯一环境变量。
 # ============================================================================
 
 
@@ -543,6 +549,254 @@ OPENROUTER_MODEL_ALIASES = {
 }
 OPENROUTER_HTTP_REFERER = "http://localhost"
 OPENROUTER_GLOBAL_RATE_DELAY_SECONDS = 0.0
+
+
+# -----------------------------------------------------------------------------
+# OpenCode Zen / OpenCode Go relay/provider configuration
+# -----------------------------------------------------------------------------
+# Only three OpenCode settings are read from the environment:
+#   VE_OPENCODE_API_KEYS - API keys, JSON array or comma/newline separated.
+#                          Without keys no OpenCode model is published at all.
+#   VE_OPENCODE_FREE     - default 1: publish only Zen models whose id ends in
+#                          "-free". Set to 0 to publish every Zen model.
+#   VE_OPENCODE_GO       - default 0: set to 1 to also publish OpenCode Go models.
+# The three names are spelled out literally at every read site (and in the
+# messages that mention them) so the ENV REGISTRY at the top of this file can
+# index them, exactly like the VE_*_LOG_DEBUG flags.
+# Everything else (the two endpoints, the model catalogue and the upstream
+# protocol of every model) is configured by the constants below.
+OPENCODE_MODEL_PREFIX = "opencode:"
+OPENCODE_ALTERNATE_MODEL_PREFIX = "opencode/"
+OPENCODE_ZEN_ENDPOINT = "zen"
+OPENCODE_GO_ENDPOINT = "go"
+OPENCODE_ENDPOINT_BASE_URLS = {
+    OPENCODE_ZEN_ENDPOINT: "https://opencode.ai/zen/v1",
+    OPENCODE_GO_ENDPOINT: "https://opencode.ai/zen/go/v1",
+}
+# No hard-coded default model: a client asking for the bare "opencode:" prefix
+# gets the first model published for the current environment, see
+# _opencode_default_public_id(), so the default can never point at a model this
+# configuration hides.
+OPENCODE_FREE_MODEL_SUFFIX = "-free"
+
+# Upstream wire protocol of every model (see https://opencode.ai/docs/zh-cn/zen/
+# and https://opencode.ai/docs/zh-cn/go/). The same model id can exist on both
+# endpoints and the two endpoints do not always agree on the protocol: for
+# example `minimax-m3` is Chat Completions on Zen but Anthropic Messages on Go.
+# That is why every OPENCODE_MODELS entry maps one protocol per endpoint.
+OPENCODE_PROTOCOL_CHAT = "chat"  # POST {base}/chat/completions (OpenAI compatible)
+OPENCODE_PROTOCOL_RESPONSES = "responses"  # POST {base}/responses (OpenAI Responses)
+OPENCODE_PROTOCOL_MESSAGES = "messages"  # POST {base}/messages (Anthropic Messages)
+OPENCODE_PROTOCOL_GOOGLE = "google"  # POST {base}/models/<id>:streamGenerateContent
+
+# 模型目录 + 协议映射。key 是 "端口/模型ID"，对客户端就是 "opencode:端口/模型ID"，
+# 一行一个端口：同一个模型在 zen 和 go 上各占一行、各有自己的开关。
+# 字段说明：
+#   "protocol"         该端口的协议，四个 OPENCODE_PROTOCOL_* 常量之一
+#   "publish": True    打开就发布（不看 VE_OPENCODE_FREE / VE_OPENCODE_GO）
+#   "publish": False   强制不发布
+#   "text_only": True  该端口不接受数组 content，中继时自动拍平成文本
+# 不写 "publish" 的行：zen 的由 VE_OPENCODE_FREE 决定（=1 时只发 "-free" 结尾的），
+# "go/" 开头的行由 VE_OPENCODE_GO 决定（=1 才发）。
+# Model catalogue and protocol mapping: one line per endpoint.
+OPENCODE_MODELS: dict[str, dict[str, Any]] = {
+    # Claude
+    "zen/claude-fable-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-fable-5-1": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-opus-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-opus-4-8": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-opus-4-7": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-opus-4-6": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-opus-4-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-sonnet-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-sonnet-4-6": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-sonnet-4-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-sonnet-4": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-haiku-4-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    # Gemini
+    "zen/gemini-3.8-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    "zen/gemini-3.7-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    "zen/gemini-3.6-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    "zen/gemini-3.5-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    "zen/gemini-3.5-flash-lite": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    "zen/gemini-3.1-pro": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    "zen/gemini-3-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    # OpenAI GPT
+    "zen/gpt-6-astra": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.6-sol": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.6-terra": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.6-luna": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "go/gpt-5.6-luna": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.5": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.5-pro": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.4": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.4-pro": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.4-mini": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.4-nano": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.3-codex": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.3-codex-spark": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.2": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.2-codex": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.1": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.1-codex": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.1-codex-max": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5.1-codex-mini": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5-codex": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-5-nano": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    # xAI Grok
+    "zen/grok-4.6": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "go/grok-4.6": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/grok-4.5": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "go/grok-4.5": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/grok-build-0.1": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    # Muse Spark
+    "zen/muse-spark-1.3": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/muse-spark-1.2": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/muse-spark-1.3-contributor-free": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/muse-spark-1.2-contributor-free": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "go/muse-spark-1.3-contributor": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "go/muse-spark-1.2-contributor": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    # DeepSeek
+    "zen/deepseek-v4-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/deepseek-v4-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/deepseek-v4-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/deepseek-v4-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/deepseek-v4-flash-vision-exp": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/deepseek-v4-flash-vision-exp": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/deepseek-v4-flash-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/deepseek-v4.1-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/deepseek-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    # GLM
+    "zen/glm-5.3-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/glm-5.3-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/glm-5.3": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/glm-5.3": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/glm-5.2": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/glm-5.2": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/glm-5.1": {"protocol": OPENCODE_PROTOCOL_CHAT, "text_only": True},
+    "go/glm-5.1": {"protocol": OPENCODE_PROTOCOL_CHAT, "text_only": True},
+    "zen/glm-5": {"protocol": OPENCODE_PROTOCOL_CHAT, "text_only": True},
+    "go/glm-5": {"protocol": OPENCODE_PROTOCOL_CHAT, "text_only": True},
+    # MiniMax
+    "zen/minimax-m3": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/minimax-m3": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/minimax-m2.7": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/minimax-m2.7": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/minimax-m2.5": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/minimax-m2.5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    # Kimi
+    "zen/kimi-k2.5": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/kimi-k2.5": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/kimi-k2.6": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/kimi-k2.6": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/kimi-k2.7-code": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/kimi-k2.7-code": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/kimi-k3": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/kimi-k3": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    # Qwen
+    "zen/qwen3.6-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/qwen3.6-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/qwen3.5-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/qwen3.5-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/qwen3.8-max": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/qwen3.8-flash": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/qwen3.7-max": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/qwen3.7-max": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/qwen3.7-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/qwen3.7-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    # Other providers / free tiers
+    "zen/big-pickle": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/union-alpha": {"protocol": OPENCODE_PROTOCOL_MESSAGES, "publish": True},
+    "go/union-alpha": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/longcat-2.0": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/mimo-v2.5": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/mimo-v2.5-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/mimo-v2-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/mimo-v2-omni": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/hy4-preview": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/hy3": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/hy3-preview": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/omen-alpha": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/mimo-v2.5-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/ling-3.0-flash-fin-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/nemotron-3-ultra-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/nemotron-3.5-lightning-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+}
+
+# Per-endpoint catalogue, derived from the "<endpoint>/<model>" keys above.
+OPENCODE_ENDPOINT_MODELS: dict[str, tuple[str, ...]] = {
+    endpoint: tuple(
+        key.split("/", 1)[1]
+        for key in OPENCODE_MODELS
+        if key.startswith(endpoint + "/")
+    )
+    for endpoint in OPENCODE_ENDPOINT_BASE_URLS
+}
+# Models whose endpoint rejects array content (images/files) and accepts a plain
+# string only, keyed as "<endpoint>/<model>"; array content is flattened to text.
+OPENCODE_TEXT_ONLY_MODELS: frozenset[str] = frozenset(
+    key for key, entry in OPENCODE_MODELS.items() if entry.get("text_only")
+)
+OPENCODE_PROTOCOL_CAPABILITIES: dict[str, frozenset[str]] = {
+    OPENCODE_PROTOCOL_CHAT: frozenset({"chat", "completions", "stream", "tools"}),
+    OPENCODE_PROTOCOL_RESPONSES: frozenset(
+        {"chat", "completions", "stream", "tools", "reasoning"}
+    ),
+    OPENCODE_PROTOCOL_MESSAGES: frozenset(
+        {"chat", "completions", "stream", "tools", "reasoning"}
+    ),
+    OPENCODE_PROTOCOL_GOOGLE: frozenset(
+        {"chat", "completions", "stream", "tools", "reasoning"}
+    ),
+}
+# Local voice_edge request fields that must never leak upstream.
+OPENCODE_LOCAL_REQUEST_FIELDS = frozenset(
+    {"conversation_id", "new_conversation", "source"}
+)
+# The Go endpoint requires third-party clients to identify themselves and to
+# send a stable per-conversation session id (routing + prompt caching).
+OPENCODE_USER_AGENT = "voice-edge/1.0"
+OPENCODE_ANTHROPIC_VERSION = "2023-06-01"
+# Zen free-tier gate. Measured against real OpenCode CLI traffic: the gateway
+# only serves "-free" models to requests that look like the CLI, so a relay has
+# to satisfy all of these or it gets 403 FreeTierError:
+#   * User-Agent contains "opencode/<version>" (minimum 1.18.0)
+#   * x-opencode-session is present as ses_ + 12 lowercase hex + 14 base62
+#   * the request streams (stream: true)
+#   * the tools array declares functions named exactly "bash" and "read"
+# Free models additionally need no Authorization header at all.
+OPENCODE_FREE_TIER_USER_AGENT = "opencode/1.18.31 voice-edge/1.0"
+OPENCODE_SESSION_ID_PREFIX = "ses_"
+OPENCODE_FREE_TIER_REQUIRED_TOOLS = ("bash", "read")
+OPENCODE_BASE62_ALPHABET = (
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+)
+OPENCODE_DEFAULT_MAX_TOKENS = 4096
+OPENCODE_SCHEMA_KEYS_UNSUPPORTED_BY_GOOGLE = frozenset(
+    {
+        "$schema",
+        "$defs",
+        "definitions",
+        "additionalProperties",
+        "unevaluatedProperties",
+        "strict",
+        "title",
+        "examples",
+        "default",
+    }
+)
+OPENCODE_CONNECT_TIMEOUT_SECONDS = 15.0
+OPENCODE_FIRST_EVENT_TIMEOUT_SECONDS = 45.0
+OPENCODE_STREAM_IDLE_TIMEOUT_SECONDS = 90.0
+OPENCODE_TOTAL_TIMEOUT_SECONDS = 600.0
+OPENCODE_MAX_ATTEMPTS = 3
+OPENCODE_RETRY_BASE_SECONDS = 0.35
+OPENCODE_KEY_COOLDOWN_SECONDS = 300.0
+OPENCODE_MAX_INFLIGHT_PER_KEY = 8
+OPENCODE_KEY_SELECTION_STRATEGY = "round-robin"
+OPENCODE_KEY_SELECTION_OPTS: tuple[str, ...] = ()
+OPENCODE_GLOBAL_RATE_DELAY_SECONDS = 0.0
 
 
 DICTATION_CORRECTION_MODEL = "LLM:gemma-4-unsloth"
@@ -45813,6 +46067,22 @@ async def completions_api(request):
                 dict(body), openrouter_stream
             )
 
+        # OpenCode has no legacy text-completion endpoint: every model is served
+        # through /v1/chat/completions (or the Responses/Messages protocol).
+        if _opencode_is_model(requested_model):
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": (
+                            f"{requested_model} is a chat model; use "
+                            "/v1/chat/completions instead of /v1/completions"
+                        ),
+                        "type": "opencode_model_error",
+                    }
+                },
+                status_code=400,
+            )
+
         if is_fim_request:
             requested_model = requested_model or DEFAULT_FIM_ALIAS
 
@@ -47387,6 +47657,35 @@ def _openrouter_error_response(
     return JSONResponse(payload, status_code=status, headers=headers)
 
 
+_OPENROUTER_CLIENT_CACHE: dict[tuple, OpenRouterHTTPClient] = {}
+_OPENROUTER_CLIENT_CACHE_LOCK = threading.Lock()
+
+
+def _openrouter_shared_client(config: OpenRouterConfig) -> OpenRouterHTTPClient:
+    """Return the shared client for this key set.
+
+    A client owns the key manager, so it has to outlive a single request:
+    round-robin rotation and 429 cooldowns only persist when the next request
+    reaches the same manager, otherwise every request restarts at the first key
+    and a cooling key can never be skipped. Only the active key set is kept, so
+    a changed environment replaces the cached client instead of accumulating one
+    per configuration. The running loop is part of the key because the key
+    manager holds an asyncio lock.
+    """
+    try:
+        loop: Any = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    cache_key = (config.api_keys, config.base_url, loop)
+    with _OPENROUTER_CLIENT_CACHE_LOCK:
+        client = _OPENROUTER_CLIENT_CACHE.get(cache_key)
+        if client is None:
+            client = OpenRouterHTTPClient(config)
+            _OPENROUTER_CLIENT_CACHE.clear()
+            _OPENROUTER_CLIENT_CACHE[cache_key] = client
+        return client
+
+
 async def _direct_openrouter_chat_response(
     body: dict, messages: list, stream_mode: bool
 ):
@@ -47401,7 +47700,7 @@ async def _direct_openrouter_chat_response(
             },
             status_code=503,
         )
-    client = OpenRouterHTTPClient(config)
+    client = _openrouter_shared_client(config)
     payload = _openrouter_request_payload(body, messages, stream_mode)
     public_model = str(
         body.get("model") or f"{OPENROUTER_MODEL_PREFIX}{config.default_model}"
@@ -47431,7 +47730,7 @@ async def _direct_openrouter_text_completion(body: dict, stream_mode: bool):
             },
             status_code=503,
         )
-    client = OpenRouterHTTPClient(config)
+    client = _openrouter_shared_client(config)
     payload = _openrouter_request_payload(body, None, stream_mode)
     if not stream_mode:
         return await client.complete("/completions", payload)
@@ -47443,6 +47742,2567 @@ async def _direct_openrouter_text_completion(body: dict, stream_mode: bool):
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+# -----------------------------------------------------------------------------
+# OpenCode Zen / OpenCode Go relay
+# -----------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class OpenCodeConfig:
+    """OpenCode relay configuration; only API keys come from the environment."""
+
+    api_keys: tuple[str, ...]
+    zen_base_url: str = OPENCODE_ENDPOINT_BASE_URLS[OPENCODE_ZEN_ENDPOINT]
+    go_base_url: str = OPENCODE_ENDPOINT_BASE_URLS[OPENCODE_GO_ENDPOINT]
+    model_prefix: str = OPENCODE_MODEL_PREFIX
+    alternate_model_prefix: str = OPENCODE_ALTERNATE_MODEL_PREFIX
+    user_agent: str = OPENCODE_USER_AGENT
+    anthropic_version: str = OPENCODE_ANTHROPIC_VERSION
+    connect_timeout: float = OPENCODE_CONNECT_TIMEOUT_SECONDS
+    first_event_timeout: float = OPENCODE_FIRST_EVENT_TIMEOUT_SECONDS
+    stream_idle_timeout: float = OPENCODE_STREAM_IDLE_TIMEOUT_SECONDS
+    total_timeout: float = OPENCODE_TOTAL_TIMEOUT_SECONDS
+    max_attempts: int = OPENCODE_MAX_ATTEMPTS
+    retry_base_seconds: float = OPENCODE_RETRY_BASE_SECONDS
+    key_cooldown_seconds: float = OPENCODE_KEY_COOLDOWN_SECONDS
+    max_inflight_per_key: int = OPENCODE_MAX_INFLIGHT_PER_KEY
+    key_strategy: str = OPENCODE_KEY_SELECTION_STRATEGY
+    key_options: tuple[str, ...] = OPENCODE_KEY_SELECTION_OPTS
+    global_rate_delay: float = OPENCODE_GLOBAL_RATE_DELAY_SECONDS
+    schema_keys_unsupported_by_google: frozenset[str] = (
+        OPENCODE_SCHEMA_KEYS_UNSUPPORTED_BY_GOOGLE
+    )
+
+    @classmethod
+    def load(cls) -> "OpenCodeConfig":
+        return cls(api_keys=tuple(_opencode_parse_api_keys()))
+
+    def base_url(self, endpoint: str) -> str:
+        if endpoint == OPENCODE_GO_ENDPOINT:
+            return self.go_base_url
+        return self.zen_base_url
+
+
+@dataclass(frozen=True)
+class OpenCodeModelSpec:
+    """A published OpenCode model: endpoint (zen|go) + upstream protocol."""
+
+    public_id: str
+    endpoint: str
+    upstream_id: str
+    protocol: str
+    capabilities: frozenset[str] = frozenset({"chat", "completions", "stream"})
+
+    @classmethod
+    def from_public_id(cls, public_id: str) -> "OpenCodeModelSpec":
+        """Build a spec from an explicit `opencode:<endpoint>/<model-id>` id."""
+        endpoint, upstream_id = _opencode_parse_public_id(public_id)
+        if endpoint is None or not upstream_id:
+            raise ValueError(
+                "OpenCode model id must look like "
+                f"'{OPENCODE_MODEL_PREFIX}{OPENCODE_ZEN_ENDPOINT}|"
+                f"{OPENCODE_GO_ENDPOINT}/<model-id>': {public_id!r}"
+            )
+        protocol = _opencode_protocol_for(endpoint, upstream_id)
+        return cls(
+            public_id=f"{OPENCODE_MODEL_PREFIX}{endpoint}/{upstream_id}",
+            endpoint=endpoint,
+            upstream_id=upstream_id,
+            protocol=protocol,
+            capabilities=OPENCODE_PROTOCOL_CAPABILITIES[protocol],
+        )
+
+    def as_openai_model(self) -> dict[str, Any]:
+        return {
+            "id": self.public_id,
+            "object": "model",
+            "created": 0,
+            "owned_by": f"opencode-{self.endpoint}",
+            "root": self.upstream_id,
+            "endpoint": self.endpoint,
+            "protocol": self.protocol,
+            "capabilities": sorted(self.capabilities),
+        }
+
+
+@dataclass
+class OpenCodeKeyState:
+    secret: str
+    key_id: str
+    inflight: int = 0
+    disabled_until: float = 0.0
+    failures: int = 0
+    last_used: float = 0.0
+
+
+class OpenCodeNoKeyError(RuntimeError):
+    def __init__(self, wait_seconds: float = 0.0):
+        self.wait_seconds = max(0.0, float(wait_seconds))
+        super().__init__(
+            "No OpenCode API key is available"
+            + (f"; retry in {self.wait_seconds:.0f}s" if self.wait_seconds else "")
+        )
+
+
+class OpenCodeRequestError(RuntimeError):
+    """An upstream request failed before any body was produced."""
+
+    def __init__(self, response: Response):
+        self.response = response
+        super().__init__(_opencode_error_message(getattr(response, "body", b"")))
+
+
+class OpenCodeStreamError(RuntimeError):
+    """An upstream stream reported an error (or broke) after it had started."""
+
+
+def _opencode_parse_api_keys() -> list[str]:
+    raw = os.getenv("VE_OPENCODE_API_KEYS", "").strip()
+    if not raw:
+        return []
+    if raw.startswith("["):
+        try:
+            decoded = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                "VE_OPENCODE_API_KEYS must be JSON or comma/newline separated"
+            ) from exc
+        if not isinstance(decoded, list):
+            raise RuntimeError("VE_OPENCODE_API_KEYS JSON must be an array")
+        values = [str(value).strip() for value in decoded]
+    else:
+        values = [part.strip() for part in re.split(r"[,\r\n]+", raw)]
+    return list(dict.fromkeys(value for value in values if value))
+
+
+def _opencode_mask(key: str) -> str:
+    if len(key) <= 8:
+        return "****"
+    return f"{key[:4]}****{key[-4:]}"
+
+
+def _opencode_env_bool(name: str, *, default: bool) -> bool:
+    """Read a boolean environment flag; invalid values fall back to default."""
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return parse_optional_bool(raw.strip(), default=default, field_name=name)
+    except ValueError:
+        _http_log.warning("Ignoring invalid %s=%r; using %s", name, raw, default)
+        return default
+
+
+def _opencode_free_only() -> bool:
+    """VE_OPENCODE_FREE (default 1): publish only '-free' Zen models."""
+    return _opencode_env_bool("VE_OPENCODE_FREE", default=True)
+
+
+def _opencode_go_enabled() -> bool:
+    """VE_OPENCODE_GO (default 0): publish OpenCode Go models as well."""
+    return _opencode_env_bool("VE_OPENCODE_GO", default=False)
+
+
+def _opencode_is_model(model_name: Any) -> bool:
+    return isinstance(model_name, str) and (
+        model_name.startswith(OPENCODE_MODEL_PREFIX)
+        or model_name.startswith(OPENCODE_ALTERNATE_MODEL_PREFIX)
+    )
+
+
+def _opencode_parse_public_id(public_id: str) -> tuple[str | None, str]:
+    """Split `opencode:<endpoint>/<model-id>` into (endpoint, upstream id).
+
+    The endpoint is None when the id does not name one of the two OpenCode
+    endpoints (`zen` or `go`); the caller turns that into a client-facing error.
+    """
+    raw = str(public_id or "").strip()
+    for prefix in (OPENCODE_MODEL_PREFIX, OPENCODE_ALTERNATE_MODEL_PREFIX):
+        if raw.startswith(prefix):
+            raw = raw[len(prefix) :].strip()
+            break
+    for endpoint in (OPENCODE_ZEN_ENDPOINT, OPENCODE_GO_ENDPOINT):
+        if raw.startswith(endpoint + "/"):
+            return endpoint, raw[len(endpoint) + 1 :].strip()
+    return None, raw
+
+
+def _opencode_protocol_from_name(upstream_id: str) -> str:
+    """Family fallback for ids that are missing from the protocol tables."""
+    model = str(upstream_id or "").strip().lower()
+    if model.startswith(("claude", "qwen", "union-")):
+        return OPENCODE_PROTOCOL_MESSAGES
+    if model.startswith("gemini"):
+        return OPENCODE_PROTOCOL_GOOGLE
+    if model.startswith(("gpt-", "grok", "muse-spark")):
+        return OPENCODE_PROTOCOL_RESPONSES
+    return OPENCODE_PROTOCOL_CHAT
+
+
+def _opencode_table_entry(endpoint: str, upstream_id: str) -> dict[str, Any] | None:
+    """Table row for one endpoint: the "<endpoint>/<model>" key."""
+    return OPENCODE_MODELS.get(f"{endpoint}/{upstream_id}")
+
+
+def _opencode_protocol_for(endpoint: str, upstream_id: str) -> str:
+    entry = _opencode_table_entry(endpoint, upstream_id)
+    protocol = entry.get("protocol") if entry else None
+    if protocol:
+        return protocol
+    return _opencode_protocol_from_name(upstream_id)
+
+
+def _opencode_publish_switch(endpoint: str, upstream_id: str) -> bool | None:
+    """Value of a row's "publish" field: True/False, None when unset.
+
+    ``"publish": True`` publishes the model regardless of
+    VE_OPENCODE_FREE / VE_OPENCODE_GO, ``False`` hides it, and a row without the
+    field follows those two env flags.
+    """
+    entry = _opencode_table_entry(endpoint, upstream_id)
+    if not entry or "publish" not in entry:
+        return None
+    return bool(entry["publish"])
+
+
+def _opencode_publication_error(spec: OpenCodeModelSpec) -> str | None:
+    """Explain why a model is hidden in the current environment."""
+    switch = _opencode_publish_switch(spec.endpoint, spec.upstream_id)
+    if switch is True:
+        return None
+    if switch is False:
+        return (
+            f"OpenCode model '{spec.upstream_id}' is turned off "
+            "(publish: False in OPENCODE_MODELS)"
+        )
+    if (
+        spec.endpoint == OPENCODE_ZEN_ENDPOINT
+        and _opencode_free_only()
+        and not spec.upstream_id.endswith(OPENCODE_FREE_MODEL_SUFFIX)
+    ):
+        return (
+            f"OpenCode Zen model '{spec.upstream_id}' is hidden because "
+            f"VE_OPENCODE_FREE=1 publishes only "
+            f"'{OPENCODE_FREE_MODEL_SUFFIX}'-suffixed Zen models; "
+            f"set VE_OPENCODE_FREE=0 to publish every Zen model"
+        )
+    if spec.endpoint == OPENCODE_GO_ENDPOINT and not _opencode_go_enabled():
+        return (
+            "OpenCode Go models are hidden because "
+            "VE_OPENCODE_GO=0; set VE_OPENCODE_GO=1 to publish them"
+        )
+    return None
+
+
+def _opencode_default_public_id() -> str | None:
+    """First published model, used for a bare "opencode:" request."""
+    exposed = _opencode_exposed_models()
+    return exposed[0] if exposed else None
+
+
+def _opencode_resolve_spec(
+    model_name: Any,
+) -> tuple["OpenCodeModelSpec | None", str | None]:
+    """Resolve a public model id to its spec, or to a client-facing error."""
+    if not _opencode_is_model(model_name):
+        return None, f"Not an OpenCode model id: {model_name}"
+    endpoint, upstream_id = _opencode_parse_public_id(str(model_name))
+    if endpoint is None:
+        if not upstream_id:
+            default_public_id = _opencode_default_public_id()
+            if default_public_id is None:
+                return None, (
+                    "No OpenCode model is published in this environment; set "
+                    "VE_OPENCODE_API_KEYS (and VE_OPENCODE_FREE=0 to "
+                    "publish the paid Zen models as well)"
+                )
+            return OpenCodeModelSpec.from_public_id(default_public_id), None
+        return (
+            None,
+            f"Unknown OpenCode endpoint in '{model_name}': use "
+            f"'{OPENCODE_MODEL_PREFIX}{OPENCODE_ZEN_ENDPOINT}/<model-id>' or "
+            f"'{OPENCODE_MODEL_PREFIX}{OPENCODE_GO_ENDPOINT}/<model-id>'",
+        )
+    if not upstream_id:
+        return None, f"Missing OpenCode model id in '{model_name}'"
+    spec = OpenCodeModelSpec.from_public_id(
+        f"{OPENCODE_MODEL_PREFIX}{endpoint}/{upstream_id}"
+    )
+    error = _opencode_publication_error(spec)
+    if error:
+        return None, error
+    return spec, None
+
+
+def _opencode_exposed_models() -> tuple[str, ...]:
+    """Public model ids published on /v1/models for the current environment."""
+    if not _opencode_parse_api_keys():
+        return ()
+    free_only = _opencode_free_only()
+    go_enabled = _opencode_go_enabled()
+    models: list[str] = []
+    for key in OPENCODE_MODELS:
+        endpoint, separator, model_id = key.partition("/")
+        if not separator or endpoint not in OPENCODE_ENDPOINT_BASE_URLS:
+            continue
+        switch = _opencode_publish_switch(endpoint, model_id)
+        if switch is False:
+            continue
+        if switch is None:
+            # 没写 publish 的行使按两个环境开关过滤。
+            if endpoint == OPENCODE_GO_ENDPOINT and not go_enabled:
+                continue
+            if (
+                endpoint == OPENCODE_ZEN_ENDPOINT
+                and free_only
+                and not model_id.endswith(OPENCODE_FREE_MODEL_SUFFIX)
+            ):
+                continue
+        # publish: True —— 打开就发布，不看开关。
+        models.append(f"{OPENCODE_MODEL_PREFIX}{endpoint}/{model_id}")
+    return tuple(models)
+
+
+class OpenCodeKeyManager:
+    """Concurrency-aware first/random/round-robin selector with sticky option.
+
+    The free models are quota limited per window, so keys are rotated on every
+    request (round-robin) and a 429 cools the used key down instead of failing
+    the whole request while other keys are still usable.
+    """
+
+    def __init__(self, config: OpenCodeConfig):
+        self.config = config
+        self._states = [
+            OpenCodeKeyState(
+                secret=key,
+                key_id=hashlib.sha256(key.encode()).hexdigest()[:10],
+            )
+            for key in config.api_keys
+        ]
+        self._cursor = 0
+        self._last_good_id: str | None = None
+        self._lock = asyncio.Lock()
+
+    async def acquire(self, excluded: set[str] | None = None) -> OpenCodeKeyState:
+        excluded = excluded or set()
+        async with self._lock:
+            now = time.monotonic()
+            candidates = [
+                state
+                for state in self._states
+                if state.key_id not in excluded
+                and state.disabled_until <= now
+                and state.inflight < self.config.max_inflight_per_key
+            ]
+            if not candidates:
+                candidates = [
+                    state
+                    for state in self._states
+                    if state.key_id not in excluded and state.disabled_until <= now
+                ]
+            if not candidates:
+                waits = [
+                    s.disabled_until - now
+                    for s in self._states
+                    if s.disabled_until > now
+                ]
+                raise OpenCodeNoKeyError(min(waits) if waits else 0.0)
+            if "same" in {value.lower() for value in self.config.key_options}:
+                sticky = next(
+                    (s for s in candidates if s.key_id == self._last_good_id), None
+                )
+            else:
+                sticky = None
+            if sticky is not None:
+                chosen = sticky
+            elif self.config.key_strategy == "first":
+                chosen = candidates[0]
+            elif self.config.key_strategy == "random":
+                chosen = secrets.choice(candidates)
+            else:
+                ordered = sorted(
+                    candidates, key=lambda state: self._states.index(state)
+                )
+                chosen = ordered[self._cursor % len(ordered)]
+                self._cursor = (self._cursor + 1) % max(1, len(self._states))
+            chosen.inflight += 1
+            chosen.last_used = now
+            return chosen
+
+    async def release(self, state: OpenCodeKeyState, *, success: bool) -> None:
+        async with self._lock:
+            state.inflight = max(0, state.inflight - 1)
+            if success:
+                state.failures = 0
+                self._last_good_id = state.key_id
+            else:
+                state.failures += 1
+
+    async def penalize(
+        self, state: OpenCodeKeyState, seconds: float | None = None
+    ) -> None:
+        cooldown = self.config.key_cooldown_seconds
+        if seconds and seconds > 0:
+            # Honor a shorter upstream Retry-After, never a longer one: a stuck
+            # key must not be taken out of rotation for longer than the default.
+            cooldown = min(cooldown, float(seconds))
+        async with self._lock:
+            state.disabled_until = time.monotonic() + cooldown
+            if self._last_good_id == state.key_id:
+                self._last_good_id = None
+            _http_log.warning(
+                "OpenCode key %s cooling down for %.0fs",
+                _opencode_mask(state.secret),
+                cooldown,
+            )
+
+
+def _opencode_error_fields(raw: bytes, status: int) -> tuple[str, str]:
+    """Return (type, message) from an OpenCode error body.
+
+    OpenCode wraps upstream failures in `{"type": "error", "error": {"type":
+    "AuthError"|"FreeTierError"|"ModelError"|..., "message": ...}}`, but some
+    routes return a bare `{"error": {...}}` or plain text, so all shapes are
+    accepted and the real upstream message is what the client ends up seeing.
+    """
+    text = raw.decode(errors="replace").strip() if raw else ""
+    if not text:
+        return (
+            "opencode_upstream_error",
+            f"OpenCode upstream returned HTTP {status}"
+            if status
+            else "OpenCode request failed",
+        )
+    try:
+        payload = json.loads(text)
+    except Exception:
+        return "opencode_upstream_error", text
+    if isinstance(payload, dict):
+        error = payload.get("error")
+        if isinstance(error, dict):
+            message = str(error.get("message") or "").strip()
+            error_type = str(error.get("type") or "").strip()
+            if message:
+                return error_type or "opencode_upstream_error", message
+        message = str(payload.get("message") or "").strip()
+        if message:
+            return str(payload.get("type") or "opencode_upstream_error"), message
+    return "opencode_upstream_error", text
+
+
+def _opencode_error_message(raw: bytes) -> str:
+    return _opencode_error_fields(raw, 0)[1]
+
+
+def _opencode_error_summary(raw: bytes, status: int) -> str:
+    """`Type: message` form used in log lines."""
+    error_type, message = _opencode_error_fields(raw, status)
+    return f"{error_type}: {message}"
+
+
+def _opencode_error_response(
+    status: int, raw: bytes, retry_after_seconds: float = 0.0
+) -> JSONResponse:
+    error_type, message = _opencode_error_fields(raw, status)
+    if retry_after_seconds and "retry in" not in message.lower():
+        message = (
+            f"{message} (all OpenCode API keys are cooling down; "
+            f"retry in {retry_after_seconds:.0f}s)"
+        )
+    headers = (
+        {"Retry-After": str(int(retry_after_seconds))} if retry_after_seconds else None
+    )
+    return JSONResponse(
+        {"error": {"message": message, "type": error_type, "code": status}},
+        status_code=status,
+        headers=headers,
+    )
+
+
+def _opencode_retry_after_seconds(value: Any) -> float:
+    """Numeric Retry-After seconds; HTTP-date values fall back to the default."""
+    if value is None:
+        return 0.0
+    try:
+        seconds = float(str(value).strip())
+    except (TypeError, ValueError):
+        return 0.0
+    return seconds if seconds > 0 else 0.0
+
+
+def _opencode_event_error_message(event: "VoiceEdgeEvent") -> str:
+    payload = event.payload
+    if isinstance(payload, dict):
+        message = payload.get("message")
+        if message:
+            return str(message)
+        error = payload.get("error")
+        if isinstance(error, dict) and error.get("message"):
+            return str(error["message"])
+    if payload:
+        return str(payload)
+    return "OpenCode stream error"
+
+
+def _opencode_error_frame(assembler: "OpenRouterItemAssembler", message: str) -> str:
+    return _chat_sse_data(
+        {
+            "id": assembler.completion_id,
+            "object": "chat.completion.chunk",
+            "created": assembler.created,
+            "model": assembler.model,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "error"}],
+            "error": {
+                "message": message or "OpenCode stream error",
+                "type": "opencode_stream_error",
+            },
+        }
+    )
+
+
+def _opencode_random_session_id() -> str:
+    """Random id in the shape the CLI sends: ses_ + 12 hex + 14 base62."""
+    return (
+        OPENCODE_SESSION_ID_PREFIX
+        + secrets.token_hex(6)
+        + "".join(secrets.choice(OPENCODE_BASE62_ALPHABET) for _ in range(14))
+    )
+
+
+def _opencode_session_id(body: dict, spec: OpenCodeModelSpec) -> str:
+    """Per-conversation id for the x-opencode-session header.
+
+    Both endpoints use it (routing + prompt caching) and the Zen free tier
+    rejects requests without it, so an id is always returned: a client supplied
+    conversation id or the first user turn seeds it - keeping it stable for the
+    whole conversation - otherwise a random one is generated.
+    """
+    seed = body.get("conversation_id") or body.get("session_id") or body.get("user")
+    if not seed:
+        messages = body.get("messages")
+        if isinstance(messages, list):
+            for message in messages:
+                if not isinstance(message, dict):
+                    continue
+                if str(message.get("role") or "") != "user":
+                    continue
+                text = _content_to_text(message.get("content")).strip()
+                if text:
+                    seed = text[:512]
+                    break
+    text = str(seed or "").strip()
+    if not text:
+        return _opencode_random_session_id()
+    # Deterministic per conversation, but random looking: 6 bytes -> 12 hex
+    # chars, 14 bytes -> 14 base62 chars (total length 30 like the CLI).
+    digest = hashlib.sha256(
+        f"{spec.endpoint}\x00{spec.upstream_id}\x00{text}".encode()
+    ).digest()
+    tail = "".join(OPENCODE_BASE62_ALPHABET[value % 62] for value in digest[6:20])
+    return f"{OPENCODE_SESSION_ID_PREFIX}{digest[:6].hex()}{tail}"
+
+
+def _opencode_is_free_model(spec: OpenCodeModelSpec) -> bool:
+    """True for Zen models behind the free-tier gate (id ends in "-free")."""
+    return spec.endpoint == OPENCODE_ZEN_ENDPOINT and spec.upstream_id.endswith(
+        OPENCODE_FREE_MODEL_SUFFIX
+    )
+
+
+def _opencode_apply_free_tier_gate(
+    payload: dict, protocol: str = OPENCODE_PROTOCOL_CHAT
+) -> dict:
+    """Shape a payload the Zen free-tier gate accepts.
+
+    The gate wants a streaming request whose tools array declares "bash" and
+    "read"; the injected declarations are marked as unusable so a model is not
+    tempted to call a tool the client never offered. ``protocol`` only changes
+    the tool declaration shape (flat for /responses, nested for chat).
+    """
+    payload["stream"] = True
+    if protocol != OPENCODE_PROTOCOL_RESPONSES:
+        options = payload.get("stream_options")
+        payload["stream_options"] = {
+            **(options if isinstance(options, dict) else {}),
+            "include_usage": True,
+        }
+    tools = payload.get("tools")
+    items = list(tools) if isinstance(tools, list) else []
+    declared: set[str] = set()
+    for tool in items:
+        if not isinstance(tool, dict):
+            continue
+        function = tool.get("function")
+        name = function.get("name") if isinstance(function, dict) else tool.get("name")
+        if isinstance(name, str) and name:
+            declared.add(name)
+    for name in OPENCODE_FREE_TIER_REQUIRED_TOOLS:
+        if name in declared:
+            continue
+        declaration: dict[str, Any] = {
+            "description": "Unavailable in this session; never call this tool.",
+            "parameters": {"type": "object", "properties": {}},
+        }
+        if protocol == OPENCODE_PROTOCOL_RESPONSES:
+            items.append({"type": "function", "name": name, **declaration})
+        else:
+            items.append(
+                {"type": "function", "function": {"name": name, **declaration}}
+            )
+    if items:
+        payload["tools"] = items
+        payload.setdefault("tool_choice", "auto")
+    return payload
+
+
+def _opencode_flatten_text_messages(messages: list) -> list:
+    """Turn array content into plain text for models that reject content parts."""
+    flattened: list = []
+    for message in messages:
+        content = message.get("content") if isinstance(message, dict) else None
+        if not isinstance(content, list):
+            flattened.append(message)
+            continue
+        text = "\n".join(
+            piece["text"]
+            for piece in _opencode_content_pieces(content)
+            if piece["kind"] == "text"
+        )
+        flattened.append({**message, "content": text})
+    return flattened
+
+
+def _opencode_chat_payload(
+    spec: OpenCodeModelSpec, body: dict, messages: list | None, stream: bool
+) -> dict:
+    """Chat Completions passthrough payload (same shape as the upstream API)."""
+    payload = {
+        key: value
+        for key, value in body.items()
+        if key not in OPENCODE_LOCAL_REQUEST_FIELDS
+    }
+    payload["model"] = spec.upstream_id
+    if messages is not None:
+        payload["messages"] = (
+            _opencode_flatten_text_messages(messages)
+            if f"{spec.endpoint}/{spec.upstream_id}" in OPENCODE_TEXT_ONLY_MODELS
+            else messages
+        )
+    payload["stream"] = bool(stream)
+    return payload
+
+
+def _opencode_completion_payload(
+    assembler: "OpenRouterItemAssembler", usage: Any = None
+) -> dict:
+    """Assemble the non-streaming chat.completion from accumulated chunks."""
+    text = ""
+    reasoning = ""
+    tool_calls: list[dict[str, Any]] = []
+    for item in assembler.items_by_id.values():
+        if item.type == "message":
+            text += item.text
+        elif item.type == "reasoning":
+            reasoning += item.text
+        elif item.type == "function_call":
+            tool_calls.append(
+                {
+                    "id": item.call_id or f"call_{len(tool_calls)}",
+                    "type": "function",
+                    "function": {
+                        "name": item.name,
+                        "arguments": item.arguments or "{}",
+                    },
+                }
+            )
+    message: dict[str, Any] = {
+        "role": "assistant",
+        "content": text or (None if tool_calls else ""),
+    }
+    if reasoning:
+        message["reasoning_content"] = reasoning
+    if tool_calls:
+        message["tool_calls"] = tool_calls
+    finish_reason = assembler.finish_reason or ("tool_calls" if tool_calls else "stop")
+    payload: dict[str, Any] = {
+        "id": assembler.completion_id,
+        "object": "chat.completion",
+        "created": assembler.created,
+        "model": assembler.model,
+        "choices": [
+            {
+                "index": 0,
+                "message": message,
+                "finish_reason": finish_reason,
+            }
+        ],
+    }
+    if usage:
+        payload["usage"] = usage
+    return payload
+
+
+class OpenCodeHTTPClient:
+    """Owns transport, key rotation and OpenAI <-> upstream protocol conversion."""
+
+    RETRYABLE = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+    def __init__(self, config: OpenCodeConfig):
+        self.config = config
+        self.keys = OpenCodeKeyManager(config)
+
+    @staticmethod
+    def request_path(spec: OpenCodeModelSpec) -> str:
+        if spec.protocol == OPENCODE_PROTOCOL_RESPONSES:
+            return "/responses"
+        if spec.protocol == OPENCODE_PROTOCOL_MESSAGES:
+            return "/messages"
+        if spec.protocol == OPENCODE_PROTOCOL_GOOGLE:
+            quoted = urllib.parse.quote(spec.upstream_id, safe="")
+            return f"/models/{quoted}:streamGenerateContent?alt=sse"
+        return "/chat/completions"
+
+    def headers(
+        self,
+        state: OpenCodeKeyState,
+        *,
+        spec: OpenCodeModelSpec,
+        stream: bool,
+        session_id: str = "",
+    ) -> dict[str, str]:
+        if _opencode_is_free_model(spec):
+            # Free tier: the gate accepts CLI-looking traffic and the models
+            # need no Authorization header at all, so no key is attached.
+            return {
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream",
+                "User-Agent": OPENCODE_FREE_TIER_USER_AGENT,
+                "x-opencode-session": session_id or _opencode_random_session_id(),
+            }
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream" if stream else "application/json",
+            # The Go endpoint requires a non-generic client identity.
+            "User-Agent": self.config.user_agent,
+        }
+        # Each upstream protocol authenticates exactly like the AI SDK provider
+        # that speaks it: Bearer for OpenAI routes, x-api-key for Anthropic
+        # Messages, x-goog-api-key for the Google Generative Language route.
+        if spec.protocol == OPENCODE_PROTOCOL_MESSAGES:
+            headers["x-api-key"] = state.secret
+            headers["anthropic-version"] = self.config.anthropic_version
+        elif spec.protocol == OPENCODE_PROTOCOL_GOOGLE:
+            headers["x-goog-api-key"] = state.secret
+        else:
+            headers["Authorization"] = f"Bearer {state.secret}"
+        if session_id:
+            headers["x-opencode-session"] = session_id
+        return headers
+
+    async def _open(
+        self,
+        spec: OpenCodeModelSpec,
+        payload: dict,
+        stream: bool,
+        session_id: str = "",
+    ):
+        excluded: set[str] = set()
+        attempts = max(1, self.config.max_attempts)
+        last_error = "OpenCode request failed"
+        # Preserve the most recent REAL upstream error (status + body) so the
+        # client still sees OpenCode's own explanation when the loop ends on key
+        # exhaustion instead of overwriting it with the generic no-key message.
+        last_upstream_status: int | None = None
+        last_upstream_body: bytes = b""
+        retry_after_seconds = 0.0
+        for attempt in range(attempts):
+            if len(excluded) >= len(self.config.api_keys):
+                excluded.clear()
+            try:
+                state = await self.keys.acquire(excluded)
+            except OpenCodeNoKeyError as exc:
+                last_error = str(exc)
+                retry_after_seconds = getattr(exc, "wait_seconds", 0.0)
+                break
+            excluded.add(state.key_id)
+            timeout = aiohttp.ClientTimeout(
+                total=None if stream else self.config.total_timeout,
+                connect=self.config.connect_timeout,
+                sock_read=self.config.stream_idle_timeout
+                if stream
+                else self.config.total_timeout,
+            )
+            url = self.config.base_url(spec.endpoint).rstrip("/") + self.request_path(
+                spec
+            )
+            session = aiohttp.ClientSession(timeout=timeout)
+            try:
+                response = await session.post(
+                    url,
+                    json=payload,
+                    headers=self.headers(
+                        state,
+                        spec=spec,
+                        stream=stream,
+                        session_id=session_id,
+                    ),
+                )
+            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                await session.close()
+                await self.keys.release(state, success=False)
+                last_error = str(exc) or exc.__class__.__name__
+                _http_log.warning(
+                    "OpenCode %s transport error on %s (key %s): %s",
+                    spec.public_id,
+                    url,
+                    _opencode_mask(state.secret),
+                    last_error,
+                )
+                continue
+            if response.status == 429:
+                raw = await response.read()
+                last_error = raw.decode(errors="replace")
+                last_upstream_status = 429
+                last_upstream_body = raw
+                retry_after = _opencode_retry_after_seconds(
+                    response.headers.get("Retry-After")
+                )
+                _http_log.warning(
+                    "OpenCode %s rate limited (key %s, retry-after %.0fs): %s",
+                    spec.public_id,
+                    _opencode_mask(state.secret),
+                    retry_after,
+                    _opencode_error_summary(raw, 429),
+                )
+                response.release()
+                await session.close()
+                await self.keys.penalize(state, retry_after)
+                await self.keys.release(state, success=False)
+                if self.config.global_rate_delay:
+                    await asyncio.sleep(self.config.global_rate_delay)
+                continue
+            if response.status >= 400:
+                raw = await response.read()
+                status = response.status
+                last_upstream_status = status
+                last_upstream_body = raw
+                retrying = status in self.RETRYABLE and attempt + 1 < attempts
+                _http_log.warning(
+                    "OpenCode %s upstream HTTP %s on %s (%s): %s",
+                    spec.public_id,
+                    status,
+                    url,
+                    "retrying" if retrying else "returning to client",
+                    _opencode_error_summary(raw, status),
+                )
+                response.release()
+                await session.close()
+                await self.keys.release(state, success=False)
+                if retrying:
+                    last_error = raw.decode(errors="replace")
+                    await asyncio.sleep(self.config.retry_base_seconds * (2**attempt))
+                    continue
+                return None, None, None, _opencode_error_response(status, raw)
+            _http_log.debug(
+                "OpenCode %s accepted by upstream HTTP %s",
+                spec.public_id,
+                response.status,
+            )
+            return session, response, state, None
+        if last_upstream_status is not None:
+            _http_log.warning(
+                "OpenCode %s gave up after %d attempt(s); last upstream HTTP %s: %s",
+                spec.public_id,
+                attempts,
+                last_upstream_status,
+                _opencode_error_summary(last_upstream_body, last_upstream_status),
+            )
+            return (
+                None,
+                None,
+                None,
+                _opencode_error_response(
+                    last_upstream_status,
+                    last_upstream_body,
+                    retry_after_seconds=retry_after_seconds,
+                ),
+            )
+        message = last_error or "OpenCode request failed"
+        if retry_after_seconds and "retry in" not in message.lower():
+            message = (
+                f"{message} (all OpenCode API keys are cooling down; "
+                f"retry in {retry_after_seconds:.0f}s)"
+            )
+        _http_log.warning(
+            "OpenCode %s failed without a usable API key: %s", spec.public_id, message
+        )
+        return (
+            None,
+            None,
+            None,
+            JSONResponse(
+                {"error": {"message": message, "type": "opencode_upstream_error"}},
+                status_code=503,
+            ),
+        )
+
+    async def complete(self, spec: OpenCodeModelSpec, payload: dict) -> Response:
+        """Non-streaming passthrough of an OpenAI shaped upstream response."""
+        session, response, state, error = await self._open(spec, payload, False)
+        if error is not None:
+            return error
+        assert session is not None and response is not None and state is not None
+        try:
+            raw = await response.read()
+            return Response(
+                raw,
+                status_code=response.status,
+                media_type=response.headers.get("content-type", "application/json"),
+            )
+        finally:
+            response.release()
+            await session.close()
+            await self.keys.release(state, success=True)
+
+    async def chat_stream(
+        self,
+        spec: OpenCodeModelSpec,
+        payload: dict,
+        public_model: str,
+        session_id: str = "",
+    ) -> AsyncGenerator[str, None]:
+        """Streaming passthrough for models that already speak Chat Completions."""
+        assembler = OpenRouterItemAssembler(
+            f"chatcmpl-oc-{uuid.uuid4().hex}", int(time.time()), public_model
+        )
+        session, response, state, error = await self._open(
+            spec, payload, True, session_id
+        )
+        if error is not None:
+            raw = getattr(error, "body", b"")
+            message = _opencode_error_message(raw)
+            _http_log.warning(
+                "OpenCode chat stream rejected for %s: %s",
+                spec.public_id,
+                _opencode_error_summary(raw, getattr(error, "status_code", 0)),
+            )
+            yield _opencode_error_frame(assembler, message)
+            yield _SSE_DONE_FRAME
+            return
+        assert session is not None and response is not None and state is not None
+        decoder = _OpenRouterSSEDecoder()
+        saw_done = False
+        clean = False
+        try:
+            iterator = response.content.iter_any().__aiter__()
+            first = await asyncio.wait_for(
+                iterator.__anext__(), timeout=self.config.first_event_timeout
+            )
+            chunks = [first]
+
+            async def remaining():
+                for initial in chunks:
+                    yield initial
+                async for value in iterator:
+                    yield value
+
+            async for raw_chunk in remaining():
+                for payload_chunk in decoder.feed(raw_chunk):
+                    if payload_chunk is None:
+                        saw_done = True
+                        break
+                    for event in assembler.push(payload_chunk):
+                        if event.kind == "error":
+                            message = _opencode_event_error_message(event)
+                            _http_log.warning(
+                                "OpenCode chat stream error for %s: %s",
+                                spec.public_id,
+                                message,
+                            )
+                            yield _opencode_error_frame(assembler, message)
+                            yield _SSE_DONE_FRAME
+                            return
+                        frame = assembler.serialize(event)
+                        if frame is not None:
+                            yield _chat_sse_data(frame)
+                if saw_done:
+                    break
+            yield _chat_sse_data(assembler.finalize())
+            yield _SSE_DONE_FRAME
+            clean = True
+        except StopAsyncIteration:
+            yield _chat_sse_data(assembler.finalize())
+            yield _SSE_DONE_FRAME
+            clean = True
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            message = str(exc) or exc.__class__.__name__
+            _http_log.warning(
+                "OpenCode chat stream failed for %s: %s", spec.public_id, message
+            )
+            yield _opencode_error_frame(assembler, message)
+            yield _SSE_DONE_FRAME
+        finally:
+            response.release()
+            await session.close()
+            await self.keys.release(state, success=clean)
+
+    async def chat_completion(
+        self,
+        spec: OpenCodeModelSpec,
+        payload: dict,
+        public_model: str,
+        session_id: str = "",
+    ) -> Response:
+        """Non-streaming reply assembled from an always-streaming upstream.
+
+        The Zen free tier only serves streaming requests, so a non-streaming
+        client is answered by collecting the stream into one chat.completion.
+        """
+        assembler = OpenRouterItemAssembler(
+            f"chatcmpl-oc-{uuid.uuid4().hex}", int(time.time()), public_model
+        )
+        session, response, state, error = await self._open(
+            spec, payload, True, session_id
+        )
+        if error is not None:
+            raw = getattr(error, "body", b"")
+            _http_log.warning(
+                "OpenCode chat request rejected for %s: %s",
+                spec.public_id,
+                _opencode_error_summary(raw, getattr(error, "status_code", 0)),
+            )
+            return error
+        assert session is not None and response is not None and state is not None
+        decoder = _OpenRouterSSEDecoder()
+        usage: Any = None
+        saw_done = False
+        clean = False
+        try:
+            iterator = response.content.iter_any().__aiter__()
+            first = await asyncio.wait_for(
+                iterator.__anext__(), timeout=self.config.first_event_timeout
+            )
+            chunks = [first]
+
+            async def remaining():
+                for initial in chunks:
+                    yield initial
+                async for value in iterator:
+                    yield value
+
+            async for raw_chunk in remaining():
+                for payload_chunk in decoder.feed(raw_chunk):
+                    if payload_chunk is None:
+                        saw_done = True
+                        break
+                    chunk_usage = payload_chunk.get("usage")
+                    if chunk_usage is not None:
+                        usage = chunk_usage
+                    for event in assembler.push(payload_chunk):
+                        if event.kind == "metadata" and isinstance(event.payload, dict):
+                            usage = event.payload.get("usage") or usage
+                        elif event.kind == "error":
+                            message = _opencode_event_error_message(event)
+                            _http_log.warning(
+                                "OpenCode chat stream error for %s: %s",
+                                spec.public_id,
+                                message,
+                            )
+                            return JSONResponse(
+                                {
+                                    "error": {
+                                        "message": message,
+                                        "type": "opencode_stream_error",
+                                    }
+                                },
+                                status_code=502,
+                            )
+                if saw_done:
+                    break
+            clean = True
+        except StopAsyncIteration:
+            clean = True
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            message = str(exc) or exc.__class__.__name__
+            _http_log.warning(
+                "OpenCode chat stream failed for %s: %s", spec.public_id, message
+            )
+            return JSONResponse(
+                {"error": {"message": message, "type": "opencode_stream_error"}},
+                status_code=502,
+            )
+        finally:
+            response.release()
+            await session.close()
+            await self.keys.release(state, success=clean)
+        return JSONResponse(_opencode_completion_payload(assembler, usage))
+
+    async def _converted_chunks(
+        self,
+        spec: OpenCodeModelSpec,
+        payload: dict,
+        session_id: str = "",
+    ) -> AsyncGenerator[dict, None]:
+        """Yield OpenAI chat.completion.chunk dicts from a foreign upstream protocol.
+
+        Every non chat-completions protocol is requested in streaming mode, so
+        one converter serves both the streaming and the non-streaming client.
+        """
+        session, response, state, error = await self._open(
+            spec, payload, True, session_id
+        )
+        if error is not None:
+            raw = getattr(error, "body", b"")
+            _http_log.warning(
+                "OpenCode %s request rejected for %s: %s",
+                spec.protocol,
+                spec.public_id,
+                _opencode_error_summary(raw, getattr(error, "status_code", 0)),
+            )
+            raise OpenCodeRequestError(error)
+        assert session is not None and response is not None and state is not None
+        converter = _opencode_converter(
+            spec.protocol,
+            f"chatcmpl-oc-{uuid.uuid4().hex}",
+            int(time.time()),
+            spec.public_id,
+        )
+        decoder = _OpenRouterSSEDecoder()
+        saw_done = False
+        clean = False
+        try:
+            iterator = response.content.iter_any().__aiter__()
+            first = await asyncio.wait_for(
+                iterator.__anext__(), timeout=self.config.first_event_timeout
+            )
+            chunks = [first]
+
+            async def remaining():
+                for initial in chunks:
+                    yield initial
+                async for value in iterator:
+                    yield value
+
+            async for raw_chunk in remaining():
+                for payload_chunk in decoder.feed(raw_chunk):
+                    if payload_chunk is None:
+                        saw_done = True
+                        break
+                    for chunk in converter.feed(payload_chunk):
+                        yield chunk
+                if saw_done:
+                    break
+            for chunk in converter.finalize():
+                yield chunk
+            clean = True
+        except StopAsyncIteration:
+            for chunk in converter.finalize():
+                yield chunk
+            clean = True
+        except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            _http_log.warning(
+                "OpenCode %s stream failed for %s: %s",
+                spec.protocol,
+                spec.public_id,
+                str(exc) or exc.__class__.__name__,
+            )
+            raise OpenCodeStreamError(str(exc) or exc.__class__.__name__) from exc
+        finally:
+            response.release()
+            await session.close()
+            await self.keys.release(state, success=clean)
+
+    async def converted_stream(
+        self,
+        spec: OpenCodeModelSpec,
+        payload: dict,
+        public_model: str,
+        session_id: str = "",
+    ) -> AsyncGenerator[str, None]:
+        """Stream responses/messages/google upstreams as OpenAI SSE chunks."""
+        assembler = OpenRouterItemAssembler(
+            f"chatcmpl-oc-{uuid.uuid4().hex}", int(time.time()), public_model
+        )
+        try:
+            async for chunk in self._converted_chunks(
+                spec, payload, session_id=session_id
+            ):
+                for event in assembler.push(chunk):
+                    if event.kind == "error":
+                        message = _opencode_event_error_message(event)
+                        _http_log.warning(
+                            "OpenCode %s stream error for %s: %s",
+                            spec.protocol,
+                            spec.public_id,
+                            message,
+                        )
+                        yield _opencode_error_frame(assembler, message)
+                        return
+                    frame = assembler.serialize(event)
+                    if frame is not None:
+                        yield _chat_sse_data(frame)
+        except OpenCodeRequestError as exc:
+            yield _opencode_error_frame(assembler, str(exc))
+            return
+        except (OpenCodeStreamError, aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            yield _opencode_error_frame(assembler, str(exc) or exc.__class__.__name__)
+            return
+        yield _chat_sse_data(assembler.finalize())
+        yield _SSE_DONE_FRAME
+
+    async def converted_completion(
+        self,
+        spec: OpenCodeModelSpec,
+        payload: dict,
+        public_model: str,
+        session_id: str = "",
+    ) -> Response:
+        """Assemble responses/messages/google upstreams into one chat.completion."""
+        assembler = OpenRouterItemAssembler(
+            f"chatcmpl-oc-{uuid.uuid4().hex}", int(time.time()), public_model
+        )
+        usage: Any = None
+        try:
+            async for chunk in self._converted_chunks(
+                spec, payload, session_id=session_id
+            ):
+                chunk_usage = chunk.get("usage")
+                if chunk_usage is not None:
+                    usage = chunk_usage
+                for event in assembler.push(chunk):
+                    if event.kind == "metadata" and isinstance(event.payload, dict):
+                        usage = event.payload.get("usage") or usage
+                    elif event.kind == "error":
+                        message = _opencode_event_error_message(event)
+                        _http_log.warning(
+                            "OpenCode %s stream error for %s: %s",
+                            spec.protocol,
+                            spec.public_id,
+                            message,
+                        )
+                        return JSONResponse(
+                            {
+                                "error": {
+                                    "message": message,
+                                    "type": "opencode_stream_error",
+                                }
+                            },
+                            status_code=502,
+                        )
+        except OpenCodeRequestError as exc:
+            return exc.response
+        except (OpenCodeStreamError, aiohttp.ClientError, asyncio.TimeoutError) as exc:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": str(exc) or exc.__class__.__name__,
+                        "type": "opencode_stream_error",
+                    }
+                },
+                status_code=502,
+            )
+        return JSONResponse(_opencode_completion_payload(assembler, usage))
+
+
+def _opencode_image_url(part: dict) -> str:
+    value = part.get("image_url")
+    if isinstance(value, dict):
+        value = value.get("url")
+    if not isinstance(value, str):
+        value = part.get("url")
+    return value.strip() if isinstance(value, str) else ""
+
+
+def _opencode_content_pieces(content: Any) -> list[dict[str, str]]:
+    """Normalize Chat Completions content into text/image pieces."""
+    pieces: list[dict[str, str]] = []
+    if content is None:
+        return pieces
+    if isinstance(content, str):
+        if content:
+            pieces.append({"kind": "text", "text": content})
+        return pieces
+    if not isinstance(content, list):
+        text = str(content)
+        if text:
+            pieces.append({"kind": "text", "text": text})
+        return pieces
+    for part in content:
+        if isinstance(part, str):
+            if part:
+                pieces.append({"kind": "text", "text": part})
+            continue
+        if not isinstance(part, dict):
+            continue
+        part_type = str(part.get("type") or "").strip().lower()
+        if part_type in ("image_url", "input_image", "image") or "image_url" in part:
+            url = _opencode_image_url(part)
+            if url:
+                pieces.append({"kind": "image", "url": url})
+            continue
+        text = part.get("text")
+        if isinstance(text, str) and text:
+            pieces.append({"kind": "text", "text": text})
+            continue
+        fallback = part.get("content")
+        if isinstance(fallback, str) and fallback:
+            pieces.append({"kind": "text", "text": fallback})
+    return pieces
+
+
+def _opencode_data_url(url: str) -> tuple[str, str] | None:
+    """Split a data: URL into (media_type, base64 payload)."""
+    text = str(url or "").strip()
+    if not text.lower().startswith("data:") or "," not in text:
+        return None
+    header, _, payload = text.partition(",")
+    media_type = header[len("data:") :].split(";")[0].strip()
+    return (media_type or "application/octet-stream"), payload.strip()
+
+
+def _opencode_json_object(value: Any) -> dict:
+    """Parse a JSON object from tool-call arguments (or a tool result)."""
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str) or not value.strip():
+        return {}
+    try:
+        parsed = json.loads(value)
+    except Exception:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _opencode_requested_max_tokens(body: dict) -> int | None:
+    value = body.get("max_completion_tokens")
+    if value is None:
+        value = body.get("max_tokens")
+    if value is None:
+        return None
+    try:
+        return max(1, int(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _opencode_optional_number(body: dict, field: str) -> float | None:
+    value = body.get(field)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def _opencode_tool_choice_kind(choice: Any) -> tuple[str, str]:
+    """Normalize a Chat Completions tool_choice into (kind, forced name)."""
+    if choice is None:
+        return "", ""
+    if isinstance(choice, str):
+        value = choice.strip().lower()
+        if value in ("auto", "none", "required"):
+            return value, ""
+        if value == "any":
+            return "required", ""
+        return "", ""
+    if isinstance(choice, dict):
+        if str(choice.get("type") or "").lower() == "function":
+            function = choice.get("function")
+            if isinstance(function, dict) and function.get("name"):
+                return "function", str(function["name"])
+        if choice.get("name"):
+            return "function", str(choice["name"])
+        value = str(choice.get("type") or "").lower()
+        if value in ("auto", "none", "required"):
+            return value, ""
+        if value == "any":
+            return "required", ""
+    return "", ""
+
+
+def _opencode_function_tools(body: dict) -> list[dict]:
+    """Normalize Chat Completions tool declarations into flat function entries."""
+    tools = body.get("tools")
+    result: list[dict] = []
+    if not isinstance(tools, list):
+        return result
+    for tool in tools:
+        if not isinstance(tool, dict):
+            continue
+        function = tool.get("function")
+        if not isinstance(function, dict):
+            function = tool if isinstance(tool.get("name"), str) else None
+        if not isinstance(function, dict):
+            continue
+        name = function.get("name")
+        if not isinstance(name, str) or not name:
+            continue
+        parameters = function.get("parameters")
+        entry: dict[str, Any] = {
+            "name": name,
+            "parameters": parameters
+            if isinstance(parameters, dict)
+            else {"type": "object", "properties": {}},
+        }
+        description = function.get("description")
+        if isinstance(description, str) and description:
+            entry["description"] = description
+        if "strict" in function:
+            entry["strict"] = bool(function["strict"])
+        result.append(entry)
+    return result
+
+
+# --- OpenAI Chat Completions -> OpenAI Responses API -------------------------
+
+
+def _opencode_responses_input(messages: list) -> tuple[str, list[dict]]:
+    instructions: list[str] = []
+    items: list[dict] = []
+    for message in messages or []:
+        if not isinstance(message, dict):
+            continue
+        role = str(message.get("role") or "user").strip().lower()
+        if role in ("system", "developer"):
+            text = _content_to_text(message.get("content")).strip()
+            if text:
+                instructions.append(text)
+            continue
+        if role == "tool":
+            items.append(
+                {
+                    "type": "function_call_output",
+                    "call_id": str(message.get("tool_call_id") or ""),
+                    "output": _content_to_text(message.get("content")),
+                }
+            )
+            continue
+        if role == "assistant":
+            text = "\n".join(
+                piece["text"]
+                for piece in _opencode_content_pieces(message.get("content"))
+                if piece["kind"] == "text"
+            )
+            if text:
+                items.append(
+                    {
+                        "role": "assistant",
+                        "content": [{"type": "output_text", "text": text}],
+                    }
+                )
+            for call in message.get("tool_calls") or []:
+                if not isinstance(call, dict):
+                    continue
+                function = call.get("function") or {}
+                items.append(
+                    {
+                        "type": "function_call",
+                        "call_id": str(call.get("id") or ""),
+                        "name": str(function.get("name") or ""),
+                        "arguments": str(function.get("arguments") or ""),
+                    }
+                )
+            continue
+        content: list[dict] = []
+        for piece in _opencode_content_pieces(message.get("content")):
+            if piece["kind"] == "text":
+                content.append({"type": "input_text", "text": piece["text"]})
+            else:
+                content.append({"type": "input_image", "image_url": piece["url"]})
+        if not content:
+            content.append({"type": "input_text", "text": ""})
+        items.append({"role": "user", "content": content})
+    return "\n\n".join(part for part in instructions if part), items
+
+
+def _opencode_responses_tools(body: dict) -> list[dict]:
+    tools = body.get("tools")
+    converted: list[dict] = []
+    if not isinstance(tools, list):
+        return converted
+    for tool in tools:
+        if not isinstance(tool, dict):
+            continue
+        if str(tool.get("type") or "function") != "function":
+            # Hosted tools (web_search, file_search, ...) pass through untouched.
+            converted.append(tool)
+            continue
+        for entry in _opencode_function_tools({"tools": [tool]}):
+            item: dict[str, Any] = {
+                "type": "function",
+                "name": entry["name"],
+                "parameters": entry["parameters"],
+            }
+            if entry.get("description"):
+                item["description"] = entry["description"]
+            if "strict" in entry:
+                item["strict"] = entry["strict"]
+            converted.append(item)
+    return converted
+
+
+def _opencode_responses_payload(
+    spec: OpenCodeModelSpec, body: dict, messages: list, stream: bool
+) -> dict:
+    instructions, items = _opencode_responses_input(messages or [])
+    payload: dict[str, Any] = {
+        "model": spec.upstream_id,
+        "input": items,
+        "stream": bool(stream),
+    }
+    if instructions:
+        payload["instructions"] = instructions
+    tools = _opencode_responses_tools(body)
+    if tools:
+        payload["tools"] = tools
+        kind, name = _opencode_tool_choice_kind(body.get("tool_choice"))
+        if kind == "none":
+            payload["tool_choice"] = "none"
+        elif kind == "required":
+            payload["tool_choice"] = "required"
+        elif kind == "function" and name:
+            payload["tool_choice"] = {"type": "function", "name": name}
+        elif kind == "auto":
+            payload["tool_choice"] = "auto"
+    temperature = _opencode_optional_number(body, "temperature")
+    if temperature is not None:
+        payload["temperature"] = temperature
+    top_p = _opencode_optional_number(body, "top_p")
+    if top_p is not None:
+        payload["top_p"] = top_p
+    max_tokens = _opencode_requested_max_tokens(body)
+    if max_tokens is not None:
+        payload["max_output_tokens"] = max_tokens
+    return payload
+
+
+# --- OpenAI Chat Completions -> Anthropic Messages ---------------------------
+
+
+def _opencode_anthropic_image_block(url: str) -> dict | None:
+    data = _opencode_data_url(url)
+    if data is not None:
+        media_type, payload = data
+        return {
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": media_type,
+                "data": payload,
+            },
+        }
+    text = str(url or "").strip()
+    if text.startswith(("http://", "https://")):
+        return {"type": "image", "source": {"type": "url", "url": text}}
+    return None
+
+
+def _opencode_anthropic_messages(messages: list) -> tuple[str, list[dict]]:
+    system_parts: list[str] = []
+    turns: list[dict] = []
+
+    def append_turn(role: str, blocks: list[dict]) -> None:
+        if not blocks:
+            return
+        if turns and turns[-1]["role"] == role:
+            turns[-1]["content"].extend(blocks)
+        else:
+            turns.append({"role": role, "content": list(blocks)})
+
+    for message in messages or []:
+        if not isinstance(message, dict):
+            continue
+        role = str(message.get("role") or "user").strip().lower()
+        if role in ("system", "developer"):
+            text = _content_to_text(message.get("content")).strip()
+            if text:
+                system_parts.append(text)
+            continue
+        if role == "tool":
+            text = _content_to_text(message.get("content")).strip()
+            append_turn(
+                "user",
+                [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": str(message.get("tool_call_id") or ""),
+                        "content": text or "(empty)",
+                    }
+                ],
+            )
+            continue
+        if role == "assistant":
+            blocks: list[dict] = []
+            for piece in _opencode_content_pieces(message.get("content")):
+                if piece["kind"] == "text":
+                    blocks.append({"type": "text", "text": piece["text"]})
+            for call in message.get("tool_calls") or []:
+                if not isinstance(call, dict):
+                    continue
+                function = call.get("function") or {}
+                blocks.append(
+                    {
+                        "type": "tool_use",
+                        "id": str(call.get("id") or f"toolu_{len(turns)}"),
+                        "name": str(function.get("name") or ""),
+                        "input": _opencode_json_object(function.get("arguments")),
+                    }
+                )
+            append_turn("assistant", blocks)
+            continue
+        blocks = []
+        for piece in _opencode_content_pieces(message.get("content")):
+            if piece["kind"] == "text":
+                blocks.append({"type": "text", "text": piece["text"]})
+            else:
+                block = _opencode_anthropic_image_block(piece.get("url", ""))
+                if block is not None:
+                    blocks.append(block)
+        append_turn("user", blocks)
+    if not turns:
+        turns.append({"role": "user", "content": [{"type": "text", "text": "(empty)"}]})
+    if turns[0]["role"] != "user":
+        # Anthropic requires the conversation to start with a user turn.
+        turns.insert(
+            0, {"role": "user", "content": [{"type": "text", "text": "(continue)"}]}
+        )
+    return "\n\n".join(part for part in system_parts if part), turns
+
+
+def _opencode_anthropic_payload(
+    spec: OpenCodeModelSpec, body: dict, messages: list, stream: bool
+) -> dict:
+    system_text, turns = _opencode_anthropic_messages(messages or [])
+    payload: dict[str, Any] = {
+        "model": spec.upstream_id,
+        # max_tokens is mandatory for the Anthropic Messages API.
+        "max_tokens": _opencode_requested_max_tokens(body)
+        or OPENCODE_DEFAULT_MAX_TOKENS,
+        "messages": turns,
+        "stream": bool(stream),
+    }
+    if system_text:
+        payload["system"] = system_text
+    kind, name = _opencode_tool_choice_kind(body.get("tool_choice"))
+    if kind != "none":
+        tools = [
+            {
+                "name": entry["name"],
+                "input_schema": entry["parameters"],
+                **(
+                    {"description": entry["description"]}
+                    if entry.get("description")
+                    else {}
+                ),
+            }
+            for entry in _opencode_function_tools(body)
+        ]
+        if tools:
+            payload["tools"] = tools
+            if kind == "required":
+                payload["tool_choice"] = {"type": "any"}
+            elif kind == "function" and name:
+                payload["tool_choice"] = {"type": "tool", "name": name}
+            elif kind == "auto":
+                payload["tool_choice"] = {"type": "auto"}
+    temperature = _opencode_optional_number(body, "temperature")
+    if temperature is not None:
+        payload["temperature"] = temperature
+    top_p = _opencode_optional_number(body, "top_p")
+    if top_p is not None:
+        payload["top_p"] = top_p
+    return payload
+
+
+# --- OpenAI Chat Completions -> Google Generative Language -------------------
+
+
+def _opencode_tool_names_by_id(messages: list) -> dict[str, str]:
+    names: dict[str, str] = {}
+    for message in messages or []:
+        if not isinstance(message, dict):
+            continue
+        for call in message.get("tool_calls") or []:
+            if not isinstance(call, dict) or not call.get("id"):
+                continue
+            function = call.get("function") or {}
+            if isinstance(function, dict) and function.get("name"):
+                names[str(call["id"])] = str(function["name"])
+    return names
+
+
+def _opencode_google_schema(value: Any) -> Any:
+    """Strip JSON Schema keys the Google Schema object rejects."""
+    if isinstance(value, dict):
+        return {
+            key: _opencode_google_schema(item)
+            for key, item in value.items()
+            if key not in OPENCODE_SCHEMA_KEYS_UNSUPPORTED_BY_GOOGLE
+        }
+    if isinstance(value, list):
+        return [_opencode_google_schema(item) for item in value]
+    return value
+
+
+def _opencode_google_contents(messages: list) -> tuple[str, list[dict]]:
+    system_parts: list[str] = []
+    contents: list[dict] = []
+    tool_names = _opencode_tool_names_by_id(messages)
+
+    def append_content(role: str, parts: list[dict]) -> None:
+        if not parts:
+            return
+        if contents and contents[-1]["role"] == role:
+            contents[-1]["parts"].extend(parts)
+        else:
+            contents.append({"role": role, "parts": list(parts)})
+
+    for message in messages or []:
+        if not isinstance(message, dict):
+            continue
+        role = str(message.get("role") or "user").strip().lower()
+        if role in ("system", "developer"):
+            text = _content_to_text(message.get("content")).strip()
+            if text:
+                system_parts.append(text)
+            continue
+        if role == "tool":
+            text = _content_to_text(message.get("content")).strip()
+            name = tool_names.get(str(message.get("tool_call_id") or ""), "")
+            parsed = _opencode_json_object(text)
+            append_content(
+                "user",
+                [
+                    {
+                        "functionResponse": {
+                            "name": name or "tool",
+                            "response": parsed or {"result": text or "(empty)"},
+                        }
+                    }
+                ],
+            )
+            continue
+        if role == "assistant":
+            parts: list[dict] = []
+            for piece in _opencode_content_pieces(message.get("content")):
+                if piece["kind"] == "text":
+                    parts.append({"text": piece["text"]})
+            for call in message.get("tool_calls") or []:
+                if not isinstance(call, dict):
+                    continue
+                function = call.get("function") or {}
+                parts.append(
+                    {
+                        "functionCall": {
+                            "name": str(function.get("name") or ""),
+                            "args": _opencode_json_object(function.get("arguments")),
+                        }
+                    }
+                )
+            append_content("model", parts)
+            continue
+        parts = []
+        for piece in _opencode_content_pieces(message.get("content")):
+            if piece["kind"] == "text":
+                parts.append({"text": piece["text"]})
+                continue
+            data = _opencode_data_url(piece.get("url", ""))
+            if data is not None:
+                parts.append({"inlineData": {"mimeType": data[0], "data": data[1]}})
+            else:
+                _http_log.warning(
+                    "Dropping non-inline image from OpenCode Google request: %s",
+                    str(piece.get("url"))[:64],
+                )
+        append_content("user", parts)
+    if not contents:
+        contents.append({"role": "user", "parts": [{"text": "(empty)"}]})
+    if contents[0]["role"] != "user":
+        contents.insert(0, {"role": "user", "parts": [{"text": "(continue)"}]})
+    return "\n\n".join(part for part in system_parts if part), contents
+
+
+def _opencode_google_payload(
+    spec: OpenCodeModelSpec, body: dict, messages: list, stream: bool
+) -> dict:
+    system_text, contents = _opencode_google_contents(messages or [])
+    payload: dict[str, Any] = {"contents": contents}
+    if system_text:
+        payload["systemInstruction"] = {"parts": [{"text": system_text}]}
+    kind, name = _opencode_tool_choice_kind(body.get("tool_choice"))
+    declarations: list[dict] = []
+    if kind != "none":
+        for entry in _opencode_function_tools(body):
+            declaration: dict[str, Any] = {
+                "name": entry["name"],
+                "parameters": _opencode_google_schema(entry["parameters"]),
+            }
+            if entry.get("description"):
+                declaration["description"] = entry["description"]
+            declarations.append(declaration)
+    if declarations:
+        payload["tools"] = [{"functionDeclarations": declarations}]
+        if kind == "required" or (kind == "function" and name):
+            function_config: dict[str, Any] = {"mode": "ANY"}
+            if kind == "function" and name:
+                function_config["allowedFunctionNames"] = [name]
+            payload["toolConfig"] = {"functionCallingConfig": function_config}
+        elif kind == "auto":
+            payload["toolConfig"] = {"functionCallingConfig": {"mode": "AUTO"}}
+    generation_config: dict[str, Any] = {}
+    temperature = _opencode_optional_number(body, "temperature")
+    if temperature is not None:
+        generation_config["temperature"] = temperature
+    top_p = _opencode_optional_number(body, "top_p")
+    if top_p is not None:
+        generation_config["topP"] = top_p
+    max_tokens = _opencode_requested_max_tokens(body)
+    if max_tokens is not None:
+        generation_config["maxOutputTokens"] = max_tokens
+    if generation_config:
+        payload["generationConfig"] = generation_config
+    return payload
+
+
+def _opencode_upstream_payload(
+    spec: OpenCodeModelSpec, body: dict, messages: list | None, *, stream: bool
+) -> dict:
+    """Translate a Chat Completions request into the model's upstream protocol."""
+    if spec.protocol == OPENCODE_PROTOCOL_RESPONSES:
+        return _opencode_responses_payload(spec, body, messages or [], stream)
+    if spec.protocol == OPENCODE_PROTOCOL_MESSAGES:
+        return _opencode_anthropic_payload(spec, body, messages or [], stream)
+    if spec.protocol == OPENCODE_PROTOCOL_GOOGLE:
+        return _opencode_google_payload(spec, body, messages or [], stream)
+    return _opencode_chat_payload(spec, body, messages, stream)
+
+
+def _opencode_openai_usage(
+    prompt_tokens: Any = None,
+    completion_tokens: Any = None,
+    total_tokens: Any = None,
+) -> dict | None:
+    """Build an OpenAI usage object from whatever the upstream reported."""
+
+    def _as_int(value: Any) -> int | None:
+        if value is None or isinstance(value, bool):
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    prompt = _as_int(prompt_tokens)
+    completion = _as_int(completion_tokens)
+    total = _as_int(total_tokens)
+    if prompt is None and completion is None and total is None:
+        return None
+    if total is None:
+        total = (prompt or 0) + (completion or 0)
+    return {
+        "prompt_tokens": prompt or 0,
+        "completion_tokens": completion or 0,
+        "total_tokens": total,
+    }
+
+
+def _opencode_responses_error_message(payload: dict) -> str:
+    error = payload.get("error")
+    if isinstance(error, dict) and error.get("message"):
+        return str(error["message"])
+    if isinstance(error, str) and error:
+        return error
+    response = payload.get("response")
+    if isinstance(response, dict):
+        nested = response.get("error")
+        if isinstance(nested, dict) and nested.get("message"):
+            return str(nested["message"])
+        return f"OpenCode response {response.get('status') or 'failed'}"
+    return str(payload.get("message") or "OpenCode response failed")
+
+
+class _OpenCodeStreamConverter:
+    """Base class: one upstream stream -> OpenAI chat.completion.chunk dicts."""
+
+    def __init__(self, protocol: str, completion_id: str, created: int, model: str):
+        self.protocol = protocol
+        self.completion_id = completion_id
+        self.created = created
+        self.model = model
+        self.usage: dict[str, Any] | None = None
+        self.finish_reason: str | None = None
+        self.tool_call_count = 0
+        self._role_sent = False
+        self._finish_sent = False
+
+    def _chunk(
+        self, delta: dict | None = None, *, finish_reason: str | None = None
+    ) -> dict:
+        delta = dict(delta or {})
+        if delta and not self._role_sent:
+            delta = {"role": "assistant", **delta}
+            self._role_sent = True
+        return {
+            "id": self.completion_id,
+            "object": "chat.completion.chunk",
+            "created": self.created,
+            "model": self.model,
+            "choices": [{"index": 0, "delta": delta, "finish_reason": finish_reason}],
+        }
+
+    def _text_chunk(self, text: str) -> list[dict]:
+        return [self._chunk({"content": text})] if text else []
+
+    def _reasoning_chunk(self, text: str) -> list[dict]:
+        return [self._chunk({"reasoning_content": text})] if text else []
+
+    def _usage_chunk(self) -> list[dict]:
+        if not self.usage:
+            return []
+        return [
+            {
+                "id": self.completion_id,
+                "object": "chat.completion.chunk",
+                "created": self.created,
+                "model": self.model,
+                "choices": [],
+                "usage": self.usage,
+            }
+        ]
+
+    def _finish(self) -> list[dict]:
+        if self._finish_sent:
+            return []
+        self._finish_sent = True
+        reason = self.finish_reason or (
+            "tool_calls" if self.tool_call_count else "stop"
+        )
+        return [self._chunk({}, finish_reason=reason), *self._usage_chunk()]
+
+    def feed(self, payload: dict) -> list[dict]:
+        raise NotImplementedError
+
+    def finalize(self) -> list[dict]:
+        return self._finish()
+
+
+class _OpenCodeResponsesConverter(_OpenCodeStreamConverter):
+    """OpenAI Responses API events -> Chat Completions chunks."""
+
+    def __init__(self, completion_id: str, created: int, model: str):
+        super().__init__(OPENCODE_PROTOCOL_RESPONSES, completion_id, created, model)
+        self._tool_index_by_item: dict[str, int] = {}
+        self._tool_arguments: dict[str, str] = {}
+        self._tool_names: dict[str, str] = {}
+        self._tool_ids: dict[str, str] = {}
+        self._text = ""
+        self._reasoning = ""
+
+    def _tool_index(self, item_id: str) -> int:
+        index = self._tool_index_by_item.get(item_id)
+        if index is None:
+            index = len(self._tool_index_by_item)
+            self._tool_index_by_item[item_id] = index
+            self.tool_call_count += 1
+        return index
+
+    def _text_delta(self, text: str) -> list[dict]:
+        if not text:
+            return []
+        self._text += text
+        return self._text_chunk(text)
+
+    def _reasoning_delta(self, text: str) -> list[dict]:
+        if not text:
+            return []
+        self._reasoning += text
+        return self._reasoning_chunk(text)
+
+    def _text_snapshot(self, text: str) -> list[dict]:
+        if not text or not text.startswith(self._text):
+            return []
+        suffix = text[len(self._text) :]
+        self._text = text
+        return self._text_chunk(suffix)
+
+    def _reasoning_snapshot(self, text: str) -> list[dict]:
+        if not text or not text.startswith(self._reasoning):
+            return []
+        suffix = text[len(self._reasoning) :]
+        self._reasoning = text
+        return self._reasoning_chunk(suffix)
+
+    def _tool_start(self, item: dict) -> list[dict]:
+        item_id = str(item.get("id") or item.get("call_id") or "")
+        index = self._tool_index(item_id)
+        name = str(item.get("name") or "")
+        call_id = str(item.get("call_id") or item.get("id") or "")
+        self._tool_names[item_id] = name
+        self._tool_ids[item_id] = call_id
+        call: dict[str, Any] = {
+            "index": index,
+            "type": "function",
+            "function": {"name": name, "arguments": ""},
+        }
+        if call_id:
+            call["id"] = call_id
+        chunks = [self._chunk({"tool_calls": [call]})]
+        arguments = str(item.get("arguments") or "")
+        if arguments:
+            self._tool_arguments[item_id] = arguments
+            chunks.append(
+                self._chunk(
+                    {
+                        "tool_calls": [
+                            {"index": index, "function": {"arguments": arguments}}
+                        ]
+                    }
+                )
+            )
+        return chunks
+
+    def _tool_arguments_suffix(self, item_id: str, arguments: str) -> list[dict]:
+        if not item_id or not arguments:
+            return []
+        previous = self._tool_arguments.get(item_id, "")
+        if not arguments.startswith(previous):
+            return []
+        suffix = arguments[len(previous) :]
+        self._tool_arguments[item_id] = arguments
+        if not suffix:
+            return []
+        return [
+            self._chunk(
+                {
+                    "tool_calls": [
+                        {
+                            "index": self._tool_index(item_id),
+                            "function": {"arguments": suffix},
+                        }
+                    ]
+                }
+            )
+        ]
+
+    def _item_done(self, item: dict) -> list[dict]:
+        item_type = str(item.get("type") or "")
+        if item_type == "function_call":
+            item_id = str(item.get("id") or item.get("call_id") or "")
+            chunks: list[dict] = []
+            if item_id and item_id not in self._tool_names:
+                chunks.extend(self._tool_start(item))
+            chunks.extend(
+                self._tool_arguments_suffix(item_id, str(item.get("arguments") or ""))
+            )
+            return chunks
+        if item_type == "message":
+            text = ""
+            for part in item.get("content") or []:
+                if isinstance(part, dict) and str(part.get("type") or "") in (
+                    "output_text",
+                    "text",
+                ):
+                    text += str(part.get("text") or "")
+            return self._text_snapshot(text)
+        return []
+
+    def _completed(self, payload: dict) -> list[dict]:
+        response = payload.get("response")
+        if not isinstance(response, dict):
+            response = payload
+        chunks: list[dict] = []
+        for item in response.get("output") or []:
+            if isinstance(item, dict):
+                chunks.extend(self._item_done(item))
+        status = str(response.get("status") or "")
+        if status == "incomplete":
+            details = response.get("incomplete_details")
+            reason = ""
+            if isinstance(details, dict):
+                reason = str(details.get("reason") or "")
+            self.finish_reason = (
+                "length" if reason in ("max_output_tokens", "max_tokens") else "stop"
+            )
+        elif self.finish_reason is None:
+            self.finish_reason = "tool_calls" if self.tool_call_count else "stop"
+        usage = response.get("usage")
+        if isinstance(usage, dict):
+            self.usage = (
+                _opencode_openai_usage(
+                    usage.get("input_tokens"),
+                    usage.get("output_tokens"),
+                    usage.get("total_tokens"),
+                )
+                or self.usage
+            )
+        return [*chunks, *self._finish()]
+
+    def feed(self, payload: dict) -> list[dict]:
+        event_type = str(payload.get("type") or "")
+        if event_type in ("response.failed", "response.error", "error"):
+            raise OpenCodeStreamError(_opencode_responses_error_message(payload))
+        if event_type in ("response.output_text.delta", "response.refusal.delta"):
+            return self._text_delta(str(payload.get("delta") or ""))
+        if event_type in (
+            "response.reasoning_summary_text.delta",
+            "response.reasoning_text.delta",
+        ):
+            return self._reasoning_delta(str(payload.get("delta") or ""))
+        if event_type == "response.output_text.done":
+            return self._text_snapshot(str(payload.get("text") or ""))
+        if event_type in (
+            "response.reasoning_summary_text.done",
+            "response.reasoning_text.done",
+        ):
+            return self._reasoning_snapshot(str(payload.get("text") or ""))
+        if event_type == "response.output_item.added":
+            item = payload.get("item")
+            if (
+                isinstance(item, dict)
+                and str(item.get("type") or "") == "function_call"
+            ):
+                return self._tool_start(item)
+            return []
+        if event_type == "response.output_item.done":
+            item = payload.get("item")
+            return self._item_done(item) if isinstance(item, dict) else []
+        if event_type == "response.function_call_arguments.delta":
+            item_id = str(payload.get("item_id") or "")
+            delta = str(payload.get("delta") or "")
+            if not item_id or not delta:
+                return []
+            self._tool_arguments[item_id] = (
+                self._tool_arguments.get(item_id, "") + delta
+            )
+            return [
+                self._chunk(
+                    {
+                        "tool_calls": [
+                            {
+                                "index": self._tool_index(item_id),
+                                "function": {"arguments": delta},
+                            }
+                        ]
+                    }
+                )
+            ]
+        if event_type == "response.function_call_arguments.done":
+            return self._tool_arguments_suffix(
+                str(payload.get("item_id") or ""), str(payload.get("arguments") or "")
+            )
+        if event_type in ("response.completed", "response.incomplete"):
+            return self._completed(payload)
+        return []
+
+
+_OPENCODE_ANTHROPIC_STOP_REASONS = {
+    "end_turn": "stop",
+    "stop_sequence": "stop",
+    "max_tokens": "length",
+    "tool_use": "tool_calls",
+    "refusal": "content_filter",
+    "pause_turn": "stop",
+}
+
+
+class _OpenCodeMessagesConverter(_OpenCodeStreamConverter):
+    """Anthropic Messages stream events -> Chat Completions chunks."""
+
+    def __init__(self, completion_id: str, created: int, model: str):
+        super().__init__(OPENCODE_PROTOCOL_MESSAGES, completion_id, created, model)
+        self._text = ""
+        self._reasoning = ""
+        self._tool_index_by_block: dict[int, int] = {}
+        self._tool_arguments: dict[int, str] = {}
+        self._started_blocks: set[int] = set()
+
+    def _text_delta(self, text: str) -> list[dict]:
+        if not text:
+            return []
+        self._text += text
+        return self._text_chunk(text)
+
+    def _reasoning_delta(self, text: str) -> list[dict]:
+        if not text:
+            return []
+        self._reasoning += text
+        return self._reasoning_chunk(text)
+
+    def _text_snapshot(self, text: str) -> list[dict]:
+        if not text or not text.startswith(self._text):
+            return []
+        suffix = text[len(self._text) :]
+        self._text = text
+        return self._text_chunk(suffix)
+
+    def _reasoning_snapshot(self, text: str) -> list[dict]:
+        if not text or not text.startswith(self._reasoning):
+            return []
+        suffix = text[len(self._reasoning) :]
+        self._reasoning = text
+        return self._reasoning_chunk(suffix)
+
+    def _tool_block_index(self, block_index: int) -> int:
+        existing = self._tool_index_by_block.get(block_index)
+        if existing is None:
+            existing = self.tool_call_count
+            self._tool_index_by_block[block_index] = existing
+            self.tool_call_count += 1
+        return existing
+
+    def _tool_arguments_suffix(self, block_index: int, arguments: str) -> list[dict]:
+        if not arguments:
+            return []
+        previous = self._tool_arguments.get(block_index, "")
+        if not arguments.startswith(previous):
+            return []
+        suffix = arguments[len(previous) :]
+        self._tool_arguments[block_index] = arguments
+        if not suffix:
+            return []
+        return [
+            self._chunk(
+                {
+                    "tool_calls": [
+                        {
+                            "index": self._tool_block_index(block_index),
+                            "function": {"arguments": suffix},
+                        }
+                    ]
+                }
+            )
+        ]
+
+    def _block_snapshot(self, block_index: int, block: dict) -> list[dict]:
+        block_type = str(block.get("type") or "")
+        if block_type == "text":
+            return self._text_snapshot(str(block.get("text") or ""))
+        if block_type == "thinking":
+            return self._reasoning_snapshot(str(block.get("thinking") or ""))
+        if block_type != "tool_use":
+            return []
+        tool_index = self._tool_block_index(block_index)
+        arguments = block.get("input")
+        arguments_text = (
+            json.dumps(arguments, ensure_ascii=False)
+            if isinstance(arguments, dict) and arguments
+            else ""
+        )
+        if block_index in self._started_blocks:
+            return self._tool_arguments_suffix(block_index, arguments_text)
+        self._started_blocks.add(block_index)
+        call: dict[str, Any] = {
+            "index": tool_index,
+            "type": "function",
+            "function": {"name": str(block.get("name") or ""), "arguments": ""},
+        }
+        call_id = str(block.get("id") or "")
+        if call_id:
+            call["id"] = call_id
+        chunks = [self._chunk({"tool_calls": [call]})]
+        if arguments_text:
+            self._tool_arguments[block_index] = arguments_text
+            chunks.append(
+                self._chunk(
+                    {
+                        "tool_calls": [
+                            {
+                                "index": tool_index,
+                                "function": {"arguments": arguments_text},
+                            }
+                        ]
+                    }
+                )
+            )
+        return chunks
+
+    def feed(self, payload: dict) -> list[dict]:
+        event_type = str(payload.get("type") or "")
+        if event_type == "error":
+            error = payload.get("error")
+            message = ""
+            if isinstance(error, dict):
+                message = str(error.get("message") or error.get("type") or "")
+            raise OpenCodeStreamError(message or "OpenCode stream error")
+        if event_type == "message_start":
+            message = payload.get("message")
+            if not isinstance(message, dict):
+                return []
+            usage = message.get("usage")
+            if isinstance(usage, dict):
+                self.usage = (
+                    _opencode_openai_usage(usage.get("input_tokens"), None, None)
+                    or self.usage
+                )
+            chunks: list[dict] = []
+            content = message.get("content")
+            if isinstance(content, list):
+                for block_index, block in enumerate(content):
+                    if isinstance(block, dict):
+                        chunks.extend(self._block_snapshot(block_index, block))
+            return chunks
+        if event_type == "content_block_start":
+            block = payload.get("content_block")
+            if not isinstance(block, dict):
+                return []
+            return self._block_snapshot(int(payload.get("index") or 0), block)
+        if event_type == "content_block_delta":
+            index = int(payload.get("index") or 0)
+            delta = payload.get("delta")
+            if not isinstance(delta, dict):
+                return []
+            delta_type = str(delta.get("type") or "")
+            if delta_type == "text_delta":
+                return self._text_delta(str(delta.get("text") or ""))
+            if delta_type == "thinking_delta":
+                return self._reasoning_delta(str(delta.get("thinking") or ""))
+            if delta_type == "input_json_delta":
+                fragment = str(delta.get("partial_json") or "")
+                if not fragment:
+                    return []
+                self._tool_arguments[index] = (
+                    self._tool_arguments.get(index, "") + fragment
+                )
+                return [
+                    self._chunk(
+                        {
+                            "tool_calls": [
+                                {
+                                    "index": self._tool_block_index(index),
+                                    "function": {"arguments": fragment},
+                                }
+                            ]
+                        }
+                    )
+                ]
+            return []
+        if event_type == "message_delta":
+            delta = payload.get("delta")
+            if isinstance(delta, dict) and delta.get("stop_reason"):
+                self.finish_reason = _OPENCODE_ANTHROPIC_STOP_REASONS.get(
+                    str(delta["stop_reason"]), "stop"
+                )
+            usage = payload.get("usage")
+            if isinstance(usage, dict):
+                prompt = (self.usage or {}).get("prompt_tokens")
+                self.usage = (
+                    _opencode_openai_usage(prompt, usage.get("output_tokens"), None)
+                    or self.usage
+                )
+            return []
+        if event_type == "message_stop":
+            return self._finish()
+        return []
+
+
+_OPENCODE_GOOGLE_FINISH_REASONS = {
+    "STOP": "stop",
+    "MAX_TOKENS": "length",
+    "SAFETY": "content_filter",
+    "RECITATION": "content_filter",
+    "BLOCKLIST": "content_filter",
+    "PROHIBITED_CONTENT": "content_filter",
+    "SPII": "content_filter",
+    "MALFORMED_FUNCTION_CALL": "stop",
+    "OTHER": "stop",
+}
+
+
+class _OpenCodeGoogleConverter(_OpenCodeStreamConverter):
+    """Google generateContent stream chunks -> Chat Completions chunks."""
+
+    def __init__(self, completion_id: str, created: int, model: str):
+        super().__init__(OPENCODE_PROTOCOL_GOOGLE, completion_id, created, model)
+        self._text = ""
+        self._reasoning = ""
+
+    def _function_call(self, function_call: dict) -> list[dict]:
+        index = self.tool_call_count
+        self.tool_call_count += 1
+        arguments = function_call.get("args")
+        return [
+            self._chunk(
+                {
+                    "tool_calls": [
+                        {
+                            "index": index,
+                            "id": f"call_{index}",
+                            "type": "function",
+                            "function": {
+                                "name": str(function_call.get("name") or ""),
+                                "arguments": json.dumps(
+                                    arguments if isinstance(arguments, dict) else {},
+                                    ensure_ascii=False,
+                                ),
+                            },
+                        }
+                    ]
+                }
+            )
+        ]
+
+    def feed(self, payload: dict) -> list[dict]:
+        error = payload.get("error")
+        if isinstance(error, dict) and error.get("message"):
+            raise OpenCodeStreamError(str(error["message"]))
+        chunks: list[dict] = []
+        for candidate in payload.get("candidates") or []:
+            if not isinstance(candidate, dict):
+                continue
+            content = candidate.get("content")
+            if isinstance(content, dict):
+                for part in content.get("parts") or []:
+                    if not isinstance(part, dict):
+                        continue
+                    function_call = part.get("functionCall")
+                    if isinstance(function_call, dict):
+                        chunks.extend(self._function_call(function_call))
+                        continue
+                    text = part.get("text")
+                    if not isinstance(text, str) or not text:
+                        continue
+                    if part.get("thought"):
+                        self._reasoning += text
+                        chunks.extend(self._reasoning_chunk(text))
+                    else:
+                        self._text += text
+                        chunks.extend(self._text_chunk(text))
+            finish_reason = candidate.get("finishReason")
+            if finish_reason:
+                self.finish_reason = _OPENCODE_GOOGLE_FINISH_REASONS.get(
+                    str(finish_reason).upper(), "stop"
+                )
+        usage = payload.get("usageMetadata")
+        if isinstance(usage, dict):
+            self.usage = (
+                _opencode_openai_usage(
+                    usage.get("promptTokenCount"),
+                    usage.get("candidatesTokenCount"),
+                    usage.get("totalTokenCount"),
+                )
+                or self.usage
+            )
+        return chunks
+
+    def finalize(self) -> list[dict]:
+        if self.finish_reason == "stop" and self.tool_call_count:
+            self.finish_reason = "tool_calls"
+        return self._finish()
+
+
+def _opencode_converter(
+    protocol: str, completion_id: str, created: int, model: str
+) -> _OpenCodeStreamConverter:
+    if protocol == OPENCODE_PROTOCOL_RESPONSES:
+        return _OpenCodeResponsesConverter(completion_id, created, model)
+    if protocol == OPENCODE_PROTOCOL_MESSAGES:
+        return _OpenCodeMessagesConverter(completion_id, created, model)
+    if protocol == OPENCODE_PROTOCOL_GOOGLE:
+        return _OpenCodeGoogleConverter(completion_id, created, model)
+    raise OpenCodeStreamError(f"Unsupported OpenCode upstream protocol: {protocol}")
+
+
+def _opencode_sse_response(stream: AsyncGenerator[str, None]) -> StreamingResponse:
+    return StreamingResponse(
+        stream,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+_OPENCODE_CLIENT_CACHE: dict[tuple, OpenCodeHTTPClient] = {}
+_OPENCODE_CLIENT_CACHE_LOCK = threading.Lock()
+
+
+def _opencode_shared_client(config: OpenCodeConfig) -> OpenCodeHTTPClient:
+    """Return the shared client for this key set.
+
+    A client owns the key manager, so it has to outlive a single request:
+    round-robin rotation only advances when the next request reaches the same
+    manager. Only the active key set is kept, so a changed environment replaces
+    the cached client instead of accumulating one per configuration. The running
+    loop is part of the key because the key manager holds an asyncio lock.
+    """
+    try:
+        loop: Any = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    cache_key = (config.api_keys, config.zen_base_url, config.go_base_url, loop)
+    with _OPENCODE_CLIENT_CACHE_LOCK:
+        client = _OPENCODE_CLIENT_CACHE.get(cache_key)
+        if client is None:
+            client = OpenCodeHTTPClient(config)
+            _OPENCODE_CLIENT_CACHE.clear()
+            _OPENCODE_CLIENT_CACHE[cache_key] = client
+        return client
+
+
+async def _direct_opencode_chat_response(body: dict, messages: list, stream_mode: bool):
+    """Relay a Chat Completions request to OpenCode Zen or OpenCode Go."""
+    config = OpenCodeConfig.load()
+    if not config.api_keys:
+        return JSONResponse(
+            {
+                "error": {
+                    "message": "VE_OPENCODE_API_KEYS is not configured",
+                    "type": "opencode_config_error",
+                }
+            },
+            status_code=503,
+        )
+    public_model = str(body.get("model") or OPENCODE_MODEL_PREFIX)
+    spec, model_error = _opencode_resolve_spec(public_model)
+    if spec is None:
+        return JSONResponse(
+            {
+                "error": {
+                    "message": model_error or "OpenCode model is not available",
+                    "type": "opencode_model_error",
+                }
+            },
+            status_code=404,
+        )
+    client = _opencode_shared_client(config)
+    session_id = _opencode_session_id(body, spec)
+    if spec.protocol == OPENCODE_PROTOCOL_CHAT:
+        if _opencode_is_free_model(spec):
+            # Free tier: the gate only accepts CLI-looking streaming requests,
+            # so the payload is shaped for it and a non-streaming client gets
+            # the stream assembled back into a single chat.completion.
+            payload = _opencode_apply_free_tier_gate(
+                _opencode_chat_payload(spec, body, messages, True), spec.protocol
+            )
+            if not stream_mode:
+                return await client.chat_completion(
+                    spec, payload, spec.public_id, session_id
+                )
+            return _opencode_sse_response(
+                client.chat_stream(spec, payload, spec.public_id, session_id)
+            )
+        # Chat Completions upstreams are relayed verbatim in both modes.
+        payload = _opencode_chat_payload(spec, body, messages, stream_mode)
+        if not stream_mode:
+            return await client.complete(spec, payload)
+        return _opencode_sse_response(
+            client.chat_stream(spec, payload, spec.public_id, session_id)
+        )
+    # responses / messages / google always stream upstream and get converted,
+    # so one code path serves streaming and non-streaming clients alike.
+    payload = _opencode_upstream_payload(spec, body, messages, stream=True)
+    if _opencode_is_free_model(spec):
+        payload = _opencode_apply_free_tier_gate(payload, spec.protocol)
+    if not stream_mode:
+        return await client.converted_completion(
+            spec, payload, spec.public_id, session_id
+        )
+    return _opencode_sse_response(
+        client.converted_stream(spec, payload, spec.public_id, session_id)
     )
 
 
@@ -47569,6 +50429,16 @@ async def chat_api(request):
         # relay or local-model tool protocol.
         if _openrouter_is_model(requested_model):
             return await _direct_openrouter_chat_response(
+                dict(body),
+                list(browser_source_messages),
+                stream_mode,
+            )
+
+        # OpenCode Zen / Go is the same kind of native HTTP upstream. The relay
+        # keeps the raw multimodal messages and the native OpenAI tool fields,
+        # then translates them into the protocol the selected model speaks.
+        if _opencode_is_model(requested_model):
+            return await _direct_opencode_chat_response(
                 dict(body),
                 list(browser_source_messages),
                 stream_mode,
@@ -48705,6 +51575,10 @@ async def models_list(request):
                 ).as_openai_model()
             )
 
+    if _opencode_parse_api_keys():
+        for public_id in _opencode_exposed_models():
+            data.append(OpenCodeModelSpec.from_public_id(public_id).as_openai_model())
+
     for alias, model_id in LLM_MODEL_ALIASES.items():
         data.append(
             {
@@ -48779,6 +51653,24 @@ async def models_retrieve(request):
         return JSONResponse(
             OpenRouterModelSpec.from_public_id(model_id).as_openai_model()
         )
+
+    if _opencode_is_model(model_id):
+        if not _opencode_parse_api_keys():
+            return JSONResponse(
+                {"error": "OpenCode is not configured"}, status_code=503
+            )
+        spec, model_error = _opencode_resolve_spec(model_id)
+        if spec is None:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": model_error or "OpenCode model is not available",
+                        "type": "opencode_model_error",
+                    }
+                },
+                status_code=404,
+            )
+        return JSONResponse(spec.as_openai_model())
 
     if model_id in BROWSER_MODEL_ALIASES:
         return JSONResponse(
