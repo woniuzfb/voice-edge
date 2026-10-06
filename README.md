@@ -46,13 +46,13 @@ Install the included Continue extension package when using Voice Edge through VS
 ### MCP mode
 
 ```bash
-uv run start
+uv run main
 ```
 
 ### HTTP mode
 
 ```bash
-uv run start --http
+uv run main --http
 ```
 
 Default ports:
@@ -181,7 +181,7 @@ export QWEN_BROWSER_MODEL='qwen3.7-plus'
 export XIAOAI_MODEL='LLM:deepseek'
 
 # Microsoft 365 Copilot example
-export XIAOAI_MODEL='LLM:m365-chatgpt-5.6'
+export XIAOAI_MODEL='LLM:m365-chatgpt-6.1'
 ```
 
 The system prompt is used by local models that support a system-message role. It is not prepended to browser-model user messages.
@@ -258,7 +258,7 @@ export XIAOAI_TAVILY_TOOL_TIMEOUT=30
 ### Optional Local miIO
 
 ```bash
-uv run start --mi-list
+uv run main --mi-list
 
 export XIAOAI_LOCAL_DEVICES = '[
   {
@@ -362,6 +362,19 @@ models:
       - chat
     defaultCompletionOptions:
       contextLength: 1000000
+      maxTokens: 128000
+    capabilities:
+      - tool_use
+      - image_input
+    excludeToolOutputsFromTokenCount: true
+  - name: LLM:m365-chatgpt-6.1
+    provider: Local
+    model: LLM:m365-chatgpt-6.1
+    apiBase: http://localhost:5002/v1/
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 1050000
       maxTokens: 128000
     capabilities:
       - tool_use

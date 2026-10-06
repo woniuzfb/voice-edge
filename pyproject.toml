@@ -1,6 +1,6 @@
 [project]
 name = "voice-edge"
-version = "0.1.0"
+version = "0.2.0"
 description = "Voice Edge AI is a macOS-focused local voice and AI platform. It combines local MLX language and vision models, faster-whisper/apple speech recognition, streaming Edge-TTS synthesis, OpenAI-compatible HTTP APIs, MCP tools, native macOS dictation, Xiaomi XiaoAI integration, and browser-backed AI providers."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -34,20 +34,26 @@ dependencies = [
     "bleak>=3.0.2",
     "pycryptodome>=3.23.0",
     "modelscope-hub>=0.2.0",
+    "mlx-lm",
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project.scripts]
-start = "voice_edge:main"
+ve = "voice_edge:main"
+main = "voice_edge:main"
 
-[tool.uv]
-package = true
-
-[tool.setuptools]
-py-modules = ["voice_edge"]
+[tool.hatch.build.targets.wheel]
+include = [
+    "voice_edge.py",
+]
 
 [tool.uv.sources]
 mlx-vlm = { git = "https://github.com/Blaizzy/mlx-vlm.git" }
 mlx-embeddings = { git = "https://github.com/woniuzfb/mlx-embeddings.git" }
+mlx-lm = { git = "https://github.com/ml-explore/mlx-lm.git" }
 
 [tool.ruff]
 target-version = "py311"
