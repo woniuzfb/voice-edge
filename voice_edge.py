@@ -138,28 +138,28 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L1683
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2083
 #    VE_VLM_KV_BITS                         3.5                                          L475
 #    VE_VLM_KV_GROUP_SIZE                   None                                         L480
 #    VE_VLM_QUANTIZED_KV_START              "0"                                          L485
 #    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L486
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L1266
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L1271
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L1274
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L1278
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1287
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1295
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1350
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L1801
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L41729
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42378
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42390
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18400
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18397
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18363
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18378
-#    AUTH_SYNC_ENABLED                      "1"                                          L18351
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18352
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L1666
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L1671
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L1674
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L1678
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1687
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1695
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1750
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2201
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42222
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42871
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42883
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18865
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18862
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18828
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18843
+#    AUTH_SYNC_ENABLED                      "1"                                          L18816
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18817
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
 #    VE_APP_LOG_DEBUG                           "0"                                      L365
@@ -189,168 +189,168 @@ if sys.version_info < (3, 11):
 #    VE_XIAOAI_LOG_DEBUG                        "0"                                      L401
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L41615
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L41638
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L41665
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L41724
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42267
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42270
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42278
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42290
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42292
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42301
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42307
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42313
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42329
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42334
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42341
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42348
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42357
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42364
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42412
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L44180
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L44181
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L44182
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42108
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42131
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42158
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42217
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42760
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42763
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42771
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42783
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42785
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42794
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42800
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42806
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42822
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42827
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42834
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42841
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42850
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42857
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42905
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L44673
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L44674
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L44675
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L13907
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L13909
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L13910
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L13916
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L13918
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L13921
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L13929
-#    QWEN_COOKIE_HEADER                     ""                                           L13933
-#    QWEN_TOKENS                            ""                                           L13941
-#    QWEN_TOKEN                             ""                                           L13942
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14372
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14374
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L14375
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14381
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14383
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14386
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14394
+#    QWEN_COOKIE_HEADER                     ""                                           L14398
+#    QWEN_TOKENS                            ""                                           L14406
+#    QWEN_TOKEN                             ""                                           L14407
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L876
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L15576
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L15577
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L15579
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L15581
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L15583
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L15586
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L15589
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L15592
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L15713
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L15716
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1276
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16041
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16042
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16044
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16046
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16048
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16051
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16054
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16057
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16178
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16181
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L18261
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L18262
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L18268
-#    DOUBAO_FP                              "doubao_voice_edge"                          L18269
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L18277
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L18279
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L18282
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18284
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18286
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18290
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18317
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18320
-#    DOUBAO_WEB_AID                         "497858"                                     L18322
-#    DOUBAO_WEB_REGION                      "CN"                                         L18323
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18324
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18325
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18327
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18376
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18368
-#    DOUBAO_COOKIE_HEADER                   ""                                           L18678
-#    DOUBAO_SESSION_IDS                     ""                                           L18720
-#    DOUBAO_SESSION_ID                      ""                                           L18724
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L19235
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L19244
-#    DOUBAO_SESSION_ID_SS                   ""                                           L19426
-#    DOUBAO_SID_TT                          ""                                           L19429
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L18726
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L18727
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L18733
+#    DOUBAO_FP                              "doubao_voice_edge"                          L18734
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L18742
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L18744
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L18747
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18749
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18751
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18755
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18782
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18785
+#    DOUBAO_WEB_AID                         "497858"                                     L18787
+#    DOUBAO_WEB_REGION                      "CN"                                         L18788
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18789
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18790
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18792
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18841
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18833
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19143
+#    DOUBAO_SESSION_IDS                     ""                                           L19185
+#    DOUBAO_SESSION_ID                      ""                                           L19189
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L19700
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L19709
+#    DOUBAO_SESSION_ID_SS                   ""                                           L19891
+#    DOUBAO_SID_TT                          ""                                           L19894
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L23813
-#    SHAREPOINT_HOME_URL                    ""                                           L23814
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L23815
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L23816
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L23843
-#    M365_BRIDGE_PORT                       "5003"                                       L23844
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L23845
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L23846
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L23848
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L23851
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L23854
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L23862
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L23864
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L23884
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L23891
-#    M365_CONV_MAP_MAX                      "1024"                                       L24060
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L24707
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L24725
+#    M365_ENTRY_URL                         ""                                           L24278
+#    SHAREPOINT_HOME_URL                    ""                                           L24279
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24280
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24281
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24308
+#    M365_BRIDGE_PORT                       "5003"                                       L24309
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24310
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24311
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24313
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24316
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24319
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24327
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L24329
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24349
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24356
+#    M365_CONV_MAP_MAX                      "1024"                                       L24525
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25172
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25190
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L36953
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L37163
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L37225
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L37247
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L37254
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37349
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37351
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37355
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L38548
-#    MI_USER                                ""                                           L38274
-#    MI_PASS                                ""                                           L38300
-#    XIAOAI_HARDWARE                        "LX06"                                       L38302
-#    MI_DID                                 ""                                           L38304
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38307
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38311
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L38314
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38317
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38323
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38334
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38339
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38320
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38330
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L38350
-#    XIAOAI_VOICE                           "zh"                                         L38352
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L38354
-#    XIAOAI_MAX_TOKENS                      "500"                                        L38357
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L38360
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38363
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38367
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38371
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38376
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38381
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38386
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38391
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38396
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38404
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38409
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38414
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38419
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38424
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38429
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38434
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L38437
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38441
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38445
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38449
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38454
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38459
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38463
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38466
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38469
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38472
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38475
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38478
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L38481
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38484
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38491
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38497
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L38501
+#    XIAOAI_ENABLED                         "0"                                          L37446
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L37656
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L37718
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L37740
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L37747
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37842
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37844
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37848
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39041
+#    MI_USER                                ""                                           L38767
+#    MI_PASS                                ""                                           L38793
+#    XIAOAI_HARDWARE                        "LX06"                                       L38795
+#    MI_DID                                 ""                                           L38797
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38800
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38804
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L38807
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38810
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38816
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38827
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38832
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38813
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38823
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L38843
+#    XIAOAI_VOICE                           "zh"                                         L38845
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L38847
+#    XIAOAI_MAX_TOKENS                      "500"                                        L38850
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L38853
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38856
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38860
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38864
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38869
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38874
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38879
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38884
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38889
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38897
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38902
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38907
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38912
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38917
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38922
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38927
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L38930
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38934
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38938
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38942
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38947
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38952
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38956
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38959
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38962
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38965
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38968
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38971
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L38974
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38977
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38984
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38990
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L38994
 #
 #  【中继提供商 (OpenRouter / OpenCode)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L46942
-#    VE_OPENCODE_API_KEYS                   ""                                           L47863
-#    VE_OPENCODE_FREE                       "1"                                          L47901
-#    VE_OPENCODE_GO                         "0"                                          L47906
+#    VE_OPENROUTER_API_KEYS                 ""                                           L47435
+#    VE_OPENCODE_API_KEYS                   ""                                           L48360
+#    VE_OPENCODE_FREE                       "1"                                          L48398
+#    VE_OPENCODE_GO                         "0"                                          L48403
 #
 # 合计 197 个唯一环境变量。
 # ============================================================================
@@ -588,18 +588,11 @@ OPENCODE_PROTOCOL_CHAT = "chat"  # POST {base}/chat/completions (OpenAI compatib
 OPENCODE_PROTOCOL_RESPONSES = "responses"  # POST {base}/responses (OpenAI Responses)
 OPENCODE_PROTOCOL_MESSAGES = "messages"  # POST {base}/messages (Anthropic Messages)
 OPENCODE_PROTOCOL_GOOGLE = "google"  # POST {base}/models/<id>:streamGenerateContent
+OPENCODE_PROTOCOL_SYSTEMONE = "systemone"  # POST {base}/systemone (TypeSafe AI Jev)
 
-# 模型目录 + 协议映射。key 是 "端口/模型ID"，对客户端就是 "opencode:端口/模型ID"，
-# 一行一个端口：同一个模型在 zen 和 go 上各占一行、各有自己的开关。
-# 字段说明：
-#   "protocol"         该端口的协议，四个 OPENCODE_PROTOCOL_* 常量之一
-#   "publish": True    打开就发布（不看 VE_OPENCODE_FREE / VE_OPENCODE_GO）
-#   "publish": False   强制不发布
-#   "text_only": True  该端口不接受数组 content，中继时自动拍平成文本
-# 不写 "publish" 的行：zen 的由 VE_OPENCODE_FREE 决定（=1 时只发 "-free" 结尾的），
-# "go/" 开头的行由 VE_OPENCODE_GO 决定（=1 才发）。
-# Model catalogue and protocol mapping: one line per endpoint.
-OPENCODE_MODELS: dict[str, dict[str, Any]] = {
+# 内置基线模型目录 (Baseline)：在未联网、远端下线或启动前，提供已知的模型与协议映射保底。
+# 一行一个端口，key 为 "端口/模型ID"。同一个模型在 zen 和 go 上各占一行。
+_OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     # Claude
     "zen/claude-fable-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/claude-fable-5-1": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
@@ -705,10 +698,11 @@ OPENCODE_MODELS: dict[str, dict[str, Any]] = {
     "go/qwen3.7-max": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/qwen3.7-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "go/qwen3.7-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    # Jev (System One)
+    "zen/jev-1.13": {"protocol": OPENCODE_PROTOCOL_SYSTEMONE},
+    "zen/jev-1.13-free": {"protocol": OPENCODE_PROTOCOL_SYSTEMONE},
     # Other providers / free tiers
     "zen/big-pickle": {"protocol": OPENCODE_PROTOCOL_CHAT},
-    "zen/union-alpha": {"protocol": OPENCODE_PROTOCOL_MESSAGES, "publish": True},
-    "go/union-alpha": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "go/longcat-2.0": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/mimo-v2.5": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/mimo-v2.5-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
@@ -718,26 +712,66 @@ OPENCODE_MODELS: dict[str, dict[str, Any]] = {
     "go/hy3": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/hy3-preview": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/omen-alpha": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/space-bunny-free": {"protocol": OPENCODE_PROTOCOL_CHAT, "publish": True},
+    "go/space-bunny": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/mimo-v2.5-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/ling-3.0-flash-fin-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/nemotron-3-ultra-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/nemotron-3.5-lightning-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
 }
 
-# Per-endpoint catalogue, derived from the "<endpoint>/<model>" keys above.
-OPENCODE_ENDPOINT_MODELS: dict[str, tuple[str, ...]] = {
-    endpoint: tuple(
-        key.split("/", 1)[1]
-        for key in OPENCODE_MODELS
-        if key.startswith(endpoint + "/")
-    )
-    for endpoint in OPENCODE_ENDPOINT_BASE_URLS
+# 人工补充 (EXTRA)：即使远端 /models 列表尚未收录，也强制注册到本地目录。
+# 必须指定 protocol；可选指定 publish=True/False、text_only=True 等。
+OPENCODE_EXTRA_MODELS: dict[str, dict[str, Any]] = {
+    # 示例:
+    # "zen/union-alpha": {"protocol": OPENCODE_PROTOCOL_MESSAGES, "publish": True},
 }
-# Models whose endpoint rejects array content (images/files) and accepts a plain
-# string only, keyed as "<endpoint>/<model>"; array content is flattened to text.
-OPENCODE_TEXT_ONLY_MODELS: frozenset[str] = frozenset(
-    key for key, entry in OPENCODE_MODELS.items() if entry.get("text_only")
-)
+
+# 人工覆盖 (OVERRIDES)：逐字段覆盖已发现或额外添加的模型属性（不整行替换）。
+# 字段说明:
+#   publish: True   - 强制发布（绕过 VE_OPENCODE_FREE / VE_OPENCODE_GO 过滤）
+#   publish: False  - 强制隐藏
+#   text_only: True - 拍平数组为文本
+#   protocol: ...   - 显式覆盖推断协议
+OPENCODE_MODEL_OVERRIDES: dict[str, dict[str, Any]] = {
+    # 示例:
+    # "zen/space-bunny-free": {"publish": True},
+    # "zen/glm-5.1": {"text_only": True},
+    # "go/glm-5.1": {"text_only": True},
+    # "zen/<model-id>": {"publish": False},
+}
+
+# 活跃模型目录 (运行时动态更新，业务代码继续读取此变量)。
+# 初始载入 baseline 保证模块 import 时立即安全可用。
+OPENCODE_MODELS: dict[str, dict[str, Any]] = {
+    key: dict(entry) for key, entry in _OPENCODE_BASELINE_MODELS.items()
+}
+
+# 按端口划分的模型名称 tuple (由 OPENCODE_MODELS 派生)
+OPENCODE_ENDPOINT_MODELS: dict[str, tuple[str, ...]] = {}
+
+# 仅文本模型集合 (由 OPENCODE_MODELS 派生)
+OPENCODE_TEXT_ONLY_MODELS: frozenset[str] = frozenset()
+
+
+def _rebuild_opencode_derived_catalogs() -> None:
+    """Rebuild endpoint and text-only indexes from the active OPENCODE_MODELS."""
+    global OPENCODE_ENDPOINT_MODELS, OPENCODE_TEXT_ONLY_MODELS
+    OPENCODE_ENDPOINT_MODELS = {
+        endpoint: tuple(
+            key.split("/", 1)[1]
+            for key in OPENCODE_MODELS
+            if key.startswith(endpoint + "/")
+        )
+        for endpoint in OPENCODE_ENDPOINT_BASE_URLS
+    }
+    OPENCODE_TEXT_ONLY_MODELS = frozenset(
+        key for key, entry in OPENCODE_MODELS.items() if entry.get("text_only")
+    )
+
+
+_rebuild_opencode_derived_catalogs()
+
 OPENCODE_PROTOCOL_CAPABILITIES: dict[str, frozenset[str]] = {
     OPENCODE_PROTOCOL_CHAT: frozenset({"chat", "completions", "stream", "tools"}),
     OPENCODE_PROTOCOL_RESPONSES: frozenset(
@@ -749,7 +783,373 @@ OPENCODE_PROTOCOL_CAPABILITIES: dict[str, frozenset[str]] = {
     OPENCODE_PROTOCOL_GOOGLE: frozenset(
         {"chat", "completions", "stream", "tools", "reasoning"}
     ),
+    OPENCODE_PROTOCOL_SYSTEMONE: frozenset({"systemone", "classification"}),
 }
+
+
+def _parse_opencode_doc_protocols(html: str) -> dict[str, str]:
+    """Parse table rows in OpenCode documentation into {model_id: protocol}."""
+    import html as html_lib
+
+    mapping: dict[str, str] = {}
+    tables = re.findall(r"<table\b[^>]*>(.*?)</table>", html, re.DOTALL | re.IGNORECASE)
+    for table in tables:
+        rows = re.findall(r"<tr\b[^>]*>(.*?)</tr>", table, re.DOTALL | re.IGNORECASE)
+        if not rows:
+            continue
+        headers = [
+            html_lib.unescape(re.sub(r"<[^>]+>", "", c)).strip()
+            for c in re.findall(
+                r"<t[dh]\b[^>]*>(.*?)</t[dh]>", rows[0], re.DOTALL | re.IGNORECASE
+            )
+        ]
+        if "模型 ID" in headers and "端点" in headers:
+            id_idx = headers.index("模型 ID")
+            ep_idx = headers.index("端点")
+            for r in rows[1:]:
+                cols = [
+                    html_lib.unescape(re.sub(r"<[^>]+>", "", c)).strip()
+                    for c in re.findall(
+                        r"<t[dh]\b[^>]*>(.*?)</t[dh]>",
+                        r,
+                        re.DOTALL | re.IGNORECASE,
+                    )
+                ]
+                if len(cols) > max(id_idx, ep_idx):
+                    model_id = cols[id_idx].strip()
+                    ep_url = cols[ep_idx].strip().lower()
+                    if not model_id or not ep_url:
+                        continue
+                    if ep_url.endswith("/systemone"):
+                        mapping[model_id] = OPENCODE_PROTOCOL_SYSTEMONE
+                    elif ep_url.endswith("/responses"):
+                        mapping[model_id] = OPENCODE_PROTOCOL_RESPONSES
+                    elif ep_url.endswith("/messages"):
+                        mapping[model_id] = OPENCODE_PROTOCOL_MESSAGES
+                    elif ep_url.endswith("/chat/completions"):
+                        mapping[model_id] = OPENCODE_PROTOCOL_CHAT
+                    elif "/models/" in ep_url or "streamgeneratecontent" in ep_url:
+                        mapping[model_id] = OPENCODE_PROTOCOL_GOOGLE
+    return mapping
+
+
+def _parse_strict_bool(val: Any) -> bool | None:
+    """Strictly parse boolean values, rejecting arbitrary truthiness."""
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        if val == 1:
+            return True
+        if val == 0:
+            return False
+        return None
+    if isinstance(val, str):
+        s = val.strip().lower()
+        if s in ("true", "1", "yes", "on"):
+            return True
+        if s in ("false", "0", "no", "off"):
+            return False
+    return None
+
+
+def _clean_opencode_remote_entry(key: str, entry: Any) -> dict[str, Any] | None:
+    """Validate and sanitize a remote/cache catalog entry (excludes manual fields like publish)."""
+    if not isinstance(key, str) or "/" not in key:
+        return None
+    endpoint, _, mid = key.partition("/")
+    if endpoint not in (OPENCODE_ZEN_ENDPOINT, OPENCODE_GO_ENDPOINT) or not mid.strip():
+        return None
+    if not isinstance(entry, dict):
+        return None
+    protocol = entry.get("protocol")
+    if not isinstance(protocol, str) or protocol not in OPENCODE_PROTOCOL_CAPABILITIES:
+        return None
+    cleaned: dict[str, Any] = {"protocol": protocol}
+    if "text_only" in entry and entry["text_only"] is not None:
+        parsed_to = _parse_strict_bool(entry["text_only"])
+        if parsed_to is True:
+            cleaned["text_only"] = True
+        elif parsed_to is None:
+            return None
+    return cleaned
+
+
+def _clean_opencode_catalog_entry(key: str, entry: Any) -> dict[str, Any] | None:
+    """Validate and sanitize a single OpenCode catalog key and entry."""
+    if not isinstance(key, str) or "/" not in key:
+        return None
+    endpoint, _, mid = key.partition("/")
+    if endpoint not in (OPENCODE_ZEN_ENDPOINT, OPENCODE_GO_ENDPOINT) or not mid.strip():
+        return None
+    if not isinstance(entry, dict):
+        return None
+    protocol = entry.get("protocol")
+    if not isinstance(protocol, str) or protocol not in OPENCODE_PROTOCOL_CAPABILITIES:
+        return None
+    cleaned: dict[str, Any] = {"protocol": protocol}
+    if "publish" in entry and entry["publish"] is not None:
+        parsed_pub = _parse_strict_bool(entry["publish"])
+        if parsed_pub is None:
+            return None
+        cleaned["publish"] = parsed_pub
+    if "text_only" in entry and entry["text_only"] is not None:
+        parsed_to = _parse_strict_bool(entry["text_only"])
+        if parsed_to is None:
+            return None
+        cleaned["text_only"] = parsed_to
+    return cleaned
+
+
+def _initialize_opencode_catalog(timeout: float = 4.0) -> None:
+    """Fetch current models from remote OpenCode /models and docs at startup.
+
+    Merges remote models with doc endpoints, baseline defaults, EXTRA models,
+    and applies field-level OVERRIDES. Preserves local cache on failure.
+    """
+    import urllib.request
+
+    cache_file = Path(tempfile.gettempdir()) / "voice_edge_opencode_catalog_v2.json"
+    legacy_cache = (
+        Path(tempfile.gettempdir()) / "voice_edge_opencode_catalog_cache.json"
+    )
+    if legacy_cache.is_file():
+        try:
+            legacy_cache.unlink()
+        except OSError:
+            pass
+
+    # Pre-read and validate existing v2 disk cache. Reject legacy or unversioned formats.
+    cached_snapshots: dict[str, dict[str, Any]] = {}
+    if cache_file.is_file():
+        try:
+            raw_cache = json.loads(cache_file.read_text(encoding="utf-8"))
+            if isinstance(raw_cache, dict) and raw_cache.get("version") == 2:
+                eps_data = raw_cache.get("endpoints")
+                if isinstance(eps_data, dict):
+                    for ep in (OPENCODE_ZEN_ENDPOINT, OPENCODE_GO_ENDPOINT):
+                        ep_info = eps_data.get(ep)
+                        if isinstance(ep_info, dict) and ep_info.get("valid") is True:
+                            ep_models = ep_info.get("models")
+                            if isinstance(ep_models, dict):
+                                clean_ep_models: dict[str, dict[str, Any]] = {}
+                                for k, v in ep_models.items():
+                                    if isinstance(k, str) and k.startswith(f"{ep}/"):
+                                        sanitized = _clean_opencode_remote_entry(k, v)
+                                        if sanitized:
+                                            clean_ep_models[k] = sanitized
+                                cached_snapshots[ep] = {
+                                    "valid": True,
+                                    "models": clean_ep_models,
+                                }
+        except Exception as exc:
+            _http_log.debug("Failed reading OpenCode catalog cache: %s", exc)
+
+    urls = {
+        "zen_models": f"{OPENCODE_ENDPOINT_BASE_URLS[OPENCODE_ZEN_ENDPOINT]}/models",
+        "go_models": f"{OPENCODE_ENDPOINT_BASE_URLS[OPENCODE_GO_ENDPOINT]}/models",
+        "zen_doc": "https://opencode.ai/docs/zh-cn/zen/",
+        "go_doc": "https://opencode.ai/docs/zh-cn/go/",
+    }
+
+    def _fetch(url: str) -> bytes | None:
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": OPENCODE_USER_AGENT, "Accept": "*/*"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.read()
+        except Exception as exc:
+            _http_log.debug("OpenCode fetch failed for %s: %s", url, exc)
+            return None
+
+    results: dict[str, bytes | None] = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {executor.submit(_fetch, url): key for key, url in urls.items()}
+        for fut in concurrent.futures.as_completed(futures):
+            key = futures[fut]
+            try:
+                results[key] = fut.result()
+            except Exception:
+                results[key] = None
+
+    zen_doc_raw = results.get("zen_doc")
+    zen_doc_map = (
+        _parse_opencode_doc_protocols(zen_doc_raw.decode("utf-8", "replace"))
+        if zen_doc_raw is not None
+        else {}
+    )
+    go_doc_raw = results.get("go_doc")
+    go_doc_map = (
+        _parse_opencode_doc_protocols(go_doc_raw.decode("utf-8", "replace"))
+        if go_doc_raw is not None
+        else {}
+    )
+
+    catalog: dict[str, dict[str, Any]] = {}
+    endpoint_snapshots: dict[str, dict[str, Any]] = {}
+    all_unresolved_remote_keys: set[str] = set()
+
+    endpoint_tasks = [
+        (OPENCODE_ZEN_ENDPOINT, results.get("zen_models"), zen_doc_map),
+        (OPENCODE_GO_ENDPOINT, results.get("go_models"), go_doc_map),
+    ]
+
+    for endpoint, models_raw, doc_map in endpoint_tasks:
+        endpoint_discovered: dict[str, dict[str, Any]] = {}
+        endpoint_unresolved: set[str] = set()
+        fetch_valid = False
+
+        if models_raw is not None:
+            try:
+                models_json = json.loads(models_raw)
+                if isinstance(models_json, dict) and isinstance(
+                    models_json.get("data"), list
+                ):
+                    fetch_valid = True
+                    for item in models_json.get("data", []):
+                        if not isinstance(item, dict):
+                            continue
+                        mid = item.get("id")
+                        if not mid or not isinstance(mid, str):
+                            continue
+                        full_key = f"{endpoint}/{mid}"
+                        # Remote protocol hierarchy (strictly excludes manual overrides):
+                        # 1. Current documentation table
+                        # 2. Disk cache snapshot for this endpoint/model
+                        # 3. Baseline models
+                        doc_proto = doc_map.get(mid)
+                        cache_proto = (
+                            cached_snapshots.get(endpoint, {})
+                            .get("models", {})
+                            .get(full_key, {})
+                            .get("protocol")
+                        )
+                        baseline_proto = _OPENCODE_BASELINE_MODELS.get(
+                            full_key, {}
+                        ).get("protocol")
+                        proto = doc_proto or cache_proto or baseline_proto
+
+                        if not proto or proto not in OPENCODE_PROTOCOL_CAPABILITIES:
+                            endpoint_unresolved.add(full_key)
+                            _http_log.warning(
+                                "OpenCode model %s has unknown protocol; pending override or skipping publication",
+                                full_key,
+                            )
+                            continue
+
+                        entry: dict[str, Any] = {"protocol": proto}
+                        if _OPENCODE_BASELINE_MODELS.get(full_key, {}).get(
+                            "text_only"
+                        ) or (
+                            cached_snapshots.get(endpoint, {})
+                            .get("models", {})
+                            .get(full_key, {})
+                            .get("text_only")
+                        ):
+                            entry["text_only"] = True
+                        endpoint_discovered[full_key] = entry
+            except Exception as exc:
+                _http_log.warning(
+                    "Failed parsing remote OpenCode %s catalog (%s)", endpoint, exc
+                )
+                fetch_valid = False
+
+        if fetch_valid:
+            # Remote returned a valid models response.
+            clean_remote_models: dict[str, dict[str, Any]] = {}
+            for k, v in endpoint_discovered.items():
+                cleaned = _clean_opencode_remote_entry(k, v)
+                if cleaned:
+                    clean_remote_models[k] = cleaned
+            endpoint_snapshots[endpoint] = {
+                "valid": True,
+                "models": clean_remote_models,
+            }
+            catalog.update(clean_remote_models)
+            all_unresolved_remote_keys.update(endpoint_unresolved)
+            _http_log.info(
+                "Discovered %d OpenCode %s models from remote (valid response)",
+                len(clean_remote_models),
+                endpoint,
+            )
+        else:
+            # Remote fetch/parse failed -> fallback this endpoint to cache or baseline
+            if endpoint in cached_snapshots and cached_snapshots[endpoint].get("valid"):
+                ep_cached = cached_snapshots[endpoint]["models"]
+                endpoint_snapshots[endpoint] = {
+                    "valid": True,
+                    "models": dict(ep_cached),
+                }
+                catalog.update(ep_cached)
+                _http_log.info(
+                    "Loaded %d OpenCode %s models from disk cache",
+                    len(ep_cached),
+                    endpoint,
+                )
+            else:
+                ep_baseline = {
+                    k: dict(v)
+                    for k, v in _OPENCODE_BASELINE_MODELS.items()
+                    if k.startswith(f"{endpoint}/")
+                }
+                catalog.update(ep_baseline)
+                _http_log.info(
+                    "Using baseline OpenCode %s catalog (%d models)",
+                    endpoint,
+                    len(ep_baseline),
+                )
+
+    # Cache remote-discovered models and confirmed protocols BEFORE applying manual EXTRA/OVERRIDES.
+    cache_payload: dict[str, Any] = {
+        "version": 2,
+        "endpoints": {},
+    }
+    for ep in (OPENCODE_ZEN_ENDPOINT, OPENCODE_GO_ENDPOINT):
+        if ep in endpoint_snapshots and endpoint_snapshots[ep].get("valid"):
+            cache_payload["endpoints"][ep] = endpoint_snapshots[ep]
+        elif ep in cached_snapshots and cached_snapshots[ep].get("valid"):
+            cache_payload["endpoints"][ep] = cached_snapshots[ep]
+
+    if cache_payload["endpoints"]:
+        try:
+            cache_file.write_text(json.dumps(cache_payload, indent=2), encoding="utf-8")
+        except Exception as exc:
+            _http_log.debug("Failed saving OpenCode catalog cache: %s", exc)
+
+    # Merge EXTRA models (adds new model keys, runtime only)
+    for key, extra in OPENCODE_EXTRA_MODELS.items():
+        if isinstance(extra, dict):
+            cleaned_extra = _clean_opencode_catalog_entry(key, dict(extra))
+            if cleaned_extra:
+                catalog[key] = cleaned_extra
+            else:
+                _http_log.warning(
+                    "Ignoring invalid OPENCODE_EXTRA_MODELS entry %r: %r", key, extra
+                )
+
+    # Apply OVERRIDES field-by-field (runtime only, allows resolving discovered models with unknown protocol)
+    for key, override in OPENCODE_MODEL_OVERRIDES.items():
+        if not isinstance(override, dict):
+            continue
+        if key in catalog or key in all_unresolved_remote_keys:
+            base_entry = dict(catalog[key]) if key in catalog else {}
+            merged = dict(base_entry)
+            merged.update(override)
+            cleaned_override = _clean_opencode_catalog_entry(key, merged)
+            if cleaned_override:
+                catalog[key] = cleaned_override
+            else:
+                _http_log.warning(
+                    "Ignoring invalid OPENCODE_MODEL_OVERRIDES on %r: %r", key, override
+                )
+
+    # Update active catalog & derived indices
+    OPENCODE_MODELS.clear()
+    OPENCODE_MODELS.update(catalog)
+    _rebuild_opencode_derived_catalogs()
+
+
 # Local voice_edge request fields that must never leak upstream.
 OPENCODE_LOCAL_REQUEST_FIELDS = frozenset(
     {"conversation_id", "new_conversation", "source"}
@@ -855,9 +1255,9 @@ DEEPSEEK_BROWSER_MODEL_TYPES = {
 M365_BROWSER_MODEL_TONES = {
     "LLM:m365-claude-opus": "Claude_Opus",
     "LLM:m365-claude-sonnet": "Claude_Sonnet",
+    "LLM:m365-chatgpt-6.1": "Gpt_61_Sol_Reasoning",
     "LLM:m365-chatgpt-5.6": "Gpt_5_6_Reasoning",
     "LLM:m365-chatgpt-5.6-quick": "Gpt_5_6_Chat",
-    "LLM:m365-chatgpt-5.5": "Gpt_5_5_Chat",
     "LLM:m365-research-learn": "EducationLearnAgent",
     "LLM:m365-repo-prompt-coach": "RepoPromptCoachAgent",
 }
@@ -939,6 +1339,15 @@ BROWSER_MODEL_METADATA = {
         "deepseek_harness": True,
         "deepseek_harness_tools": False,
     },
+    "LLM:m365-chatgpt-6.1": {
+        "owned_by": "m365-copilot-browser",
+        "root": "Gpt_61_Sol_Reasoning",
+        "capabilities": ["chat", "reasoning", "web", "work"],
+        "supports_tools": True,
+        "relay_prompt": True,
+        "deepseek_harness": True,
+        "deepseek_harness_tools": False,
+    },
     "LLM:m365-chatgpt-5.6": {
         "owned_by": "m365-copilot-browser",
         "root": "Gpt_5_6_Reasoning",
@@ -951,15 +1360,6 @@ BROWSER_MODEL_METADATA = {
     "LLM:m365-chatgpt-5.6-quick": {
         "owned_by": "m365-copilot-browser",
         "root": "Gpt_5_6_Chat",
-        "capabilities": ["chat", "reasoning", "web", "work"],
-        "supports_tools": True,
-        "relay_prompt": True,
-        "deepseek_harness": True,
-        "deepseek_harness_tools": False,
-    },
-    "LLM:m365-chatgpt-5.5": {
-        "owned_by": "m365-copilot-browser",
-        "root": "Gpt_5_5_Chat",
         "capabilities": ["chat", "web", "work"],
         "supports_tools": True,
         "relay_prompt": True,
@@ -3255,6 +3655,17 @@ class BrowserRelay:
         have the IDE's system prose or tools injected). The caller decides when
         to bypass; a convenience detector is provided as `should_bypass(body)`.
         """
+        if BrowserRelay.is_passthrough(body):
+            full_text = BrowserRelay.format_full_messages(messages)
+            return PreparedTurn(
+                text=full_text,
+                policy=RelayPolicy(),
+                tools_active=False,
+                client_kind="plain",
+                user_text=full_text,
+                fresh_user_turn=True,
+            )
+
         if bypass:
             # Pure passthrough: no system relay, no tools, and NO client-envelope
             # parsing (XiaoAI sends plain text; parsing would be a no-op anyway).
@@ -3312,6 +3723,60 @@ class BrowserRelay:
         """Whether this request must skip the relay entirely. True for the
         XiaoAI smart-speaker bridge, which tags its body `source":"xiaoai"`."""
         return str((body or {}).get("source") or "").strip().lower() == "xiaoai"
+
+    @staticmethod
+    def is_passthrough(body: dict) -> bool:
+        """Whether this request wants full messages passed through without stripping
+        prompts or history (e.g. Xianyu customer service helper)."""
+        b = body or {}
+        if str(b.get("user") or "").strip().lower() == "xianyu":
+            return True
+        if str(b.get("source") or "").strip().lower() in (
+            "xianyu",
+            "raw",
+            "passthrough",
+        ):
+            return True
+        if b.get("raw_prompt") or b.get("full_prompt") or b.get("passthrough"):
+            return True
+        return False
+
+    @staticmethod
+    def format_full_messages(messages: list) -> str:
+        """Format OpenAI multi-turn messages into a single coherent prompt."""
+        system_chunks: list[str] = []
+        turns: list[tuple[str, str]] = []
+        for m in messages or []:
+            if not isinstance(m, dict):
+                continue
+            role = str(m.get("role") or "").strip().lower()
+            content = _content_to_text(m.get("content")).strip()
+            if not content:
+                continue
+            if role in ("system", "developer"):
+                system_chunks.append(content)
+            elif role == "user":
+                turns.append(("买家", content))
+            elif role == "assistant":
+                turns.append(("客服", content))
+
+        # 如果只有一条消息且无系统提示，原样直通（如连接测试）
+        if not system_chunks and len(turns) == 1:
+            return turns[0][1]
+
+        sections: list[str] = []
+        if system_chunks:
+            sections.append("【商品背景与店铺规则】\n" + "\n\n".join(system_chunks))
+        if turns:
+            if len(turns) == 1:
+                sections.append(f"买家咨询: {turns[0][1]}")
+            else:
+                history_lines = [f"{r}: {t}" for r, t in turns[:-1]]
+                if history_lines:
+                    sections.append("【历史对话】\n" + "\n".join(history_lines))
+                last_role, last_text = turns[-1]
+                sections.append(f"【{last_role}最新消息】\n{last_text}")
+        return "\n\n".join(sections).strip()
 
 
 # --- 6a. optional OpenAI stream helpers (handlers may reuse) ---------------
@@ -24904,18 +25369,18 @@ def _client_collect_inline_files(message: dict) -> list[dict]:
     for span in spans:
         attachment_index += 1
         extracted_text = scan_text[span["content_start"] : span["content_end"]]
-        # Continue serializes every attachment as:
-        #   <file_content path="...">\n${content}\n</file_content>
-        # The regex intentionally excludes the opening-tag newline, but its
-        # content group still includes the one transport newline immediately
-        # before the closing tag. Remove exactly that one newline. This keeps a
-        # file's own trailing newline intact (it appears as the preceding LF)
-        # while preventing .b64.NNN attachments from gaining a byte and failing
-        # b64_total_bytes / b64_total_sha256 verification after SharePoint upload.
-        if extracted_text.endswith("\r\n"):
-            extracted_text = extracted_text[:-2]
-        elif extracted_text.endswith("\n"):
-            extracted_text = extracted_text[:-1]
+        # Continue serializes attachments with </file_content> on a new line.
+        # For .b64 / .b64.NNN chunks without trailing newlines, the transport
+        # newline before the closing tag causes .b64 attachments to gain a byte
+        # and fail b64_total_bytes / b64_total_sha256 verification. Strip the
+        # transport newline specifically for .b64 attachments while keeping
+        # ordinary source files byte-exact.
+        #
+        if re.search(r"\.b64(?:\.\d+)?$", span["path"], re.IGNORECASE):
+            if extracted_text.endswith("\r\n"):
+                extracted_text = extracted_text[:-2]
+            elif extracted_text.endswith("\n"):
+                extracted_text = extracted_text[:-1]
         data = extracted_text.encode("utf-8")
         source = "inline"
         resolved_path = ""
@@ -26760,14 +27225,6 @@ async def _direct_m365_chat_response(
         client_kind=_m365_prepared.client_kind,
         chars=len(prompt),
     )
-    # cline_mode comes from the UNIFIED relay decision (prepared.client_kind),
-    # not a second, m365-local detection pass. No prompt-side instruction is
-    # appended here: _cline_wrap_result already strips any model-generated
-    # attempt_completion envelope before re-wrapping, so telling the model not
-    # to emit one was redundant defense. The shared ClineEnvelope below applies
-    # the attempt_completion framing the SAME way every browser family does.
-    cline_mode = _m365_prepared.client_kind == "cline"
-    _m365_env = ClineEnvelope(cline_mode)
     try:
         attachments = await _client_collect_attachments(messages)
     except Exception as exc:
@@ -26775,6 +27232,37 @@ async def _direct_m365_chat_response(
             {"error": {"message": str(exc), "type": "m365_file_error"}},
             status_code=400,
         )
+
+    # Image turns must contain only the actual user request plus any tool
+    # instructions. Relaying the caller's system/developer prompt as
+    # <client_system_prompt> pollutes M365 image-edit intent routing. Re-run the
+    # normal relay preparation without those roles so all existing user/tool
+    # handling remains unchanged while the client prompt is omitted.
+    if any(str(item.get("kind") or "").lower() == "image" for item in attachments):
+        image_messages = [
+            item
+            for item in messages
+            if not (
+                isinstance(item, dict)
+                and str(item.get("role") or "").strip().lower()
+                in ("system", "developer")
+            )
+        ]
+        _m365_prepared = BROWSER_RELAY.prepare(
+            model_name, body, image_messages, bypass=_m365_bypass
+        )
+        prompt = _m365_prepared.text
+        _m365_attachment_debug(
+            "image-client-prompt-suppressed",
+            source=str(body.get("source") or "unknown"),
+            client_kind=_m365_prepared.client_kind,
+            chars=len(prompt),
+        )
+
+    # cline_mode comes from the final relay decision after image turns have had
+    # their client system/developer prompt suppressed.
+    cline_mode = _m365_prepared.client_kind == "cline"
+    _m365_env = ClineEnvelope(cline_mode)
     # Snapshot the fresh user turn before offloaded tool-result attachments join
     # this list. Multimodal content is rebuilt from the original content slots,
     # so images remain between the same surrounding text instead of moving to
@@ -31178,7 +31666,12 @@ def _embedding_similarity_rerank_in_worker(
         count=len(docs),
     )
 
-    return [float(x) for x in scores.tolist()], method
+    raw_scores: Any = scores.tolist()
+    if isinstance(raw_scores, list):
+        score_list = [float(x) for x in raw_scores]  # pyright: ignore[reportArgumentType]
+    else:
+        score_list = [float(raw_scores)]  # pyright: ignore[reportArgumentType]
+    return score_list, method
 
 
 def _rerank_qwen3_vl_in_worker(
@@ -47807,6 +48300,10 @@ class OpenCodeModelSpec:
                 f"{OPENCODE_GO_ENDPOINT}/<model-id>': {public_id!r}"
             )
         protocol = _opencode_protocol_for(endpoint, upstream_id)
+        if protocol not in OPENCODE_PROTOCOL_CAPABILITIES:
+            raise ValueError(
+                f"Model '{endpoint}/{upstream_id}' has unsupported protocol {protocol!r}"
+            )
         return cls(
             public_id=f"{OPENCODE_MODEL_PREFIX}{endpoint}/{upstream_id}",
             endpoint=endpoint,
@@ -47939,6 +48436,8 @@ def _opencode_protocol_from_name(upstream_id: str) -> str:
         return OPENCODE_PROTOCOL_GOOGLE
     if model.startswith(("gpt-", "grok", "muse-spark")):
         return OPENCODE_PROTOCOL_RESPONSES
+    if model.startswith("jev"):
+        return OPENCODE_PROTOCOL_SYSTEMONE
     return OPENCODE_PROTOCOL_CHAT
 
 
@@ -47949,10 +48448,16 @@ def _opencode_table_entry(endpoint: str, upstream_id: str) -> dict[str, Any] | N
 
 def _opencode_protocol_for(endpoint: str, upstream_id: str) -> str:
     entry = _opencode_table_entry(endpoint, upstream_id)
-    protocol = entry.get("protocol") if entry else None
-    if protocol:
-        return protocol
-    return _opencode_protocol_from_name(upstream_id)
+    if not entry:
+        raise ValueError(
+            f"Unknown or unavailable OpenCode model '{endpoint}/{upstream_id}'"
+        )
+    protocol = entry.get("protocol")
+    if not protocol or protocol not in OPENCODE_PROTOCOL_CAPABILITIES:
+        raise ValueError(
+            f"Model '{endpoint}/{upstream_id}' has unsupported protocol {protocol!r}"
+        )
+    return str(protocol)
 
 
 def _opencode_publish_switch(endpoint: str, upstream_id: str) -> bool | None:
@@ -47965,7 +48470,7 @@ def _opencode_publish_switch(endpoint: str, upstream_id: str) -> bool | None:
     entry = _opencode_table_entry(endpoint, upstream_id)
     if not entry or "publish" not in entry:
         return None
-    return bool(entry["publish"])
+    return _parse_strict_bool(entry["publish"])
 
 
 def _opencode_publication_error(spec: OpenCodeModelSpec) -> str | None:
@@ -48028,9 +48533,12 @@ def _opencode_resolve_spec(
         )
     if not upstream_id:
         return None, f"Missing OpenCode model id in '{model_name}'"
-    spec = OpenCodeModelSpec.from_public_id(
-        f"{OPENCODE_MODEL_PREFIX}{endpoint}/{upstream_id}"
-    )
+    try:
+        spec = OpenCodeModelSpec.from_public_id(
+            f"{OPENCODE_MODEL_PREFIX}{endpoint}/{upstream_id}"
+        )
+    except ValueError as exc:
+        return None, str(exc)
     error = _opencode_publication_error(spec)
     if error:
         return None, error
@@ -48457,6 +48965,8 @@ class OpenCodeHTTPClient:
 
     @staticmethod
     def request_path(spec: OpenCodeModelSpec) -> str:
+        if spec.protocol == OPENCODE_PROTOCOL_SYSTEMONE:
+            return "/systemone"
         if spec.protocol == OPENCODE_PROTOCOL_RESPONSES:
             return "/responses"
         if spec.protocol == OPENCODE_PROTOCOL_MESSAGES:
@@ -48477,9 +48987,10 @@ class OpenCodeHTTPClient:
         if _opencode_is_free_model(spec):
             # Free tier: the gate accepts CLI-looking traffic and the models
             # need no Authorization header at all, so no key is attached.
+            accept = "application/json" if not stream else "text/event-stream"
             return {
                 "Content-Type": "application/json",
-                "Accept": "text/event-stream",
+                "Accept": accept,
                 "User-Agent": OPENCODE_FREE_TIER_USER_AGENT,
                 "x-opencode-session": session_id or _opencode_random_session_id(),
             }
@@ -48650,9 +49161,13 @@ class OpenCodeHTTPClient:
             ),
         )
 
-    async def complete(self, spec: OpenCodeModelSpec, payload: dict) -> Response:
+    async def complete(
+        self, spec: OpenCodeModelSpec, payload: dict, session_id: str = ""
+    ) -> Response:
         """Non-streaming passthrough of an OpenAI shaped upstream response."""
-        session, response, state, error = await self._open(spec, payload, False)
+        session, response, state, error = await self._open(
+            spec, payload, False, session_id=session_id
+        )
         if error is not None:
             return error
         assert session is not None and response is not None and state is not None
@@ -50270,6 +50785,20 @@ async def _direct_opencode_chat_response(body: dict, messages: list, stream_mode
         )
     client = _opencode_shared_client(config)
     session_id = _opencode_session_id(body, spec)
+    if spec.protocol == OPENCODE_PROTOCOL_SYSTEMONE:
+        return JSONResponse(
+            {
+                "error": {
+                    "message": (
+                        f"Model '{spec.public_id}' uses the systemone protocol "
+                        "and cannot be used with /v1/chat/completions. "
+                        "Please use /v1/systemone instead."
+                    ),
+                    "type": "invalid_request_error",
+                }
+            },
+            status_code=400,
+        )
     if spec.protocol == OPENCODE_PROTOCOL_CHAT:
         if _opencode_is_free_model(spec):
             # Free tier: the gate only accepts CLI-looking streaming requests,
@@ -51053,6 +51582,105 @@ async def chat_api(request):
         raise
     except Exception as e:
         _http_log.error(f"Chat API error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+async def systemone_api(request):
+    """
+    OpenCode System One (/v1/systemone) endpoint.
+    Proxies structured classification/decision requests (e.g. TypeSafe AI Jev).
+    Accepts JSON: { model, state, questions, ... }
+    """
+    try:
+        config = OpenCodeConfig.load()
+        if not config.api_keys:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": "VE_OPENCODE_API_KEYS is not configured",
+                        "type": "opencode_config_error",
+                    }
+                },
+                status_code=503,
+            )
+
+        try:
+            body = await request.json()
+        except Exception as exc:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": f"Invalid JSON body: {exc}",
+                        "type": "invalid_request_error",
+                    }
+                },
+                status_code=400,
+            )
+
+        if not isinstance(body, dict):
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": "JSON body must be an object",
+                        "type": "invalid_request_error",
+                    }
+                },
+                status_code=400,
+            )
+
+        raw_model = str(body.get("model") or "").strip()
+        if not raw_model:
+            raw_model = "zen/jev-1.13"
+
+        if not _opencode_is_model(raw_model):
+            if "/" not in raw_model:
+                raw_model = (
+                    f"{OPENCODE_MODEL_PREFIX}{OPENCODE_ZEN_ENDPOINT}/{raw_model}"
+                )
+            else:
+                raw_model = f"{OPENCODE_MODEL_PREFIX}{raw_model}"
+
+        spec, model_error = _opencode_resolve_spec(raw_model)
+        if spec is None:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": model_error or "OpenCode model is not available",
+                        "type": "opencode_model_error",
+                    }
+                },
+                status_code=404,
+            )
+
+        if spec.protocol != OPENCODE_PROTOCOL_SYSTEMONE:
+            return JSONResponse(
+                {
+                    "error": {
+                        "message": (
+                            f"Model '{spec.public_id}' is not a System One model "
+                            f"(protocol: {spec.protocol}). Use /v1/chat/completions instead."
+                        ),
+                        "type": "invalid_request_error",
+                    }
+                },
+                status_code=400,
+            )
+
+        client = _opencode_shared_client(config)
+        session_id = _opencode_session_id(body, spec)
+        upstream_payload = dict(body)
+        upstream_payload["model"] = spec.upstream_id
+
+        return await client.complete(spec, upstream_payload, session_id=session_id)
+
+    except ClientDisconnect:
+        _http_log.info("SystemOne API client disconnected")
+        return Response(status_code=499)
+    except asyncio.CancelledError:
+        _http_log.info("SystemOne API cancelled during shutdown")
+        raise
+    except Exception as e:
+        _http_log.error(f"SystemOne API error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -55210,7 +55838,7 @@ def test_harness_enabled_requires_flag_and_endpoint():
         globals()["VOICE_EDGE_HARNESS_URL"] = "http://127.0.0.1:3080/api/voice-edge"
         globals()["VOICE_EDGE_HARNESS_TOKEN"] = "t"
         assert _harness_enabled("LLM:m365-claude-opus") is True
-        assert _harness_enabled("LLM:m365-chatgpt-5.5") is True
+        assert _harness_enabled("LLM:m365-chatgpt-6.1") is True
         # Non-opted-in browser models stay on the direct path.
         assert _harness_enabled("LLM:doubao") is False
         assert _harness_enabled("LLM:deepseek") is False
@@ -55990,6 +56618,7 @@ def main():
 
     _acquire_process_instance_lock()
     _initialize_main_runtime()
+    _initialize_opencode_catalog()
 
     try:
         _main_event_loop = asyncio.get_running_loop()
@@ -56303,6 +56932,7 @@ app = Starlette(
         Route("/v1/audio/speech", endpoint=speech_api, methods=["POST"]),
         Route("/v1/audio/transcriptions", endpoint=transcribe_api, methods=["POST"]),
         Route("/v1/chat/completions", endpoint=chat_api, methods=["POST"]),
+        Route("/v1/systemone", endpoint=systemone_api, methods=["POST"]),
         Route("/v1/embeddings", endpoint=embeddings_api, methods=["POST"]),
         Route("/v1/rerank", endpoint=rerank_api, methods=["POST"]),
         Route("/v1/completions", endpoint=completions_api, methods=["POST"]),
