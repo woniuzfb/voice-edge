@@ -18,10 +18,11 @@
 
 ## 2. 核心铁律（强制执行）
 
-### 铁律 1：每次修改必须通过 Ruff 检查（Linting）
-- **要求**：任何对 Python 文件的修改，必须在最终交付前运行并通过 Ruff 静态检查，确保 **0 Error / 0 Warning**。
+### 铁律 1：代码必须经过 Ruff 格式化与静态检查（Format & Lint）
+- **要求**：任何对 Python 文件的修改，必须在最终交付前运行并通过 Ruff 格式化与静态检查，确保风格统一且 **0 Error / 0 Warning**。
 - **执行命令**：
   ```bash
+  ruff format voice_edge.py
   ruff check voice_edge.py
   # 或者全局检查
   ruff check .
@@ -43,44 +44,33 @@
 ---
 
 ### 铁律 3：必须通过全量自测试（Self-Test）
-- **要求**：在交付或提交前，必须运行全量内置自测，确保全部测试用例 100% 通过。
+- **要求**：在交付前，必须运行全量内置自测，确保全部测试用例 100% 通过。
 - **执行命令**：
   ```bash
   python voice_edge.py --self-test
   # 或
   uv run main --self-test
   ```
-- **基线要求**：当前基线为 **114/114 passed**。不得出现任何 `❌ Self-test failed`。
+- **基线要求**：当前基线为 **115/115 passed**。不得出现任何 `❌ Self-test failed`。
 
 ---
 
-### 铁律 4：OpenCode 目录发现与缓存设计约束
-OpenCode 动态发现与缓存机制具备严格的安全与防污染要求，修改相关逻辑时必须恪守：
-1. **缓存版本隔离**：磁盘缓存仅使用版本化文件 `voice_edge_opencode_catalog_v2.json`，格式为：
-   ```json
-   {
-     "version": 2,
-     "endpoints": {
-       "zen": { "valid": true, "models": { ... } },
-       "go": { "valid": true, "models": { ... } }
-     }
-   }
-   ```
-2. **人工配置绝不入缓存**：
-   - 远端探测循环的协议推断来源必须仅限于：`文档表格 (Doc) -> 磁盘缓存快照 (Cache) -> 内置基线 (Baseline)`。
-   - 绝不允许在探测阶段读取 `OPENCODE_MODEL_OVERRIDES`。
-   - 磁盘缓存写入必须发生在合并 `OPENCODE_EXTRA_MODELS` 和 `OPENCODE_MODEL_OVERRIDES` **之前**。
-   - 缓存模型条目仅允许包含 `protocol` 和严格布尔值 `text_only`，绝不允许写入 `publish` 等人工字段。
-3. **保留有效空快照**：
-   - 远端成功返回合法空列表时，记录端点为 `valid: True, models: {}`。
-   - 断网或失败时，优先恢复该有效空快照（0 个模型），绝不能误判为“获取失败”而回退 Baseline。
-4. **严格布尔解析**：
-   - 解析 `publish`、`text_only` 等布尔配置必须使用 `_parse_strict_bool()`，严禁依赖 Python 原生隐式真值转换（防止 `"false"` 被判为真）。
+### 铁律 4：严禁编写低价值或虚假测试（No Pseudo-Tests）
+- **要求**：
+  - 自测用例必须真实驱动实际生产执行链路（Real Execution Path），对核心业务逻辑具备实质性断言。
+  - **严禁伪测试**：坚决禁止编写「即使把生产代码的核心修复逻辑删除，测试仍然能通过」的低价值虚假测试。
+  - 严禁为了虚增测试数量而仅对静态数据结构做无意义断言，或者构造脱离生产运行状态的孤立 Mock。
 
 ---
 
-### 铁律 5：绝对禁止暂存或提交 `.memory/` 目录
-- **要求**：`.memory/` 目录（包含每日记录及 `MEMORY.md` 长期记忆）仅用于本地 Agent 运行上下文与记忆维护。**绝对不要执行 `git add .memory/` 或将其提交到版本控制中（DO NOT stage or commit `.memory/`）**。
+### 铁律 5：严禁未经允许擅自提交代码（No Unauthorized Git Commit）
+- **要求**：AI Agent **绝对禁止**在没有得到用户明确许可的情况下自动执行 `git commit`。
+- **规范**：所有修改在完成验证（通过自测与 Ruff）后，必须保留在工作区中，向用户汇报修改内容并等待用户指示或审查授权。
+
+---
+
+### 铁律 6：绝对禁止暂存或提交 `.memory/` 目录
+- **要求**：`.memory/` 目录（包含每日记录、长期记忆 `MEMORY.md` 以及各专项业务设计规范如 OpenCode 缓存机制等）仅用于本地 Agent 运行上下文维护。**绝对不要执行 `git add .memory/` 或将其提交到版本控制中（DO NOT stage or commit `.memory/`）**。
 
 ---
 
@@ -93,15 +83,17 @@ flowchart TD
     A[阅读需求与相关代码] --> B[实施修改]
     B --> C[语法编译: python -m py_compile voice_edge.py]
     C --> D[行号同步: python voice_edge.py --fix-env-registry]
-    D --> E[代码风格: ruff check voice_edge.py]
-    E --> F[全量自测: python voice_edge.py --self-test]
-    F --> G{全部检查通过?}
-    G -- 否 --> B
-    G -- 是 --> H[更新本地 .memory/ 记录与 Git Commit]
+    D --> E[代码格式化: ruff format voice_edge.py]
+    E --> F[代码检查: ruff check voice_edge.py]
+    F --> G[全量自测: python voice_edge.py --self-test]
+    G --> H{全部检查通过?}
+    H -- 否 --> B
+    H -- 是 --> I[更新本地 .memory/ 记录并向用户汇报]
 ```
 
 1. **语法检查**：`python -m py_compile voice_edge.py`
 2. **对齐行号**：`python voice_edge.py --fix-env-registry`
-3. **代码检查**：`ruff check voice_edge.py`（必须 0 errors）
-4. **自测验证**：`python voice_edge.py --self-test`（必须 114/114 通过）
-5. **记忆同步**：在本地 `.memory/YYYY-MM-DD.md` 记录重大架构变更与决策背景
+3. **代码格式化**：`ruff format voice_edge.py`
+4. **代码检查**：`ruff check voice_edge.py`（必须 0 errors / 0 warnings）
+5. **自测验证**：`python voice_edge.py --self-test`（必须 115/115 通过）
+6. **记忆更新与汇报**：在本地 `.memory/YYYY-MM-DD.md` 记录重大架构变更与决策背景；向用户清晰汇报改动细节，**等待用户授权后方可提交**。

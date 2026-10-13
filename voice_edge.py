@@ -130,6 +130,43 @@ if sys.version_info < (3, 11):
     raise RuntimeError("voice_edge.py requires Python 3.11 or newer")
 
 
+def _patch_edge_tts_endpoint() -> None:
+    """Redirect Edge-TTS websocket synthesis to api.msedgeservices.com.
+
+    In October 2026, Microsoft decommissioned the legacy speech.platform.bing.com
+    readaloud websocket endpoint with HTTP 403. Microsoft Edge 155+ synthesizes
+    through api.msedgeservices.com with Ocp-Apim-Subscription-Key.
+    Ref: upstream PR https://github.com/rany2/edge-tts/pull/491.
+    """
+    import email.utils
+    from datetime import timezone as dt_timezone
+
+    import edge_tts.communicate
+    import edge_tts.constants
+    import edge_tts.drm
+
+    new_wss_url = (
+        "wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1"
+        f"?Ocp-Apim-Subscription-Key={edge_tts.constants.TRUSTED_CLIENT_TOKEN}"
+    )
+    edge_tts.constants.WSS_URL = new_wss_url
+    edge_tts.communicate.WSS_URL = new_wss_url  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+
+    def _safe_parse_rfc2616_date(date: str) -> Optional[float]:
+        try:
+            parsed = email.utils.parsedate_to_datetime(date)
+        except (TypeError, ValueError, IndexError):
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt_timezone.utc)
+        return parsed.timestamp()
+
+    edge_tts.drm.DRM.parse_rfc2616_date = staticmethod(_safe_parse_rfc2616_date)
+
+
+_patch_edge_tts_endpoint()
+
+
 # ============================================================================
 # 环境变量登记表 (ENV REGISTRY) —— 全文 env 读取的唯一索引
 # ----------------------------------------------------------------------------
@@ -138,219 +175,219 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2083
-#    VE_VLM_KV_BITS                         3.5                                          L475
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L480
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L485
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L486
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L1666
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L1671
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L1674
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L1678
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1687
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1695
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1750
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2201
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42222
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42871
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42883
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18865
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18862
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18828
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18843
-#    AUTH_SYNC_ENABLED                      "1"                                          L18816
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18817
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2120
+#    VE_VLM_KV_BITS                         3.5                                          L512
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L517
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L522
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L523
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L1703
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L1708
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L1711
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L1715
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L1724
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L1732
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L1787
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2238
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42273
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L42922
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L42934
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L18902
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L18899
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L18865
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L18880
+#    AUTH_SYNC_ENABLED                      "1"                                          L18853
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L18854
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L365
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L366
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L367
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L368
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L369
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L373
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L377
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L378
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L379
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L380
-#    VE_HUD_LOG_DEBUG                           "0"                                      L381
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L382
-#    VE_KWS_LOG_DEBUG                           "0"                                      L383
-#    VE_LLM_LOG_DEBUG                           "0"                                      L384
-#    VE_M365_LOG_DEBUG                          "0"                                      L385
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L386
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L390
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L394
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L395
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L396
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L397
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L398
-#    VE_TTS_LOG_DEBUG                           "0"                                      L399
-#    VE_VLM_LOG_DEBUG                           "0"                                      L400
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L401
+#    VE_APP_LOG_DEBUG                           "0"                                      L402
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L403
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L404
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L405
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L406
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L410
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L414
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L415
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L416
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L417
+#    VE_HUD_LOG_DEBUG                           "0"                                      L418
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L419
+#    VE_KWS_LOG_DEBUG                           "0"                                      L420
+#    VE_LLM_LOG_DEBUG                           "0"                                      L421
+#    VE_M365_LOG_DEBUG                          "0"                                      L422
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L423
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L427
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L431
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L432
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L433
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L434
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L435
+#    VE_TTS_LOG_DEBUG                           "0"                                      L436
+#    VE_VLM_LOG_DEBUG                           "0"                                      L437
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L438
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42108
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42131
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42158
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42217
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42760
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42763
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42771
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42783
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42785
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42794
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42800
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42806
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42822
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42827
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42834
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42841
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42850
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42857
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42905
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L44673
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L44674
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L44675
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42159
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42182
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42209
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42268
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L42811
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L42814
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L42822
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L42834
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L42836
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L42845
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L42851
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L42857
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L42873
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L42878
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L42885
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L42892
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L42901
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L42908
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L42956
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L44724
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L44725
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L44726
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14372
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14374
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L14375
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14381
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14383
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14386
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14394
-#    QWEN_COOKIE_HEADER                     ""                                           L14398
-#    QWEN_TOKENS                            ""                                           L14406
-#    QWEN_TOKEN                             ""                                           L14407
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14409
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14411
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L14412
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14418
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14420
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14423
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14431
+#    QWEN_COOKIE_HEADER                     ""                                           L14435
+#    QWEN_TOKENS                            ""                                           L14443
+#    QWEN_TOKEN                             ""                                           L14444
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1276
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16041
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16042
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16044
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16046
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16048
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16051
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16054
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16057
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16178
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16181
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1313
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16078
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16079
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16081
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16083
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16085
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16088
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16091
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16094
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16215
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16218
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L18726
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L18727
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L18733
-#    DOUBAO_FP                              "doubao_voice_edge"                          L18734
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L18742
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L18744
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L18747
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18749
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18751
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18755
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18782
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18785
-#    DOUBAO_WEB_AID                         "497858"                                     L18787
-#    DOUBAO_WEB_REGION                      "CN"                                         L18788
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18789
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18790
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18792
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18841
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18833
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19143
-#    DOUBAO_SESSION_IDS                     ""                                           L19185
-#    DOUBAO_SESSION_ID                      ""                                           L19189
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L19700
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L19709
-#    DOUBAO_SESSION_ID_SS                   ""                                           L19891
-#    DOUBAO_SID_TT                          ""                                           L19894
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L18763
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L18764
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L18770
+#    DOUBAO_FP                              "doubao_voice_edge"                          L18771
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L18779
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L18781
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L18784
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L18786
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L18788
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L18792
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L18819
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L18822
+#    DOUBAO_WEB_AID                         "497858"                                     L18824
+#    DOUBAO_WEB_REGION                      "CN"                                         L18825
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L18826
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L18827
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L18829
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L18878
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L18870
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19180
+#    DOUBAO_SESSION_IDS                     ""                                           L19222
+#    DOUBAO_SESSION_ID                      ""                                           L19226
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L19737
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L19746
+#    DOUBAO_SESSION_ID_SS                   ""                                           L19928
+#    DOUBAO_SID_TT                          ""                                           L19931
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24278
-#    SHAREPOINT_HOME_URL                    ""                                           L24279
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24280
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24281
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24308
-#    M365_BRIDGE_PORT                       "5003"                                       L24309
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24310
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24311
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24313
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24316
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L24319
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24327
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L24329
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24349
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24356
-#    M365_CONV_MAP_MAX                      "1024"                                       L24525
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25172
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25190
+#    M365_ENTRY_URL                         ""                                           L24315
+#    SHAREPOINT_HOME_URL                    ""                                           L24316
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24317
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24318
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24345
+#    M365_BRIDGE_PORT                       "5003"                                       L24346
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24347
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24348
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24350
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24353
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24356
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24364
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L24366
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24386
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24393
+#    M365_CONV_MAP_MAX                      "1024"                                       L24562
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25209
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25227
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L37446
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L37656
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L37718
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L37740
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L37747
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37842
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37844
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37848
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39041
-#    MI_USER                                ""                                           L38767
-#    MI_PASS                                ""                                           L38793
-#    XIAOAI_HARDWARE                        "LX06"                                       L38795
-#    MI_DID                                 ""                                           L38797
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38800
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38804
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L38807
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38810
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38816
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38827
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38832
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38813
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38823
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L38843
-#    XIAOAI_VOICE                           "zh"                                         L38845
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L38847
-#    XIAOAI_MAX_TOKENS                      "500"                                        L38850
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L38853
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38856
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38860
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38864
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38869
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38874
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38879
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38884
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38889
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38897
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38902
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38907
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38912
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38917
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38922
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38927
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L38930
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38934
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38938
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38942
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38947
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L38952
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L38956
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L38959
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L38962
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L38965
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L38968
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L38971
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L38974
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L38977
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L38984
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L38990
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L38994
+#    XIAOAI_ENABLED                         "0"                                          L37497
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L37707
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L37769
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L37791
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L37798
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L37893
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L37895
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L37899
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39092
+#    MI_USER                                ""                                           L38818
+#    MI_PASS                                ""                                           L38844
+#    XIAOAI_HARDWARE                        "LX06"                                       L38846
+#    MI_DID                                 ""                                           L38848
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L38851
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L38855
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L38858
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L38861
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L38867
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L38878
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L38883
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L38864
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L38874
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L38894
+#    XIAOAI_VOICE                           "zh"                                         L38896
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L38898
+#    XIAOAI_MAX_TOKENS                      "500"                                        L38901
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L38904
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L38907
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L38911
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L38915
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L38920
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L38925
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L38930
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L38935
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L38940
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L38948
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L38953
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L38958
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L38963
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L38968
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L38973
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L38978
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L38981
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L38985
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L38989
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L38993
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L38998
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39003
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39007
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39010
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39013
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39016
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39019
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39022
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39025
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39028
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39035
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39041
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39045
 #
 #  【中继提供商 (OpenRouter / OpenCode)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L47435
-#    VE_OPENCODE_API_KEYS                   ""                                           L48360
-#    VE_OPENCODE_FREE                       "1"                                          L48398
-#    VE_OPENCODE_GO                         "0"                                          L48403
+#    VE_OPENROUTER_API_KEYS                 ""                                           L47486
+#    VE_OPENCODE_API_KEYS                   ""                                           L48411
+#    VE_OPENCODE_FREE                       "1"                                          L48449
+#    VE_OPENCODE_GO                         "0"                                          L48454
 #
 # 合计 197 个唯一环境变量。
 # ============================================================================
@@ -26499,6 +26536,7 @@ class M365BrowserRuntime:
                 code_execution_hard_deadline: Optional[float] = None
                 reasoning_frames = 0
                 delta_frames = 0
+                last_emitted_cid = str(conversation_id or "").strip()
 
                 def _log_producer_summary(signal: str) -> None:
                     if not VE_M365_LOG_RELAY_TRACE:
@@ -26662,6 +26700,10 @@ class M365BrowserRuntime:
                         continue
                     mtype = str(msg.get("type") or "")
                     last_inbound_type = mtype or "<empty>"
+                    inbound_cid = str(msg.get("conversationId") or "").strip()
+                    if inbound_cid and inbound_cid != last_emitted_cid:
+                        last_emitted_cid = inbound_cid
+                        emit({"type": "conversation", "conversation_id": inbound_cid})
                     if VE_M365_LOG_RELAY_TRACE:
                         trace_inbound_msgs += 1
                         _tk = _m365_trace_inbound_key(mtype, msg)
@@ -27353,6 +27395,13 @@ async def _direct_m365_chat_response(
         # cross-chat reuse bug.
         conversation_id = ""
 
+    resolved_existing = bool(conversation_id)
+    if not conversation_id:
+        conversation_id = str(uuid.uuid4())
+        _m365_remember_conversation(
+            conversation_id, full_key, boot_key, tone, has_history
+        )
+
     def _remember_conversation(cid: str) -> None:
         _m365_remember_conversation(cid, full_key, boot_key, tone, has_history)
 
@@ -27365,7 +27414,9 @@ async def _direct_m365_chat_response(
         explicit_new,
         bool(requested),
         has_history,
-        (conversation_id[:16] + "…") if conversation_id else "<new>",
+        (conversation_id[:16] + "…")
+        if resolved_existing
+        else f"<new:{conversation_id[:8]}…>",
     )
 
     completion_id = f"chatcmpl-m365-{uuid.uuid4().hex}"
@@ -27386,7 +27437,7 @@ async def _direct_m365_chat_response(
             }
             for x in attachments
         ],
-        conversation_reused=bool(conversation_id),
+        conversation_reused=resolved_existing,
     )
     (
         future,
@@ -27420,7 +27471,7 @@ async def _direct_m365_chat_response(
         # tool-step counter, and the current step's visible text / reasoning
         # accumulators for the model-event mirror.
         _harness_step = 0
-        _stream_cid = ""
+        _stream_cid = conversation_id
         _step_text: list = []
         _step_reasoning: list = []
 
@@ -27917,7 +27968,7 @@ async def _direct_m365_chat_response(
 
     best = ""
     reasoning = ""
-    conv = ""
+    conv = conversation_id
     # Harness bridge state for the non-streaming tool loop. The transpiler
     # runs ONLY when the bridge is active: legacy non-stream never parsed
     # tool blocks and returned the raw text (fence included), so when the
@@ -56056,6 +56107,38 @@ def test_harness_tool_results_block_matches_relay_wire_format():
     assert block.endswith("</tool_results>")
 
 
+def test_edge_tts_endpoint_patch():
+    import edge_tts.communicate
+    import edge_tts.constants
+    import edge_tts.drm
+
+    # Ensure current patched state points to the active msedgeservices host
+    assert "api.msedgeservices.com" in edge_tts.constants.WSS_URL
+    assert "Ocp-Apim-Subscription-Key" in edge_tts.constants.WSS_URL
+    assert (
+        edge_tts.communicate.WSS_URL  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+        == edge_tts.constants.WSS_URL
+    )
+    assert (
+        "speech.platform.bing.com" not in edge_tts.communicate.WSS_URL  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+    )
+
+    # Verify idempotency when re-invoked
+    _patch_edge_tts_endpoint()
+    assert "api.msedgeservices.com" in edge_tts.constants.WSS_URL
+    assert (
+        edge_tts.communicate.WSS_URL  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+        == edge_tts.constants.WSS_URL
+    )
+
+    # Verify date parser works across formats including GMT and numeric zone
+    timestamp1 = edge_tts.drm.DRM.parse_rfc2616_date("Mon, 12 Oct 2026 03:16:09 GMT")
+    assert timestamp1 is not None and timestamp1 > 0
+    timestamp2 = edge_tts.drm.DRM.parse_rfc2616_date("Mon, 12 Oct 2026 03:16:09 +0000")
+    assert timestamp2 == timestamp1
+    assert edge_tts.drm.DRM.parse_rfc2616_date("invalid-date") is None
+
+
 def run_self_tests():
     tests = [
         test_harness_metadata_opt_in_is_m365_only,
@@ -56172,6 +56255,7 @@ def run_self_tests():
         test_browser_inline_files_reappended_for_no_egress_families,
         test_m365_offload_large_tool_result_replaces_body_with_pointer,
         test_m365_offload_disabled_and_scoped_to_pending_results,
+        test_edge_tts_endpoint_patch,
     ]
 
     passed = 0
