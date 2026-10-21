@@ -22,10 +22,10 @@
 - **要求**：任何对 Python 文件的修改，必须在最终交付前运行并通过 Ruff 格式化与静态检查，确保风格统一且 **0 Error / 0 Warning**。
 - **执行命令**：
   ```bash
-  ruff format voice_edge.py
-  ruff check voice_edge.py
+  uv run ruff format voice_edge.py
+  uv run ruff check voice_edge.py
   # 或者全局检查
-  ruff check .
+  uv run ruff check .
   ```
 - **配置规则**：遵循 `pyproject.toml` 中的 `[tool.ruff.lint]` 配置（包含 `E`, `F`, `B`, `ASYNC`, `RUF` 等规则）。不要随意修改该规则集或使用 `# noqa` 逃避校验。
 
@@ -35,8 +35,6 @@
 - **机制**：`voice_edge.py` 顶部维护了一份 `环境变量登记表 (ENV REGISTRY)`，汇总了全局 197+ 个环境变量的默认值与定义代码行号。
 - **要求**：只要在代码中增删行、重构函数或新增环境变量，必须运行自动修复命令以重新通过 AST 对齐登记表行号：
   ```bash
-  python voice_edge.py --fix-env-registry
-  # 或
   uv run main --fix-env-registry
   ```
 - **输出确认**：确保看到输出 `ENV REGISTRY updated: ...` 或 `ENV REGISTRY already current: ...`。
@@ -47,11 +45,9 @@
 - **要求**：在交付前，必须运行全量内置自测，确保全部测试用例 100% 通过。
 - **执行命令**：
   ```bash
-  python voice_edge.py --self-test
-  # 或
   uv run main --self-test
   ```
-- **基线要求**：当前基线为 **115/115 passed**。不得出现任何 `❌ Self-test failed`。
+- **基线要求**：当前基线为 **119/119 passed**。不得出现任何 `❌ Self-test failed`。
 
 ---
 
@@ -63,14 +59,21 @@
 
 ---
 
-### 铁律 5：严禁未经允许擅自提交代码（No Unauthorized Git Commit）
-- **要求**：AI Agent **绝对禁止**在没有得到用户明确许可的情况下自动执行 `git commit`。
-- **规范**：所有修改在完成验证（通过自测与 Ruff）后，必须保留在工作区中，向用户汇报修改内容并等待用户指示或审查授权。
+### 铁律 5：严禁未经允许擅自改变 Git 文件状态（No Unauthorized Git Add / Stage / Unstage / Commit）
+- **核心禁令**：AI Agent **绝对禁止**在没有得到用户明确许可的情况下执行任何改变 Git 暂存区（Index）或提交历史的命令：
+  1. **严禁擅自 Unstage**：绝对禁止执行 `git restore --staged`、`git reset`、`git rm --cached` 等任何将用户已暂存（staged）文件取消暂存的操作！用户已暂存的内容由用户全权掌控，Agent 绝无权利触碰、撤销或改变其暂存状态。
+  2. **严禁擅自 Stage / Commit**：绝对禁止未经用户明确许可自动执行 `git add`、`git stage` 或 `git commit`。
+- **工作区规范**：Agent 自身的代码修改在完成验证（通过自测与 Ruff）后，保留在工作区中向用户汇报，等待用户指令。**严禁以「遵守未提交规则」为借口去擅自 unstage 用户已暂存的文件，严禁以任何理由改变任何文件的现有 Git 状态**。
 
 ---
 
 ### 铁律 6：绝对禁止暂存或提交 `.memory/` 目录
 - **要求**：`.memory/` 目录（包含每日记录、长期记忆 `MEMORY.md` 以及各专项业务设计规范如 OpenCode 缓存机制等）仅用于本地 Agent 运行上下文维护。**绝对不要执行 `git add .memory/` 或将其提交到版本控制中（DO NOT stage or commit `.memory/`）**。
+
+---
+
+### 铁律 7：绝对禁止自行启动或关闭脚本
+- **要求**：AI Agent **绝对禁止**在没有得到用户明确许可的情况下自动或停止 voice_edge.py 脚本。
 
 ---
 
@@ -81,19 +84,19 @@
 ```mermaid
 flowchart TD
     A[阅读需求与相关代码] --> B[实施修改]
-    B --> C[语法编译: python -m py_compile voice_edge.py]
-    C --> D[行号同步: python voice_edge.py --fix-env-registry]
-    D --> E[代码格式化: ruff format voice_edge.py]
-    E --> F[代码检查: ruff check voice_edge.py]
-    F --> G[全量自测: python voice_edge.py --self-test]
+    B --> C[语法编译: uv run python -m py_compile voice_edge.py]
+    C --> D[行号同步: uv run main --fix-env-registry]
+    D --> E[代码格式化: uv run ruff format voice_edge.py]
+    E --> F[代码检查: uv run ruff check voice_edge.py]
+    F --> G[全量自测: uv run main --self-test]
     G --> H{全部检查通过?}
     H -- 否 --> B
     H -- 是 --> I[更新本地 .memory/ 记录并向用户汇报]
 ```
 
-1. **语法检查**：`python -m py_compile voice_edge.py`
-2. **对齐行号**：`python voice_edge.py --fix-env-registry`
-3. **代码格式化**：`ruff format voice_edge.py`
-4. **代码检查**：`ruff check voice_edge.py`（必须 0 errors / 0 warnings）
-5. **自测验证**：`python voice_edge.py --self-test`（必须 115/115 通过）
-6. **记忆更新与汇报**：在本地 `.memory/YYYY-MM-DD.md` 记录重大架构变更与决策背景；向用户清晰汇报改动细节，**等待用户授权后方可提交**。
+1. **语法检查**：`uv run python -m py_compile voice_edge.py`
+2. **对齐行号**：`uv run main --fix-env-registry`
+3. **代码格式化**：`uv run ruff format voice_edge.py`
+4. **代码检查**：`uv run ruff check voice_edge.py`（必须 0 errors / 0 warnings）
+5. **自测验证**：`uv run main --self-test`（必须 119/119 通过）
+6. **记忆更新与汇报**：在本地 `.memory/YYYY-MM-DD.md` 记录重大架构变更与决策背景；保持所有修改严格处于**未暂存状态（unstaged）**，向用户清晰汇报改动细节，**严禁擅自执行 git add 或 git commit，等待用户指示与审查授权**。
