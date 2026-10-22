@@ -1,22 +1,16 @@
-# Voice Edge
+# Voice Edge - [A]LL [I]n One Script
 
-Voice Edge 是一个面向 macOS 的本地语音与 AI 平台，集成本地 MLX 语言与视觉模型、faster-whisper/apple 语音识别、Edge-TTS 流式语音合成、OpenAI 兼容 HTTP API、MCP 工具、macOS 原生听写、小米小爱同学集成，以及基于浏览器的 AI 模型。
+## 结合
 
-## 主要能力
-
-- 本地 MLX 语言与视觉推理
-- 基于 faster-whisper 的实时识别和文件转写
-- Edge-TTS 流式语音合成
-- OpenAI 兼容的聊天、转写、语音、嵌入、重排与 FIM 接口
-- MCP Streamable HTTP 工具
-- macOS 原生听写、HUD、全局快捷键与音频路由恢复
-- 小米小爱音箱集成
-- 基于浏览器的 DeepSeek、豆包、Qwen 和 Microsoft 365 Copilot 模型
-- OpenRouter 与 OpenCode（Zen/Go）模型中继，支持多 key 轮询
-- Firefox 辅助的本地认证同步
-- 面向 Microsoft 365 Copilot 附件的可选 SharePoint 上传能力
-
-Voice Edge 可作为本地语音助手、推理网关、MCP 服务器、转写服务、流式 TTS 网关或小爱同学后端使用。
+- mlx-vlm, mlx-lm
+- stt, tts
+- OpenAI API
+- dictation
+- Xiaomi XiaoAI
+- 浏览器模型: DeepSeek, Doubao, Qwen, M365 Copilot
+- OpenRouter, OpenCode
+- Firefox 扩展
+- Voice-Edge Harness[veh] 使用 Gemini app 里的 Argon 模型[任务模式]
 
 ## 系统要求
 
@@ -28,6 +22,7 @@ Voice Edge 可作为本地语音助手、推理网关、MCP 服务器、转写�
 - 输入监控权限
 - [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync)
 - [continue](https://github.com/woniuzfb/continue)
+- [voice edge harness](https://github.com/woniuzfb/voice-edge-harness)
 
 ## 安装
 
@@ -37,9 +32,11 @@ uv sync
 uv run python -m camoufox fetch
 ```
 
-使用浏览器模型时，请安装项目随附的 Firefox 认证同步插件。
+使用浏览器模型时，请安装上面的 Firefox 认证同步插件。
 
-通过 VS Code 使用 Voice Edge 时，请安装项目随附的 Continue 插件。
+通过 VS Code 使用 Voice Edge 时，请安装上面的 Continue 插件。
+
+需使用 Gemini app 里的 Argon 模型[任务模式]，请安装上面的 Voice-Edge Harness[veh]。
 
 ## 运行
 
@@ -374,6 +371,19 @@ models:
       - tool_use
       - image_input
     excludeToolOutputsFromTokenCount: true
+  - name: LLM:m365-chatgpt-6
+    provider: Local
+    model: LLM:m365-chatgpt-6
+    apiBase: http://localhost:5002/v1/
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 1050000
+      maxTokens: 128000
+    capabilities:
+      - tool_use
+      - image_input
+    excludeToolOutputsFromTokenCount: true
   - name: LLM:m365-chatgpt-5.6
     provider: Local
     model: LLM:m365-chatgpt-5.6
@@ -518,6 +528,7 @@ export VE_DEEPSEEK_LOG_STREAM_CHUNKS=1
 export VE_M365_LOG_DEBUG=1
 export VE_M365_LOG_RELAY_TRACE=1
 export VE_M365_LOG_ATTACHMENT=1
+export VE_GEMINI_LOG_DEBUG=1
 ```
 
 分享日志前，必须移除 Cookie、访问令牌、刷新令牌、Authorization Header 和临时下载凭据等敏感信息。

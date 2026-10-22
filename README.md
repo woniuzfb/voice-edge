@@ -1,22 +1,16 @@
-# Voice Edge
+# Voice Edge - [A]LL [I]n One Script
 
-Voice Edge is a macOS-focused local voice and AI platform. It combines local MLX language and vision models, faster-whisper/apple speech recognition, streaming Edge-TTS synthesis, OpenAI-compatible HTTP APIs, MCP tools, native macOS dictation, Xiaomi XiaoAI integration, and browser-backed AI providers.
+## Combines
 
-## Highlights
-
-- Local MLX language and vision inference
-- Real-time and file-based speech recognition with faster-whisper
-- Streaming speech synthesis with Edge-TTS
-- OpenAI-compatible chat, transcription, speech, embedding, rerank, and FIM endpoints
-- MCP Streamable HTTP tools
-- Native macOS dictation, HUD, keyboard shortcuts, and audio-route recovery
-- Xiaomi XiaoAI smart-speaker integration
-- Browser-backed DeepSeek, Doubao, Qwen, and Microsoft 365 Copilot models
-- OpenRouter and OpenCode (Zen/Go) model relays with multi-key rotation
-- Firefox-assisted local authentication synchronization
-- Optional SharePoint uploads for Microsoft 365 Copilot attachments
-
-Voice Edge can be used as a local voice assistant, inference gateway, MCP server, transcription service, streaming TTS gateway, or Xiaomi XiaoAI backend.
+- mlx-vlm and mlx-lm
+- stt and tts
+- OpenAI API
+- dictation
+- Xiaomi XiaoAI
+- Browser-backed models: DeepSeek, Doubao, Qwen, and M365 Copilot
+- OpenRouter and OpenCode
+- Firefox extension
+- Gemini app Argon models[task mode] used in Voice-Edge Harness[veh]
 
 ## Requirements
 
@@ -28,6 +22,7 @@ Voice Edge can be used as a local voice assistant, inference gateway, MCP server
 - Input Monitoring permission
 - [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync)
 - [continue](https://github.com/woniuzfb/continue)
+- [voice edge harness](https://github.com/woniuzfb/voice-edge-harness)
 
 ## Installation
 
@@ -37,9 +32,11 @@ uv sync
 uv run python -m camoufox fetch
 ```
 
-Install the included Firefox authentication-sync extension when using browser-backed providers.
+Install the Firefox authentication-sync extension when using browser-backed providers.
 
-Install the included Continue extension package when using Voice Edge through VS Code.
+Install the Continue extension when using Voice Edge through VS Code.
+
+Install the Voice-Edge harness[veh] when using Gemini Argon models[task mode].
 
 ## Running
 
@@ -380,6 +377,19 @@ models:
       - tool_use
       - image_input
     excludeToolOutputsFromTokenCount: true
+  - name: LLM:m365-chatgpt-6
+    provider: Local
+    model: LLM:m365-chatgpt-6
+    apiBase: http://localhost:5002/v1/
+    roles:
+      - chat
+    defaultCompletionOptions:
+      contextLength: 1050000
+      maxTokens: 128000
+    capabilities:
+      - tool_use
+      - image_input
+    excludeToolOutputsFromTokenCount: true
   - name: LLM:m365-chatgpt-5.6
     provider: Local
     model: LLM:m365-chatgpt-5.6
@@ -526,6 +536,7 @@ export VE_DEEPSEEK_LOG_STREAM_CHUNKS=1
 export VE_M365_LOG_DEBUG=1
 export VE_M365_LOG_RELAY_TRACE=1
 export VE_M365_LOG_ATTACHMENT=1
+export VE_GEMINI_LOG_DEBUG=1
 ```
 
 Do not share logs until secrets such as cookies, access tokens, refresh tokens, authorization headers, and temporary download credentials have been removed.
