@@ -35,6 +35,7 @@ dependencies = [
     "pycryptodome>=3.23.0",
     "modelscope-hub>=0.2.0",
     "mlx-lm",
+    "h2>=4.1",
 ]
 
 [build-system]
