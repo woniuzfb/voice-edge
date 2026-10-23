@@ -58,7 +58,6 @@ import zlib
 from builtins import BaseExceptionGroup
 from collections import OrderedDict, deque
 from dataclasses import dataclass, field, replace
-from types import SimpleNamespace
 from datetime import datetime
 from enum import Enum
 from http.cookies import SimpleCookie
@@ -184,234 +183,234 @@ _patch_edge_tts_endpoint()
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2554
-#    VE_VLM_KV_BITS                         3.5                                          L537
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L542
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L547
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L548
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2137
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2142
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2145
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2149
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2158
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2166
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2221
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2672
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42717
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43366
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43378
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19346
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19343
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19309
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19324
-#    AUTH_SYNC_ENABLED                      "1"                                          L19297
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19298
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2553
+#    VE_VLM_KV_BITS                         3.5                                          L536
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L541
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L546
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L547
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2136
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2141
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2144
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2148
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2157
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2165
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2220
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2671
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42716
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43365
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43377
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19345
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19342
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19308
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19323
+#    AUTH_SYNC_ENABLED                      "1"                                          L19296
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19297
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L426
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L427
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L428
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L429
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L430
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L434
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L438
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L439
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L440
-#    VE_GEMINI_LOG_DEBUG                        "0"                                      L441
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L442
-#    VE_HUD_LOG_DEBUG                           "0"                                      L443
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L444
-#    VE_KWS_LOG_DEBUG                           "0"                                      L445
-#    VE_LLM_LOG_DEBUG                           "0"                                      L446
-#    VE_M365_LOG_DEBUG                          "0"                                      L447
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L448
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L452
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L456
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L457
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L458
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L459
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L460
-#    VE_TTS_LOG_DEBUG                           "0"                                      L461
-#    VE_VLM_LOG_DEBUG                           "0"                                      L462
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L463
+#    VE_APP_LOG_DEBUG                           "0"                                      L425
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L426
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L427
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L428
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L429
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L433
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L437
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L438
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L439
+#    VE_GEMINI_LOG_DEBUG                        "0"                                      L440
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L441
+#    VE_HUD_LOG_DEBUG                           "0"                                      L442
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L443
+#    VE_KWS_LOG_DEBUG                           "0"                                      L444
+#    VE_LLM_LOG_DEBUG                           "0"                                      L445
+#    VE_M365_LOG_DEBUG                          "0"                                      L446
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L447
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L451
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L455
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L456
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L457
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L458
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L459
+#    VE_TTS_LOG_DEBUG                           "0"                                      L460
+#    VE_VLM_LOG_DEBUG                           "0"                                      L461
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L462
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42603
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42626
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42653
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42712
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43255
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43258
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43266
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43278
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43280
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43289
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43295
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43301
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43317
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43322
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43329
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43336
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43345
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43352
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43400
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45168
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45169
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45170
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42602
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42625
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42652
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42711
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43254
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43257
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43265
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43277
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43279
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43288
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43294
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43300
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43316
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43321
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43328
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43335
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43344
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43351
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43399
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45167
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45168
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45169
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14853
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14855
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L14856
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14862
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14864
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14867
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14875
-#    QWEN_COOKIE_HEADER                     ""                                           L14879
-#    QWEN_TOKENS                            ""                                           L14887
-#    QWEN_TOKEN                             ""                                           L14888
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14852
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14854
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L14855
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14861
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14863
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14866
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14874
+#    QWEN_COOKIE_HEADER                     ""                                           L14878
+#    QWEN_TOKENS                            ""                                           L14886
+#    QWEN_TOKEN                             ""                                           L14887
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1738
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16522
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16523
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16525
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16527
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16529
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16532
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16535
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16538
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16659
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16662
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1737
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16521
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16522
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16524
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16526
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16528
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16531
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16534
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16537
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16658
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16661
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19207
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19208
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19214
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19215
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19223
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19225
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19228
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19230
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19232
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19236
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19263
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19266
-#    DOUBAO_WEB_AID                         "497858"                                     L19268
-#    DOUBAO_WEB_REGION                      "CN"                                         L19269
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19270
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19271
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19273
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19322
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19314
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19624
-#    DOUBAO_SESSION_IDS                     ""                                           L19666
-#    DOUBAO_SESSION_ID                      ""                                           L19670
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20181
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20190
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20372
-#    DOUBAO_SID_TT                          ""                                           L20375
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19206
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19207
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19213
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19214
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19222
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19224
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19227
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19229
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19231
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19235
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19262
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19265
+#    DOUBAO_WEB_AID                         "497858"                                     L19267
+#    DOUBAO_WEB_REGION                      "CN"                                         L19268
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19269
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19270
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19272
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19321
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19313
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19623
+#    DOUBAO_SESSION_IDS                     ""                                           L19665
+#    DOUBAO_SESSION_ID                      ""                                           L19669
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20180
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20189
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20371
+#    DOUBAO_SID_TT                          ""                                           L20374
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24759
-#    SHAREPOINT_HOME_URL                    ""                                           L24760
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24761
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24762
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24789
-#    M365_BRIDGE_PORT                       "5003"                                       L24790
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24791
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24792
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24794
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24797
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L24800
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24808
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L24810
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24830
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24837
-#    M365_CONV_MAP_MAX                      "1024"                                       L25006
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25653
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25671
+#    M365_ENTRY_URL                         ""                                           L24758
+#    SHAREPOINT_HOME_URL                    ""                                           L24759
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24760
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24761
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24788
+#    M365_BRIDGE_PORT                       "5003"                                       L24789
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24790
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24791
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24793
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24796
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24799
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24807
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L24809
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24829
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24836
+#    M365_CONV_MAP_MAX                      "1024"                                       L25005
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25652
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25670
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L37941
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38151
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38213
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38235
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38242
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38337
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38339
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38343
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39536
-#    MI_USER                                ""                                           L39262
-#    MI_PASS                                ""                                           L39288
-#    XIAOAI_HARDWARE                        "LX06"                                       L39290
-#    MI_DID                                 ""                                           L39292
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39295
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39299
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39302
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39305
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39311
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39322
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39327
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39308
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39318
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39338
-#    XIAOAI_VOICE                           "zh"                                         L39340
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39342
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39345
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39348
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39351
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39355
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39359
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39364
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39369
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39374
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39379
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39384
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39392
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39397
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39402
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39407
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39412
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39417
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39422
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39425
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39429
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39433
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39437
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39442
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39447
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39451
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39454
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39457
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39460
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39463
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39466
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39469
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39472
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39479
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39485
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39489
+#    XIAOAI_ENABLED                         "0"                                          L37940
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38150
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38212
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38234
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38241
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38336
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38338
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38342
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39535
+#    MI_USER                                ""                                           L39261
+#    MI_PASS                                ""                                           L39287
+#    XIAOAI_HARDWARE                        "LX06"                                       L39289
+#    MI_DID                                 ""                                           L39291
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39294
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39298
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39301
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39304
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39310
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39321
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39326
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39307
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39317
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39337
+#    XIAOAI_VOICE                           "zh"                                         L39339
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39341
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39344
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39347
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39350
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39354
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39358
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39363
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39368
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39373
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39378
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39383
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39391
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39396
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39401
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39406
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39411
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39416
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39421
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39424
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39428
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39432
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39436
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39441
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39446
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39450
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39453
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39456
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39459
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39462
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39465
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39468
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39471
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39478
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39484
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39488
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L47930
-#    VE_OPENCODE_API_KEYS                   ""                                           L48855
-#    VE_OPENCODE_FREE                       "1"                                          L48893
-#    VE_OPENCODE_GO                         "0"                                          L48898
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L58733
-#    VE_GEMINI_API_KEYS                     ""                                           L58737
-#    VE_GEMINI_BACKEND                      "auto"                                       L58756
-#    VE_GEMINI_PROJECT_ID                   ""                                           L58763
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L53601
-#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1451
-#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1452
-#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1453
-#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1454
-#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1455
-#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1456
-#    VE_GEMINI_APP_BINARY                   ""                                           L1476
-#    VE_GEMINI_AGY_BINARY                   ""                                           L1491
-#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1509
+#    VE_OPENROUTER_API_KEYS                 ""                                           L47929
+#    VE_OPENCODE_API_KEYS                   ""                                           L48854
+#    VE_OPENCODE_FREE                       "1"                                          L48892
+#    VE_OPENCODE_GO                         "0"                                          L48897
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L58865
+#    VE_GEMINI_API_KEYS                     ""                                           L58869
+#    VE_GEMINI_BACKEND                      "auto"                                       L58888
+#    VE_GEMINI_PROJECT_ID                   ""                                           L58895
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L53699
+#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1450
+#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1451
+#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1452
+#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1453
+#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1454
+#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1455
+#    VE_GEMINI_APP_BINARY                   ""                                           L1475
+#    VE_GEMINI_AGY_BINARY                   ""                                           L1490
+#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1508
 #
 # 合计 212 个唯一环境变量。
 # ============================================================================
@@ -43370,7 +43369,7 @@ VE_TTS_PREWARM_BEFORE_ANSWER = (
 # 覆盖 _run_apple_session.finally 覆盖不到的路径(典型: M365 -> MCP speak 工具 -> speak_local_async,
 # 不经唤醒->回答, apple KWS 只是被动让麦)。开启后: 任意 TTS 入口(speak_local_async)在建输出流前,
 # 先置 _TTS_PREEMPT_KWS 让 apple KWS 主动让麦释放 HFP、等切 A2DP 稳定, 再把流一次建在 A2DP,
-# 消除"HFP 建流 + 释麦切 A2DP recreate"的两次建流。已实测(2026-08): MCP speak 触发仅 1 次建流、
+# 消除"HFP 建流 + 释麦切 A2DP recreate"的两次建流。已实测: MCP speak 触发仅 1 次建流、
 # 内容零丢失、播完 KWS 正常恢复监听(session listening), 故转为默认开。
 # 代价: 首次 TTS(冷启动)会多等 KWS 让麦 + route 稳(~<1s); 且此期间 KWS 让麦短暂不监听唤醒词。热流
 # (consumer 已运行)零开销。动到 KWS 让麦体系, 若发现唤醒被吞/恢复慢, 设 VE_TTS_KWS_PREEMPT_PREWARM=0
@@ -51220,7 +51219,9 @@ def _opencode_converter(
     raise OpenCodeStreamError(f"Unsupported OpenCode upstream protocol: {protocol}")
 
 
-def _opencode_sse_response(stream: AsyncGenerator[str, None]) -> StreamingResponse:
+def _opencode_sse_response(
+    stream: AsyncGenerator[str, None] | AsyncGenerator[bytes, None],
+) -> StreamingResponse:
     return StreamingResponse(
         stream,
         media_type="text/event-stream",
@@ -52051,12 +52052,14 @@ def _robin_build_schema_pb(schema: dict[str, Any] | None) -> bytes:
 
 def _robin_build_function_declaration_pb(tool: dict[str, Any]) -> bytes:
     """Encode an OpenAI tool or functionDeclaration into a FunctionDeclaration protobuf message."""
-    fn = tool.get("function") if isinstance(tool.get("function"), dict) else tool
+    raw_fn = tool.get("function")
+    fn: dict[str, Any] = raw_fn if isinstance(raw_fn, dict) else tool
     name = str(fn.get("name") or "tool").strip() or "tool"
     desc = str(fn.get("description") or "").strip()
-    params = (
-        fn.get("parameters")
-        if isinstance(fn.get("parameters"), dict)
+    raw_params = fn.get("parameters")
+    params: dict[str, Any] = (
+        raw_params
+        if isinstance(raw_params, dict)
         else {"type": "object", "properties": {}}
     )
     out = bytearray()
@@ -52495,8 +52498,9 @@ def _robin_build_execute_remote_tools_result_frames(
         raw_out = item.get("output")
         out_str = _robin_truncate_tool_output(_robin_stringify_tool_output(raw_out))
         is_err = _robin_is_dsh_tool_error(out_str)
-        orig_args = (
-            item.get("_orig_args") if isinstance(item.get("_orig_args"), dict) else {}
+        raw_orig_args = item.get("_orig_args")
+        orig_args: dict[str, Any] = (
+            raw_orig_args if isinstance(raw_orig_args, dict) else {}
         )
         mcp_server = str(item.get("_mcp_server") or "").strip()
         mcp_tool = str(item.get("_mcp_tool") or "").strip()
@@ -53255,6 +53259,100 @@ class _RobinThoughtProjector:
         delta = full[self.delivered_char_offset :]
         self.delivered_char_offset = len(full)
         return delta
+
+
+# Interactive ActionCards reach the client as a marker inside the plain answer text
+# (`.1003.1.1.2.1`) — `http://googleusercontent.com/action_card_content/<id>` — not as the
+# `.1003.1.1.5` protobuf card field. A headless relay can never answer one, and the server
+# ends the turn as soon as it emits the marker, so the marker must never reach the caller
+# as the answer: it is stripped and replaced with an explicit, actionable closure.
+GEMINI_ROBIN_ACTION_CARD_MARKER = "http://googleusercontent.com/action_card_content/"
+
+_ROBIN_ACTION_CARD_CLOSURE = (
+    "[服务端返回了需要人工点击的授权卡片，本无头中继无法代为确认；"
+    "请用客户端内置工具（run_command / write_to_file 等）重新执行该操作。]"
+)
+
+
+def _robin_strip_action_card_markers(text: str) -> tuple[str, bool]:
+    """Strip every `action_card_content` marker from a *complete* text.
+
+    Returns `(clean_text, seen)`. Only use this on whole answers (terminal snapshots);
+    incremental deltas go through `_RobinActionCardFilter` so a marker split across two
+    chunks cannot leak its prefix.
+    """
+    if GEMINI_ROBIN_ACTION_CARD_MARKER not in text:
+        return text, False
+    out: list[str] = []
+    seen = False
+    cursor = 0
+    while True:
+        hit = text.find(GEMINI_ROBIN_ACTION_CARD_MARKER, cursor)
+        if hit < 0:
+            out.append(text[cursor:])
+            break
+        out.append(text[cursor:hit])
+        cursor = hit + len(GEMINI_ROBIN_ACTION_CARD_MARKER)
+        while cursor < len(text) and (text[cursor].isalnum() or text[cursor] in "-_"):
+            cursor += 1
+        seen = True
+    return "".join(out), seen
+
+
+def _robin_clean_action_card_text(text: str) -> str:
+    """Return a readable, marker-free card description, or `""` when the payload is noise.
+
+    A `.1003.1.1.5` card can embed the same `action_card_content` URL plus protobuf
+    control bytes; surfacing that verbatim is as useless to the caller as the marker
+    itself.
+    """
+    clean, _seen = _robin_strip_action_card_markers(text)
+    printable = "".join(ch if ch.isprintable() or ch in "\n\t" else " " for ch in clean)
+    collapsed = " ".join(printable.split())
+    return collapsed if len(collapsed) >= 8 else ""
+
+
+class _RobinActionCardFilter:
+    """Strip `action_card_content` markers from streamed answer deltas.
+
+    Deltas arrive in arbitrary slices, so a marker can straddle two chunks: a trailing
+    slice that could still grow into a marker is held back until the next delta resolves
+    it.
+    """
+
+    def __init__(self) -> None:
+        self._pending = ""
+        self.seen = False
+
+    def feed(self, delta: str) -> str:
+        if not delta:
+            return ""
+        buf = self._pending + delta
+        self._pending = ""
+        out: list[str] = []
+        cursor = 0
+        while True:
+            hit = buf.find(GEMINI_ROBIN_ACTION_CARD_MARKER, cursor)
+            if hit < 0:
+                break
+            out.append(buf[cursor:hit])
+            cursor = hit + len(GEMINI_ROBIN_ACTION_CARD_MARKER)
+            while cursor < len(buf) and (buf[cursor].isalnum() or buf[cursor] in "-_"):
+                cursor += 1
+            self.seen = True
+        tail = buf[cursor:]
+        hold = 0
+        for size in range(
+            min(len(tail), len(GEMINI_ROBIN_ACTION_CARD_MARKER) - 1), 0, -1
+        ):
+            if GEMINI_ROBIN_ACTION_CARD_MARKER.startswith(tail[-size:]):
+                hold = size
+                break
+        if hold:
+            self._pending = tail[-hold:]
+            tail = tail[:-hold]
+        out.append(tail)
+        return "".join(out)
 
 
 class _RobinAnswerProjector:
@@ -54169,7 +54267,8 @@ def _robin_canonicalize_assistant_turn_for_key(msg: dict[str, Any]) -> str:
         for tc in tcs:
             if not isinstance(tc, dict):
                 continue
-            fn = tc.get("function") if isinstance(tc.get("function"), dict) else tc
+            raw_fn = tc.get("function")
+            fn: dict[str, Any] = raw_fn if isinstance(raw_fn, dict) else tc
             fn_name = str(fn.get("name") or "").strip()
             raw_args = fn.get("arguments")
             if isinstance(raw_args, str):
@@ -54247,7 +54346,8 @@ def _robin_conversation_keys(
             lower_h.get("x-session-id") or lower_h.get("x-conversation-id") or ""
         )
     if not explicit_id and isinstance(body, dict):
-        meta = body.get("metadata") if isinstance(body.get("metadata"), dict) else {}
+        raw_meta = body.get("metadata")
+        meta: dict[str, Any] = raw_meta if isinstance(raw_meta, dict) else {}
         explicit_id = str(
             body.get("session_id")
             or body.get("conversation_id")
@@ -54660,7 +54760,6 @@ def _robin_normalize_dsh_tools(tools: Sequence[Any] | None) -> list[dict[str, An
         return []
     normalized: list[dict[str, Any]] = []
     seen: set[str] = set()
-    destructive_names = {"bash", "write", "edit", "write_file", "delete"}
     for item in tools:
         if not isinstance(item, dict):
             continue
@@ -54701,9 +54800,12 @@ def _robin_normalize_dsh_tools(tools: Sequence[Any] | None) -> list[dict[str, An
             {
                 "name": name,
                 "description": desc_final,
-                "toolAnnotations": {
-                    "destructiveHint": name.lower() in destructive_names
-                },
+                # Never declare `destructiveHint: true`. Measured: the server
+                # inserts a "Run <tool>?" consent card for every `execute_mcp` call that
+                # lands on an MCP tool declared destructive, and a headless relay cannot
+                # answer it — the turn then ends with the card marker as the answer.
+                # Destructive operations stay governed by DSH's own sandbox + approval.
+                "toolAnnotations": {"destructiveHint": False},
             }
         )
     return normalized
@@ -55337,7 +55439,7 @@ class _RobinToolLedger:
         if self.local_tool_names and dsh_name not in self.local_tool_names:
             err_msg = (
                 f"Tool '{target_name}' is not available in this DSH client environment. "
-                "Please use available tools via client:execute_mcp with ServerName='dsh'."
+                "Use one of the tools returned by list_mcp."
             )
             if orig_name == "execute_mcp":
                 err_dict: dict[str, Any] = {
@@ -56432,6 +56534,8 @@ class _RobinStreamDecoder:
         self.tool_call_count = 0
         self.emitted_reasoning_chars = 0
         self.emitted_answer_chars = 0
+        self.emitted_answer_text = ""
+        self.action_card_filter = _RobinActionCardFilter()
         self.model_attribution_emitted = False
 
     def _resolve_server_model_banner(self) -> str:
@@ -56595,9 +56699,14 @@ class _RobinStreamDecoder:
         # 4. Project answer delta from AnswerProjector
         if parsed["answer_text"]:
             ans_delta = self.run.answer_projector.update_snapshot(parsed["answer_text"])
-            if ans_delta:
-                self.emitted_answer_chars += len(ans_delta)
-                out.append(self._make_chunk({"content": ans_delta}))
+            # An ActionCard arrives as a marker inside the answer text; strip it before it
+            # can reach the caller, and remember that it happened so the turn can be
+            # closed with an actionable sentence instead of a bare googleusercontent URL.
+            visible_delta = self.action_card_filter.feed(ans_delta)
+            if visible_delta:
+                self.emitted_answer_chars += len(visible_delta)
+                self.emitted_answer_text += visible_delta
+                out.append(self._make_chunk({"content": visible_delta}))
 
         # 5. Inline Ext 1011 tool calls (only when server sends inline RobinOpRequestStream)
         if parsed["inline_tool_calls"]:
@@ -56606,23 +56715,33 @@ class _RobinStreamDecoder:
             out.extend(self._ingest_raw_tool_calls(parsed["inline_tool_calls"]))
 
         if parsed["is_completed"]:
-            # Fallback if server completed turn with an unexpected ActionCard and no answer text
+            # Close a turn the server ended on an interactive card. The card may arrive as
+            # the `.1003.1.1.5` field or as a marker inside the answer text; either way the
+            # caller would otherwise be left with nothing (or with a bare URL).
+            card_seen = bool(
+                parsed.get("action_card_text")
+                or parsed.get("has_action_card")
+                or self.action_card_filter.seen
+            )
             if (
-                not self.run.answer_projector.committed_text
+                not self.emitted_answer_text.strip()
                 and not self.pending_tool_calls
-                and (parsed.get("action_card_text") or parsed.get("has_action_card"))
+                and card_seen
             ):
-                card_txt = str(parsed.get("action_card_text") or "").strip()
+                card_txt = _robin_clean_action_card_text(
+                    str(parsed.get("action_card_text") or "")
+                )
                 fallback_card = (
                     f"[服务端返回确认卡片: {card_txt}]"
                     if card_txt
-                    else "[服务端请求交互确认，已自动记录；请直接继续或在指令中明确参数]"
+                    else _ROBIN_ACTION_CARD_CLOSURE
                 )
-                ans_delta = self.run.answer_projector.update_snapshot(fallback_card)
-                if ans_delta:
-                    out.extend(self._maybe_emit_model_attribution_chunk())
-                    self.emitted_answer_chars += len(ans_delta)
-                    out.append(self._make_chunk({"content": ans_delta}))
+                # Emit directly: the projector already committed the (filtered) marker, so
+                # its append-only snapshot can never be replaced by the closure text.
+                out.extend(self._maybe_emit_model_attribution_chunk())
+                self.emitted_answer_chars += len(fallback_card)
+                self.emitted_answer_text += fallback_card
+                out.append(self._make_chunk({"content": fallback_card}))
             self.is_completed = True
             self.run.execution_state = "TERMINAL"
             self.run.outcome_state = "SUCCEEDED"
@@ -57246,7 +57365,9 @@ class _RobinHTTP2Mux:
         sid = getattr(event, "stream_id", None)
         state = self.streams.get(sid) if sid is not None else None
         if isinstance(event, h2.events.DataReceived):
-            self.conn.acknowledge_received_data(event.flow_controlled_length, sid)
+            self.conn.acknowledge_received_data(
+                event.flow_controlled_length, event.stream_id
+            )
             if state is not None:
                 state.queue.put_nowait(bytes(event.data))
         elif isinstance(event, h2.events.ResponseReceived):
@@ -57928,13 +58049,24 @@ async def _robin_reconcile_via_list_turns(
                     decoder._make_chunk({"reasoning_content": thought_delta})
                 )
         if matched.get("answer_text"):
-            ans_delta = decoder.run.answer_projector.update_snapshot(
+            # Terminal snapshot: strip any ActionCard marker before projecting, then fall
+            # back to the closure sentence when the card was the whole answer.
+            clean_answer, card_seen = _robin_strip_action_card_markers(
                 str(matched["answer_text"])
             )
+            ans_delta = decoder.run.answer_projector.update_snapshot(clean_answer)
             if ans_delta:
                 out_chunks.extend(decoder._maybe_emit_model_attribution_chunk())
                 decoder.emitted_answer_chars += len(ans_delta)
+                decoder.emitted_answer_text += ans_delta
                 out_chunks.append(decoder._make_chunk({"content": ans_delta}))
+            if card_seen and not decoder.emitted_answer_text.strip():
+                out_chunks.extend(decoder._maybe_emit_model_attribution_chunk())
+                decoder.emitted_answer_chars += len(_ROBIN_ACTION_CARD_CLOSURE)
+                decoder.emitted_answer_text += _ROBIN_ACTION_CARD_CLOSURE
+                out_chunks.append(
+                    decoder._make_chunk({"content": _ROBIN_ACTION_CARD_CLOSURE})
+                )
         if matched.get("is_completed"):
             decoder.is_completed = True
             decoder.eod = True
@@ -57970,7 +58102,7 @@ async def _robin_open_execute_remote_tools_stream(
     if server_token:
         headers["X-Server-Token"] = server_token
     if _robin_session_post_is_custom(session):
-        resp = await session.post(
+        resp: Any = await session.post(
             GEMINI_ROBIN_EXECUTE_REMOTE_TOOLS_URL,
             data=payload,
             headers=headers,
@@ -66724,17 +66856,17 @@ def test_robin_ert_dispatch_and_tool_result_resume():
         session_key="resume_key",
         boot_key="resume_key",
         full_key="",
-        http_session=None,
+        http_session=cast(Any, None),
         response=None,
         iterator=None,
-        decoder=_DecoderStub(),
+        decoder=cast(Any, _DecoderStub()),
         run=run,
         conversation_id="c_live_conv",
         ert_response=ert,
     )
     actor.pending_tool_calls = list(actor.decoder.pending_tool_calls)
     orig_save_run = _GEMINI_DSH_STORE.save_run
-    _GEMINI_DSH_STORE.save_run = lambda _run: None
+    _GEMINI_DSH_STORE.save_run = lambda run: None
     try:
         asyncio.run(
             actor.submit_tool_results(
@@ -66778,6 +66910,158 @@ def test_robin_ert_dispatch_and_tool_result_resume():
     assert run.attachment_state == "STREAMING"
 
 
+def test_robin_action_card_marker_is_closed():
+    """A card marker inside the answer text must never be delivered as the answer.
+
+    Real turn: the whole assistant answer was
+    `\\n\\nhttp://googleusercontent.com/action_card_content/<id>` because the server turned a
+    shell tool call into a "Run bash?" consent card. The relay only understood the
+    `.1003.1.1.5` card field, so the marker reached DSH verbatim and the turn ended there.
+    """
+    card_url = "http://googleusercontent.com/action_card_content/14288659078536846835"
+
+    def frame(answer: str, *, completed: bool = True) -> bytes:
+        candidate = _pb_bytes_field(1, "rc_card")
+        if answer:
+            candidate += _pb_bytes_field(2, _pb_bytes_field(1, answer))
+        if completed:
+            candidate += _pb_varint_field(19, 2)
+        payload = _pb_bytes_field(
+            1003, _pb_bytes_field(1, _pb_bytes_field(1, candidate))
+        )
+        return b"\x00" + len(payload).to_bytes(4, "big") + payload
+
+    def content(decoder: _RobinStreamDecoder, raw: bytes) -> str:
+        return "".join(
+            chunk["choices"][0]["delta"].get("content") or ""
+            for chunk in decoder.feed_bytes(raw)
+        )
+
+    # (1) Card as the whole answer -> actionable closure, never the marker.
+    alone = _RobinStreamDecoder("chatcmpl-card-only", 0, "gemini:gemini-4-argon")
+    alone_text = content(alone, frame("\n\n" + card_url))
+    assert "action_card_content" not in alone_text
+    assert "授权" in alone_text and "run_command" in alone_text
+    assert alone.is_completed
+
+    # (2) Marker appended to a real answer -> the answer survives, the marker does not.
+    tail = _RobinStreamDecoder("chatcmpl-card-tail", 0, "gemini:gemini-4-argon")
+    assert (
+        content(tail, frame("改动都对。" + "\n\n" + card_url)).strip() == "改动都对。"
+    )
+
+    # (3) Marker split across two snapshots -> not even its prefix may leak.
+    split = _RobinStreamDecoder("chatcmpl-card-split", 0, "gemini:gemini-4-argon")
+    head = "\n\nhttp://googleusercontent.com/action_card_"
+    first = content(split, frame(head, completed=False))
+    second = content(split, frame(head + "content/14288659078536846835"))
+    assert "googleusercontent" not in first + second
+    assert "http://" not in first + second
+
+    # (4) The legacy `.1003.1.1.5` card field keeps closing with its own text.
+    def legacy_frame(card_text: str) -> bytes:
+        candidate = _pb_bytes_field(1, "rc_legacy") + _pb_bytes_field(5, card_text)
+        candidate += _pb_varint_field(19, 2)
+        payload = _pb_bytes_field(
+            1003, _pb_bytes_field(1, _pb_bytes_field(1, candidate))
+        )
+        return b"\x00" + len(payload).to_bytes(4, "big") + payload
+
+    legacy = _RobinStreamDecoder("chatcmpl-card-legacy", 0, "gemini:gemini-4-argon")
+    legacy_text = content(legacy, legacy_frame("是否允许执行 git status？"))
+    assert "是否允许执行 git status" in legacy_text
+
+    # (5) A `.1003.1.1.5` card may embed the same marker plus protobuf noise: the
+    # readable part must survive, the marker and the control bytes must not.
+    noisy_card = _RobinStreamDecoder("chatcmpl-card-noisy", 0, "gemini:gemini-4-argon")
+    noisy_text = content(
+        noisy_card,
+        legacy_frame(
+            "G\nEhttp://googleusercontent.com/action_card_content/13805222009531777598"
+            "\t\nRun write? Allow Gemini to run write on your machine?"
+        ),
+    )
+    assert "googleusercontent" not in noisy_text
+    assert "Run write?" in noisy_text
+    assert "\t" not in noisy_text
+
+
+def test_robin_mcp_catalog_declares_nothing_destructive():
+    """The measured card trigger is `destructiveHint`: advertise none of it.
+
+    Measured: the server asks for GUI consent on every `execute_mcp` call that
+    reaches an MCP tool advertised `destructiveHint: true` — shell, write and edit alike,
+    read-only commands included. The same call dispatches once that flag is false (probes
+    D/E/F), and native tools never consult the catalog at all. A headless relay cannot
+    click the card, so nothing may be declared destructive; the per-operation approval
+    stays with DSH's sandbox and `Approval policy`.
+    """
+    tools = [
+        {
+            "type": "function",
+            "function": {"name": "bash", "description": "Run a shell command."},
+        },
+        {
+            "type": "function",
+            "function": {"name": "read", "description": "Read a file."},
+        },
+        {
+            "type": "function",
+            "function": {"name": "write", "description": "Write a file."},
+        },
+    ]
+    ledger = _RobinToolLedger("run_catalog", tools)
+    advertised = {item["name"] for item in ledger.normalized_mcp_tools}
+    assert advertised == {"bash", "read", "write"}, advertised
+    assert ledger.local_tool_names == {"bash", "read", "write"}
+    # Any `destructiveHint: true` entry makes the server demand GUI consent.
+    assert all(
+        item["toolAnnotations"]["destructiveHint"] is False
+        for item in ledger.normalized_mcp_tools
+    ), ledger.normalized_mcp_tools
+
+    # Native run_command still maps onto DSH's bash.
+    inv, frame_bytes = ledger.register_ert_call(
+        {
+            "name": "client:run_command",
+            "id": "call_native_shell",
+            "args": {"CommandLine": "echo ok > /tmp/x", "Cwd": "/tmp"},
+        }
+    )
+    assert frame_bytes is None, "native shell call must not be answered locally"
+    assert inv is not None and inv.dsh_tool_name == "bash"
+
+    # The same tool through the MCP bridge is a normal dispatch, not a local refusal.
+    mcp_inv, mcp_frame = ledger.register_ert_call(
+        {
+            "name": "client:execute_mcp",
+            "id": "call_mcp_shell",
+            "args": {
+                "ServerName": "dsh",
+                "ToolName": "bash",
+                "Arguments": {"command": "ls /tmp"},
+            },
+        }
+    )
+    assert mcp_frame is None and mcp_inv is not None
+    assert mcp_inv.dsh_tool_name == "bash" and mcp_inv.mcp_tool == "bash"
+
+    # A tool DSH never declared is still refused locally with guidance.
+    unknown_inv, unknown_frame = ledger.register_ert_call(
+        {
+            "name": "client:execute_mcp",
+            "id": "call_unknown",
+            "args": {
+                "ServerName": "dsh",
+                "ToolName": "teleport",
+                "Arguments": {},
+            },
+        }
+    )
+    assert unknown_inv is None and unknown_frame is not None
+    assert b"list_mcp" in unknown_frame
+
+
 def test_robin_session_title_ignores_provisional_query_echo():
     """The server echoes the query as a provisional title; only the generated one may reach DSH."""
     query = "请读取我工作区里的 README.md 的前五行并原样告诉我，必须用工具读取。"
@@ -66809,10 +67093,12 @@ def test_robin_session_title_ignores_provisional_query_echo():
 
     assert run.publish_conversation_title(query) is False
     assert session.title == ""
+    assert session.title_ready_event is not None
     assert not session.title_ready_event.is_set()
 
     assert run.publish_conversation_title(generated) is True
     assert session.title == generated
+    assert session.title_ready_event is not None
     assert session.title_ready_event.is_set()
     assert run.conversation_title == generated
 
@@ -66842,18 +67128,22 @@ def test_robin_title_wait_yields_event_loop():
         conversation_ready_event=asyncio.Event(),
         title_ready_event=asyncio.Event(),
     )
+    assert session.conversation_ready_event is not None
     session.conversation_ready_event.set()
     _robin_bind_session_in_cache(session)
 
-    fake_cred = SimpleNamespace(
+    fake_cred = GeminiOAuthCredential(
         credential_id=principal,
-        is_api_key=False,
         access_token="token",
         expiry=time.time() + 3600,
     )
     client = GeminiHTTPClient([fake_cred])
 
-    async def fake_ensure_token(_self, _session, _cred):
+    async def fake_ensure_token(
+        self: GeminiHTTPClient,
+        session: aiohttp.ClientSession,
+        cred: GeminiOAuthCredential,
+    ) -> str:
         await asyncio.sleep(0.01)
         return "token"
 
@@ -67810,6 +68100,8 @@ def run_self_tests():
         test_gemini_stored_token_and_keyring_decoding,
         test_gemini_model_spec_and_envelopes,
         test_robin_ert_dispatch_and_tool_result_resume,
+        test_robin_action_card_marker_is_closed,
+        test_robin_mcp_catalog_declares_nothing_destructive,
         test_robin_session_title_ignores_provisional_query_echo,
         test_robin_title_wait_yields_event_loop,
         test_robin_session_resume_after_cache_clear,
