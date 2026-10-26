@@ -47,7 +47,7 @@
   ```bash
   uv run main --self-test
   ```
-- **基线要求**：当前基线为 **129/129 passed**。不得出现任何 `❌ Self-test failed`。
+- **基线要求**：当前基线为 **130/130 passed**。不得出现任何 `❌ Self-test failed`。
 
 ---
 
@@ -112,5 +112,5 @@ flowchart TD
 2. **对齐行号**：`uv run main --fix-env-registry`
 3. **代码格式化**：`uv run ruff format voice_edge.py`
 4. **代码检查**：`uv run ruff check voice_edge.py`（必须 0 errors / 0 warnings）
-5. **自测验证**：`uv run main --self-test`（必须 129/129 通过）
+5. **自测验证**：`uv run main --self-test`（必须 130/130 通过）
 6. **记忆更新与汇报**：在本地 `.memory/YYYY-MM-DD.md` 记录重大架构变更与决策背景；保持所有修改严格处于**未暂存状态（unstaged）**，向用户清晰汇报改动细节，**严禁擅自执行 git add 或 git commit，等待用户指示与审查授权**。

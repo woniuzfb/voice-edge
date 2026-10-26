@@ -138,43 +138,6 @@ if sys.version_info < (3, 11):
     raise RuntimeError("voice_edge.py requires Python 3.11 or newer")
 
 
-def _patch_edge_tts_endpoint() -> None:
-    """Redirect Edge-TTS websocket synthesis to api.msedgeservices.com.
-
-    In October 2026, Microsoft decommissioned the legacy speech.platform.bing.com
-    readaloud websocket endpoint with HTTP 403. Microsoft Edge 155+ synthesizes
-    through api.msedgeservices.com with Ocp-Apim-Subscription-Key.
-    Ref: upstream PR https://github.com/rany2/edge-tts/pull/491.
-    """
-    import email.utils
-    from datetime import timezone as dt_timezone
-
-    import edge_tts.communicate
-    import edge_tts.constants
-    import edge_tts.drm
-
-    new_wss_url = (
-        "wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1"
-        f"?Ocp-Apim-Subscription-Key={edge_tts.constants.TRUSTED_CLIENT_TOKEN}"
-    )
-    edge_tts.constants.WSS_URL = new_wss_url
-    edge_tts.communicate.WSS_URL = new_wss_url  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
-
-    def _safe_parse_rfc2616_date(date: str) -> Optional[float]:
-        try:
-            parsed = email.utils.parsedate_to_datetime(date)
-        except (TypeError, ValueError, IndexError):
-            return None
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=dt_timezone.utc)
-        return parsed.timestamp()
-
-    edge_tts.drm.DRM.parse_rfc2616_date = staticmethod(_safe_parse_rfc2616_date)
-
-
-_patch_edge_tts_endpoint()
-
-
 # ============================================================================
 # 环境变量登记表 (ENV REGISTRY) —— 全文 env 读取的唯一索引
 # ----------------------------------------------------------------------------
@@ -183,234 +146,234 @@ _patch_edge_tts_endpoint()
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2553
-#    VE_VLM_KV_BITS                         3.5                                          L536
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L541
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L546
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L547
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2136
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2141
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2144
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2148
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2157
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2165
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2220
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2671
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42716
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43365
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43377
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19345
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19342
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19308
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19323
-#    AUTH_SYNC_ENABLED                      "1"                                          L19296
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19297
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2621
+#    VE_VLM_KV_BITS                         3.5                                          L499
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L504
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L509
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L510
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2204
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2209
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2212
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2216
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2225
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2233
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2288
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2739
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42834
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43483
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43495
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19463
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19460
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19426
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19441
+#    AUTH_SYNC_ENABLED                      "1"                                          L19414
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19415
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L425
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L426
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L427
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L428
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L429
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L433
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L437
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L438
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L439
-#    VE_GEMINI_LOG_DEBUG                        "0"                                      L440
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L441
-#    VE_HUD_LOG_DEBUG                           "0"                                      L442
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L443
-#    VE_KWS_LOG_DEBUG                           "0"                                      L444
-#    VE_LLM_LOG_DEBUG                           "0"                                      L445
-#    VE_M365_LOG_DEBUG                          "0"                                      L446
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L447
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L451
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L455
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L456
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L457
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L458
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L459
-#    VE_TTS_LOG_DEBUG                           "0"                                      L460
-#    VE_VLM_LOG_DEBUG                           "0"                                      L461
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L462
+#    VE_APP_LOG_DEBUG                           "0"                                      L388
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L389
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L390
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L391
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L392
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L396
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L400
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L401
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L402
+#    VE_GEMINI_LOG_DEBUG                        "0"                                      L403
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L404
+#    VE_HUD_LOG_DEBUG                           "0"                                      L405
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L406
+#    VE_KWS_LOG_DEBUG                           "0"                                      L407
+#    VE_LLM_LOG_DEBUG                           "0"                                      L408
+#    VE_M365_LOG_DEBUG                          "0"                                      L409
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L410
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L414
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L418
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L419
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L420
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L421
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L422
+#    VE_TTS_LOG_DEBUG                           "0"                                      L423
+#    VE_VLM_LOG_DEBUG                           "0"                                      L424
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L425
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42602
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42625
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42652
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42711
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43254
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43257
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43265
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43277
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43279
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43288
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43294
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43300
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43316
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43321
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43328
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43335
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43344
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43351
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43399
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45167
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45168
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45169
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42720
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42743
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42770
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42829
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43372
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43375
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43383
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43395
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43397
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43406
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43412
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43418
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43434
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43439
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43446
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43453
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43462
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43469
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43517
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45285
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45286
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45287
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14852
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14854
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L14855
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14861
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14863
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14866
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14874
-#    QWEN_COOKIE_HEADER                     ""                                           L14878
-#    QWEN_TOKENS                            ""                                           L14886
-#    QWEN_TOKEN                             ""                                           L14887
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14970
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14972
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L14973
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14979
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14981
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14984
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14992
+#    QWEN_COOKIE_HEADER                     ""                                           L14996
+#    QWEN_TOKENS                            ""                                           L15004
+#    QWEN_TOKEN                             ""                                           L15005
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1737
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16521
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16522
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16524
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16526
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16528
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16531
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16534
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16537
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16658
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16661
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1805
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16639
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16640
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16642
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16644
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16646
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16649
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16652
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16655
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16776
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16779
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19206
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19207
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19213
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19214
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19222
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19224
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19227
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19229
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19231
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19235
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19262
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19265
-#    DOUBAO_WEB_AID                         "497858"                                     L19267
-#    DOUBAO_WEB_REGION                      "CN"                                         L19268
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19269
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19270
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19272
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19321
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19313
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19623
-#    DOUBAO_SESSION_IDS                     ""                                           L19665
-#    DOUBAO_SESSION_ID                      ""                                           L19669
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20180
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20189
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20371
-#    DOUBAO_SID_TT                          ""                                           L20374
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19324
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19325
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19331
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19332
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19340
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19342
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19345
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19347
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19349
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19353
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19380
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19383
+#    DOUBAO_WEB_AID                         "497858"                                     L19385
+#    DOUBAO_WEB_REGION                      "CN"                                         L19386
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19387
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19388
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19390
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19439
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19431
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19741
+#    DOUBAO_SESSION_IDS                     ""                                           L19783
+#    DOUBAO_SESSION_ID                      ""                                           L19787
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20298
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20307
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20489
+#    DOUBAO_SID_TT                          ""                                           L20492
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24758
-#    SHAREPOINT_HOME_URL                    ""                                           L24759
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24760
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24761
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24788
-#    M365_BRIDGE_PORT                       "5003"                                       L24789
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24790
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24791
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24793
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24796
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L24799
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24807
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L24809
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24829
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24836
-#    M365_CONV_MAP_MAX                      "1024"                                       L25005
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25652
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25670
+#    M365_ENTRY_URL                         ""                                           L24876
+#    SHAREPOINT_HOME_URL                    ""                                           L24877
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24878
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24879
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24906
+#    M365_BRIDGE_PORT                       "5003"                                       L24907
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24908
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24909
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24911
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24914
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24917
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24925
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L24927
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24947
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24954
+#    M365_CONV_MAP_MAX                      "1024"                                       L25123
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25770
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25788
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L37940
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38150
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38212
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38234
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38241
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38336
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38338
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38342
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39535
-#    MI_USER                                ""                                           L39261
-#    MI_PASS                                ""                                           L39287
-#    XIAOAI_HARDWARE                        "LX06"                                       L39289
-#    MI_DID                                 ""                                           L39291
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39294
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39298
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39301
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39304
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39310
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39321
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39326
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39307
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39317
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39337
-#    XIAOAI_VOICE                           "zh"                                         L39339
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39341
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39344
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39347
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39350
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39354
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39358
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39363
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39368
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39373
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39378
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39383
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39391
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39396
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39401
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39406
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39411
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39416
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39421
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39424
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39428
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39432
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39436
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39441
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39446
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39450
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39453
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39456
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39459
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39462
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39465
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39468
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39471
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39478
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39484
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39488
+#    XIAOAI_ENABLED                         "0"                                          L38058
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38268
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38330
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38352
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38359
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38454
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38456
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38460
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39653
+#    MI_USER                                ""                                           L39379
+#    MI_PASS                                ""                                           L39405
+#    XIAOAI_HARDWARE                        "LX06"                                       L39407
+#    MI_DID                                 ""                                           L39409
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39412
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39416
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39419
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39422
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39428
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39439
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39444
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39425
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39435
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39455
+#    XIAOAI_VOICE                           "zh"                                         L39457
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39459
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39462
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39465
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39468
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39472
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39476
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39481
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39486
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39491
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39496
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39501
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39509
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39514
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39519
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39524
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39529
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39534
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39539
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39542
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39546
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39550
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39554
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39559
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39564
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39568
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39571
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39574
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39577
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39580
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39583
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39586
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39589
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39596
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39602
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39606
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L47929
-#    VE_OPENCODE_API_KEYS                   ""                                           L48854
-#    VE_OPENCODE_FREE                       "1"                                          L48892
-#    VE_OPENCODE_GO                         "0"                                          L48897
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L58865
-#    VE_GEMINI_API_KEYS                     ""                                           L58869
-#    VE_GEMINI_BACKEND                      "auto"                                       L58888
-#    VE_GEMINI_PROJECT_ID                   ""                                           L58895
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L53699
-#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1450
-#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1451
-#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1452
-#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1453
-#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1454
-#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1455
-#    VE_GEMINI_APP_BINARY                   ""                                           L1475
-#    VE_GEMINI_AGY_BINARY                   ""                                           L1490
-#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1508
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48047
+#    VE_OPENCODE_API_KEYS                   ""                                           L48972
+#    VE_OPENCODE_FREE                       "1"                                          L49010
+#    VE_OPENCODE_GO                         "0"                                          L49015
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L58998
+#    VE_GEMINI_API_KEYS                     ""                                           L59002
+#    VE_GEMINI_BACKEND                      "auto"                                       L59021
+#    VE_GEMINI_PROJECT_ID                   ""                                           L59028
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L53831
+#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1518
+#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1519
+#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1520
+#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1521
+#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1522
+#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1523
+#    VE_GEMINI_APP_BINARY                   ""                                           L1543
+#    VE_GEMINI_AGY_BINARY                   ""                                           L1558
+#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1576
 #
 # 合计 212 个唯一环境变量。
 # ============================================================================
@@ -655,6 +618,11 @@ OPENCODE_PROTOCOL_SYSTEMONE = "systemone"  # POST {base}/systemone (TypeSafe AI 
 # 一行一个端口，key 为 "端口/模型ID"。同一个模型在 zen 和 go 上各占一行。
 _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     # Claude
+    "zen/claude-opus-5-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-opus-5-5-backup": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-sonnet-5-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "zen/claude-haiku-5-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/claude-haiku-5-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/claude-fable-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/claude-fable-5-1": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/claude-opus-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
@@ -668,6 +636,8 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     "zen/claude-sonnet-4": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/claude-haiku-4-5": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     # Gemini
+    "zen/gemini-4-argon": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
+    "go/gemini-4-argon": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
     "zen/gemini-3.8-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
     "zen/gemini-3.7-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
     "zen/gemini-3.6-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
@@ -676,6 +646,10 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     "zen/gemini-3.1-pro": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
     "zen/gemini-3-flash": {"protocol": OPENCODE_PROTOCOL_GOOGLE},
     # OpenAI GPT
+    "zen/gpt-6.1-sol": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-6-sol": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "zen/gpt-6-luna": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "go/gpt-6-luna": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/gpt-6-astra": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/gpt-5.6-sol": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/gpt-5.6-terra": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
@@ -699,12 +673,15 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     "zen/gpt-5-codex": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/gpt-5-nano": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     # xAI Grok
+    "zen/grok-4.7": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
+    "go/grok-4.7": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/grok-4.6": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "go/grok-4.6": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/grok-4.5": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "go/grok-4.5": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/grok-build-0.1": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     # Muse Spark
+    "zen/muse-wonder-1.0": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/muse-spark-1.3": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/muse-spark-1.2": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "zen/muse-spark-1.3-contributor-free": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
@@ -712,6 +689,8 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     "go/muse-spark-1.3-contributor": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     "go/muse-spark-1.2-contributor": {"protocol": OPENCODE_PROTOCOL_RESPONSES},
     # DeepSeek
+    "zen/deepseek-v4.1-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/deepseek-v4.1-flash-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/deepseek-v4-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/deepseek-v4-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/deepseek-v4-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
@@ -724,6 +703,7 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     # GLM
     "zen/glm-5.3-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/glm-5.3-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/glm-5.3-flash-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/glm-5.3": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/glm-5.3": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/glm-5.2": {"protocol": OPENCODE_PROTOCOL_CHAT},
@@ -735,6 +715,7 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     # MiniMax
     "zen/minimax-m3": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/minimax-m3": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
+    "go/minimax-m3.1-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/minimax-m2.7": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/minimax-m2.7": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/minimax-m2.5": {"protocol": OPENCODE_PROTOCOL_CHAT},
@@ -748,7 +729,10 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     "go/kimi-k2.7-code": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/kimi-k3": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/kimi-k3": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/kimi-k3.1-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
     # Qwen
+    "zen/qwen3.8-max": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/qwen3.8-flash": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/qwen3.6-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "go/qwen3.6-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
     "zen/qwen3.5-plus": {"protocol": OPENCODE_PROTOCOL_MESSAGES},
@@ -763,12 +747,21 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     "zen/jev-1.13": {"protocol": OPENCODE_PROTOCOL_SYSTEMONE},
     "zen/jev-1.13-free": {"protocol": OPENCODE_PROTOCOL_SYSTEMONE},
     # Other providers / free tiers
+    "zen/mistral-large-4": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/beam-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/beam-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/flint-40b-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/big-pickle": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/longcat-2.0": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/mimo-v2.6-flash": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/mimo-v2.6-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/mimo-v2.6-flash-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/mimo-v2.5": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/mimo-v2.5-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/mimo-v2-pro": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/mimo-v2-omni": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/step-5-preview": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "go/iceman-contributor-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/hy4-preview": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/hy3": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "go/hy3-preview": {"protocol": OPENCODE_PROTOCOL_CHAT},
@@ -779,6 +772,7 @@ _OPENCODE_BASELINE_MODELS: dict[str, dict[str, Any]] = {
     "zen/ling-3.0-flash-fin-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/nemotron-3-ultra-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
     "zen/nemotron-3.5-lightning-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
+    "zen/nemotron-3.5-super-vl-free": {"protocol": OPENCODE_PROTOCOL_CHAT},
 }
 
 # 人工补充 (EXTRA)：即使远端 /models 列表尚未收录，也强制注册到本地目录。
@@ -848,6 +842,34 @@ OPENCODE_PROTOCOL_CAPABILITIES: dict[str, frozenset[str]] = {
 }
 
 
+def _infer_opencode_protocol(
+    model_id: str, endpoint: str = OPENCODE_ZEN_ENDPOINT
+) -> str | None:
+    """Infer the wire protocol for an OpenCode model from its identifier and endpoint."""
+    if not isinstance(model_id, str):
+        return None
+    mid = model_id.strip().lower()
+    if not mid or mid == "test":
+        return None
+    if mid.startswith("claude-"):
+        return OPENCODE_PROTOCOL_MESSAGES
+    if mid.startswith("gemini-"):
+        return OPENCODE_PROTOCOL_GOOGLE
+    if mid.startswith(("gpt-", "grok-", "muse-spark-", "muse-wonder-")):
+        return OPENCODE_PROTOCOL_RESPONSES
+    if mid.startswith("jev-"):
+        return OPENCODE_PROTOCOL_SYSTEMONE
+    if mid.startswith("qwen"):
+        if endpoint == OPENCODE_GO_ENDPOINT or mid.endswith(("-plus", "-flash")):
+            return OPENCODE_PROTOCOL_MESSAGES
+        return OPENCODE_PROTOCOL_CHAT
+    if endpoint == OPENCODE_GO_ENDPOINT and mid.startswith("minimax-"):
+        if mid.endswith("-flash") or "-flash-" in mid:
+            return OPENCODE_PROTOCOL_CHAT
+        return OPENCODE_PROTOCOL_MESSAGES
+    return OPENCODE_PROTOCOL_CHAT
+
+
 def _parse_opencode_doc_protocols(html: str) -> dict[str, str]:
     """Parse table rows in OpenCode documentation into {model_id: protocol}."""
     import html as html_lib
@@ -859,14 +881,23 @@ def _parse_opencode_doc_protocols(html: str) -> dict[str, str]:
         if not rows:
             continue
         headers = [
-            html_lib.unescape(re.sub(r"<[^>]+>", "", c)).strip()
+            html_lib.unescape(re.sub(r"<[^>]+>", "", c)).strip().lower()
             for c in re.findall(
                 r"<t[dh]\b[^>]*>(.*?)</t[dh]>", rows[0], re.DOTALL | re.IGNORECASE
             )
         ]
-        if "模型 ID" in headers and "端点" in headers:
-            id_idx = headers.index("模型 ID")
-            ep_idx = headers.index("端点")
+        id_idx: int | None = None
+        ep_idx: int | None = None
+        sdk_idx: int | None = None
+        for i, h in enumerate(headers):
+            if h in ("模型 id", "模型id", "model id", "model_id", "modelid"):
+                id_idx = i
+            elif h in ("端点", "endpoint", "endpoints"):
+                ep_idx = i
+            elif h in ("ai sdk package", "sdk package", "package", "sdk"):
+                sdk_idx = i
+
+        if id_idx is not None and (ep_idx is not None or sdk_idx is not None):
             for r in rows[1:]:
                 cols = [
                     html_lib.unescape(re.sub(r"<[^>]+>", "", c)).strip()
@@ -876,20 +907,36 @@ def _parse_opencode_doc_protocols(html: str) -> dict[str, str]:
                         re.DOTALL | re.IGNORECASE,
                     )
                 ]
-                if len(cols) > max(id_idx, ep_idx):
+                if len(cols) > id_idx:
                     model_id = cols[id_idx].strip()
-                    ep_url = cols[ep_idx].strip().lower()
-                    if not model_id or not ep_url:
+                    if not model_id:
                         continue
+                    ep_url = (
+                        cols[ep_idx].strip().lower()
+                        if ep_idx is not None and len(cols) > ep_idx
+                        else ""
+                    )
+                    sdk_pkg = (
+                        cols[sdk_idx].strip().lower()
+                        if sdk_idx is not None and len(cols) > sdk_idx
+                        else ""
+                    )
                     if ep_url.endswith("/systemone"):
                         mapping[model_id] = OPENCODE_PROTOCOL_SYSTEMONE
-                    elif ep_url.endswith("/responses"):
+                    elif ep_url.endswith("/responses") or sdk_pkg == "@ai-sdk/openai":
                         mapping[model_id] = OPENCODE_PROTOCOL_RESPONSES
-                    elif ep_url.endswith("/messages"):
+                    elif ep_url.endswith("/messages") or sdk_pkg == "@ai-sdk/anthropic":
                         mapping[model_id] = OPENCODE_PROTOCOL_MESSAGES
-                    elif ep_url.endswith("/chat/completions"):
+                    elif ep_url.endswith("/chat/completions") or sdk_pkg in (
+                        "@ai-sdk/openai-compatible",
+                        "@ai-sdk/mistral",
+                    ):
                         mapping[model_id] = OPENCODE_PROTOCOL_CHAT
-                    elif "/models/" in ep_url or "streamgeneratecontent" in ep_url:
+                    elif (
+                        "/models/" in ep_url
+                        or "streamgeneratecontent" in ep_url
+                        or sdk_pkg == "@ai-sdk/google"
+                    ):
                         mapping[model_id] = OPENCODE_PROTOCOL_GOOGLE
     return mapping
 
@@ -926,6 +973,8 @@ def _clean_opencode_remote_entry(key: str, entry: Any) -> dict[str, Any] | None:
     if not isinstance(protocol, str) or protocol not in OPENCODE_PROTOCOL_CAPABILITIES:
         return None
     cleaned: dict[str, Any] = {"protocol": protocol}
+    if entry.get("inferred") is True:
+        cleaned["inferred"] = True
     if "text_only" in entry and entry["text_only"] is not None:
         parsed_to = _parse_strict_bool(entry["text_only"])
         if parsed_to is True:
@@ -1074,22 +1123,37 @@ def _initialize_opencode_catalog(timeout: float = 4.0) -> None:
                         mid = item.get("id")
                         if not mid or not isinstance(mid, str):
                             continue
+                        if mid == "test":
+                            continue
                         full_key = f"{endpoint}/{mid}"
                         # Remote protocol hierarchy (strictly excludes manual overrides):
                         # 1. Current documentation table
-                        # 2. Disk cache snapshot for this endpoint/model
-                        # 3. Baseline models
+                        # 2. Baseline models
+                        # 3. Confirmed (non-inferred) disk cache snapshot for this endpoint/model
+                        # 4. Inferred protocol from model identifier
                         doc_proto = doc_map.get(mid)
-                        cache_proto = (
+                        cache_entry = (
                             cached_snapshots.get(endpoint, {})
                             .get("models", {})
                             .get(full_key, {})
-                            .get("protocol")
                         )
+                        cache_proto = cache_entry.get("protocol")
+                        cache_is_inferred = cache_entry.get("inferred") is True
                         baseline_proto = _OPENCODE_BASELINE_MODELS.get(
                             full_key, {}
                         ).get("protocol")
-                        proto = doc_proto or cache_proto or baseline_proto
+                        inferred_proto = _infer_opencode_protocol(mid, endpoint)
+
+                        is_inferred = False
+                        if doc_proto:
+                            proto = doc_proto
+                        elif baseline_proto:
+                            proto = baseline_proto
+                        elif cache_proto and not cache_is_inferred:
+                            proto = cache_proto
+                        else:
+                            proto = inferred_proto
+                            is_inferred = bool(proto)
 
                         if not proto or proto not in OPENCODE_PROTOCOL_CAPABILITIES:
                             endpoint_unresolved.add(full_key)
@@ -1099,15 +1163,19 @@ def _initialize_opencode_catalog(timeout: float = 4.0) -> None:
                             )
                             continue
 
+                        if is_inferred:
+                            _http_log.warning(
+                                "OpenCode model %s protocol unspecified; inferred %s, pending override or documentation update",
+                                full_key,
+                                proto,
+                            )
+
                         entry: dict[str, Any] = {"protocol": proto}
+                        if is_inferred:
+                            entry["inferred"] = True
                         if _OPENCODE_BASELINE_MODELS.get(full_key, {}).get(
                             "text_only"
-                        ) or (
-                            cached_snapshots.get(endpoint, {})
-                            .get("models", {})
-                            .get(full_key, {})
-                            .get("text_only")
-                        ):
+                        ) or cache_entry.get("text_only"):
                             entry["text_only"] = True
                         endpoint_discovered[full_key] = entry
             except Exception as exc:
@@ -12172,6 +12240,56 @@ def stop_tts_immediately(
         cancel_manager.finish_tts_operation(token)
 
     return cleared
+
+
+def _patch_edge_tts_endpoint() -> None:
+    """Ensure Edge-TTS synthesis uses the Sec-MS-GEC v2 token specification.
+
+    Aligns websocket synthesis with the canonical service endpoint, ensures
+    the v2 digest format is produced, propagates the v2 version prefix across
+    consuming module bindings, and provides locale-resilient date parsing for
+    clock skew adjustment.
+    """
+    import email.utils
+    from datetime import timezone as dt_timezone
+
+    import edge_tts.communicate
+    import edge_tts.constants
+    import edge_tts.drm
+    import edge_tts.voices
+
+    # Ensure canonical synthesis endpoint and synchronize bindings
+    canonical_wss_url = (
+        "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1"
+        f"?TrustedClientToken={edge_tts.constants.TRUSTED_CLIENT_TOKEN}"
+    )
+    edge_tts.constants.WSS_URL = canonical_wss_url
+    edge_tts.communicate.WSS_URL = canonical_wss_url  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+
+    # Propagate v2 version prefix across all modules importing the binding by value
+    current_ver = str(getattr(edge_tts.constants, "SEC_MS_GEC_VERSION", ""))
+    if not current_ver.startswith("2-"):
+        chromium_full = getattr(
+            edge_tts.constants, "CHROMIUM_FULL_VERSION", "143.0.3650.75"
+        )
+        v2_version = f"2-{chromium_full}"
+        edge_tts.constants.SEC_MS_GEC_VERSION = v2_version
+        edge_tts.communicate.SEC_MS_GEC_VERSION = v2_version  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+        edge_tts.voices.SEC_MS_GEC_VERSION = v2_version  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+
+    def _safe_parse_rfc2616_date(date: str) -> float | None:
+        try:
+            parsed = email.utils.parsedate_to_datetime(date)
+        except (TypeError, ValueError, IndexError, OverflowError):
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt_timezone.utc)
+        return parsed.timestamp()
+
+    edge_tts.drm.DRM.parse_rfc2616_date = staticmethod(_safe_parse_rfc2616_date)
+
+
+_patch_edge_tts_endpoint()
 
 
 def speak_edge_tts_stream(
@@ -53199,6 +53317,12 @@ class _RobinThoughtProjector:
         self.revision: int = 0
         self.delivered_char_offset: int = 0
         self._projected_seq_count: int = 0
+        self._block_start_row_indices: set[int] = {0}
+
+    def mark_new_thought_block(self) -> None:
+        """Mark the next projected row as the first row of a new DSH thought block (no leading newline)."""
+        self.project()
+        self._block_start_row_indices.add(len(self.rows))
 
     def project(self) -> list[_RobinThoughtRow]:
         """Project any unprojected `StateTape` entries into `self.rows` in strict arrival order."""
@@ -53241,14 +53365,22 @@ class _RobinThoughtProjector:
         collapses to a space. Tool status rows must stay one-per-line, so any boundary
         touching a `tool` row uses a GFM hard break (two spaces + newline). Text-to-text
         boundaries keep the soft newline so prose still flows normally.
+        Exception: the first row of any thought block (index 0 or after a tool handoff)
+        never receives a leading newline, regardless of whether it is `text` or `tool`.
         """
         self.project()
         if not self.rows:
             return ""
         parts: list[str] = [self.rows[0].text]
-        for prev, row in zip(self.rows, self.rows[1:], strict=False):
-            hard = row.kind == "tool" or prev.kind == "tool"
-            parts.append(("  \n" if hard else "\n") + row.text)
+        for idx in range(1, len(self.rows)):
+            prev = self.rows[idx - 1]
+            row = self.rows[idx]
+            if idx in self._block_start_row_indices:
+                sep = ""
+            else:
+                hard = row.kind == "tool" or prev.kind == "tool"
+                sep = "  \n" if hard else "\n"
+            parts.append(sep + row.text)
         return "".join(parts)
 
     def consume_delta(self) -> str:
@@ -56116,6 +56248,7 @@ class _RobinRunActor:
         self.run.execution_state = "RUNNING"
         self.run.attachment_state = "STREAMING"
         self.run.finalization_state = "OPEN"
+        self.run.thought_projector.mark_new_thought_block()
         conv_id = self.conversation_id or self.decoder.conversation_id
         if self.ert_response is None and conv_id:
             await self.ensure_ert_and_presence(conv_id)
@@ -60355,6 +60488,7 @@ class GeminiHTTPClient:
                         # Park `_RobinRunActor` for DSH tool execution round-trip (`TOOL_HANDOFF`)
                         run.attachment_state = "TOOL_HANDOFF"
                         run.execution_state = "WAITING_TOOLS"
+                        run.thought_projector.mark_new_thought_block()
                         actor.response.keep_open = True
                         if actor.ert_response is not None:
                             actor.ert_response.keep_open = True
@@ -65910,25 +66044,33 @@ def test_edge_tts_endpoint_patch():
     import edge_tts.communicate
     import edge_tts.constants
     import edge_tts.drm
+    import edge_tts.voices
 
-    # Ensure current patched state points to the active msedgeservices host
-    assert "api.msedgeservices.com" in edge_tts.constants.WSS_URL
-    assert "Ocp-Apim-Subscription-Key" in edge_tts.constants.WSS_URL
-    assert (
-        edge_tts.communicate.WSS_URL  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
-        == edge_tts.constants.WSS_URL
-    )
-    assert (
-        "speech.platform.bing.com" not in edge_tts.communicate.WSS_URL  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
+    # Verify canonical synthesis endpoint and consistency across module namespaces
+    assert "speech.platform.bing.com" in edge_tts.constants.WSS_URL
+    assert "TrustedClientToken" in edge_tts.constants.WSS_URL
+    assert getattr(edge_tts.communicate, "WSS_URL", "") == edge_tts.constants.WSS_URL
+
+    # Verify Sec-MS-GEC v2 protocol version declaration across all consuming modules
+    assert edge_tts.constants.SEC_MS_GEC_VERSION.startswith("2-")
+    assert str(getattr(edge_tts.communicate, "SEC_MS_GEC_VERSION", "")).startswith("2-")
+    assert str(getattr(edge_tts.voices, "SEC_MS_GEC_VERSION", "")).startswith("2-")
+
+    # Verify Sec-MS-GEC token format (16 hex CS64 + '-' + 64 hex SHA256)
+    token = edge_tts.drm.DRM.generate_sec_ms_gec()
+    assert len(token) == 81
+    assert token[16] == "-"
+
+    # Verify deterministic test vector for v2 token generation
+    assert edge_tts.drm.generate_sec_ms_gec_v2(1791888000) == (
+        "492D7694A183A45E-56E821F95D4579C5B7C7E33DC7303FF379EC36D510213555BBBB9EB17EF15876"
     )
 
     # Verify idempotency when re-invoked
     _patch_edge_tts_endpoint()
-    assert "api.msedgeservices.com" in edge_tts.constants.WSS_URL
-    assert (
-        edge_tts.communicate.WSS_URL  # pyright: ignore[reportPrivateImportUsage, reportAttributeAccessIssue]
-        == edge_tts.constants.WSS_URL
-    )
+    assert "speech.platform.bing.com" in edge_tts.constants.WSS_URL
+    assert getattr(edge_tts.communicate, "WSS_URL", "") == edge_tts.constants.WSS_URL
+    assert edge_tts.constants.SEC_MS_GEC_VERSION.startswith("2-")
 
     # Verify date parser works across formats including GMT and numeric zone
     timestamp1 = edge_tts.drm.DRM.parse_rfc2616_date("Mon, 12 Oct 2026 03:16:09 GMT")
@@ -65936,6 +66078,162 @@ def test_edge_tts_endpoint_patch():
     timestamp2 = edge_tts.drm.DRM.parse_rfc2616_date("Mon, 12 Oct 2026 03:16:09 +0000")
     assert timestamp2 == timestamp1
     assert edge_tts.drm.DRM.parse_rfc2616_date("invalid-date") is None
+
+
+def test_opencode_catalog_protocol_resolution():
+    en_html = """
+    <table>
+      <tr><th>Model</th><th>Model ID</th><th>Endpoint</th><th>AI SDK Package</th></tr>
+      <tr><td>Claude Sonnet 5</td><td>claude-sonnet-5</td><td>https://opencode.ai/inference/anthropic/v1/messages</td><td>@ai-sdk/anthropic</td></tr>
+      <tr><td>GPT 6 Sol</td><td>gpt-6-sol</td><td>https://opencode.ai/inference/openai/v1/responses</td><td>@ai-sdk/openai</td></tr>
+      <tr><td>DeepSeek Flash</td><td>deepseek-v4.1-flash</td><td>https://opencode.ai/inference/openai/v1/chat/completions</td><td>@ai-sdk/openai-compatible</td></tr>
+      <tr><td>Gemini Argon</td><td>gemini-4-argon</td><td>https://opencode.ai/inference/google/v1beta/models/gemini-4-argon:streamGenerateContent</td><td>@ai-sdk/google</td></tr>
+    </table>
+    """
+    en_map = _parse_opencode_doc_protocols(en_html)
+    assert en_map.get("claude-sonnet-5") == OPENCODE_PROTOCOL_MESSAGES
+    assert en_map.get("gpt-6-sol") == OPENCODE_PROTOCOL_RESPONSES
+    assert en_map.get("deepseek-v4.1-flash") == OPENCODE_PROTOCOL_CHAT
+    assert en_map.get("gemini-4-argon") == OPENCODE_PROTOCOL_GOOGLE
+
+    zh_html = """
+    <table>
+      <tr><th>模型名称</th><th>模型 ID</th><th>端点</th></tr>
+      <tr><td>Jev</td><td>jev-1.13</td><td>https://opencode.ai/zen/v1/systemone</td></tr>
+      <tr><td>Claude</td><td>claude-opus-5</td><td>https://opencode.ai/zen/v1/messages</td></tr>
+    </table>
+    """
+    zh_map = _parse_opencode_doc_protocols(zh_html)
+    assert zh_map.get("jev-1.13") == OPENCODE_PROTOCOL_SYSTEMONE
+    assert zh_map.get("claude-opus-5") == OPENCODE_PROTOCOL_MESSAGES
+
+    assert _infer_opencode_protocol("claude-sonnet-5-5") == OPENCODE_PROTOCOL_MESSAGES
+    assert _infer_opencode_protocol("gemini-4-argon") == OPENCODE_PROTOCOL_GOOGLE
+    assert _infer_opencode_protocol("gpt-6-luna") == OPENCODE_PROTOCOL_RESPONSES
+    assert _infer_opencode_protocol("grok-4.7") == OPENCODE_PROTOCOL_RESPONSES
+    assert _infer_opencode_protocol("jev-1.14") == OPENCODE_PROTOCOL_SYSTEMONE
+    assert (
+        _infer_opencode_protocol("deepseek-v4.1-flash-free") == OPENCODE_PROTOCOL_CHAT
+    )
+    assert (
+        _infer_opencode_protocol("qwen3.8-flash", OPENCODE_ZEN_ENDPOINT)
+        == OPENCODE_PROTOCOL_MESSAGES
+    )
+    assert (
+        _infer_opencode_protocol("qwen3.8-max", OPENCODE_GO_ENDPOINT)
+        == OPENCODE_PROTOCOL_MESSAGES
+    )
+    assert (
+        _infer_opencode_protocol("minimax-m3", OPENCODE_GO_ENDPOINT)
+        == OPENCODE_PROTOCOL_MESSAGES
+    )
+    assert (
+        _infer_opencode_protocol("minimax-m3.1-flash", OPENCODE_GO_ENDPOINT)
+        == OPENCODE_PROTOCOL_CHAT
+    )
+    assert _infer_opencode_protocol("test") is None
+
+    # Verify inferred flag round-tripping through remote entry sanitization
+    inferred_entry = _clean_opencode_remote_entry(
+        "zen/custom-agent",
+        {"protocol": OPENCODE_PROTOCOL_CHAT, "inferred": True},
+    )
+    assert inferred_entry is not None
+    assert inferred_entry.get("inferred") is True
+
+    # Drive real _initialize_opencode_catalog execution path to verify protocol
+    # hierarchy (doc > baseline > confirmed cache > inferred), "test" skipping,
+    # and warning emission when a remote model relies on inferred protocol.
+    import urllib.request
+
+    class _CaptureHandler(logging.Handler):
+        def __init__(self):
+            super().__init__()
+            self.warnings: list[str] = []
+
+        def emit(self, record: logging.LogRecord):
+            if record.levelno >= logging.WARNING:
+                self.warnings.append(record.getMessage())
+
+    class _FakeHttpResponse:
+        def __init__(self, payload: bytes):
+            self._payload = payload
+
+        def read(self) -> bytes:
+            return self._payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    fake_zen_models = json.dumps(
+        {
+            "data": [
+                {"id": "claude-sonnet-5"},
+                {"id": "future-agent-free"},
+                {"id": "test"},
+            ]
+        }
+    ).encode("utf-8")
+    fake_go_models = json.dumps(
+        {
+            "data": [
+                {"id": "minimax-m3"},
+                {"id": "minimax-m3.1-flash"},
+            ]
+        }
+    ).encode("utf-8")
+
+    def _fake_urlopen(req, timeout=None):
+        url = req.full_url if hasattr(req, "full_url") else str(req)
+        if url.endswith("/zen/v1/models"):
+            return _FakeHttpResponse(fake_zen_models)
+        if url.endswith("/zen/go/v1/models"):
+            return _FakeHttpResponse(fake_go_models)
+        if "/docs/zh-cn/zen/" in url:
+            return _FakeHttpResponse(en_html.encode("utf-8"))
+        return _FakeHttpResponse(b"")
+
+    orig_urlopen = urllib.request.urlopen
+    orig_gettempdir = tempfile.gettempdir
+    orig_models = {k: dict(v) for k, v in OPENCODE_MODELS.items()}
+    tmp_dir = tempfile.mkdtemp(prefix="ve_opencode_test_")
+    handler = _CaptureHandler()
+    _http_log.addHandler(handler)
+    try:
+        urllib.request.urlopen = _fake_urlopen
+        tempfile.gettempdir = lambda: tmp_dir
+        _initialize_opencode_catalog(timeout=1.0)
+
+        assert OPENCODE_MODELS.get("zen/claude-sonnet-5") == {
+            "protocol": OPENCODE_PROTOCOL_MESSAGES
+        }
+        assert OPENCODE_MODELS.get("zen/future-agent-free") == {
+            "protocol": OPENCODE_PROTOCOL_CHAT,
+            "inferred": True,
+        }
+        assert "zen/test" not in OPENCODE_MODELS
+        assert OPENCODE_MODELS.get("go/minimax-m3") == {
+            "protocol": OPENCODE_PROTOCOL_MESSAGES
+        }
+        assert OPENCODE_MODELS.get("go/minimax-m3.1-flash") == {
+            "protocol": OPENCODE_PROTOCOL_CHAT
+        }
+        assert any(
+            "zen/future-agent-free protocol unspecified; inferred chat" in w
+            for w in handler.warnings
+        )
+        assert not any("zen/test" in w for w in handler.warnings)
+    finally:
+        urllib.request.urlopen = orig_urlopen
+        tempfile.gettempdir = orig_gettempdir
+        _http_log.removeHandler(handler)
+        OPENCODE_MODELS.clear()
+        OPENCODE_MODELS.update(orig_models)
+        _rebuild_opencode_derived_catalogs()
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 _GOLDEN_TURN1_ZLIB_B64 = (
@@ -66258,6 +66556,34 @@ def test_gemini_model_spec_and_envelopes():
         # Second terminal patch frame with identical H must calibrate without duplicating
         assert not tape_b.reconcile_terminal_history(terminal_h)
         assert proj_b.consume_delta() == ""
+
+    # Verify exception: the first row of any thought block (initial or after tool handoff)
+    # never gets a leading newline regardless of whether it is `text` or `tool`.
+    tape_blocks = _RobinStateTape()
+    proj_blocks = _RobinThoughtProjector(tape_blocks)
+    tool_l_1 = _pb_bytes_field(
+        13, _pb_bytes_field(1, _pb_bytes_field(1, b"Listing directory"))
+    )
+    text_l_1 = _pb_bytes_field(13, _pb_bytes_field(4, b"First block text.\n\n\n"))
+    tape_blocks.append_live(tool_l_1)
+    assert proj_blocks.consume_delta() == "Listing directory"
+    tape_blocks.append_live(text_l_1)
+    assert proj_blocks.consume_delta() == "  \nFirst block text."
+    # Start a new thought block (e.g. after TOOL_HANDOFF resume) starting with a tool row
+    proj_blocks.mark_new_thought_block()
+    tool_l_2 = _pb_bytes_field(
+        13, _pb_bytes_field(1, _pb_bytes_field(1, b"Reading file"))
+    )
+    text_l_2 = _pb_bytes_field(13, _pb_bytes_field(4, b"Second block text.\n\n\n"))
+    tape_blocks.append_live(tool_l_2)
+    assert proj_blocks.consume_delta() == "Reading file"
+    tape_blocks.append_live(text_l_2)
+    assert proj_blocks.consume_delta() == "  \nSecond block text."
+    # Start another thought block starting with a text row
+    proj_blocks.mark_new_thought_block()
+    text_l_3 = _pb_bytes_field(13, _pb_bytes_field(4, b"Third block text.\n\n\n"))
+    tape_blocks.append_live(text_l_3)
+    assert proj_blocks.consume_delta() == "Third block text."
 
     # 2. Verify ProcessQuery 3-frame and 4-frame wire layout, connected_folders in all 3 places,
     #    and optional field 48 behavior.
@@ -68097,6 +68423,7 @@ def run_self_tests():
         test_m365_offload_large_tool_result_replaces_body_with_pointer,
         test_m365_offload_disabled_and_scoped_to_pending_results,
         test_edge_tts_endpoint_patch,
+        test_opencode_catalog_protocol_resolution,
         test_gemini_stored_token_and_keyring_decoding,
         test_gemini_model_spec_and_envelopes,
         test_robin_ert_dispatch_and_tool_result_resume,
