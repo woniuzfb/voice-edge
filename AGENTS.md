@@ -47,7 +47,7 @@
   ```bash
   uv run main --self-test
   ```
-- **基线要求**：当前基线为 **130/130 passed**。不得出现任何 `❌ Self-test failed`。
+- **基线要求**：当前基线为 **134/134 passed**。不得出现任何 `❌ Self-test failed`。
 
 ---
 
