@@ -148,28 +148,28 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2623
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2626
 #    VE_VLM_KV_BITS                         3.5                                          L501
 #    VE_VLM_KV_GROUP_SIZE                   None                                         L506
 #    VE_VLM_QUANTIZED_KV_START              "0"                                          L511
 #    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L512
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2206
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2211
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2214
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2218
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2227
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2235
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2290
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2741
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42837
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43486
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43498
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19466
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19463
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19429
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19444
-#    AUTH_SYNC_ENABLED                      "1"                                          L19417
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19418
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2209
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2214
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2217
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2221
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2230
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2238
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2293
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2744
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42840
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43489
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43501
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19469
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19466
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19432
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19447
+#    AUTH_SYNC_ENABLED                      "1"                                          L19420
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19421
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
 #    VE_APP_LOG_DEBUG                           "0"                                      L390
@@ -200,173 +200,173 @@ if sys.version_info < (3, 11):
 #    VE_XIAOAI_LOG_DEBUG                        "0"                                      L427
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42723
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42746
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42773
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42832
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43375
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43378
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43386
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43398
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43400
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43409
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43415
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43421
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43437
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43442
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43449
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43456
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43465
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43472
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43520
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45288
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45289
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45290
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42726
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42749
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42776
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42835
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43378
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43381
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43389
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43401
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43403
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43412
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43418
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43424
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43440
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43445
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43452
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43459
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43468
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43475
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43523
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45291
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45292
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45293
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14972
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14974
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L14975
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14981
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14983
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14986
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14994
-#    QWEN_COOKIE_HEADER                     ""                                           L14998
-#    QWEN_TOKENS                            ""                                           L15006
-#    QWEN_TOKEN                             ""                                           L15007
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L14975
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L14977
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L14978
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L14984
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L14986
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L14989
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L14997
+#    QWEN_COOKIE_HEADER                     ""                                           L15001
+#    QWEN_TOKENS                            ""                                           L15009
+#    QWEN_TOKEN                             ""                                           L15010
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1807
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16641
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16642
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16644
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16646
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16648
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16651
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16654
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16657
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16778
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16781
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1810
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16644
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16645
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16647
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16649
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16651
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16654
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16657
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16660
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16781
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16784
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19327
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19328
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19334
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19335
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19343
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19345
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19348
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19350
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19352
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19356
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19383
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19386
-#    DOUBAO_WEB_AID                         "497858"                                     L19388
-#    DOUBAO_WEB_REGION                      "CN"                                         L19389
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19390
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19391
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19393
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19442
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19434
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19744
-#    DOUBAO_SESSION_IDS                     ""                                           L19786
-#    DOUBAO_SESSION_ID                      ""                                           L19790
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20301
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20310
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20492
-#    DOUBAO_SID_TT                          ""                                           L20495
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19330
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19331
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19337
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19338
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19346
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19348
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19351
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19353
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19355
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19359
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19386
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19389
+#    DOUBAO_WEB_AID                         "497858"                                     L19391
+#    DOUBAO_WEB_REGION                      "CN"                                         L19392
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19393
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19394
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19396
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19445
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19437
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19747
+#    DOUBAO_SESSION_IDS                     ""                                           L19789
+#    DOUBAO_SESSION_ID                      ""                                           L19793
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20304
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20313
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20495
+#    DOUBAO_SID_TT                          ""                                           L20498
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24879
-#    SHAREPOINT_HOME_URL                    ""                                           L24880
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24881
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24882
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24909
-#    M365_BRIDGE_PORT                       "5003"                                       L24910
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24911
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24912
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24914
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24917
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L24920
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24928
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L24930
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24950
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24957
-#    M365_CONV_MAP_MAX                      "1024"                                       L25126
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25773
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25791
+#    M365_ENTRY_URL                         ""                                           L24882
+#    SHAREPOINT_HOME_URL                    ""                                           L24883
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24884
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24885
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24912
+#    M365_BRIDGE_PORT                       "5003"                                       L24913
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24914
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24915
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24917
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24920
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24923
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24931
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L24933
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L24953
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L24960
+#    M365_CONV_MAP_MAX                      "1024"                                       L25129
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25776
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25794
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38061
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38271
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38333
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38355
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38362
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38457
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38459
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38463
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39656
-#    MI_USER                                ""                                           L39382
-#    MI_PASS                                ""                                           L39408
-#    XIAOAI_HARDWARE                        "LX06"                                       L39410
-#    MI_DID                                 ""                                           L39412
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39415
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39419
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39422
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39425
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39431
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39442
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39447
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39428
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39438
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39458
-#    XIAOAI_VOICE                           "zh"                                         L39460
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39462
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39465
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39468
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39471
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39475
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39479
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39484
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39489
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39494
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39499
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39504
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39512
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39517
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39522
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39527
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39532
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39537
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39542
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39545
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39549
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39553
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39557
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39562
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39567
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39571
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39574
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39577
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39580
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39583
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39586
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39589
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39592
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39599
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39605
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39609
+#    XIAOAI_ENABLED                         "0"                                          L38064
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38274
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38336
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38358
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38365
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38460
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38462
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38466
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39659
+#    MI_USER                                ""                                           L39385
+#    MI_PASS                                ""                                           L39411
+#    XIAOAI_HARDWARE                        "LX06"                                       L39413
+#    MI_DID                                 ""                                           L39415
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39418
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39422
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39425
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39428
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39434
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39445
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39450
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39431
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39441
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39461
+#    XIAOAI_VOICE                           "zh"                                         L39463
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39465
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39468
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39471
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39474
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39478
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39482
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39487
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39492
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39497
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39502
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39507
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39515
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39520
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39525
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39530
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39535
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39540
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39545
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39548
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39552
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39556
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39560
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39565
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39570
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39574
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39577
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39580
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39583
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39586
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39589
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39592
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39595
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39602
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39608
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39612
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48050
-#    VE_OPENCODE_API_KEYS                   ""                                           L48975
-#    VE_OPENCODE_FREE                       "1"                                          L49013
-#    VE_OPENCODE_GO                         "0"                                          L49018
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L61179
-#    VE_GEMINI_API_KEYS                     ""                                           L61183
-#    VE_GEMINI_BACKEND                      "auto"                                       L61202
-#    VE_GEMINI_PROJECT_ID                   ""                                           L61209
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54199
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48053
+#    VE_OPENCODE_API_KEYS                   ""                                           L48978
+#    VE_OPENCODE_FREE                       "1"                                          L49016
+#    VE_OPENCODE_GO                         "0"                                          L49021
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L61342
+#    VE_GEMINI_API_KEYS                     ""                                           L61346
+#    VE_GEMINI_BACKEND                      "auto"                                       L61365
+#    VE_GEMINI_PROJECT_ID                   ""                                           L61372
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54274
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1520
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1521
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1522
@@ -1698,6 +1698,9 @@ GEMINI_RETRY_BASE_SECONDS = 0.35
 GEMINI_CREDENTIAL_CACHE_TTL_SECONDS = 30.0
 GEMINI_ERT_ROLLOVER_SECONDS = 240.0
 GEMINI_PQ_ROLLOVER_SECONDS = 270.0
+GEMINI_WEB_ERT_COALESCE_WINDOW_MS = int(
+    os.environ.get("GEMINI_WEB_ERT_COALESCE_WINDOW_MS", "60")
+)
 # The service publishes the generated session title around the end of the bound turn
 # (measured 1-55s after conversation creation, and it can land after the turn reaches
 # TERMINAL). The DSH title request waits up to this budget and returns as soon as the
@@ -51540,8 +51543,13 @@ GEMINI_ROBIN_GRPC_USER_AGENT = "grpc-objc-cfstream/1.86.0-dev grpc-c++/1.86.0-de
 
 GEMINI_ROBIN_MCP_SERVER_NAME = "dsh"
 GEMINI_ROBIN_MCP_SERVER_DESCRIPTION = (
-    "DeepSeek Harness client tools. Call `client:execute_mcp` with "
-    'ServerName="dsh", ToolName="<name>", Arguments={...}, destructiveHint=False to run a tool.'
+    "DeepSeek Harness client tools. Prefer top-level native `client:*` tools "
+    "(`client:view_file`, `client:write_to_file`, `client:replace_file_content`, "
+    "`client:list_dir`, `client:find_by_name`, `client:grep_search`, `client:run_command`) "
+    "for file, search, and shell operations. For DSH-only tools, call `client:execute_mcp` "
+    '(expand via `retriever:expand_tools` first if undeclared) with ServerName="dsh", '
+    'ToolName="<name>", Arguments={...}, and ALWAYS pass destructiveHint=False '
+    "(omitting destructiveHint defaults to True and triggers a blocking confirmation card)."
 )
 GEMINI_ROBIN_PRESENCE_INTERVAL_SECONDS = 10.0
 GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS = 10.0
@@ -53576,6 +53584,15 @@ class _RobinThoughtRow:
     revision: int = 1
 
 
+def _robin_state_content_sig(raw_b: bytes) -> tuple[str, tuple[str, ...]]:
+    """Return the semantic content signature `(text_s4, tool_items_sig)` for a display state."""
+    parsed = _robin_parse_display_state(raw_b)
+    return (
+        parsed.text_s4,
+        tuple(it.call_id or it.display_text for it in parsed.tool_items),
+    )
+
+
 class _RobinStateTape:
     """Ordered per-Run tape of raw status entries (`L = .1003.1.6` and `H = .1003.1.8[]`) keyed by `state_seq`."""
 
@@ -53584,6 +53601,7 @@ class _RobinStateTape:
         self.projection_conflict: bool = False
         self.conflict_history: list[bytes] = []
         self._stream_seq: int = 0
+        self.update_count: int = 0
 
     def on_stream_rollover(self) -> None:
         """Reset the per-stream 0-based `state_seq` counter when `ProcessQuery` rolls over via `resumeTurn`."""
@@ -53596,32 +53614,61 @@ class _RobinStateTape:
         *,
         state_seq: int | None = None,
     ) -> _RobinStateTapeEntry | None:
+        self.update_count += 1
         raw_b = bytes(raw_bytes)
         seq = self._stream_seq if state_seq is None else int(state_seq)
         if seq < 0 or seq > len(self.entries):
             self.projection_conflict = True
             return None
-        self._stream_seq = max(self._stream_seq, seq + 1)
         if seq < len(self.entries):
             existing = self.entries[seq]
             if response_id and not existing.response_id:
                 existing.response_id = response_id
-            if existing.raw_bytes != raw_b:
-                old_p = _robin_parse_display_state(existing.raw_bytes)
-                new_p = _robin_parse_display_state(raw_b)
-                old_sig = (
-                    old_p.text_s4,
-                    tuple(it.call_id or it.display_text for it in old_p.tool_items),
-                )
-                new_sig = (
-                    new_p.text_s4,
-                    tuple(it.call_id or it.display_text for it in new_p.tool_items),
-                )
-                if old_sig != new_sig and any(old_sig) and any(new_sig):
-                    self.projection_conflict = True
+            if existing.raw_bytes == raw_b:
+                self._stream_seq = max(self._stream_seq, seq + 1)
+                return existing
+            old_sig = _robin_state_content_sig(existing.raw_bytes)
+            new_sig = _robin_state_content_sig(raw_b)
+            if old_sig == new_sig:
+                existing.raw_bytes = raw_b
+                self._stream_seq = max(self._stream_seq, seq + 1)
+                return existing
+            if state_seq is None:
+                if any(new_sig):
+                    # On `resumeTurn` rollover, the server may collapse transient `S.7`-only
+                    # spinner frames or skip uncommitted pre-rollover tail frames. Search
+                    # `entries[seq:]` for the matching content signature; if found, realign
+                    # `_stream_seq` past it, otherwise treat `raw_b` as a brand-new post-rollover
+                    # content state and append at the tail so `ThoughtProjector` projects it.
+                    matched_k = next(
+                        (
+                            k
+                            for k in range(seq, len(self.entries))
+                            if _robin_state_content_sig(self.entries[k].raw_bytes)
+                            == new_sig
+                        ),
+                        None,
+                    )
+                    if matched_k is not None:
+                        matched = self.entries[matched_k]
+                        matched.raw_bytes = raw_b
+                        if response_id and not matched.response_id:
+                            matched.response_id = response_id
+                        self._stream_seq = max(self._stream_seq, matched_k + 1)
+                        return matched
+                    seq = len(self.entries)
+                elif any(old_sig):
+                    # Never overwrite a committed thought/tool entry with an empty `S.7` spinner frame.
+                    return existing
                 else:
                     existing.raw_bytes = raw_b
-            return existing
+                    self._stream_seq = max(self._stream_seq, seq + 1)
+                    return existing
+            else:
+                self.projection_conflict = True
+                self._stream_seq = max(self._stream_seq, seq + 1)
+                return existing
+        self._stream_seq = max(self._stream_seq, seq + 1)
         entry = _RobinStateTapeEntry(
             state_seq=seq,
             raw_bytes=raw_b,
@@ -53657,6 +53704,34 @@ class _RobinStateTape:
             if cur_len == len(h_bytes):
                 return False
             for item in h_bytes[cur_len:]:
+                self.entries.append(
+                    _RobinStateTapeEntry(
+                        state_seq=len(self.entries),
+                        raw_bytes=item,
+                        source="H",
+                        response_id=response_id,
+                    )
+                )
+            self._stream_seq = max(self._stream_seq, len(self.entries))
+            return True
+        cur_content_sigs = [
+            sig
+            for sig in (_robin_state_content_sig(e.raw_bytes) for e in self.entries)
+            if any(sig)
+        ]
+        h_content_items = [
+            (sig, item)
+            for item in h_bytes
+            for sig in (_robin_state_content_sig(item),)
+            if any(sig)
+        ]
+        if len(cur_content_sigs) <= len(h_content_items) and all(
+            cur_content_sigs[j] == h_content_items[j][0]
+            for j in range(len(cur_content_sigs))
+        ):
+            if len(cur_content_sigs) == len(h_content_items):
+                return False
+            for _, item in h_content_items[len(cur_content_sigs) :]:
                 self.entries.append(
                     _RobinStateTapeEntry(
                         state_seq=len(self.entries),
@@ -54684,8 +54759,12 @@ _DSH_RUNTIME_CONTEXT_HEADER_RE = re.compile(
     r"(?:^|\n\n)(?:Current\s+runtime\s+context\.|Current\s+DSH\s+file\s+policy:|Approval\s+policy:|Approval\s+prompts\s+are\s+disabled).*",
     flags=re.DOTALL | re.IGNORECASE,
 )
+_DSH_APPROVAL_POLICY_CHANGED_FULL_RE = re.compile(
+    r'^\s*The\s*approval\s+policy\s+changed\s+from\s+"[^"]*"\s+to\s+"[^"]+"\s*\(changed\s+by\s+the\s+user\)\.?\s*$',
+    flags=re.IGNORECASE,
+)
 _DSH_COMPACTED_SUMMARY_RE = re.compile(
-    r"<compacted-summary>\s*(.*?)\s*</compacted-summary>",
+    r"<compacted-summary>\s*(.*?)\s*</compacted-summary>(?=[ \t]*(?:\r?\n|$))",
     flags=re.DOTALL | re.IGNORECASE,
 )
 _DSH_CHECKPOINT_PREAMBLE_RE = re.compile(
@@ -54797,6 +54876,9 @@ def _robin_split_user_text_and_context(raw_text: str) -> tuple[str, list[str]]:
     text = re.sub(r"(?:^|\n)\s*User:\s*$", "", text).strip()
     if text.startswith("User: "):
         text = text[len("User: ") :].strip()
+    if _DSH_APPROVAL_POLICY_CHANGED_FULL_RE.match(text):
+        extracted.append(text.strip())
+        text = ""
     return text, extracted
 
 
@@ -54999,12 +55081,17 @@ def _robin_is_dsh_bg_job_still_running_output(text: str) -> bool:
 def _robin_extract_first_turn_identity(
     messages: Sequence[Any], *, strip_compaction: bool = True
 ) -> tuple[str, str]:
-    """Extract `(first_user_norm, first_assistant_norm)` from the first complete turn of `messages`."""
+    """Extract `(first_user_norm, first_assistant_norm)` from the first complete turn of `messages`.
+
+    Within Turn 1 (before the first non-compaction-duplicate `assistant` message), selects the
+    last non-empty `user` message so any preceding `next-step` injections are naturally bypassed.
+    """
     first_user_norm = ""
     fallback_compaction_user_norm = ""
     fallback_notice_user_norm = ""
     first_assistant_parts: list[str] = []
     seen_first_user = False
+    seen_turn1_assistant = False
     turn1_completed = False
     last_turn1_assistant_had_tool_calls = False
     pending_compaction_summary = ""
@@ -55024,7 +55111,7 @@ def _robin_extract_first_turn_identity(
                         clean_u, strip_compaction=strip_compaction
                     )
                 continue
-            if strip_compaction and not seen_first_user:
+            if strip_compaction and not seen_turn1_assistant:
                 is_comp, _, sum_inner, trailing_u = _robin_parse_compaction_user_text(
                     clean_u
                 )
@@ -55050,7 +55137,7 @@ def _robin_extract_first_turn_identity(
                             continue
                     pending_compaction_summary = sum_inner
                     continue
-            if not seen_first_user:
+            if not seen_turn1_assistant:
                 seen_first_user = True
                 first_user_norm = _robin_normalize_first_user_fingerprint(
                     clean_u, strip_compaction=strip_compaction
@@ -55067,6 +55154,7 @@ def _robin_extract_first_turn_identity(
                     ):
                         pending_compaction_summary = ""
                 continue
+            seen_turn1_assistant = True
             canon_a = _robin_canonicalize_assistant_turn_for_key(msg)
             if canon_a:
                 first_assistant_parts.append(canon_a)
@@ -55344,11 +55432,40 @@ def _robin_partition_dsh_messages(
     latest_runtime_context: str = ""
     pending_compaction_block: str = ""
     pending_compaction_summary: str = ""
+    can_merge_user: bool = False
+
+    def _append_user_turn(u_txt: str) -> None:
+        nonlocal can_merge_user
+        if not u_txt:
+            return
+        if clean_turns and clean_turns[-1][0] == "user" and can_merge_user:
+            clean_turns[-1] = ("user", f"{clean_turns[-1][1]}\n\n{u_txt}")
+        else:
+            clean_turns.append(("user", u_txt))
+        can_merge_user = True
+
+    def _record_context_blocks(ctx_items: Sequence[str]) -> None:
+        nonlocal latest_runtime_context
+        for c_blk in ctx_items:
+            low = c_blk.lower()
+            if (
+                "current runtime context" in low
+                or "current dsh file policy:" in low
+                or "approval policy:" in low
+                or "approval prompts are disabled" in low
+                or "approval policy changed from" in low
+            ):
+                latest_runtime_context = c_blk
+            elif c_blk not in reminder_blocks:
+                reminder_blocks.append(c_blk)
 
     for msg in messages:
         if not isinstance(msg, dict):
             continue
         role = str(msg.get("role") or "")
+        if role == "tool":
+            can_merge_user = False
+            continue
         raw_txt = _robin_extract_message_plain_text(msg)
         if not raw_txt:
             continue
@@ -55357,17 +55474,7 @@ def _robin_partition_dsh_messages(
             continue
         if role == "user":
             clean_u, ctx_list = _robin_split_user_text_and_context(raw_txt)
-            for c_blk in ctx_list:
-                low = c_blk.lower()
-                if (
-                    "current runtime context" in low
-                    or "current dsh file policy:" in low
-                    or "approval policy:" in low
-                    or "approval prompts are disabled" in low
-                ):
-                    latest_runtime_context = c_blk
-                elif c_blk not in reminder_blocks:
-                    reminder_blocks.append(c_blk)
+            _record_context_blocks(ctx_list)
             if not clean_u:
                 continue
             is_comp, comp_blk, sum_inner, trailing_u = (
@@ -55378,23 +55485,13 @@ def _robin_partition_dsh_messages(
                     clean_trailing, extra_ctx = _robin_split_user_text_and_context(
                         trailing_u
                     )
-                    for c_blk in extra_ctx:
-                        low = c_blk.lower()
-                        if (
-                            "current runtime context" in low
-                            or "current dsh file policy:" in low
-                            or "approval policy:" in low
-                            or "approval prompts are disabled" in low
-                        ):
-                            latest_runtime_context = c_blk
-                        elif c_blk not in reminder_blocks:
-                            reminder_blocks.append(c_blk)
+                    _record_context_blocks(extra_ctx)
                     combined_u = (
                         f"{comp_blk}\n\n{clean_trailing}"
                         if clean_trailing
                         else comp_blk
                     )
-                    clean_turns.append(("user", combined_u))
+                    _append_user_turn(combined_u)
                     pending_compaction_block = ""
                     pending_compaction_summary = ""
                 else:
@@ -55402,11 +55499,11 @@ def _robin_partition_dsh_messages(
                     pending_compaction_summary = sum_inner
                 continue
             if pending_compaction_block:
-                clean_turns.append(("user", f"{pending_compaction_block}\n\n{clean_u}"))
+                _append_user_turn(f"{pending_compaction_block}\n\n{clean_u}")
                 pending_compaction_block = ""
                 pending_compaction_summary = ""
             else:
-                clean_turns.append(("user", clean_u))
+                _append_user_turn(clean_u)
         elif role == "assistant":
             clean_a = raw_txt.strip()
             if pending_compaction_summary and _robin_is_compaction_duplicate_assistant(
@@ -55415,13 +55512,14 @@ def _robin_partition_dsh_messages(
                 pending_compaction_summary = ""
                 continue
             if pending_compaction_block:
-                clean_turns.append(("user", pending_compaction_block))
+                _append_user_turn(pending_compaction_block)
                 pending_compaction_block = ""
                 pending_compaction_summary = ""
+            can_merge_user = False
             clean_turns.append(("assistant", clean_a))
 
     if pending_compaction_block:
-        clean_turns.append(("user", pending_compaction_block))
+        _append_user_turn(pending_compaction_block)
 
     prompt_blocks: list[str] = []
     for sb in system_blocks:
@@ -55514,14 +55612,21 @@ def _robin_normalize_title_text(text: str) -> str:
 
 
 def _robin_title_is_provisional(title: str, query_text: str) -> bool:
-    """Return True when `title` is only the provisional echo of the first user query."""
+    """Return True when `title` is only the provisional echo (full or server-truncated prefix) of the user query."""
     title_norm = _robin_normalize_title_text(title)
     query_norm = _robin_normalize_title_text(query_text)
     if not title_norm:
         return True
     if not query_norm:
         return False
-    return title_norm == query_norm
+    if title_norm == query_norm:
+        return True
+    raw_prefix_norm = _robin_normalize_title_text(str(query_text or "").strip()[:100])
+    if raw_prefix_norm and title_norm == raw_prefix_norm:
+        return True
+    if len(title_norm) >= 24 and query_norm.startswith(title_norm):
+        return True
+    return False
 
 
 def _robin_extract_title_request_boot_key(
@@ -55542,7 +55647,7 @@ def _robin_extract_title_request_boot_key(
             try:
                 arr = json.loads(raw[idx_arr : ridx_arr + 1])
                 if isinstance(arr, list):
-                    for item in arr:
+                    for item in reversed(arr):
                         cand_txt = ""
                         if isinstance(item, dict) and isinstance(item.get("text"), str):
                             cand_txt = item["text"]
@@ -57269,16 +57374,31 @@ def _robin_lookup_continuation(
             if state.conversation_id and (
                 state.parent_request_id or state.binding_state == "provisional"
             ):
-                last_user_idx = 0
+                trailing_user_start_idx: int | None = None
                 for i, m in enumerate(messages):
-                    if not isinstance(m, dict) or m.get("role") != "user":
+                    if not isinstance(m, dict):
+                        continue
+                    r = str(m.get("role") or "")
+                    if r in ("assistant", "tool"):
+                        trailing_user_start_idx = None
+                        continue
+                    if r != "user":
                         continue
                     u_clean, _ = _robin_split_user_text_and_context(
                         _robin_extract_message_plain_text(m)
                     )
                     if u_clean.strip() and not _robin_is_dsh_job_notice_text(u_clean):
-                        last_user_idx = i
-                return state, last_user_idx, ""
+                        if trailing_user_start_idx is None:
+                            trailing_user_start_idx = i
+                return (
+                    state,
+                    (
+                        trailing_user_start_idx
+                        if trailing_user_start_idx is not None
+                        else 0
+                    ),
+                    "",
+                )
     return None, 0, ""
 
 
@@ -57357,7 +57477,17 @@ def _robin_store_continuation(
             # Never overwrite an already-committed parent from a prior turn (§10.2)
             return existing
         epoch = (existing.owner_epoch + 1) if existing is not None else 1
-        resolved_title = title or (existing.title if existing is not None else "")
+        first_u_for_title, _ = _robin_extract_first_turn_identity(messages)
+        cand_title = title or (existing.title if existing is not None else "")
+        resolved_title = (
+            ""
+            if (
+                cand_title
+                and first_u_for_title
+                and _robin_title_is_provisional(cand_title, first_u_for_title)
+            )
+            else cand_title
+        )
         eff_binding = (
             "committed"
             if (
@@ -57366,32 +57496,47 @@ def _robin_store_continuation(
             )
             else "provisional"
         )
-        state = _RobinSessionState(
-            session_key=primary_key,
-            client_session_id=client_sid,
-            principal_id=principal,
-            boot_key=boot_key,
-            full_key=full_key,
-            conversation_id=conversation_id,
-            parent_request_id=request_id,
-            parent_response_id=response_id,
-            binding_state=eff_binding,
-            title=resolved_title,
-            dsh_sandbox_mode=policy["sandbox_mode"],
-            dsh_approval_policy=policy["approval_policy"],
-            connected_folders=folders,
-            active_run_id="",
-            owner_epoch=epoch,
-            message_count=len(messages),
-            prefix_hash=_robin_messages_prefix_hash(messages, len(messages)),
-            updated_at=time.time(),
-            conversation_ready_event=(
-                existing.conversation_ready_event if existing is not None else None
-            ),
-            title_ready_event=(
-                existing.title_ready_event if existing is not None else None
-            ),
-        )
+        if existing is not None:
+            existing.session_key = primary_key
+            existing.client_session_id = client_sid
+            existing.principal_id = principal
+            existing.boot_key = boot_key or existing.boot_key
+            existing.full_key = full_key or existing.full_key
+            existing.conversation_id = conversation_id
+            existing.parent_request_id = request_id
+            existing.parent_response_id = response_id
+            existing.binding_state = eff_binding
+            if resolved_title:
+                existing.title = resolved_title
+            existing.dsh_sandbox_mode = policy["sandbox_mode"]
+            existing.dsh_approval_policy = policy["approval_policy"]
+            existing.connected_folders = folders
+            existing.active_run_id = ""
+            existing.owner_epoch = epoch
+            existing.message_count = len(messages)
+            existing.prefix_hash = _robin_messages_prefix_hash(messages, len(messages))
+            state = existing
+        else:
+            state = _RobinSessionState(
+                session_key=primary_key,
+                client_session_id=client_sid,
+                principal_id=principal,
+                boot_key=boot_key,
+                full_key=full_key,
+                conversation_id=conversation_id,
+                parent_request_id=request_id,
+                parent_response_id=response_id,
+                binding_state=eff_binding,
+                title=resolved_title,
+                dsh_sandbox_mode=policy["sandbox_mode"],
+                dsh_approval_policy=policy["approval_policy"],
+                connected_folders=folders,
+                active_run_id="",
+                owner_epoch=epoch,
+                message_count=len(messages),
+                prefix_hash=_robin_messages_prefix_hash(messages, len(messages)),
+                updated_at=time.time(),
+            )
         if state.conversation_ready_event is not None:
             state.conversation_ready_event.set()
         if resolved_title and state.title_ready_event is not None:
@@ -57888,6 +58033,8 @@ class _RobinRunActor:
         self.decoder.role_sent = False
         if frames or absorbed_bg:
             self.awaiting_post_tool_progress = True
+            self.last_tool_submit_monotonic = time.monotonic()
+            self.state_updates_at_tool_submit = self.run.state_tape.update_count
             self.progress_at_tool_submit = (
                 len(self.run.state_tape.entries),
                 len(self.run.answer_projector.committed_text),
@@ -58188,15 +58335,23 @@ class _RobinRunActor:
                         len(self.run.state_tape.entries),
                         len(self.run.answer_projector.committed_text),
                     )
-                    if (
-                        self.awaiting_post_tool_progress
-                        and cur_progress != self.progress_at_tool_submit
+                    if self.awaiting_post_tool_progress and (
+                        cur_progress != self.progress_at_tool_submit
+                        or self.run.state_tape.update_count
+                        != getattr(self, "state_updates_at_tool_submit", 0)
                     ):
                         self.awaiting_post_tool_progress = False
                     if (
                         not waited_on_tools
                         and self.awaiting_post_tool_progress
                         and self.last_submitted_ert_frames
+                        and (
+                            time.monotonic()
+                            - float(
+                                getattr(self, "last_tool_submit_monotonic", 0.0) or 0.0
+                            )
+                        )
+                        >= 25.0
                     ):
                         # Server closed the 30s segment without advancing past our last FunctionResponse
                         # (`cur_progress == self.progress_at_tool_submit`): re-open ERT and re-send once.
@@ -58221,7 +58376,15 @@ class _RobinRunActor:
                         and self.decoder.conversation_id
                         and self.decoder.request_id
                     ):
-                        if no_progress_reconnects >= 3:
+                        diag = self.last_pq_close_diag or {}
+                        is_clean_30s_segment = (
+                            str(diag.get("grpc_status") or "") in ("", "0")
+                            and diag.get("reset_error_code") is None
+                            and bool(diag.get("last_frame_eod"))
+                            and float(diag.get("stream_elapsed_ms") or 0.0) >= 25000.0
+                        )
+                        max_no_progress = 8 if is_clean_30s_segment else 3
+                        if no_progress_reconnects >= max_no_progress:
                             self.unplanned_no_progress_failed = True
                             _gemini_debug_log_event(
                                 self.session_id,
@@ -62168,7 +62331,7 @@ class GeminiHTTPClient:
             clean = _robin_normalize_title_text(raw)
             if not clean:
                 return ""
-            if query_norm and clean == query_norm:
+            if _robin_title_is_provisional(clean, first_human_text):
                 return ""
             return clean
 
@@ -62216,8 +62379,11 @@ class GeminiHTTPClient:
             timeout = aiohttp.ClientTimeout(total=8.0, connect=4.0)
             async with aiohttp.ClientSession(timeout=timeout) as t_sess:
                 while time.monotonic() < deadline:
-                    if sess_state is None:
-                        sess_state = lookup_session(arrived_at - 0.5)
+                    latest_sess = lookup_session(
+                        arrived_at - GEMINI_TITLE_RECENT_WINDOW_SECONDS
+                    )
+                    if latest_sess is not None:
+                        sess_state = latest_sess
                     ready = (
                         final_title(sess_state.title) if sess_state is not None else ""
                     )
@@ -62861,6 +63027,49 @@ class GeminiHTTPClient:
                             yield f"data: {json.dumps(chunk_dict, ensure_ascii=False)}\n\n".encode(
                                 "utf-8"
                             )
+                        if isinstance(
+                            actor.response, (_RobinHTTP2Response, _RobinMuxResponse)
+                        ):
+                            coalesce_sec = max(
+                                0.0, float(GEMINI_WEB_ERT_COALESCE_WINDOW_MS) / 1000.0
+                            )
+                            coalesce_deadline = time.monotonic() + coalesce_sec
+                            while True:
+                                rem_wait = coalesce_deadline - time.monotonic()
+                                if rem_wait <= 0:
+                                    break
+                                try:
+                                    nxt_kind, nxt_item = await asyncio.wait_for(
+                                        mux_q.get(), timeout=rem_wait
+                                    )
+                                except asyncio.TimeoutError:
+                                    break
+                                if nxt_kind == "ert_chunks":
+                                    for chunk_dict in nxt_item:
+                                        _record_delivered(chunk_dict)
+                                        yield f"data: {json.dumps(chunk_dict, ensure_ascii=False)}\n\n".encode(
+                                            "utf-8"
+                                        )
+                                    coalesce_deadline = time.monotonic() + coalesce_sec
+                                elif nxt_kind == "pq":
+                                    assert isinstance(nxt_item, bytes)
+                                    nxt_chunks = decoder.feed_bytes(nxt_item)
+                                    if decoder.conversation_id:
+                                        await actor.ensure_ert_and_presence(
+                                            decoder.conversation_id
+                                        )
+                                    if decoder.pending_ert_outbound_frames:
+                                        await actor.flush_pending_ert_outbound()
+                                    for chunk_dict in nxt_chunks:
+                                        _record_delivered(chunk_dict)
+                                        yield f"data: {json.dumps(chunk_dict, ensure_ascii=False)}\n\n".encode(
+                                            "utf-8"
+                                        )
+                                elif nxt_kind == "pq_rollover":
+                                    decoder.on_pq_stream_rollover()
+                                else:
+                                    mux_q.put_nowait((nxt_kind, nxt_item))
+                                    break
                         if _handoff_ready():
                             normal_completion_or_handoff = True
                             break
@@ -71999,6 +72208,221 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
         _is_gemini_compaction_summary_request(compacted_messages, tools=synth_tools)
         is False
     )
+
+    # (g) Multi-message Turn 1 & Turn N:
+    #     - Standalone `The approval policy changed from ...` enters prompt_context, while a human
+    #       message pasting that line alongside user prose is preserved intact;
+    #     - Preceding Turn-1 injections (e.g. `subagent-settled`, `subagent-report`, `agent-message`)
+    #       are coalesced with the human prompt in `query_text`, while `boot_key` takes the last
+    #       non-empty user message in Turn 1 (matching `_robin_extract_title_request_boot_key`);
+    #     - Inject-only turns (`<goal_round>`) naturally fall back to the injection itself;
+    #     - `<compacted-summary>` containing literal `</compacted-summary>` inside the summary body
+    #       or inside the trailing human prompt never leaks or swallows user text.
+    approval_notice = (
+        'The approval policy changed from "ask" to "never" (changed by the user).'
+    )
+    subagent_notice = 'Subagent sub-1 ("audit") finished [status: completed].'
+    human_turn1 = "核实下这个方案并修复"
+    multi_turn1_msgs = [
+        {"role": "system", "content": "You are an AI coding agent."},
+        {"role": "user", "content": approval_notice},
+        {"role": "user", "content": subagent_notice},
+        {"role": "user", "content": human_turn1},
+    ]
+    u_norm_t1, a_norm_t1 = _robin_extract_first_turn_identity(multi_turn1_msgs)
+    assert u_norm_t1 == human_turn1 and a_norm_t1 == ""
+    _, boot_multi_t1, _ = _robin_conversation_keys("p_multi", multi_turn1_msgs)
+    # Covers reversed(arr) selection when multiple items are passed in the title JSON array
+    title_multi_boot, title_multi_txt = _robin_extract_title_request_boot_key(
+        [
+            {
+                "role": "user",
+                "content": (
+                    "Generate the session title from this JSON array of human messages:\n"
+                    + json.dumps(
+                        [
+                            {"seq": 1, "text": "早期消息"},
+                            {"seq": 2, "text": human_turn1},
+                        ],
+                        ensure_ascii=False,
+                    )
+                ),
+            }
+        ],
+        principal_id="p_multi",
+    )
+    assert title_multi_txt == human_turn1
+    assert boot_multi_t1 == title_multi_boot
+    q_multi_t1 = _robin_extract_aligned_user_query(
+        multi_turn1_msgs, has_remote_parent=False
+    )
+    assert approval_notice not in q_multi_t1
+    assert q_multi_t1 == f"{subagent_notice}\n\n{human_turn1}"
+    pctx_multi_t1 = _robin_extract_dsh_prompt_context(multi_turn1_msgs)
+    assert approval_notice in pctx_multi_t1
+
+    # Human message quoting `The approval policy changed from ...` alongside prose must NOT be truncated
+    pasted_log_msg = f"{approval_notice}\n\n上面这句日志为什么会进 query?"
+    clean_pasted, ctx_pasted = _robin_split_user_text_and_context(pasted_log_msg)
+    assert clean_pasted == pasted_log_msg and ctx_pasted == []
+
+    # Inject-only Turn 1 (`<goal_round>`)
+    goal_round_txt = "<goal_round>\nObjective: finish verification\n</goal_round>"
+    goal_turn1_msgs = [
+        {"role": "user", "content": approval_notice},
+        {"role": "user", "content": goal_round_txt},
+    ]
+    u_goal, _ = _robin_extract_first_turn_identity(goal_turn1_msgs)
+    assert "Objective: finish verification" in u_goal
+    assert (
+        _robin_extract_aligned_user_query(goal_turn1_msgs, has_remote_parent=False)
+        == goal_round_txt
+    )
+
+    # Multi-message continuation turn (Turn 2+) coalesces all trailing user messages after assistant
+    agent_msg_notice = "Agent helper-2 sent a message:\nAll checks passed."
+    human_turn2 = "继续下一步"
+    multi_turn2_msgs = [
+        *multi_turn1_msgs,
+        {"role": "assistant", "content": "已完成第一步。"},
+        {"role": "user", "content": approval_notice},
+        {"role": "user", "content": agent_msg_notice},
+        {"role": "user", "content": human_turn2},
+    ]
+    q_multi_t2 = _robin_extract_aligned_user_query(
+        multi_turn2_msgs, has_remote_parent=True
+    )
+    assert approval_notice not in q_multi_t2
+    assert q_multi_t2 == f"{agent_msg_notice}\n\n{human_turn2}"
+
+    # Compaction summary containing literal `</compacted-summary>` inside the summary body
+    # AND inside the trailing human prompt
+    nested_summary_body = (
+        "Summary mentions literal `</compacted-summary>` fragment in boot_key analysis.\n"
+        "All earlier steps completed."
+    )
+    nested_comp_msg = (
+        "This is an automatically generated checkpoint condensing an earlier span of the conversation "
+        "to free up context.\n\n"
+        f"<compacted-summary>\n{nested_summary_body}\n</compacted-summary>"
+    )
+    human_with_tag = "真人正文里也提到了 `</compacted-summary>` 标签\n</compacted-summary>\n请继续验证"
+    nested_comp_turns = [
+        {"role": "user", "content": nested_comp_msg},
+        {"role": "assistant", "content": nested_summary_body},
+        {"role": "user", "content": human_with_tag},
+    ]
+    u_nested, a_nested = _robin_extract_first_turn_identity(nested_comp_turns)
+    assert (
+        u_nested
+        == _robin_normalize_first_user_fingerprint(
+            human_with_tag, strip_compaction=False
+        )
+        and a_nested == ""
+    )
+    q_nested = _robin_extract_aligned_user_query(
+        nested_comp_turns, has_remote_parent=False
+    )
+    assert q_nested.count(nested_summary_body) == 1
+    assert "Assistant:" not in q_nested and q_nested.endswith(human_with_tag)
+
+    # (h) StateTape rollover with collapsed transient `S.7` spinner frames & trailing `S.7` slots,
+    #     plus 100-char server-truncated provisional title rejection and in-place session update:
+    def _make_s7_spinner_raw(label: str = "Viewing file") -> bytes:
+        return _pb_bytes_field(
+            13,
+            _pb_bytes_field(4, b"")
+            + _pb_bytes_field(7, _pb_bytes_field(1, label.encode("utf-8"))),
+        )
+
+    tape_s7 = _RobinStateTape()
+    proj_s7 = _RobinThoughtProjector(tape_s7)
+    s7_empty = _make_s7_spinner_raw()
+    t_a = _make_thought_raw("Thought A")
+    tool_b = _make_tool_raw("Tool B")
+    t_c = _make_thought_raw("Thought C")
+    for raw_item in (
+        s7_empty,
+        t_a,
+        tool_b,
+        s7_empty,
+        s7_empty,
+        t_c,
+        s7_empty,
+    ):
+        tape_s7.append_live(raw_item, response_id="rc_s7")
+    initial_s7_delta = proj_s7.consume_delta()
+    assert (
+        "Thought A" in initial_s7_delta
+        and "Tool B" in initial_s7_delta
+        and "Thought C" in initial_s7_delta
+    )
+    assert len(tape_s7.entries) == 7
+    # Rollover where server collapses the two middle `S.7` frames into one AND drops the trailing
+    # `S.7` frame before emitting a brand-new `Thought D` frame:
+    tape_s7.on_stream_rollover()
+    proj_s7.on_stream_rollover()
+    t_d = _make_thought_raw("Thought D")
+    t_e = _make_thought_raw("Thought E")
+    prev_updates = tape_s7.update_count
+    for raw_item in (s7_empty, t_a, tool_b, s7_empty, t_c, t_d):
+        tape_s7.append_live(raw_item, response_id="rc_s7")
+    assert tape_s7.projection_conflict is False
+    assert tape_s7.update_count == prev_updates + 6
+    assert len(tape_s7.entries) == 8
+    post_rollover_delta = proj_s7.consume_delta()
+    assert post_rollover_delta == "\nThought D"
+    # Second rollover where server skips `Thought C` & `Thought D` in replay and emits brand-new `Thought E`
+    # while `seq < len(tape_s7.entries)` (pointing at a non-empty slot `t_c`):
+    tape_s7.on_stream_rollover()
+    proj_s7.on_stream_rollover()
+    for raw_item in (t_a, tool_b, t_e):
+        tape_s7.append_live(raw_item, response_id="rc_s7")
+    assert tape_s7.projection_conflict is False
+    assert len(tape_s7.entries) == 9
+    assert proj_s7.consume_delta() == "\nThought E"
+
+    # 100-char truncated provisional title must be recognized as provisional, and
+    # `_robin_store_continuation` must update existing session in-place so title waiters see updates:
+    long_prompt = (
+        "我重启了脚本, 但是对话又发生中断了..  是 voice_edge.py 哪里改错了?\n\n"
+        f"看下 {_SELFTEST_WORKSPACE}/sessions/session-94af721c-fbd4-485c-8d38-14956be358fe"
+    )
+    trunc_100_title = long_prompt[:100]
+    assert _robin_title_is_provisional(trunc_100_title, long_prompt) is True
+    assert (
+        _robin_title_is_provisional("Voice-Edge 会话中断故障排查", long_prompt) is False
+    )
+    long_msgs = [{"role": "user", "content": long_prompt}]
+    pre_sess = _robin_resolve_or_create_session(
+        "", long_msgs, credential_id="p_title_ref"
+    )
+    stored_sess = _robin_store_continuation(
+        pre_sess.boot_key,
+        long_msgs,
+        "c_title_ref",
+        "r_title_ref",
+        "",
+        credential_id="p_title_ref",
+        title=trunc_100_title,
+        binding_state="provisional",
+    )
+    assert stored_sess is pre_sess
+    assert pre_sess.title == ""
+    run_title_ref = _RobinRunState(
+        run_id="run_title_ref",
+        session_key=pre_sess.session_key,
+        client_session_id=pre_sess.client_session_id,
+        principal_id="p_title_ref",
+        boot_key=pre_sess.boot_key,
+        query_text=long_prompt,
+    )
+    assert run_title_ref.publish_conversation_title(trunc_100_title) is False
+    assert pre_sess.title == ""
+    assert (
+        run_title_ref.publish_conversation_title("Voice-Edge 会话中断故障排查") is True
+    )
+    assert pre_sess.title == "Voice-Edge 会话中断故障排查"
 
 
 def run_self_tests():
