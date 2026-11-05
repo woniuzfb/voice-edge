@@ -81,3 +81,27 @@ ignore = [
 ]
 
 allowed-confusables = ["（", "）", "，", "：", "！", "？", "；", "’", "。"]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+    "ruff>=0.17.3",
+]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["voice_edge.py"]
+typeCheckingMode = "basic"
+reportReturnType = "error"
+reportCallIssue = "error"
+reportOptionalSubscript = "error"
+reportTypedDictNotRequiredAccess = "warning"
+reportArgumentType = "warning"
+reportOptionalMemberAccess = "warning"
+reportAttributeAccessIssue = "warning"
+reportMissingImports = "none"
+reportUnusedVariable = "none"
+reportUnusedFunction = "none"
+reportUnreachable = "none"
+reportPossiblyUnboundVariable = "none"

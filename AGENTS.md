@@ -18,16 +18,17 @@
 
 ## 2. 核心铁律（强制执行）
 
-### 铁律 1：代码必须经过 Ruff 格式化与静态检查（Format & Lint）
-- **要求**：任何对 Python 文件的修改，必须在最终交付前运行并通过 Ruff 格式化与静态检查，确保风格统一且 **0 Error / 0 Warning**。
+### 铁律 1：代码必须经过 Ruff 格式化、Ruff 静态检查与 Pyright 类型检查（Format, Lint & Type Check）
+- **要求**：任何对 Python 文件的修改，必须在最终交付前运行并通过 Ruff 格式化、Ruff 静态检查与 Pyright 静态类型检查，确保风格统一且 **0 Error / 0 Warning**。
 - **执行命令**：
   ```bash
   uv run ruff format voice_edge.py
   uv run ruff check voice_edge.py
   # 或者全局检查
   uv run ruff check .
+  uv run pyright voice_edge.py
   ```
-- **配置规则**：遵循 `pyproject.toml` 中的 `[tool.ruff.lint]` 配置（包含 `E`, `F`, `B`, `ASYNC`, `RUF` 等规则）。不要随意修改该规则集或使用 `# noqa` 逃避校验。
+- **配置规则**：遵循 `pyproject.toml` 中的 `[tool.ruff.lint]` 与 Pyright 配置（包含 `E`, `F`, `B`, `ASYNC`, `RUF` 等规则）。不要随意修改该规则集或使用 `# noqa` 逃避校验；调用 `pyright` 时必须严格遵守铁律 9（直接运行 `uv run pyright voice_edge.py`，严禁 Python `subprocess.run(..., timeout=...)` 套壳或分段调用）。
 
 ---
 
@@ -47,7 +48,7 @@
   ```bash
   uv run main --self-test
   ```
-- **基线要求**：当前基线为 **134/134 passed**。不得出现任何 `❌ Self-test failed`。
+- **基线要求**：当前基线为 **138/138 passed**。不得出现任何 `❌ Self-test failed`。
 
 ---
 
@@ -91,6 +92,20 @@
 
 ---
 
+### 铁律 9：严禁在 `bash` / Python 中用 `subprocess.run(..., timeout=...)` 套壳调用 `pyright` 或分段跑 `pyright`
+- **原因**：`.venv/bin/pyright` 是 Python 包装入口（`pyright.cli:entrypoint`），内部会派生独立的 `node .../pyright/dist/index.js` 子进程。使用 `python -c "subprocess.run(['.venv/bin/pyright', ...], timeout=...)"` 超时中断时，`subprocess.run` 仅向父包装进程发送 `SIGKILL`，不会清理子进程组（`os.killpg`），导致 `node` 变成孤儿进程在后台持续 100% CPU 满载运行并叠加耗尽整机内存。
+- **要求**：
+  1. **绝对禁止**用 Python `subprocess.run(..., timeout=...)` 套壳运行 `pyright`；
+  2. **绝对禁止**将 `voice_edge.py` 切分成多个临时片段循环调用 `pyright`；
+  3. 同一时间最多只允许运行 **1 个** 后台任务，若任务超时或卡死必须立即终止并确保清理整个进程树（含 `node` 子进程），绝不允许残留孤儿进程。
+
+---
+
+### 铁律 10：严禁参考用户未提供的旧 Debug 日志
+- **要求**：在排查问题时，**绝对不要参考用户没有明确提供给你的旧 debug 日志**（例如 `/tmp` 或 `/var/folders` 下早期的历史 `ve_gemini_debug_*` 目录）。旧日志可能基于不同版本的脚本生成，盲目参考会造成严重误导。仅允许查看用户明确指定的会话/日志路径，或当前正在运行的最新实时会话日志。
+
+---
+
 ## 3. 标准开发与提交流程
 
 在处理任何涉及代码修改的请求时，Agent 必须按顺序执行以下闭环：
@@ -102,7 +117,8 @@ flowchart TD
     C --> D[行号同步: uv run main --fix-env-registry]
     D --> E[代码格式化: uv run ruff format voice_edge.py]
     E --> F[代码检查: uv run ruff check voice_edge.py]
-    F --> G[全量自测: uv run main --self-test]
+    F --> P[类型检查: uv run pyright voice_edge.py]
+    P --> G[全量自测: uv run main --self-test]
     G --> H{全部检查通过?}
     H -- 否 --> B
     H -- 是 --> I[更新本地 .memory/ 记录并向用户汇报]
@@ -112,5 +128,6 @@ flowchart TD
 2. **对齐行号**：`uv run main --fix-env-registry`
 3. **代码格式化**：`uv run ruff format voice_edge.py`
 4. **代码检查**：`uv run ruff check voice_edge.py`（必须 0 errors / 0 warnings）
-5. **自测验证**：`uv run main --self-test`（必须 130/130 通过）
-6. **记忆更新与汇报**：在本地 `.memory/YYYY-MM-DD.md` 记录重大架构变更与决策背景；保持所有修改严格处于**未暂存状态（unstaged）**，向用户清晰汇报改动细节，**严禁擅自执行 git add 或 git commit，等待用户指示与审查授权**。
+5. **类型检查**：`uv run pyright voice_edge.py`（必须 0 errors / 0 warnings）
+6. **自测验证**：`uv run main --self-test`（必须 138/138 通过）
+7. **记忆更新与汇报**：在本地 `.memory/YYYY-MM-DD.md` 记录重大架构变更与决策背景；保持所有修改严格处于**未暂存状态（unstaged）**，向用户清晰汇报改动细节，**严禁擅自执行 git add 或 git commit，等待用户指示与审查授权**。

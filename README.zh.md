@@ -2,19 +2,17 @@
 
 ## 结合
 
-- mlx-vlm, mlx-lm
-- stt, tts
-- OpenAI API
-- dictation
-- Xiaomi XiaoAI
-- 浏览器模型: DeepSeek, Doubao, Qwen, M365 Copilot
-- OpenRouter, OpenCode
-- Firefox 扩展
-- Voice-Edge Harness[veh] 使用 Gemini app 里的 Argon 模型[任务模式]
+- **本地 Apple Silicon AI**：`mlx-lm` 与 `mlx-vlm` 本地推理、嵌入（Embeddings）、重排（Rerank）以及 FIM 代码补全
+- **语音与交互引擎**：实时语音转写（`faster-whisper` / Apple Speech）、流式 Edge-TTS 语音合成、macOS 全局听写、原生 HUD 浮层与本地唤醒词语音助手
+- **统一 OpenAI 与 MCP 网关**：标准 OpenAI 兼容 HTTP 接口（`/v1/chat/completions`、`/v1/audio/*`、`/v1/embeddings`、`/v1/rerank`、`/v1/completions`）与 MCP 服务
+- **浏览器模型中继**：配合 [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) Firefox 扩展接入 DeepSeek、豆包（Doubao）、Qwen、Microsoft 365 Copilot 以及 Google AI Studio Playground（`gemini:aistudio/*`）
+- **Gemini App 任务模式中继**：复用 macOS 原生 `Gemini.app` 接入 Argon 模型（`gemini:app/*`），通过 Robin gRPC 与 `ExecuteRemoteTools`（ERT）双向流驱动 [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
+- **第三方 API 中继**：OpenRouter（`openrouter:*`）与 OpenCode（`opencode:zen/*`、`opencode:go/*`），支持多 Key 轮询与上游协议自动转换
+- **小米小爱同学桥接**：局域网智能音箱桥接，支持唤醒词路由、流式 TTS 播报与小米原生助手兜底
 
 ## 系统要求
 
-- macOS
+- macOS（Apple Silicon）
 - Python 3.11 或更高版本
 - FFmpeg
 - 麦克风权限
@@ -32,11 +30,11 @@ uv sync
 uv run python -m camoufox fetch
 ```
 
-使用浏览器模型时，请安装上面的 Firefox 认证同步插件。
+使用浏览器模型（DeepSeek、豆包、Qwen、Microsoft 365 Copilot 或 Google AI Studio Playground）时，请安装上面的 Firefox 认证同步插件。
 
 通过 VS Code 使用 Voice Edge 时，请安装上面的 Continue 插件。
 
-需使用 Gemini app 里的 Argon 模型[任务模式]，请安装上面的 Voice-Edge Harness[veh]。
+使用 Gemini App Argon 模型（`gemini:app/*`）或 AI Studio Playground 模型（`gemini:aistudio/*`）进行 Agent 任务编排时，请安装上面的 Voice-Edge Harness（`veh`）。
 
 ## 运行
 
@@ -110,8 +108,9 @@ uv run main --http
 - 豆包
 - Qwen
 - Microsoft 365 Copilot
+- Google AI Studio Playground（`gemini:aistudio/*`）
 
-Firefox 通过 Native Messaging 桥接同步本地浏览器认证状态。认证内容属于敏感凭据，不得写入日志、上传或提交到代码仓库。
+Firefox 通过 Native Messaging 桥接与本地 WebSocket 通道（`ws://127.0.0.1:5003/ws`）同步本地浏览器认证状态与 RPC 调用。认证内容属于敏感凭据，不得写入日志、上传或提交到代码仓库。
 
 ## Microsoft 365 Copilot 与 SharePoint
 
@@ -460,6 +459,33 @@ models:
 - 生成的 Native Host 文件存放在 `~/.voice-edge`。
 - 对于当前进程，Firefox 同步的凭据优先于环境变量提供的浏览器凭据。
 
+## Google AI Studio 与 Gemini App 中继
+
+Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴露两条独立的 Gemini 中继通道：
+
+### 1. Google AI Studio Playground（`gemini:aistudio/*`）
+
+- **浏览器扩展桥接**：通过 [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) 浏览器扩展与本地共享 WebSocket 桥（`ws://127.0.0.1:5003/ws`，`AIS_*` 协议），在已登录的 `https://aistudio.google.com/` 标签页内驱动 `MakerSuiteService` RPC（`GenerateContent`、`ListModels`、`CreatePrompt`、`UpdatePrompt`、`ListPrompts`、`GenerateTitle`）。
+- **静默 WAA 自举与请求签名**：在标签页内自动捕获 Web Application Attestation（`BotGuard`）服务并实时计算三段 `SAPISIDHASH` 认证头，冷启动自举全程零配额消耗、零历史记录污染。
+- **核心能力**：
+  - 原生客户端工具声明（`body[6]`）、多轮函数调用，以及跨工具轮次自动保存与回填 `thoughtSignature`
+  - 通过模型后缀（`-high`、`-medium`、`-low`）切换思考强度（Thinking Level）
+  - 多模态输入（内联图片、音频、PDF、YouTube 链接）与 Google Search 联网引用（Grounding Citations）
+  - 自动持久化 Playground 会话历史（`prompts/<id>`）并同步生成标题
+- **模型 ID**：
+  - `gemini:aistudio/gemini-4-argon`（`-high`、`-medium`、`-low`）
+  - `gemini:aistudio/gemini-3.8-flash-high`、`gemini:aistudio/gemini-3.8-flash-medium`、`gemini:aistudio/gemini-3.8-flash-low`
+  - 任意由 `ListModels` 动态发现的上游模型（`gemini:aistudio/<model-slug>`）
+
+### 2. Gemini macOS App 任务模式（`gemini:app/*`）
+
+- **原生 Robin gRPC 与 ERT 双向流中继**：复用本机 macOS `Gemini.app` 登录凭据，通过 `RobinService/ProcessQuery` 与 `ExecuteRemoteTools`（ERT）双向流驱动 [Voice-Edge Harness（`veh`）](https://github.com/woniuzfb/voice-edge-harness)。
+- **核心能力**：
+  - 有状态多轮会话续接、`StateTape` `state_seq` 同步以及长连接 `resumeTurn` 自动流轮转（Rollover）
+  - 多账号凭据指纹热切换、历史回滚/分叉（`fork`）检测，以及 SQLite 状态库持久化（`~/.voice-edge/gemini_dsh_state.sqlite3`）
+- **模型 ID**：
+  - `gemini:app/gemini-4-argon`（`-high`、`-medium`、`-low`）
+
 ## OpenRouter 与 OpenCode 中继
 
 两个中继都把第三方模型暴露为本地 OpenAI 兼容模型：模型 ID 带各自的 `openrouter:` / `opencode:` 前缀，客户端只用 `/v1/chat/completions`，上游的 Responses、Anthropic Messages、Google generateContent 等协议差异由本地转换。可用模型通过 `GET /v1/models` 查询，未配置 key 的中继不会发布任何模型。
@@ -493,26 +519,35 @@ export VE_OPENCODE_GO=0
 ## 架构
 
 ```text
-    小爱同学 / OpenAI / MCP / 快捷键 / 聊天
-                  |
-                  v
-          Voice Edge 核心
-                  |
-       +----------+----------+
-       |          |          |
-       v          v          v
-      STT       本地 LLM     工具
-       |          |          |
-       +----------+----------+
-                  |
-                  v
-              对话引擎
-                  |
-                  v
-             流式 TTS
-                  |
-                  v
-          本地音频 / 小爱音频
+  Voice-Edge Harness (veh) / Continue (VS Code) / OpenAI 客户端 / MCP (:5001)
+  macOS 全局快捷键 / 本地唤醒词语音助手 / 小米小爱同学智能音箱
+                                      |
+                                      v
+                    +-----------------------------------+
+                    |     Voice Edge 核心 (:5002)       |
+                    |   OpenAI API 路由与 MCP 服务端    |
+                    +-----------------+-----------------+
+                                      |
+        +-----------------------------+-----------------------------+
+        |                             |                             |
+        v                             v                             v
++---------------+           +-------------------+           +---------------+
+| 本地 AI 与    |           | 浏览器与桌面端    |           | 云端 API      |
+| 语音引擎      |           | 模型中继          |           | 中继          |
++-------+-------+           +---------+---------+           +-------+-------+
+| - MLX-LM/VLM  |           | - Camoufox 引擎   |           | - OpenRouter  |
+| - Embeddings  |           |   DeepSeek / 豆包 |           |   openrouter: |
+|   & Rerank    |           |   Qwen            |           | - OpenCode    |
+| - FIM 补全    |           | - WS 桥接 :5003   |           |   opencode:   |
+| - Whisper /   |           |   M365 Copilot &  |           |   zen/ & go/  |
+|   Apple STT   |           |   AI Studio (AIS) |           +---------------+
+| - Edge-TTS    |           | - Gemini.app      |
++-------+-------+           |   Robin gRPC/ERT  |
+        |                   +-------------------+
+        v
++-----------------------------------+
+| macOS HUD / 本地音频 & 小爱音频流 |
++-----------------------------------+
 ```
 
 ## 调试

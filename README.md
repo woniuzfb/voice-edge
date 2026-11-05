@@ -2,19 +2,17 @@
 
 ## Combines
 
-- mlx-vlm and mlx-lm
-- stt and tts
-- OpenAI API
-- dictation
-- Xiaomi XiaoAI
-- Browser-backed models: DeepSeek, Doubao, Qwen, and M365 Copilot
-- OpenRouter and OpenCode
-- Firefox extension
-- Gemini app Argon models[task mode] used in Voice-Edge Harness[veh]
+- **Local Apple Silicon AI**: `mlx-lm` and `mlx-vlm` inference, local embeddings, reranking, and FIM code completion
+- **Speech & Voice Interaction**: Real-time STT (`faster-whisper` / Apple Speech), streaming Edge-TTS, global macOS dictation, HUD overlay, and local wake-word voice chat
+- **Unified OpenAI & MCP Gateway**: Standard OpenAI-compatible HTTP endpoints (`/v1/chat/completions`, `/v1/audio/*`, `/v1/embeddings`, `/v1/rerank`, `/v1/completions`) and MCP server
+- **Browser-Backed Model Relays**: DeepSeek, Doubao, Qwen, Microsoft 365 Copilot, and Google AI Studio Playground (`gemini:aistudio/*`), powered by the [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) Firefox extension
+- **Gemini App Task-Mode Relay**: Native macOS Gemini app Argon models (`gemini:app/*`) with bidirectional `ExecuteRemoteTools` (ERT) streaming for [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
+- **Third-Party API Relays**: OpenRouter (`openrouter:*`) and OpenCode (`opencode:zen/*`, `opencode:go/*`) with multi-key round-robin rotation and protocol translation
+- **Xiaomi XiaoAI Bridge**: Smart speaker LAN bridge with wake-word routing, streaming TTS playback, and native Xiaomi assistant fallback
 
 ## Requirements
 
-- macOS
+- macOS (Apple Silicon)
 - Python 3.11 or newer
 - FFmpeg
 - Microphone permission
@@ -32,11 +30,11 @@ uv sync
 uv run python -m camoufox fetch
 ```
 
-Install the Firefox authentication-sync extension when using browser-backed providers.
+Install the Firefox authentication-sync extension when using browser-backed providers (DeepSeek, Doubao, Qwen, Microsoft 365 Copilot, or Google AI Studio Playground).
 
 Install the Continue extension when using Voice Edge through VS Code.
 
-Install the Voice-Edge harness[veh] when using Gemini Argon models[task mode].
+Install the Voice-Edge Harness (`veh`) when using Gemini App Argon (`gemini:app/*`) or AI Studio Playground (`gemini:aistudio/*`) models in agentic task mode.
 
 ## Running
 
@@ -110,8 +108,9 @@ Supported browser-backed model families include:
 - Doubao
 - Qwen
 - Microsoft 365 Copilot
+- Google AI Studio Playground (`gemini:aistudio/*`)
 
-Firefox synchronizes local browser authentication state through the Native Messaging bridge. Authentication values are treated as secrets and must not be logged, uploaded, or committed.
+Firefox synchronizes local browser authentication state through the Native Messaging bridge and the local WebSocket relay (`ws://127.0.0.1:5003/ws`). Authentication values are treated as secrets and must not be logged, uploaded, or committed.
 
 ## Microsoft 365 Copilot and SharePoint
 
@@ -466,6 +465,33 @@ models:
 - Generated Native Host files are stored under `~/.voice-edge`.
 - Firefox-synchronized credentials take precedence over environment-provided browser credentials for the current process.
 
+## Google AI Studio and Gemini App Relays
+
+Voice Edge exposes two distinct Gemini relay endpoints under the `gemini:` namespace over `POST /v1/chat/completions`:
+
+### 1. Google AI Studio Playground (`gemini:aistudio/*`)
+
+- **Browser Extension Bridge**: Operates through the [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) browser extension over the shared local WebSocket bridge (`ws://127.0.0.1:5003/ws`, `AIS_*` protocol), driving `MakerSuiteService` RPCs (`GenerateContent`, `ListModels`, `CreatePrompt`, `UpdatePrompt`, `ListPrompts`, `GenerateTitle`) inside an authenticated `https://aistudio.google.com/` tab.
+- **Silent WAA Bootstrap & Signing**: Automatically intercepts the page's Web Application Attestation (`BotGuard`) service and computes 3-part `SAPISIDHASH` headers on the fly without consuming quota or polluting Playground history on startup.
+- **Capabilities**:
+  - Native client tool declarations (`body[6]`), multi-turn function calling, and automatic `thoughtSignature` preservation across tool turns
+  - Configurable thinking levels via suffix (`-high`, `-medium`, `-low`)
+  - Multimodal inputs (inline images, audio, PDFs, and YouTube links) and Google Search grounding citations
+  - Automatic Playground history persistence (`prompts/<id>`) and generated session title synchronization
+- **Model IDs**:
+  - `gemini:aistudio/gemini-4-argon` (`-high`, `-medium`, `-low`)
+  - `gemini:aistudio/gemini-3.8-flash-high`, `gemini:aistudio/gemini-3.8-flash-medium`, `gemini:aistudio/gemini-3.8-flash-low`
+  - Any upstream model dynamically discovered via `ListModels` (`gemini:aistudio/<model-slug>`)
+
+### 2. Gemini macOS App Task Mode (`gemini:app/*`)
+
+- **Native Robin gRPC & ERT Relay**: Reuses local macOS `Gemini.app` credentials to drive `RobinService/ProcessQuery` and bidirectional `ExecuteRemoteTools` (ERT) streams for [Voice-Edge Harness (`veh`)](https://github.com/woniuzfb/voice-edge-harness).
+- **Capabilities**:
+  - Stateful multi-turn continuation, `StateTape` `state_seq` synchronization, and automatic `resumeTurn` stream rollover
+  - Hot-reloadable multi-account switching, history divergence (`fork`) detection, and SQLite state persistence (`~/.voice-edge/gemini_dsh_state.sqlite3`)
+- **Model IDs**:
+  - `gemini:app/gemini-4-argon` (`-high`, `-medium`, `-low`)
+
 ## OpenRouter and OpenCode Relays
 
 Both relays expose third-party models as local OpenAI-compatible models: model ids carry the `openrouter:` or `opencode:` prefix and clients only speak `POST /v1/chat/completions`, while upstream differences (Responses, Anthropic Messages, Google generateContent) are translated locally. Use `GET /v1/models` to list what is available; a relay without configured keys publishes nothing.
@@ -501,26 +527,35 @@ export VE_OPENCODE_GO=0
 ## Architecture
 
 ```text
-  XiaoAI / OpenAI / MCP / Hotkeys / Voice Chat
-                |
-                v
-        Voice Edge Core
-                |
-     +----------+----------+
-     |          |          |
-     v          v          v
-    STT      Local LLM    Tools
-     |          |          |
-     +----------+----------+
-                |
-                v
-      Conversation Engine
-                |
-                v
-          Streaming TTS
-                |
-                v
-   Local Audio / XiaoAI Audio
+  Voice-Edge Harness (veh) / Continue (VS Code) / OpenAI Clients / MCP (:5001)
+  macOS Global Hotkeys / Local Wake-Word Voice Chat / Xiaomi XiaoAI Speaker
+                                      |
+                                      v
+                    +-----------------------------------+
+                    |     Voice Edge Core (:5002)       |
+                    |  OpenAI API Router & MCP Server   |
+                    +-----------------+-----------------+
+                                      |
+        +-----------------------------+-----------------------------+
+        |                             |                             |
+        v                             v                             v
++---------------+           +-------------------+           +---------------+
+| Local AI &    |           | Browser & Desktop |           | Cloud API     |
+| Speech Engine |           | Model Relays      |           | Relays        |
++-------+-------+           +---------+---------+           +-------+-------+
+| - MLX-LM/VLM  |           | - Camoufox Engine |           | - OpenRouter  |
+| - Embeddings  |           |   DeepSeek/Doubao |           |   openrouter: |
+|   & Rerank    |           |   Qwen            |           | - OpenCode    |
+| - FIM         |           | - WS Bridge :5003 |           |   opencode:   |
+| - Whisper /   |           |   M365 Copilot &  |           |   zen/ & go/  |
+|   Apple STT   |           |   AI Studio (AIS) |           +---------------+
+| - Edge-TTS    |           | - Gemini.app      |
++-------+-------+           |   Robin gRPC/ERT  |
+        |                   +-------------------+
+        v
++-----------------------------------+
+| macOS HUD / Audio & XiaoAI Stream |
++-----------------------------------+
 ```
 
 ## Debugging
