@@ -362,10 +362,10 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49018
 #    VE_OPENCODE_FREE                       "1"                                          L49056
 #    VE_OPENCODE_GO                         "0"                                          L49061
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L62150
-#    VE_GEMINI_API_KEYS                     ""                                           L62154
-#    VE_GEMINI_BACKEND                      "auto"                                       L62173
-#    VE_GEMINI_PROJECT_ID                   ""                                           L62180
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L62162
+#    VE_GEMINI_API_KEYS                     ""                                           L62166
+#    VE_GEMINI_BACKEND                      "auto"                                       L62185
+#    VE_GEMINI_PROJECT_ID                   ""                                           L62192
 #    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54378
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1520
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1521
@@ -54915,6 +54915,10 @@ _DSH_CHECKPOINT_PREAMBLE_RE = re.compile(
     r"This\s+is\s+an\s+automatically\s+generated\s+checkpoint\s+condensing\s+an\s+earlier\s+span\s+of\s+the\s+conversation",
     flags=re.IGNORECASE,
 )
+_DSH_FILE_HANDLE_PREFIX_RE = re.compile(
+    r"^\s*(?:\[File\s+\"[^\"]*\"\s+\(\d+\s+bytes,\s+sha256:[0-9a-fA-F]+\):\s+verbatim\s+read-only\s+copy\s+saved\s+at\s+\"([^\"]+)\"\.[^\]]*\]\s*)+",
+    flags=re.DOTALL,
+)
 _CJK_CHAR_RE = re.compile(r"[\u2e80-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]")
 
 
@@ -55053,6 +55057,9 @@ def _robin_normalize_first_user_fingerprint(
     m = re.search(r"<USER_REQUEST>\s*(.*?)\s*</USER_REQUEST>", cleaned, flags=re.DOTALL)
     if m:
         cleaned = m.group(1)
+    without_handles = _DSH_FILE_HANDLE_PREFIX_RE.sub("", cleaned).strip()
+    if without_handles:
+        cleaned = without_handles
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned or "empty_user_message"
 
@@ -55220,7 +55227,7 @@ def _robin_extract_dsh_notice_job_id(text: str) -> str:
 
 
 def _robin_is_dsh_job_notice_text(text: str) -> bool:
-    """Return True only when `text` matches an anchored DSH background job completion notice."""
+    """Return True when `text` matches a DSH background job completion notice."""
     return bool(_robin_extract_dsh_notice_job_id(text))
 
 
@@ -55640,7 +55647,8 @@ def _robin_partition_dsh_messages(
             elif c_blk not in reminder_blocks:
                 reminder_blocks.append(c_blk)
 
-    for msg in messages:
+    mid_turn_user_indices = _ais_identify_mid_turn_user_indices(messages)
+    for msg_idx, msg in enumerate(messages):
         if not isinstance(msg, dict):
             continue
         role = str(msg.get("role") or "")
@@ -55662,7 +55670,11 @@ def _robin_partition_dsh_messages(
             if any("current runtime context" in c.lower() for c in ctx_list):
                 can_merge_user = False
             _record_context_blocks(ctx_list)
-            if not clean_u or _robin_is_dsh_job_notice_text(clean_u):
+            if (
+                not clean_u
+                or msg_idx in mid_turn_user_indices
+                or _robin_is_dsh_job_notice_text(clean_u)
+            ):
                 continue
             is_comp, comp_blk, sum_inner, trailing_u = (
                 _robin_parse_compaction_user_text(clean_u)
@@ -64468,6 +64480,12 @@ AISTUDIO_UPDATE_PROMPT_URL = f"{AISTUDIO_MAKERSUITE_RPC_BASE}/UpdatePrompt"
 AISTUDIO_LIST_PROMPTS_URL = f"{AISTUDIO_MAKERSUITE_RPC_BASE}/ListPrompts"
 AISTUDIO_LIST_MODELS_URL = f"{AISTUDIO_MAKERSUITE_RPC_BASE}/ListModels"
 AISTUDIO_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
+AISTUDIO_FIRST_BYTE_TIMEOUT = float(
+    os.environ.get("VE_AISTUDIO_FIRST_BYTE_TIMEOUT", "240.0")
+)
+AISTUDIO_STREAM_IDLE_TIMEOUT = float(
+    os.environ.get("VE_AISTUDIO_STREAM_IDLE_TIMEOUT", "240.0")
+)
 
 _AIS_DEFAULT_SAFETY_SETTINGS: list[list[Any]] = [
     [None, None, 7, 5],
@@ -64659,9 +64677,197 @@ def _ais_model_attribution_banner(spec_or_id: GeminiModelSpec | str) -> str:
     return f"使用了 {formatted or '4 Argon'} 模型"
 
 
-def _ais_is_tool_continuation_step(messages: Sequence[Any]) -> bool:
+def _ais_assistant_hop_key(asst_msg: dict[str, Any], asst_idx: int) -> str:
+    """Return a deterministic identifier for an `assistant` message that emitted `tool_calls`."""
+    raw_tcs = asst_msg.get("tool_calls")
+    if not isinstance(raw_tcs, list) or not raw_tcs:
+        return ""
+    ids = [
+        str(tc.get("id") or "").strip()
+        for tc in raw_tcs
+        if isinstance(tc, dict) and str(tc.get("id") or "").strip()
+    ]
+    return ",".join(ids) if ids else f"hop_{asst_idx}"
+
+
+def _ais_user_msg_has_media_blocks(msg: dict[str, Any]) -> bool:
+    """Return True when a `user` message carries multimodal blocks (`image_url`, `input_image`, `input_audio`, `file`, `input_file`)."""
+    raw_c = msg.get("content")
+    if not isinstance(raw_c, list):
+        return False
+    for b in raw_c:
+        if isinstance(b, dict):
+            btype = str(b.get("type") or "").strip().lower()
+            if btype in (
+                "image_url",
+                "input_image",
+                "input_audio",
+                "file",
+                "input_file",
+            ):
+                return True
+    return False
+
+
+def _ais_find_existing_session(
+    messages: Sequence[Any], body: dict[str, Any] | None = None
+) -> "_AisSessionState | None":
+    """Look up an active in-memory `_AisSessionState` for `messages` without creating or persisting state."""
+    if not messages:
+        return None
+    try:
+        client_sid, boot_key, full_key = _robin_conversation_keys(
+            "aistudio", messages, body=body
+        )
+    except Exception:
+        return None
+    with _AIS_SESSIONS_LOCK:
+        for k in (full_key, boot_key, client_sid):
+            if k and k in _AIS_SESSIONS_BY_KEY:
+                return _AIS_SESSIONS_BY_KEY[k]
+    return None
+
+
+def _ais_identify_mid_turn_user_indices(
+    messages: Sequence[Any],
+    sess_state: "_AisSessionState | None" = None,
+) -> set[int]:
+    """Structurally identify `role == "user"` message indices that occur inside an active `assistant(tool_calls)` tool hop.
+
+    Judges mid-turn DSH `user` messages purely by conversation topology (preceding `assistant` with `tool_calls`,
+    accompanying `role == "tool"` results, and per-hop counts tracked in `_AisSessionState`) rather than matching
+    hardcoded DSH notice templates.
+    """
+    msg_list = list(messages or [])
+    if not msg_list:
+        return set()
+    if sess_state is None:
+        sess_state = _ais_find_existing_session(msg_list)
+
+    mid_turn: set[int] = set()
+    n = len(msg_list)
+    idx = 0
+    while idx < n:
+        m = msg_list[idx]
+        if not isinstance(m, dict):
+            idx += 1
+            continue
+        role = str(m.get("role") or "").strip().lower()
+        if role != "assistant":
+            idx += 1
+            continue
+        hop_key = _ais_assistant_hop_key(m, idx)
+        next_a_idx = idx + 1
+        while next_a_idx < n:
+            nm = msg_list[next_a_idx]
+            if (
+                isinstance(nm, dict)
+                and str(nm.get("role") or "").strip().lower() == "assistant"
+            ):
+                break
+            next_a_idx += 1
+        if not hop_key:
+            idx = next_a_idx
+            continue
+
+        t_indices: list[int] = []
+        u_indices: list[int] = []
+        for s_idx in range(idx + 1, next_a_idx):
+            sm = msg_list[s_idx]
+            if not isinstance(sm, dict):
+                continue
+            s_role = str(sm.get("role") or "").strip().lower()
+            if s_role in ("tool", "function"):
+                t_indices.append(s_idx)
+            elif s_role == "user":
+                raw_u = _robin_extract_message_plain_text(sm)
+                clean_u, _ = _robin_split_user_text_and_context(raw_u)
+                if clean_u.strip() or _ais_user_msg_has_media_blocks(sm):
+                    u_indices.append(s_idx)
+
+        if not u_indices:
+            if (
+                next_a_idx == n
+                and sess_state is not None
+                and hop_key not in sess_state.tool_hop_user_counts
+                and (bool(t_indices) or sess_state.active_pending_hop_key == hop_key)
+            ):
+                sess_state.tool_hop_user_counts[hop_key] = 0
+            idx = next_a_idx
+            continue
+
+        # 1. Any `user` message appearing before the last `tool` result in the same hop is unconditionally mid-turn
+        last_t_idx = t_indices[-1] if t_indices else -1
+        for u_i in u_indices:
+            if u_i < last_t_idx:
+                mid_turn.add(u_i)
+
+        # 2. Evaluate trailing `user` messages in this hop (stopping before any message that carries a new-turn
+        #    runtime-context snapshot, compaction block, or human file-handle attachment)
+        candidate_u: list[int] = []
+        for u_i in u_indices:
+            if u_i < last_t_idx:
+                continue
+            um = msg_list[u_i]
+            raw_u = _robin_extract_message_plain_text(um)
+            clean_u, u_ctx = _robin_split_user_text_and_context(raw_u)
+            has_new_turn_snapshot = any(
+                "current runtime context" in c.lower() for c in u_ctx
+            )
+            has_file_handle = bool(_AIS_DSH_FILE_HANDLE_RE.search(raw_u))
+            is_comp, _, _, _ = _robin_parse_compaction_user_text(clean_u)
+            if has_new_turn_snapshot or has_file_handle or is_comp:
+                break
+            candidate_u.append(u_i)
+
+        if sess_state is not None and hop_key in sess_state.tool_hop_user_counts:
+            recorded_cnt = sess_state.tool_hop_user_counts[hop_key]
+            for u_i in candidate_u[:recorded_cnt]:
+                mid_turn.add(u_i)
+        elif next_a_idx == n:
+            # Active trailing tool hop at the end of `messages`
+            if bool(t_indices) or (
+                sess_state is not None and sess_state.active_pending_hop_key == hop_key
+            ):
+                if sess_state is not None:
+                    sess_state.tool_hop_user_counts[hop_key] = len(candidate_u)
+                for u_i in candidate_u:
+                    mid_turn.add(u_i)
+        elif candidate_u and t_indices:
+            # Historical span followed by `msg_list[next_a_idx]`
+            next_asst = msg_list[next_a_idx]
+            next_reasoning = str(next_asst.get("reasoning_content") or "")
+            next_started_new_turn = bool(
+                _AIS_ATTRIBUTION_BANNER_RE.match(next_reasoning)
+            )
+            last_um = msg_list[candidate_u[-1]]
+            last_u_clean, _ = _robin_split_user_text_and_context(
+                _robin_extract_message_plain_text(last_um)
+            )
+            if (
+                next_started_new_turn
+                and not _ais_user_msg_has_media_blocks(last_um)
+                and not _robin_is_dsh_job_notice_text(last_u_clean)
+            ):
+                for u_i in candidate_u[:-1]:
+                    mid_turn.add(u_i)
+            else:
+                for u_i in candidate_u:
+                    mid_turn.add(u_i)
+
+        idx = next_a_idx
+    return mid_turn
+
+
+def _ais_is_tool_continuation_step(
+    messages: Sequence[Any],
+    sess_state: "_AisSessionState | None" = None,
+) -> bool:
     """Return True when the current `/v1/chat/completions` call is a tool-result continuation step within an active user turn."""
-    for msg in reversed(messages or []):
+    msg_list = list(messages or [])
+    mid_turn_user_indices = _ais_identify_mid_turn_user_indices(msg_list, sess_state)
+    for idx in range(len(msg_list) - 1, -1, -1):
+        msg = msg_list[idx]
         if not isinstance(msg, dict):
             continue
         role = str(msg.get("role") or "").strip().lower()
@@ -64670,12 +64876,11 @@ def _ais_is_tool_continuation_step(messages: Sequence[Any]) -> bool:
         if role in ("tool", "function"):
             return True
         if role == "user":
+            if idx in mid_turn_user_indices:
+                return True
             raw_u = _robin_extract_message_plain_text(msg)
             clean_u, _ = _robin_split_user_text_and_context(raw_u)
-            clean_u = clean_u.strip()
-            if not clean_u:
-                continue
-            if _robin_is_dsh_job_notice_text(clean_u):
+            if not clean_u.strip() and not _ais_user_msg_has_media_blocks(msg):
                 continue
             return False
         if role == "assistant":
@@ -65674,6 +65879,63 @@ _AIS_DATA_URI_RE = re.compile(
     r"^data:([^;,]+)?(?:;charset=[^;,]+)?;base64,(.+)$",
     re.IGNORECASE | re.DOTALL,
 )
+_AIS_DSH_FILE_HANDLE_RE = re.compile(
+    r'\[File\s+"([^"]*)"\s+\((\d+)\s+bytes,\s+sha256:([0-9a-fA-F]+)\):\s+verbatim\s+read-only\s+copy\s+saved\s+at\s+"([^"]+)"\.[^\]]*\]',
+    re.DOTALL,
+)
+_AIS_INLINE_FILE_MAX_BYTES = 20 * 1024 * 1024
+
+
+def _ais_guess_file_mime(path_or_name: str, fallback: str = "application/pdf") -> str:
+    ext = Path(str(path_or_name or "")).suffix.lower()
+    mime_map = {
+        ".pdf": "application/pdf",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+        ".gif": "image/gif",
+        ".wav": "audio/wav",
+        ".mp3": "audio/mpeg",
+        ".ogg": "audio/ogg",
+        ".m4a": "audio/mp4",
+        ".mp4": "video/mp4",
+        ".mov": "video/quicktime",
+        ".webm": "video/webm",
+        ".txt": "text/plain",
+        ".md": "text/markdown",
+        ".csv": "text/csv",
+        ".html": "text/html",
+        ".json": "application/json",
+    }
+    return mime_map.get(ext, fallback)
+
+
+def _ais_extract_dsh_file_handle_inline_parts(text: str) -> list[list[Any]]:
+    if not text or "[File " not in text:
+        return []
+    inline_parts: list[list[Any]] = []
+    seen_paths: set[str] = set()
+    for m in _AIS_DSH_FILE_HANDLE_RE.finditer(text):
+        file_name = m.group(1) or ""
+        saved_path_str = (m.group(4) or "").strip()
+        if not saved_path_str or saved_path_str in seen_paths:
+            continue
+        seen_paths.add(saved_path_str)
+        try:
+            p = Path(saved_path_str)
+            if not p.is_file():
+                continue
+            size = p.stat().st_size
+            if size <= 0 or size > _AIS_INLINE_FILE_MAX_BYTES:
+                continue
+            raw_bytes = p.read_bytes()
+            b64 = base64.b64encode(raw_bytes).decode("ascii")
+            mime = _ais_guess_file_mime(file_name or saved_path_str, "application/pdf")
+            inline_parts.append([None, None, [mime, b64]])
+        except OSError:
+            continue
+    return inline_parts
 
 
 def _ais_parse_data_uri(uri: str) -> tuple[str, str] | None:
@@ -65722,18 +65984,28 @@ def _ais_encode_user_content_parts(
 
     if isinstance(content, str):
         cleaned = _clean_text(content)
-        return (
-            _ais_encode_text_with_youtube_parts(cleaned) if cleaned else []
-        ), ctx_blocks
+        if not cleaned:
+            return [], ctx_blocks
+        out_parts = _ais_encode_text_with_youtube_parts(cleaned)
+        if strip_dsh_context:
+            out_parts.extend(_ais_extract_dsh_file_handle_inline_parts(cleaned))
+        return out_parts, ctx_blocks
     if not isinstance(content, list):
         cleaned = _clean_text(str(content or ""))
-        return ([[None, cleaned]] if cleaned else []), ctx_blocks
+        if not cleaned:
+            return [], ctx_blocks
+        out_parts = [[None, cleaned]]
+        if strip_dsh_context:
+            out_parts.extend(_ais_extract_dsh_file_handle_inline_parts(cleaned))
+        return out_parts, ctx_blocks
     parts: list[list[Any]] = []
     for block in content:
         if isinstance(block, str):
             cleaned = _clean_text(block)
             if cleaned:
                 parts.extend(_ais_encode_text_with_youtube_parts(cleaned))
+                if strip_dsh_context:
+                    parts.extend(_ais_extract_dsh_file_handle_inline_parts(cleaned))
             continue
         if not isinstance(block, dict):
             continue
@@ -65743,6 +66015,8 @@ def _ais_encode_user_content_parts(
             cleaned = _clean_text(txt)
             if cleaned:
                 parts.extend(_ais_encode_text_with_youtube_parts(cleaned))
+                if strip_dsh_context:
+                    parts.extend(_ais_extract_dsh_file_handle_inline_parts(cleaned))
         elif btype in ("image_url", "input_image"):
             img_val = block.get("image_url")
             url_str = (
@@ -65845,15 +66119,186 @@ def _ais_normalize_tool_result_parts(
     return [part_11, *extra_media_parts]
 
 
+def _ais_extract_stale_edit_retries(
+    messages: Sequence[Any],
+    sess_state: _AisSessionState | None,
+) -> list[tuple[str, dict[str, Any]]]:
+    """Inspect the trailing tool results of `messages` for DSH `file changed since it was read` (`FS_STALE_VERSION`) errors on `edit` calls that have not yet been auto-healed."""
+    if sess_state is None or not messages:
+        return []
+    msg_list = list(messages)
+    mid_turn_user_indices = _ais_identify_mid_turn_user_indices(msg_list, sess_state)
+    tail_tools: list[dict[str, Any]] = []
+    assistant_msg: dict[str, Any] | None = None
+    for idx in range(len(msg_list) - 1, -1, -1):
+        msg = msg_list[idx]
+        if not isinstance(msg, dict):
+            continue
+        r = str(msg.get("role") or "").strip().lower()
+        if r in ("tool", "function"):
+            tail_tools.append(msg)
+        elif r == "assistant":
+            assistant_msg = msg
+            break
+        elif r in ("system", "developer"):
+            continue
+        elif r == "user":
+            if idx in mid_turn_user_indices:
+                continue
+            raw_u = _robin_extract_message_plain_text(msg)
+            clean_u, _ = _robin_split_user_text_and_context(raw_u)
+            if not clean_u.strip() and not _ais_user_msg_has_media_blocks(msg):
+                continue
+            return []
+        else:
+            return []
+    if not tail_tools or assistant_msg is None:
+        return []
+    raw_tcs = assistant_msg.get("tool_calls")
+    if not isinstance(raw_tcs, list) or not raw_tcs:
+        return []
+    tc_by_id: dict[str, dict[str, Any]] = {}
+    for tc in raw_tcs:
+        if isinstance(tc, dict):
+            tid = str(tc.get("id") or "").strip()
+            if tid:
+                tc_by_id[tid] = tc
+
+    retries: list[tuple[str, dict[str, Any]]] = []
+    for t_msg in reversed(tail_tools):
+        call_id = str(t_msg.get("tool_call_id") or t_msg.get("id") or "").strip()
+        if not call_id or call_id in sess_state.stale_retried_call_ids:
+            continue
+        tc_entry = tc_by_id.get(call_id)
+        if tc_entry is None:
+            continue
+        fn_obj = tc_entry.get("function")
+        fn_dict: dict[str, Any] = fn_obj if isinstance(fn_obj, dict) else tc_entry
+        fn_name = str(fn_dict.get("name") or t_msg.get("name") or "").strip()
+        if fn_name != "edit":
+            continue
+        raw_out = _robin_stringify_tool_output(t_msg.get("content"))
+        if not _robin_is_dsh_stale_file_error(raw_out):
+            continue
+        raw_args = fn_dict.get("arguments", "{}")
+        args_dict: dict[str, Any] = {}
+        if isinstance(raw_args, dict):
+            args_dict = dict(raw_args)
+        elif isinstance(raw_args, str) and raw_args.strip():
+            try:
+                parsed_a = json.loads(raw_args)
+                if isinstance(parsed_a, dict):
+                    args_dict = parsed_a
+            except Exception:
+                args_dict = {}
+        target_fp = str(
+            args_dict.get("file_path") or args_dict.get("path") or ""
+        ).strip()
+        if not target_fp:
+            continue
+        retries.append((call_id, args_dict))
+    return retries
+
+
+def _ais_fold_mid_turn_user_into_tool_turn(
+    contents: list[list[Any]],
+    pending_calls: list[dict[str, str]],
+    u_parts: list[list[Any]],
+    append_turn_fn: Any,
+) -> None:
+    """Fold a mid-turn DSH `user` message into the active `part_11` (`functionResponse`) tool turn."""
+    notice_texts: list[str] = []
+    media_parts: list[list[Any]] = []
+    for p in u_parts:
+        if (
+            isinstance(p, list)
+            and len(p) == 2
+            and p[0] is None
+            and isinstance(p[1], str)
+        ):
+            if p[1].strip():
+                notice_texts.append(p[1].strip())
+        elif isinstance(p, list):
+            media_parts.append(p)
+
+    notice_str = "\n\n".join(notice_texts).strip()
+    if contents and contents[-1][1] == "user":
+        last_turn_parts = contents[-1][0]
+        last_p11: list[Any] | None = None
+        for p in reversed(last_turn_parts):
+            if isinstance(p, list) and len(p) > 11 and isinstance(p[11], list):
+                last_p11 = p
+                break
+        if last_p11 is not None:
+            if notice_str:
+                fn_res_val = last_p11[11]
+                decoded_val = (
+                    _ais_decode_struct(fn_res_val[1])
+                    if len(fn_res_val) > 1
+                    else {"result": ""}
+                )
+                cur_obj: dict[str, Any] = (
+                    dict(decoded_val)
+                    if isinstance(decoded_val, dict)
+                    else {"result": decoded_val}
+                )
+                if isinstance(cur_obj.get("result"), str):
+                    prev_r = str(cur_obj["result"])
+                    cur_obj["result"] = (
+                        f"{prev_r}\n\n--- [Harness Notice] ---\n{notice_str}"
+                        if prev_r
+                        else notice_str
+                    )
+                else:
+                    prev_n = str(cur_obj.get("harness_notice") or "")
+                    cur_obj["harness_notice"] = (
+                        f"{prev_n}\n\n{notice_str}" if prev_n else notice_str
+                    )
+                fn_res_val[1] = _ais_encode_struct(cur_obj)
+            if media_parts:
+                last_turn_parts.extend(media_parts)
+            return
+
+    fn_name = pending_calls[0]["name"] if pending_calls else "tool"
+    call_id = pending_calls[0]["id"] if pending_calls else ""
+    synth_parts = _ais_normalize_tool_result_parts(fn_name, call_id, notice_str)
+    if media_parts:
+        synth_parts.extend(media_parts)
+    append_turn_fn("user", synth_parts)
+
+
 def _ais_build_contents_and_system(
-    messages: Sequence[Any], system_suffix: str = ""
+    messages: Sequence[Any],
+    system_suffix: str = "",
+    *,
+    sess_state: "_AisSessionState | None" = None,
 ) -> tuple[list[list[Any]], list[Any] | None]:
+    msg_list = list(messages or [])
+    mid_turn_user_indices = _ais_identify_mid_turn_user_indices(msg_list, sess_state)
     system_texts: list[str] = []
     reminder_blocks: list[str] = []
     latest_runtime_context = ""
     contents: list[list[Any]] = []
     pending_calls: list[dict[str, str]] = []
+    pending_mid_turn_u_parts: list[list[Any]] = []
     pending_compaction_summary = ""
+
+    def _has_active_p11() -> bool:
+        if not contents or contents[-1][1] != "user":
+            return False
+        return any(
+            isinstance(p, list) and len(p) > 11 and isinstance(p[11], list)
+            for p in contents[-1][0]
+        )
+
+    def _flush_pending_mid_turn_u() -> None:
+        if not pending_mid_turn_u_parts:
+            return
+        buffered = list(pending_mid_turn_u_parts)
+        pending_mid_turn_u_parts.clear()
+        _ais_fold_mid_turn_user_into_tool_turn(
+            contents, pending_calls, buffered, _append_turn
+        )
 
     def _record_context_blocks(ctx_list: list[str]) -> None:
         nonlocal latest_runtime_context
@@ -65896,7 +66341,7 @@ def _ais_build_contents_and_system(
         else:
             contents.append([list(parts_to_add), role_wire])
 
-    for msg in messages or []:
+    for msg_idx, msg in enumerate(msg_list):
         if not isinstance(msg, dict):
             continue
         role = str(msg.get("role") or "user").strip().lower()
@@ -65942,9 +66387,12 @@ def _ais_build_contents_and_system(
                 fn_name, call_id, msg.get("content")
             )
             _append_turn("user", res_parts)
+            if pending_mid_turn_u_parts:
+                _flush_pending_mid_turn_u()
             continue
 
         if role == "assistant":
+            _flush_pending_mid_turn_u()
             raw_c = msg.get("content")
             plain_a = ""
             if isinstance(raw_c, str):
@@ -65990,6 +66438,7 @@ def _ais_build_contents_and_system(
                     if isinstance(b, dict) and b.get("text"):
                         model_parts.append([None, str(b.get("text"))])
 
+            pending_calls.clear()
             if isinstance(tcalls, list):
                 for tc in tcalls:
                     if not isinstance(tc, dict):
@@ -66050,6 +66499,15 @@ def _ais_build_contents_and_system(
         _record_context_blocks(extracted_ctx)
         if not u_parts:
             continue
+        if msg_idx in mid_turn_user_indices:
+            if _has_active_p11():
+                _ais_fold_mid_turn_user_into_tool_turn(
+                    contents, pending_calls, u_parts, _append_turn
+                )
+            else:
+                pending_mid_turn_u_parts.extend(u_parts)
+            continue
+        _flush_pending_mid_turn_u()
         pending_calls.clear()
         for up in u_parts:
             if (
@@ -66062,6 +66520,8 @@ def _ais_build_contents_and_system(
                 if is_comp and sum_inner:
                     pending_compaction_summary = sum_inner
         _append_turn("user", u_parts)
+
+    _flush_pending_mid_turn_u()
 
     for rb in reminder_blocks:
         if rb and rb not in system_texts:
@@ -66163,6 +66623,7 @@ def _ais_encode_playground_request(
     timezone: str = "UTC",
     continuation_token: str = "",
     round_max_tokens: int | None = None,
+    sess_state: "_AisSessionState | None" = None,
 ) -> tuple[list[Any], _AisToolContract, str, str, bool]:
     """Encode an OpenAI chat request into the 11/14/17-slot MakerSuite GenerateContent array.
 
@@ -66173,7 +66634,7 @@ def _ais_encode_playground_request(
         body, timezone=timezone, model_info=model_info
     )
     contents_wire, sys_wire = _ais_build_contents_and_system(
-        messages, system_suffix=contract.system_suffix
+        messages, system_suffix=contract.system_suffix, sess_state=sess_state
     )
 
     # Resolve generationConfig (body[3])
@@ -66638,16 +67099,39 @@ class _AisSparseStreamDecoder:
                 ):
                     fn_arr = part[10]
                     fn_name = str(fn_arr[0])
-                    args_obj = (
+                    raw_args_obj = (
                         _ais_decode_struct(fn_arr[1])
                         if len(fn_arr) > 1 and fn_arr[1] is not None
                         else {}
+                    )
+                    args_obj: dict[str, Any] = (
+                        dict(raw_args_obj) if isinstance(raw_args_obj, dict) else {}
                     )
                     call_id = (
                         str(fn_arr[2]).strip()
                         if len(fn_arr) > 2 and fn_arr[2]
                         else f"call_{uuid.uuid4().hex[:24]}"
                     )
+                    raw_args_json = json.dumps(
+                        args_obj, ensure_ascii=False, separators=(",", ":")
+                    )
+                    # Coerce DSH `bash` / `job_output` timeout to <=10s so long commands
+                    # automatically cut over (`moved to background job <jobId>`) instead of
+                    # blocking the step synchronously.
+                    if fn_name in ("bash", "run_command"):
+                        args_obj["timeoutMs"] = _robin_coerce_bash_timeout_ms(args_obj)
+                    elif fn_name == "job_output":
+                        raw_to = args_obj.get("timeout_ms") or args_obj.get("timeoutMs")
+                        try:
+                            parsed_to = (
+                                int(float(raw_to)) if raw_to is not None else 10000
+                            )
+                        except (TypeError, ValueError):
+                            parsed_to = 10000
+                        args_obj.pop("timeoutMs", None)
+                        args_obj["timeout_ms"] = min(
+                            max(500, parsed_to), GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS
+                        )
                     args_json = json.dumps(
                         args_obj, ensure_ascii=False, separators=(",", ":")
                     )
@@ -66665,8 +67149,12 @@ class _AisSparseStreamDecoder:
                             "google": {"thought_signature": part_sig}
                         }
                         _AIS_THOUGHT_SIG_STORE.remember(
-                            call_id, fn_name, args_json, part_sig
+                            call_id, fn_name, raw_args_json, part_sig
                         )
+                        if args_json != raw_args_json:
+                            _AIS_THOUGHT_SIG_STORE.remember(
+                                call_id, fn_name, args_json, part_sig
+                            )
                     self.tool_calls.append(tc_entry)
                     out.append({"type": "tool_call", "tool_call": tc_entry})
 
@@ -66703,7 +67191,9 @@ class _AisSparseStreamDecoder:
                 elif fcode == 2:
                     self.finish_reason = "length"
                 elif fcode in (3, 4, 7, 8, 9, 11, 14, 17, 19):
-                    self.finish_reason = "content_filter"
+                    self.finish_reason = (
+                        "tool_calls" if self.tool_calls else "content_filter"
+                    )
                 else:
                     self.finish_reason = "tool_calls" if self.tool_calls else "stop"
 
@@ -67151,11 +67641,19 @@ class AisBrowserRuntime:
         model: str,
         proof_field: int = 5,
         companion_count_tokens: bool = True,
-        first_event_timeout: float = 120.0,
-        idle_timeout: float = 180.0,
+        first_event_timeout: float | None = None,
+        idle_timeout: float | None = None,
         request: Any = None,
         session_id: str = "default",
     ) -> AsyncGenerator[dict[str, Any], None]:
+        eff_first_timeout = (
+            first_event_timeout
+            if first_event_timeout is not None
+            else AISTUDIO_FIRST_BYTE_TIMEOUT
+        )
+        eff_idle_timeout = (
+            idle_timeout if idle_timeout is not None else AISTUDIO_STREAM_IDLE_TIMEOUT
+        )
         handler = self._custom_rpc_handler
         if callable(handler):
             res = handler(
@@ -67201,7 +67699,7 @@ class AisBrowserRuntime:
             )
             loop = asyncio.get_running_loop()
             got_any = False
-            deadline = time.monotonic() + first_event_timeout
+            deadline = time.monotonic() + eff_first_timeout
             while True:
                 if request is not None and hasattr(request, "is_disconnected"):
                     try:
@@ -67234,7 +67732,7 @@ class AisBrowserRuntime:
                 except queue.Empty:
                     continue
                 got_any = True
-                deadline = time.monotonic() + idle_timeout
+                deadline = time.monotonic() + eff_idle_timeout
                 mtype = str(msg.get("type") or "")
                 if mtype == "AIS_HEAD":
                     yield msg
@@ -67270,6 +67768,10 @@ class _AisSessionState:
     first_user_text: str = ""
     first_model_text: str = ""
     history_turns: list[list[Any]] = field(default_factory=list)
+    prompt_ids_by_auth: dict[str, str] = field(default_factory=dict)
+    stale_retried_call_ids: set[str] = field(default_factory=set)
+    tool_hop_user_counts: dict[str, int] = field(default_factory=dict)
+    active_pending_hop_key: str = ""
     prompt_ready_event: asyncio.Event | None = None
     title_ready_event: asyncio.Event | None = None
 
@@ -67279,12 +67781,15 @@ _AIS_SESSIONS_LOCK = threading.RLock()
 
 
 def _ais_persist_session_state(sess: _AisSessionState) -> None:
-    """Persist AI Studio session mapping (`boot_key`/`full_key` -> `prompt_id`/`title`) to SQLite across restarts."""
+    """Persist AI Studio session mapping (`boot_key`/`full_key` -> `prompt_id`/`title`, including per-account `prompt_ids_by_auth`) to SQLite across restarts."""
     if not sess.boot_key and not sess.full_key:
         return
+    base_key = sess.full_key or sess.boot_key or sess.session_id
     try:
+        if sess.auth_key and sess.prompt_id:
+            sess.prompt_ids_by_auth[sess.auth_key] = sess.prompt_id
         _GEMINI_DSH_STORE.upsert_session(
-            session_key=sess.full_key or sess.boot_key or sess.session_id,
+            session_key=base_key,
             client_session_id=sess.session_id,
             principal_id=sess.auth_key or "aistudio",
             boot_key=sess.boot_key,
@@ -67292,8 +67797,46 @@ def _ais_persist_session_state(sess: _AisSessionState) -> None:
             conversation_id=sess.prompt_id,
             title=sess.title,
         )
+        for a_key, p_id in list(sess.prompt_ids_by_auth.items()):
+            if a_key and p_id:
+                _GEMINI_DSH_STORE.upsert_session(
+                    session_key=f"{base_key}::auth::{a_key}",
+                    client_session_id=sess.session_id,
+                    principal_id=a_key,
+                    boot_key=sess.boot_key,
+                    full_key=sess.full_key,
+                    conversation_id=p_id,
+                    title=sess.title,
+                )
     except Exception:
         pass
+
+
+def _ais_lookup_persisted_prompt_id_for_auth(
+    sess: _AisSessionState, auth_key: str
+) -> str:
+    """Look up a previously persisted `prompt_id` for `(sess, auth_key)` in memory or SQLite."""
+    if not auth_key:
+        return ""
+    cached = sess.prompt_ids_by_auth.get(auth_key, "")
+    if cached:
+        return cached
+    base_key = sess.full_key or sess.boot_key or sess.session_id
+    try:
+        row = _GEMINI_DSH_STORE.find_session(
+            full_key=sess.full_key,
+            boot_key=sess.boot_key,
+            session_key=f"{base_key}::auth::{auth_key}" if base_key else "",
+            principal_id=auth_key,
+        )
+        if row is not None:
+            pid = str(row.get("conversation_id") or "").strip()
+            if pid.startswith("prompts/"):
+                sess.prompt_ids_by_auth[auth_key] = pid
+                return pid
+    except Exception:
+        pass
+    return ""
 
 
 def _ais_reset_sessions_for_tests() -> None:
@@ -67319,17 +67862,24 @@ def _ais_resolve_or_create_session(
         "aistudio", messages, body=body
     )
     first_u, _ = _robin_extract_first_turn_identity(messages)
+    msg_boot_key = (
+        _robin_boot_key("aistudio", first_u)
+        if first_u and first_u != "empty_user_message"
+        else ""
+    )
     has_prior = _robin_has_prior_turn(messages)
     stable_sid = boot_key or client_sid
     with _AIS_SESSIONS_LOCK:
         if has_prior:
-            for k in (full_key, boot_key, client_sid):
+            for k in (full_key, boot_key, msg_boot_key, client_sid):
                 if k and k in _AIS_SESSIONS_BY_KEY:
                     existing = _AIS_SESSIONS_BY_KEY[k]
                     if full_key and not existing.full_key:
                         existing.full_key = full_key
                         _AIS_SESSIONS_BY_KEY[full_key] = existing
                         _ais_persist_session_state(existing)
+                    if msg_boot_key and msg_boot_key not in _AIS_SESSIONS_BY_KEY:
+                        _AIS_SESSIONS_BY_KEY[msg_boot_key] = existing
                     if first_u and not existing.first_user_text:
                         existing.first_user_text = first_u
                     return existing, existing.session_id, boot_key, full_key
@@ -67357,6 +67907,11 @@ def _ais_resolve_or_create_session(
                     p_ev.set()
                 if restored_title:
                     t_ev.set()
+                init_pids = (
+                    {restored_auth: restored_pid}
+                    if restored_auth and restored_pid
+                    else {}
+                )
                 restored = _AisSessionState(
                     session_id=restored_sid,
                     boot_key=boot_key or str(row.get("boot_key") or ""),
@@ -67366,11 +67921,14 @@ def _ais_resolve_or_create_session(
                     title=restored_title,
                     auth_key=restored_auth,
                     first_user_text=first_u,
+                    prompt_ids_by_auth=init_pids,
                     prompt_ready_event=p_ev,
                     title_ready_event=t_ev,
                 )
                 if restored.boot_key:
                     _AIS_SESSIONS_BY_KEY[restored.boot_key] = restored
+                if msg_boot_key:
+                    _AIS_SESSIONS_BY_KEY[msg_boot_key] = restored
                 if restored.session_id:
                     _AIS_SESSIONS_BY_KEY[restored.session_id] = restored
                 if restored.full_key:
@@ -67390,6 +67948,8 @@ def _ais_resolve_or_create_session(
         )
         if boot_key:
             _AIS_SESSIONS_BY_KEY[boot_key] = sess
+        if msg_boot_key:
+            _AIS_SESSIONS_BY_KEY[msg_boot_key] = sess
         if client_sid:
             _AIS_SESSIONS_BY_KEY[client_sid] = sess
         if has_prior and full_key:
@@ -67483,8 +68043,11 @@ def _ais_rebuild_history_turns_from_messages(
     in_tok: int,
     reason_tok: int,
     out_tok: int,
+    sess_state: "_AisSessionState | None" = None,
 ) -> tuple[list[list[Any]], str, str]:
     """Reconstruct full Playground History turn chunks (`prompt[13][0]`) and `(first_user, first_model)` from `messages` + current turn."""
+    msg_list = list(messages or [])
+    mid_turn_user_indices = _ais_identify_mid_turn_user_indices(msg_list, sess_state)
     turns: list[list[Any]] = []
     first_u = ""
     first_m = ""
@@ -67504,7 +68067,7 @@ def _ais_rebuild_history_turns_from_messages(
         tok = tok_override if tok_override is not None else max(1, len(combined_u) // 3)
         turns.append(_ais_build_prompt_turn_chunk(combined_u, "user", token_count=tok))
 
-    for msg in messages or []:
+    for msg_idx, msg in enumerate(msg_list):
         if not isinstance(msg, dict):
             continue
         role = str(msg.get("role") or "user").strip().lower()
@@ -67570,10 +68133,12 @@ def _ais_rebuild_history_turns_from_messages(
             continue
 
         # User message
+        if msg_idx in mid_turn_user_indices:
+            continue
         raw_u = _robin_extract_message_plain_text(msg)
         clean_u, _ = _robin_split_user_text_and_context(raw_u)
         clean_u = clean_u.strip()
-        if not clean_u:
+        if not clean_u or _robin_is_dsh_job_notice_text(clean_u):
             continue
         is_comp, _, sum_inner, _ = _robin_parse_compaction_user_text(clean_u)
         if is_comp and sum_inner:
@@ -67658,6 +68223,7 @@ async def _ais_sync_playground_history(
             in_tok=in_tok,
             reason_tok=reason_tok,
             out_tok=out_tok,
+            sess_state=sess,
         )
     )
     sess.history_turns = rebuilt_turns
@@ -67667,14 +68233,20 @@ async def _ais_sync_playground_history(
         sess.first_model_text = hist_first_m
 
     cur_auth_key = AIS_BROWSER_RUNTIME.auth_key
-    if (
-        sess.prompt_id
-        and sess.auth_key
-        and cur_auth_key
-        and sess.auth_key != cur_auth_key
-    ):
-        # Google account switched in browser: existing Drive prompt_id belongs to prior account
-        sess.prompt_id = ""
+    if sess.auth_key and sess.prompt_id:
+        sess.prompt_ids_by_auth[sess.auth_key] = sess.prompt_id
+    if cur_auth_key and sess.auth_key and sess.auth_key != cur_auth_key:
+        # Google account switched in browser: restore this account's existing Drive prompt_id
+        # (if this conversation was previously active on `cur_auth_key`) so `UpdatePrompt`
+        # backfills the missing intermediate turns onto that existing Playground History entry
+        # instead of creating a duplicate prompt.
+        sess.prompt_id = _ais_lookup_persisted_prompt_id_for_auth(sess, cur_auth_key)
+        sess.auth_key = cur_auth_key
+    elif cur_auth_key and not sess.prompt_id:
+        recovered_pid = _ais_lookup_persisted_prompt_id_for_auth(sess, cur_auth_key)
+        if recovered_pid:
+            sess.prompt_id = recovered_pid
+            sess.auth_key = cur_auth_key
 
     async def _do_create_prompt(run_settings: list[Any], effective_title: str) -> None:
         prompt_wire: list[Any] = [None] * 14
@@ -67701,6 +68273,8 @@ async def _ais_sync_playground_history(
                 sess.title = create_resp[4][0].strip()
             if cur_auth_key:
                 sess.auth_key = cur_auth_key
+                if sess.prompt_id:
+                    sess.prompt_ids_by_auth[cur_auth_key] = sess.prompt_id
             if sess.prompt_ready_event is not None:
                 sess.prompt_ready_event.set()
             if sess.title and sess.title_ready_event is not None:
@@ -67775,8 +68349,13 @@ async def _ais_sync_playground_history(
                     proof_field=0,
                     timeout_sec=20.0,
                 )
+                if cur_auth_key and sess.prompt_id:
+                    sess.auth_key = cur_auth_key
+                    sess.prompt_ids_by_auth[cur_auth_key] = sess.prompt_id
             except Exception:
                 # Fallback to CreatePrompt if UpdatePrompt fails (e.g., Google account switched or Drive file removed)
+                if cur_auth_key:
+                    sess.prompt_ids_by_auth.pop(cur_auth_key, None)
                 sess.prompt_id = ""
                 await _do_create_prompt(run_settings, effective_title)
 
@@ -67929,8 +68508,8 @@ async def _ais_resolve_playground_history_title(
             sess_state = latest
 
         target_pid = sess_state.prompt_id if sess_state is not None else ""
-        can_query_drive = AIS_BROWSER_RUNTIME.drive_status != "unauthorized" and (
-            bool(target_pid) or sess_state is None
+        can_query_drive = AIS_BROWSER_RUNTIME.drive_status != "unauthorized" and bool(
+            target_pid
         )
         now = time.monotonic()
         if can_query_drive and now >= next_poll_at:
@@ -67946,7 +68525,7 @@ async def _ais_resolve_playground_history_title(
                 hist_title, matched_pid = _ais_extract_title_from_list_prompts(
                     list_resp,
                     target_prompt_id=target_pid,
-                    allow_unmatched_first=(sess_state is None),
+                    allow_unmatched_first=False,
                 )
                 ready = _valid_title(hist_title)
                 if ready:
@@ -68000,6 +68579,93 @@ async def _ais_resolve_playground_history_title(
     if fallback and fallback != "Untitled prompt":
         return fallback
     return query_norm if query_norm else "新会话"
+
+
+_AIS_PLEASE_RETRY_IN_RE = re.compile(
+    r"please\s+retry\s+in\s+([0-9]+(?:\.[0-9]+)?)\s*(ms|s|sec|seconds)?\b",
+    flags=re.IGNORECASE,
+)
+
+
+def _ais_classify_429_rate_limit(message: str) -> tuple[bool, float]:
+    """Distinguish short-term RPM/TPM rate limits (`(True, wait_sec)`) from exhausted daily/plan quotas (`(False, 0.0)`)."""
+    raw = str(message or "")
+    low = raw.lower()
+    is_daily_exhausted = any(
+        tok in low
+        for tok in (
+            "per day",
+            "per_day",
+            "daily",
+            "free_tier_requests_per_day",
+            "billing",
+            "spending cap",
+            "monthly",
+        )
+    ) and not any(
+        tok in low
+        for tok in (
+            "per minute",
+            "per_minute",
+            "requests_per_model_per_user",
+            "tokens_per_minute",
+        )
+    )
+    if is_daily_exhausted:
+        return False, 0.0
+    m = _AIS_PLEASE_RETRY_IN_RE.search(raw)
+    if m:
+        val = float(m.group(1))
+        unit = (m.group(2) or "s").lower()
+        wait_s = val / 1000.0 if unit == "ms" else val
+        if wait_s <= 65.0:
+            return True, min(65.0, max(1.0, wait_s + 0.5))
+        return False, 0.0
+    if any(
+        tok in low
+        for tok in (
+            "per minute",
+            "per_minute",
+            "requests_per_model_per_user",
+            "tokens_per_minute",
+            "too many requests",
+        )
+    ):
+        return True, 6.0
+    return False, 0.0
+
+
+def _ais_is_transient_retryable_rpc_error(
+    http_status: int, message: str, *, had_emitted_content: bool = False
+) -> bool:
+    """Return True when an upstream AI Studio RPC error is a transient backend routing/gateway or RPM rate-limit fault safe to retry before any content is emitted."""
+    if had_emitted_content:
+        return False
+    low = str(message or "").lower()
+    if (
+        "ambiguous request for service" in low
+        or "streamgeneratecontentperuserquota" in low
+    ):
+        return True
+    if http_status in (502, 503, 504):
+        return True
+    if http_status == 429:
+        is_rpm, _ = _ais_classify_429_rate_limit(message)
+        return is_rpm
+    if "unavailable" in low or "deadline_exceeded" in low or "internal error" in low:
+        return True
+    return False
+
+
+def _ais_compute_transient_retry_delay(
+    http_status: int, message: str, retry_attempt: int
+) -> float:
+    """Return the sleep delay in seconds before retrying a transient AI Studio error."""
+    if http_status == 429:
+        is_rpm, wait_s = _ais_classify_429_rate_limit(message)
+        if is_rpm and wait_s > 0:
+            return wait_s
+    return 0.35 * (retry_attempt + 1)
 
 
 async def _direct_aistudio_chat_response(
@@ -68130,6 +68796,112 @@ async def _direct_aistudio_chat_response(
             }
         )
 
+    stale_edit_retries = _ais_extract_stale_edit_retries(messages, sess_state)
+    if stale_edit_retries and sess_state is not None:
+        synth_tcs: list[dict[str, Any]] = []
+        for orig_cid, edit_args in stale_edit_retries:
+            sess_state.stale_retried_call_ids.add(orig_cid)
+            target_fp = str(
+                edit_args.get("file_path") or edit_args.get("path") or ""
+            ).strip()
+            read_args = {"file_path": target_fp, "offset": 1, "limit": 1}
+            synth_tcs.append(
+                {
+                    "index": len(synth_tcs),
+                    "id": f"call_reread_{uuid.uuid4().hex[:12]}",
+                    "type": "function",
+                    "function": {
+                        "name": "read",
+                        "arguments": json.dumps(read_args, ensure_ascii=False),
+                    },
+                }
+            )
+            synth_tcs.append(
+                {
+                    "index": len(synth_tcs),
+                    "id": f"call_reedit_{uuid.uuid4().hex[:12]}",
+                    "type": "function",
+                    "function": {
+                        "name": "edit",
+                        "arguments": json.dumps(edit_args, ensure_ascii=False),
+                    },
+                }
+            )
+        sess_state.active_pending_hop_key = ",".join(
+            str(tc.get("id") or "").strip()
+            for tc in synth_tcs
+            if isinstance(tc, dict) and str(tc.get("id") or "").strip()
+        )
+        _gemini_debug_log_event(
+            session_id,
+            "ais_stale_edit_autoheal",
+            {
+                "retried_call_ids": [cid for cid, _ in stale_edit_retries],
+                "synthesized_calls_count": len(synth_tcs),
+            },
+        )
+        if stream_mode:
+
+            async def _autoheal_sse() -> AsyncGenerator[bytes, None]:
+                c_tc = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created_ts,
+                    "model": spec.public_id,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {
+                                "role": "assistant",
+                                "tool_calls": synth_tcs,
+                            },
+                            "finish_reason": None,
+                        }
+                    ],
+                }
+                c_fin = {
+                    "id": completion_id,
+                    "object": "chat.completion.chunk",
+                    "created": created_ts,
+                    "model": spec.public_id,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {},
+                            "finish_reason": "tool_calls",
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(c_tc, ensure_ascii=False)}\n\n".encode(
+                    "utf-8"
+                )
+                yield f"data: {json.dumps(c_fin, ensure_ascii=False)}\n\n".encode(
+                    "utf-8"
+                )
+                yield b"data: [DONE]\n\n"
+
+            return _opencode_sse_response(_autoheal_sse())
+
+        return JSONResponse(
+            {
+                "id": completion_id,
+                "object": "chat.completion",
+                "created": created_ts,
+                "model": spec.public_id,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": synth_tcs,
+                        },
+                        "finish_reason": "tool_calls",
+                    }
+                ],
+            }
+        )
+
     stop_raw = body.get("stop")
     stop_list: list[str] = (
         [stop_raw]
@@ -68147,6 +68919,7 @@ async def _direct_aistudio_chat_response(
                 body,
                 messages,
                 timezone=AIS_BROWSER_RUNTIME.timezone,
+                sess_state=sess_state,
             )
         )
     except ValueError as exc:
@@ -68173,7 +68946,7 @@ async def _direct_aistudio_chat_response(
         else model_info.output_limit
     )
     attribution_banner = _ais_model_attribution_banner(spec)
-    is_tool_continuation = _ais_is_tool_continuation_step(messages)
+    is_tool_continuation = _ais_is_tool_continuation_step(messages, sess_state)
 
     async def _generate_sse() -> AsyncGenerator[bytes, None]:
         role_sent = False
@@ -68207,58 +68980,209 @@ async def _direct_aistudio_chat_response(
             )
 
         for round_idx in range(4):
-            decoder = _AisSparseStreamDecoder(has_system=has_system)
-            raw_chunks: list[str] = []
-            http_status = 200
-            stream_aborted_by_stop = False
+            saved_stop_pending = stop_matcher._pending
+            for retry_attempt in range(3):
+                stop_matcher._pending = saved_stop_pending
+                stop_matcher.stopped = False
+                decoder = _AisSparseStreamDecoder(has_system=has_system)
+                raw_chunks: list[str] = []
+                http_status = 200
+                stream_aborted_by_stop = False
+                had_round_output = False
+                explicit_err_msg = ""
+                explicit_err_code: Any = None
+                explicit_err_status = 502
 
-            _gemini_debug_log_event(
-                session_id,
-                "ais_stream_start",
-                {
-                    "round_idx": round_idx,
-                    "model": spec.upstream_id,
-                    "root_slots": len(cur_wire),
-                    "digest": cur_digest,
-                    "page_prompt_len": len(cur_page_prompt),
-                    "has_system": has_system,
-                    "has_tools": bool(contract.tools_wire),
-                    "continuation_token_present": bool(
-                        len(cur_wire) > 16 and cur_wire[16]
-                    ),
-                },
-            )
+                _gemini_debug_log_event(
+                    session_id,
+                    "ais_stream_start",
+                    {
+                        "round_idx": round_idx,
+                        "retry_attempt": retry_attempt,
+                        "model": spec.upstream_id,
+                        "root_slots": len(cur_wire),
+                        "digest": cur_digest,
+                        "page_prompt_len": len(cur_page_prompt),
+                        "has_system": has_system,
+                        "has_tools": bool(contract.tools_wire),
+                        "continuation_token_present": bool(
+                            len(cur_wire) > 16 and cur_wire[16]
+                        ),
+                    },
+                )
 
-            async for frame_msg in AIS_BROWSER_RUNTIME.stream_rpc(
-                url=AISTUDIO_GENERATE_CONTENT_URL,
-                body_wire=cur_wire,
-                digest=cur_digest,
-                page_prompt=cur_page_prompt,
-                model=spec.upstream_id,
-                proof_field=5,
-                companion_count_tokens=(round_idx == 0 and bool(cur_page_prompt)),
-                request=request,
-                session_id=session_id,
-            ):
-                mtype = str(frame_msg.get("type") or "")
-                if mtype == "AIS_HEAD":
-                    http_status = int(frame_msg.get("status") or 200)
-                    _gemini_debug_log_event(
-                        session_id,
-                        "ais_head",
-                        {"round_idx": round_idx, "status": http_status},
+                try:
+                    async for frame_msg in AIS_BROWSER_RUNTIME.stream_rpc(
+                        url=AISTUDIO_GENERATE_CONTENT_URL,
+                        body_wire=cur_wire,
+                        digest=cur_digest,
+                        page_prompt=cur_page_prompt,
+                        model=spec.upstream_id,
+                        proof_field=5,
+                        companion_count_tokens=(
+                            round_idx == 0
+                            and retry_attempt == 0
+                            and bool(cur_page_prompt)
+                        ),
+                        request=request,
+                        session_id=session_id,
+                    ):
+                        mtype = str(frame_msg.get("type") or "")
+                        if mtype == "AIS_HEAD":
+                            http_status = int(frame_msg.get("status") or 200)
+                            _gemini_debug_log_event(
+                                session_id,
+                                "ais_head",
+                                {
+                                    "round_idx": round_idx,
+                                    "retry_attempt": retry_attempt,
+                                    "status": http_status,
+                                },
+                            )
+                        elif mtype == "AIS_ERROR":
+                            explicit_err_msg = str(
+                                frame_msg.get("message") or "AI Studio bridge error"
+                            )
+                            explicit_err_code = frame_msg.get("code")
+                            explicit_err_status = int(
+                                frame_msg.get("httpStatus") or 502
+                            )
+                            break
+                        elif mtype == "AIS_CHUNK":
+                            chunk_data = str(frame_msg.get("data") or "")
+                            raw_chunks.append(chunk_data)
+                            if http_status >= 400:
+                                continue
+                            for ev in decoder.feed(chunk_data):
+                                ev_type = ev.get("type")
+                                if ev_type == "reasoning":
+                                    had_round_output = True
+                                    if not banner_sent:
+                                        yield _make_banner_sse_bytes()
+                                    accumulated_reasoning.append(ev["text"])
+                                    delta_obj: dict[str, Any] = {
+                                        "reasoning_content": ev["text"]
+                                    }
+                                    if not role_sent:
+                                        delta_obj["role"] = "assistant"
+                                        role_sent = True
+                                    chunk_payload = {
+                                        "id": completion_id,
+                                        "object": "chat.completion.chunk",
+                                        "created": created_ts,
+                                        "model": spec.public_id,
+                                        "choices": [
+                                            {
+                                                "index": 0,
+                                                "delta": delta_obj,
+                                                "finish_reason": None,
+                                            }
+                                        ],
+                                    }
+                                    yield f"data: {json.dumps(chunk_payload, ensure_ascii=False)}\n\n".encode(
+                                        "utf-8"
+                                    )
+                                elif ev_type == "text":
+                                    emit_txt, hit_stop = stop_matcher.push(ev["text"])
+                                    if emit_txt:
+                                        had_round_output = True
+                                        if not banner_sent:
+                                            yield _make_banner_sse_bytes()
+                                        accumulated_answer.append(emit_txt)
+                                        delta_obj = {"content": emit_txt}
+                                        if not role_sent:
+                                            delta_obj["role"] = "assistant"
+                                            role_sent = True
+                                        chunk_payload = {
+                                            "id": completion_id,
+                                            "object": "chat.completion.chunk",
+                                            "created": created_ts,
+                                            "model": spec.public_id,
+                                            "choices": [
+                                                {
+                                                    "index": 0,
+                                                    "delta": delta_obj,
+                                                    "finish_reason": None,
+                                                }
+                                            ],
+                                        }
+                                        yield f"data: {json.dumps(chunk_payload, ensure_ascii=False)}\n\n".encode(
+                                            "utf-8"
+                                        )
+                                    if hit_stop:
+                                        stream_aborted_by_stop = True
+                                        decoder.finished = True
+                                        decoder.finish_reason = "stop"
+                                        break
+                                elif ev_type == "tool_call":
+                                    had_round_output = True
+                                    flushed = stop_matcher.flush()
+                                    if flushed:
+                                        if not banner_sent:
+                                            yield _make_banner_sse_bytes()
+                                        accumulated_answer.append(flushed)
+                                        delta_obj = {"content": flushed}
+                                        if not role_sent:
+                                            delta_obj["role"] = "assistant"
+                                            role_sent = True
+                                        yield f"data: {json.dumps({'id': completion_id, 'object': 'chat.completion.chunk', 'created': created_ts, 'model': spec.public_id, 'choices': [{'index': 0, 'delta': delta_obj, 'finish_reason': None}]}, ensure_ascii=False)}\n\n".encode(
+                                            "utf-8"
+                                        )
+                                    tc = dict(ev["tool_call"])
+                                    tc["index"] = len(accumulated_tool_calls)
+                                    accumulated_tool_calls.append(tc)
+                                    _gemini_debug_log_event(
+                                        session_id,
+                                        "ais_tool_call",
+                                        {
+                                            "id": tc.get("id"),
+                                            "name": (tc.get("function") or {}).get(
+                                                "name"
+                                            ),
+                                            "has_signature": bool(
+                                                tc.get("extra_content")
+                                            ),
+                                        },
+                                    )
+                except Exception as exc:
+                    explicit_err_msg = str(exc) or type(exc).__name__
+                    explicit_err_code = (
+                        "timeout" if isinstance(exc, TimeoutError) else "bridge_error"
                     )
-                elif mtype == "AIS_ERROR":
-                    err_msg = str(frame_msg.get("message") or "AI Studio bridge error")
-                    err_status = int(frame_msg.get("httpStatus") or 502)
+                    explicit_err_status = 504 if isinstance(exc, TimeoutError) else 502
+
+                if explicit_err_msg:
+                    if retry_attempt < 2 and _ais_is_transient_retryable_rpc_error(
+                        explicit_err_status,
+                        explicit_err_msg,
+                        had_emitted_content=had_round_output,
+                    ):
+                        wait_delay = _ais_compute_transient_retry_delay(
+                            explicit_err_status, explicit_err_msg, retry_attempt
+                        )
+                        _gemini_debug_log_event(
+                            session_id,
+                            "ais_transient_retry",
+                            {
+                                "round_idx": round_idx,
+                                "retry_attempt": retry_attempt + 1,
+                                "http_status": explicit_err_status,
+                                "wait_sec": round(wait_delay, 2),
+                                "message": explicit_err_msg,
+                            },
+                        )
+                        await asyncio.sleep(wait_delay)
+                        continue
+                    if sess_state is not None:
+                        sess_state.active_pending_hop_key = ""
                     _gemini_debug_log_event(
                         session_id,
                         "ais_error",
                         {
                             "round_idx": round_idx,
-                            "code": frame_msg.get("code"),
-                            "http_status": err_status,
-                            "message": err_msg,
+                            "code": explicit_err_code,
+                            "http_status": explicit_err_status,
+                            "message": explicit_err_msg,
                         },
                     )
                     err_Chunk = {
@@ -68274,10 +69198,10 @@ async def _direct_aistudio_chat_response(
                             }
                         ],
                         "error": {
-                            "message": err_msg,
+                            "message": explicit_err_msg,
                             "type": "aistudio_upstream_error",
-                            "code": frame_msg.get("code"),
-                            "_http_status": err_status,
+                            "code": explicit_err_code,
+                            "_http_status": explicit_err_status,
                         },
                     }
                     yield f"data: {json.dumps(err_Chunk, ensure_ascii=False)}\n\n".encode(
@@ -68285,163 +69209,140 @@ async def _direct_aistudio_chat_response(
                     )
                     yield b"data: [DONE]\n\n"
                     return
-                elif mtype == "AIS_CHUNK":
-                    chunk_data = str(frame_msg.get("data") or "")
-                    raw_chunks.append(chunk_data)
-                    if http_status >= 400:
+
+                if http_status >= 400:
+                    full_err = "".join(raw_chunks)
+                    rpc_err = decoder.check_rpc_error_from_raw(full_err)
+                    msg_txt = (
+                        rpc_err[1]
+                        if rpc_err
+                        else (full_err[:400] or f"AI Studio HTTP {http_status}")
+                    )
+                    if retry_attempt < 2 and _ais_is_transient_retryable_rpc_error(
+                        http_status,
+                        msg_txt,
+                        had_emitted_content=had_round_output,
+                    ):
+                        wait_delay = _ais_compute_transient_retry_delay(
+                            http_status, msg_txt, retry_attempt
+                        )
+                        _gemini_debug_log_event(
+                            session_id,
+                            "ais_transient_retry",
+                            {
+                                "round_idx": round_idx,
+                                "retry_attempt": retry_attempt + 1,
+                                "http_status": http_status,
+                                "wait_sec": round(wait_delay, 2),
+                                "message": msg_txt,
+                            },
+                        )
+                        await asyncio.sleep(wait_delay)
                         continue
-                    for ev in decoder.feed(chunk_data):
-                        ev_type = ev.get("type")
-                        if ev_type == "reasoning":
-                            if not banner_sent:
-                                yield _make_banner_sse_bytes()
-                            accumulated_reasoning.append(ev["text"])
-                            delta_obj: dict[str, Any] = {
-                                "reasoning_content": ev["text"]
-                            }
-                            if not role_sent:
-                                delta_obj["role"] = "assistant"
-                                role_sent = True
-                            chunk_payload = {
-                                "id": completion_id,
-                                "object": "chat.completion.chunk",
-                                "created": created_ts,
-                                "model": spec.public_id,
-                                "choices": [
-                                    {
-                                        "index": 0,
-                                        "delta": delta_obj,
-                                        "finish_reason": None,
-                                    }
-                                ],
-                            }
-                            yield f"data: {json.dumps(chunk_payload, ensure_ascii=False)}\n\n".encode(
-                                "utf-8"
-                            )
-                        elif ev_type == "text":
-                            emit_txt, hit_stop = stop_matcher.push(ev["text"])
-                            if emit_txt:
-                                if not banner_sent:
-                                    yield _make_banner_sse_bytes()
-                                accumulated_answer.append(emit_txt)
-                                delta_obj = {"content": emit_txt}
-                                if not role_sent:
-                                    delta_obj["role"] = "assistant"
-                                    role_sent = True
-                                chunk_payload = {
-                                    "id": completion_id,
-                                    "object": "chat.completion.chunk",
-                                    "created": created_ts,
-                                    "model": spec.public_id,
-                                    "choices": [
-                                        {
-                                            "index": 0,
-                                            "delta": delta_obj,
-                                            "finish_reason": None,
-                                        }
-                                    ],
-                                }
-                                yield f"data: {json.dumps(chunk_payload, ensure_ascii=False)}\n\n".encode(
-                                    "utf-8"
-                                )
-                            if hit_stop:
-                                stream_aborted_by_stop = True
-                                decoder.finished = True
-                                decoder.finish_reason = "stop"
-                                break
-                        elif ev_type == "tool_call":
-                            flushed = stop_matcher.flush()
-                            if flushed:
-                                if not banner_sent:
-                                    yield _make_banner_sse_bytes()
-                                accumulated_answer.append(flushed)
-                                delta_obj = {"content": flushed}
-                                if not role_sent:
-                                    delta_obj["role"] = "assistant"
-                                    role_sent = True
-                                yield f"data: {json.dumps({'id': completion_id, 'object': 'chat.completion.chunk', 'created': created_ts, 'model': spec.public_id, 'choices': [{'index': 0, 'delta': delta_obj, 'finish_reason': None}]}, ensure_ascii=False)}\n\n".encode(
-                                    "utf-8"
-                                )
-                            tc = dict(ev["tool_call"])
-                            tc["index"] = len(accumulated_tool_calls)
-                            accumulated_tool_calls.append(tc)
-                            _gemini_debug_log_event(
-                                session_id,
-                                "ais_tool_call",
-                                {
-                                    "id": tc.get("id"),
-                                    "name": (tc.get("function") or {}).get("name"),
-                                    "has_signature": bool(tc.get("extra_content")),
-                                },
-                            )
+                    if sess_state is not None:
+                        sess_state.active_pending_hop_key = ""
+                    _gemini_debug_log_event(
+                        session_id,
+                        "ais_error",
+                        {
+                            "round_idx": round_idx,
+                            "http_status": http_status,
+                            "message": msg_txt,
+                        },
+                    )
+                    err_chunk = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created_ts,
+                        "model": spec.public_id,
+                        "choices": [
+                            {"index": 0, "delta": {}, "finish_reason": "error"}
+                        ],
+                        "error": {
+                            "message": msg_txt,
+                            "type": "aistudio_upstream_error",
+                            "_http_status": http_status,
+                        },
+                    }
+                    yield f"data: {json.dumps(err_chunk, ensure_ascii=False)}\n\n".encode(
+                        "utf-8"
+                    )
+                    yield b"data: [DONE]\n\n"
+                    return
 
-            if http_status >= 400:
-                full_err = "".join(raw_chunks)
-                rpc_err = decoder.check_rpc_error_from_raw(full_err)
-                msg_txt = (
-                    rpc_err[1]
-                    if rpc_err
-                    else (full_err[:400] or f"AI Studio HTTP {http_status}")
-                )
-                _gemini_debug_log_event(
-                    session_id,
-                    "ais_error",
-                    {
-                        "round_idx": round_idx,
-                        "http_status": http_status,
-                        "message": msg_txt,
-                    },
-                )
-                err_chunk = {
-                    "id": completion_id,
-                    "object": "chat.completion.chunk",
-                    "created": created_ts,
-                    "model": spec.public_id,
-                    "choices": [{"index": 0, "delta": {}, "finish_reason": "error"}],
-                    "error": {
-                        "message": msg_txt,
-                        "type": "aistudio_upstream_error",
-                        "_http_status": http_status,
-                    },
-                }
-                yield f"data: {json.dumps(err_chunk, ensure_ascii=False)}\n\n".encode(
-                    "utf-8"
-                )
-                yield b"data: [DONE]\n\n"
-                return
+                if not decoder.finished and not stream_aborted_by_stop:
+                    rpc_err = decoder.check_rpc_error_from_raw("".join(raw_chunks))
+                    err_msg = (
+                        rpc_err[1]
+                        if rpc_err
+                        else "AI Studio stream interrupted before finish frame"
+                    )
+                    if retry_attempt < 2 and _ais_is_transient_retryable_rpc_error(
+                        http_status,
+                        err_msg,
+                        had_emitted_content=had_round_output,
+                    ):
+                        _gemini_debug_log_event(
+                            session_id,
+                            "ais_transient_retry",
+                            {
+                                "round_idx": round_idx,
+                                "retry_attempt": retry_attempt + 1,
+                                "http_status": http_status,
+                                "message": err_msg,
+                            },
+                        )
+                        await asyncio.sleep(0.35 * (retry_attempt + 1))
+                        continue
+                    if sess_state is not None:
+                        sess_state.active_pending_hop_key = ""
+                    _gemini_debug_log_event(
+                        session_id,
+                        "ais_error",
+                        {
+                            "round_idx": round_idx,
+                            "type": "aistudio_stream_interrupted",
+                            "message": err_msg,
+                        },
+                    )
+                    err_chunk = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created_ts,
+                        "model": spec.public_id,
+                        "choices": [
+                            {"index": 0, "delta": {}, "finish_reason": "error"}
+                        ],
+                        "error": {
+                            "message": err_msg,
+                            "type": "aistudio_stream_interrupted",
+                        },
+                    }
+                    yield f"data: {json.dumps(err_chunk, ensure_ascii=False)}\n\n".encode(
+                        "utf-8"
+                    )
+                    yield b"data: [DONE]\n\n"
+                    return
 
-            if not decoder.finished and not stream_aborted_by_stop:
-                rpc_err = decoder.check_rpc_error_from_raw("".join(raw_chunks))
-                err_msg = (
-                    rpc_err[1]
-                    if rpc_err
-                    else "AI Studio stream interrupted before finish frame"
-                )
-                _gemini_debug_log_event(
-                    session_id,
-                    "ais_error",
-                    {
-                        "round_idx": round_idx,
-                        "type": "aistudio_stream_interrupted",
-                        "message": err_msg,
-                    },
-                )
-                err_chunk = {
-                    "id": completion_id,
-                    "object": "chat.completion.chunk",
-                    "created": created_ts,
-                    "model": spec.public_id,
-                    "choices": [{"index": 0, "delta": {}, "finish_reason": "error"}],
-                    "error": {
-                        "message": err_msg,
-                        "type": "aistudio_stream_interrupted",
-                    },
-                }
-                yield f"data: {json.dumps(err_chunk, ensure_ascii=False)}\n\n".encode(
-                    "utf-8"
-                )
-                yield b"data: [DONE]\n\n"
-                return
+                if (
+                    not had_round_output
+                    and not accumulated_tool_calls
+                    and decoder.finish_reason == "content_filter"
+                    and retry_attempt < 2
+                ):
+                    _gemini_debug_log_event(
+                        session_id,
+                        "ais_transient_retry",
+                        {
+                            "round_idx": round_idx,
+                            "retry_attempt": retry_attempt + 1,
+                            "finish_code": decoder.finish_code,
+                            "message": "Empty candidate with finish_reason=content_filter",
+                        },
+                    )
+                    await asyncio.sleep(0.35 * (retry_attempt + 1))
+                    continue
+                break
 
             if decoder.usage is not None:
                 if final_usage is None or round_idx == 0:
@@ -68516,6 +69417,7 @@ async def _direct_aistudio_chat_response(
                         timezone=AIS_BROWSER_RUNTIME.timezone,
                         continuation_token=decoder.continuation_token,
                         round_max_tokens=next_max,
+                        sess_state=sess_state,
                     )
                 )
                 continue
@@ -68651,6 +69553,16 @@ async def _direct_aistudio_chat_response(
             )
             final_finish_reason = "tool_calls"
 
+        if sess_state is not None:
+            if accumulated_tool_calls:
+                sess_state.active_pending_hop_key = ",".join(
+                    str(tc.get("id") or "").strip()
+                    for tc in accumulated_tool_calls
+                    if isinstance(tc, dict) and str(tc.get("id") or "").strip()
+                )
+            else:
+                sess_state.active_pending_hop_key = ""
+
         # Synchronize Playground History (`GenerateTitle` -> `CreatePrompt` / `UpdatePrompt`).
         # Run on initial creation (`not sess.title or not sess.prompt_id`), account switch,
         # or final turn completion (`not accumulated_tool_calls`), avoiding redundant
@@ -68713,6 +69625,7 @@ async def _direct_aistudio_chat_response(
             "ais_done",
             {
                 "finish_reason": final_finish_reason,
+                "finish_code": decoder.finish_code,
                 "tool_calls_count": len(accumulated_tool_calls),
                 "answer_chars": len(full_answer_str),
                 "reasoning_chars": len(full_reasoning_str),
@@ -78479,7 +79392,10 @@ def test_aistudio_playground_protocol_and_routing():
     tc0 = dec.tool_calls[0]
     assert tc0["id"] == "call_ais_1"
     assert tc0["function"]["name"] == "bash"
-    assert json.loads(tc0["function"]["arguments"]) == {"command": "ls -la"}
+    assert json.loads(tc0["function"]["arguments"]) == {
+        "command": "ls -la",
+        "timeoutMs": GEMINI_ROBIN_DSH_BASH_MIN_TIMEOUT_MS,
+    }
     assert tc0["extra_content"]["google"]["thought_signature"] == "SIG_STANDALONE_999"
     assert dec.usage is not None
     assert dec.usage["prompt_tokens"] == 12
@@ -78713,6 +79629,145 @@ def test_aistudio_playground_protocol_and_routing():
         tc_msg = tc_data["choices"][0]["message"]
         # Subsequent thinking block in tool loop has no repeated "使用了 ... 模型" prefix
         assert tc_msg["reasoning_content"] == "Thinking about identity..."
+        # If a normal tool continuation step (0 mid-turn user messages) is followed by a new human
+        # question without an intervening assistant message (e.g. after the step was interrupted),
+        # `tool_hop_user_counts[hop_key] == 0` ensures the new human message is NOT misclassified
+        # as a mid-turn notice.
+        post_interrupted_normal_tool_msgs = [
+            *tool_cont_msgs,
+            {"role": "user", "content": "刚才普通工具步中断了，请直接回答"},
+        ]
+        assert (
+            _ais_is_tool_continuation_step(post_interrupted_normal_tool_msgs) is False
+        )
+        _, _, _, page_prompt_post_normal, _ = _ais_encode_playground_request(
+            spec_ais_high,
+            {"model": spec_ais_high.public_id},
+            post_interrupted_normal_tool_msgs,
+        )
+        assert page_prompt_post_normal == "刚才普通工具步中断了，请直接回答"
+
+        # Step A.3: Structural mid-turn `role="user"` recognition during a tool loop (without hardcoded
+        # template regexes): both `read_image` carrier messages AND arbitrary unknown DSH mid-turn
+        # `user` messages MUST be folded into the `part_11` (`functionResponse`) tool turn, keeping
+        # `page_prompt == ""`, preserving `query_text`, and suppressing repeated attribution banners.
+        unknown_dsh_notice = (
+            "Arbitrary unpatterned DSH mid-turn notice: check output carefully."
+        )
+        read_img_cont_msgs = [
+            *dsh_turn1_msgs,
+            {
+                "role": "assistant",
+                "content": "",
+                "reasoning_content": "使用了 4 Argon High 模型\n\nThinking about identity...",
+                "tool_calls": [
+                    {
+                        "id": "call_step1_img",
+                        "type": "function",
+                        "function": {
+                            "name": "read_image",
+                            "arguments": '{"file_path":"test.png"}',
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "call_step1_img",
+                "content": "Image loaded.",
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Attached image(s) from tool result:"},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{img_b64}"},
+                    },
+                ],
+            },
+            {
+                "role": "user",
+                "content": unknown_dsh_notice,
+            },
+        ]
+        assert _ais_is_tool_continuation_step(read_img_cont_msgs) is True
+        assert (
+            _robin_extract_aligned_user_query(
+                read_img_cont_msgs, has_remote_parent=True
+            )
+            == "你是什么模型? 有哪些工具可以调用? 全部列出"
+        )
+        wire_img_cont, _, _, page_prompt_img_cont, _ = _ais_encode_playground_request(
+            spec_ais_high, {"model": spec_ais_high.public_id}, read_img_cont_msgs
+        )
+        assert page_prompt_img_cont == ""
+        folded_tool_turn_parts = wire_img_cont[1][2][0]
+        assert wire_img_cont[1][2][1] == "user"
+        assert len(folded_tool_turn_parts) == 2
+        folded_struct = _ais_decode_struct(folded_tool_turn_parts[0][11][1])
+        assert "--- [Harness Notice] ---" in folded_struct["result"]
+        assert "Attached image(s) from tool result:" in folded_struct["result"]
+        assert unknown_dsh_notice in folded_struct["result"]
+        assert folded_tool_turn_parts[1] == [None, None, ["image/png", img_b64]]
+        resp_img_cont = asyncio.run(
+            _direct_gemini_chat_response(
+                {"model": "gemini:aistudio/gemini-4-argon-high"},
+                read_img_cont_msgs,
+                stream_mode=False,
+            )
+        )
+        assert resp_img_cont.status_code == 200
+        img_cont_data = json.loads(bytes(resp_img_cont.body).decode("utf-8"))
+        assert (
+            img_cont_data["choices"][0]["message"]["reasoning_content"]
+            == "Thinking about identity..."
+        )
+        # If the tool continuation step later has a new human turn appended after it (e.g. after an interrupted step),
+        # `tool_hop_user_counts` ensures the new human message is recognized as a real human turn (`is_tool_continuation == False`)
+        post_interrupted_human_msgs = [
+            *read_img_cont_msgs,
+            {"role": "user", "content": "刚才步骤中断了，请继续回答"},
+        ]
+        assert _ais_is_tool_continuation_step(post_interrupted_human_msgs) is False
+        _, _, _, page_prompt_post_human, _ = _ais_encode_playground_request(
+            spec_ais_high,
+            {"model": spec_ais_high.public_id},
+            post_interrupted_human_msgs,
+        )
+        assert page_prompt_post_human == "刚才步骤中断了，请继续回答"
+        # Also verify a mid-turn `user` message appearing BEFORE `role == "tool"` in the same hop
+        # is folded into the single `part_11` of that `tool` result without creating a duplicate `part_11`
+        pre_tool_notice_msgs = [
+            *dsh_turn1_msgs,
+            {
+                "role": "assistant",
+                "content": "",
+                "reasoning_content": "使用了 4 Argon High 模型\n\nThinking...",
+                "tool_calls": [
+                    {
+                        "id": "call_step1_pre",
+                        "type": "function",
+                        "function": {"name": "bash", "arguments": '{"command":"ls"}'},
+                    }
+                ],
+            },
+            {"role": "user", "content": "Mid-turn notice before tool result"},
+            {
+                "role": "tool",
+                "tool_call_id": "call_step1_pre",
+                "content": "file1.py\n[exit code: 0]",
+            },
+        ]
+        wire_pre_tool, _, _, page_prompt_pre_tool, _ = _ais_encode_playground_request(
+            spec_ais_high, {"model": spec_ais_high.public_id}, pre_tool_notice_msgs
+        )
+        assert page_prompt_pre_tool == ""
+        pre_tool_turn_parts = wire_pre_tool[1][2][0]
+        assert len(pre_tool_turn_parts) == 1
+        pre_tool_struct = _ais_decode_struct(pre_tool_turn_parts[0][11][1])
+        assert "file1.py" in pre_tool_struct["result"]
+        assert "Mid-turn notice before tool result" in pre_tool_struct["result"]
 
         # Verify _ais_extract_title_from_list_prompts never steals an older session's title when target_prompt_id mismatches
         stolen_title, _ = _ais_extract_title_from_list_prompts(
@@ -78821,6 +79876,75 @@ def test_aistudio_playground_protocol_and_routing():
         assert recreated_chunks[0][0] == "你是什么模型? 有哪些工具可以调用? 全部列出"
         assert recreated_chunks[6][0] == "切换账号后继续第三轮"
 
+        # Step D.2: Switching accounts A -> B -> A backfills missing intermediate turns onto Account A's
+        # existing `prompt_id` via `UpdatePrompt` (without creating a duplicate prompt on Account A)
+        simulate_account_switch_update_failure[0] = False
+        AIS_BROWSER_RUNTIME._auth_key = "u:2:acct_a"
+        _, boot_d2, full_d2 = _robin_conversation_keys("aistudio", dsh_turn3_msgs)
+        sess_d2 = _AIS_SESSIONS_BY_KEY[full_d2]
+        prompt_id_acct_a = sess_d2.prompt_id
+        assert prompt_id_acct_a.startswith("prompts/")
+        sess_d2.auth_key = "u:2:acct_a"
+        sess_d2.prompt_ids_by_auth["u:2:acct_a"] = prompt_id_acct_a
+        _ais_persist_session_state(sess_d2)
+
+        # Switch to Account B for Turn 4 -> creates Account B's own prompt_id
+        AIS_BROWSER_RUNTIME._auth_key = "u:3:acct_b"
+        rpc_log.clear()
+        dsh_turn4_msgs = [
+            *dsh_turn3_msgs,
+            {
+                "role": "assistant",
+                "content": "我是 Gemini 4 Argon。",
+                "reasoning_content": "使用了 4 Argon High 模型\n\nThinking about identity...",
+            },
+            {"role": "user", "content": "在账号 B 上继续第四轮"},
+        ]
+        resp_t4 = asyncio.run(
+            _direct_gemini_chat_response(
+                {"model": "gemini:aistudio/gemini-4-argon-high"},
+                dsh_turn4_msgs,
+                stream_mode=False,
+            )
+        )
+        assert resp_t4.status_code == 200
+        assert [r[1] for r in rpc_log] == ["GenerateContent", "CreatePrompt"]
+        prompt_id_acct_b = sess_d2.prompt_id
+        assert prompt_id_acct_b != prompt_id_acct_a
+
+        # Now switch BACK to Account A for Turn 5 (even after clearing in-memory session cache) ->
+        # restores `prompt_id_acct_a` from SQLite and calls `UpdatePrompt` with all 5 turns (15 chunks),
+        # backfilling Turn 4 (which happened on Account B) + Turn 5 onto Account A's existing prompt!
+        AIS_BROWSER_RUNTIME._auth_key = "u:2:acct_a"
+        with _AIS_SESSIONS_LOCK:
+            _AIS_SESSIONS_BY_KEY.clear()
+        rpc_log.clear()
+        dsh_turn5_msgs = [
+            *dsh_turn4_msgs,
+            {
+                "role": "assistant",
+                "content": "我是 Gemini 4 Argon。",
+                "reasoning_content": "使用了 4 Argon High 模型\n\nThinking about identity...",
+            },
+            {"role": "user", "content": "切回账号 A 继续第五轮并补齐缺失上下文"},
+        ]
+        resp_t5 = asyncio.run(
+            _direct_gemini_chat_response(
+                {"model": "gemini:aistudio/gemini-4-argon-high"},
+                dsh_turn5_msgs,
+                stream_mode=False,
+            )
+        )
+        assert resp_t5.status_code == 200
+        assert [r[1] for r in rpc_log] == ["GenerateContent", "UpdatePrompt"]
+        updated_wire_a = rpc_log[1][2][0]
+        assert updated_wire_a[0] == prompt_id_acct_a
+        assert len(updated_wire_a[13][0]) == 15
+        assert updated_wire_a[13][0][9][0] == "在账号 B 上继续第四轮"
+        assert updated_wire_a[13][0][12][0] == "切回账号 A 继续第五轮并补齐缺失上下文"
+        simulate_account_switch_update_failure[0] = True
+        AIS_BROWSER_RUNTIME._auth_key = ""
+
         # Verify AIS_READY deduplication suppresses repeated ping noise in bridge logs
         AIS_BROWSER_RUNTIME._last_logged_ready_sig = None
         sample_ready_msg = {
@@ -78866,6 +79990,321 @@ def test_aistudio_playground_protocol_and_routing():
             f'"{full_check}"',
         ):
             assert expected_ev in dbg_text
+
+        # Step E: DSH file-handle attachment auto-inlining (`[File "..." (... bytes, sha256:...): verbatim read-only copy saved at "..."]`),
+        #         boot_key alignment between main chat request and title request (where DSH strips file blocks),
+        #         transient 404 `/GenerativeService.StreamGenerateContentPerUserQuota` retry before first output,
+        #         and parallel `edit` `FS_STALE_VERSION` (`file changed since it was read`) auto-heal
+        with tempfile.TemporaryDirectory() as tmp_pdf_dir:
+            pdf_path = Path(tmp_pdf_dir) / "test.pdf"
+            pdf_bytes = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n"
+            pdf_path.write_bytes(pdf_bytes)
+            pdf_b64 = base64.b64encode(pdf_bytes).decode("ascii")
+            handle_prefix = (
+                f'[File "test.pdf" ({len(pdf_bytes)} bytes, sha256:9cb0ae7c): '
+                f'verbatim read-only copy saved at "{pdf_path}". Read that path with your file tools '
+                f"when its contents are needed; copy it to a writable location before modifying it. "
+                f"When delegating file work, include this saved path in the delegation prompt; "
+                f"only subagents sharing this execution environment can read it.]"
+            )
+            human_question = (
+                "我在测试 aistudio 的实现能否发 pdf 给模型识别, 你看下收到 pdf 了吗?"
+            )
+            main_user_content = handle_prefix + human_question
+
+            # 1) Verify boot_key alignment between main chat (with file handle prefix) and title request (without file handle prefix)
+            _, main_boot_k, _ = _robin_conversation_keys(
+                "aistudio", [{"role": "user", "content": main_user_content}]
+            )
+            title_boot_k, _ = _robin_extract_title_request_boot_key(
+                [
+                    {
+                        "role": "user",
+                        "content": (
+                            "Generate the session title from this JSON array of human messages:\n"
+                            + json.dumps(
+                                [{"seq": 18, "text": human_question}],
+                                ensure_ascii=False,
+                            )
+                        ),
+                    }
+                ],
+                principal_id="aistudio",
+            )
+            assert main_boot_k == title_boot_k
+
+            # 2) Verify PDF file handle is automatically inlined as part[2] = ["application/pdf", base64]
+            wire_pdf, _, digest_pdf, page_prompt_pdf, _ = (
+                _ais_encode_playground_request(
+                    spec_ais_high,
+                    {"model": spec_ais_high.public_id},
+                    [{"role": "user", "content": main_user_content}],
+                )
+            )
+            pdf_turn_parts = wire_pdf[1][0][0]
+            assert len(pdf_turn_parts) == 2
+            assert pdf_turn_parts[0] == [None, main_user_content]
+            assert pdf_turn_parts[1] == [None, None, ["application/pdf", pdf_b64]]
+            assert page_prompt_pdf == main_user_content
+            assert (
+                digest_pdf
+                == hashlib.sha256(
+                    f"{main_user_content} {pdf_b64}".encode("utf-8")
+                ).hexdigest()
+            )
+
+            # 3) Verify transient 404 `/GenerativeService.StreamGenerateContentPerUserQuota` is retried transparently
+            transient_attempts = [0]
+            orig_handler_e = AIS_BROWSER_RUNTIME._custom_rpc_handler
+
+            def _flaky_rpc(kind: str, **kwargs: Any) -> Any:
+                url = str(kwargs.get("url") or "")
+                rpc_name = url.rsplit("/", 1)[-1]
+                if kind == "AIS_STREAM" and rpc_name == "GenerateContent":
+                    transient_attempts[0] += 1
+                    if transient_attempts[0] == 1:
+                        err_wire = (
+                            "[[null,[404,\"Ambiguous request for service '' and method "
+                            "'/GenerativeService.StreamGenerateContentPerUserQuota'.  "
+                            'Please use fully qualified (unique) service and method names to call this method."]]]'
+                        )
+                        return [
+                            {"type": "AIS_HEAD", "status": 404, "headers": {}},
+                            {"type": "AIS_CHUNK", "seq": 0, "data": err_wire},
+                            {"type": "AIS_END", "seq": 1, "status": 404},
+                        ]
+                return orig_handler_e(kind, **kwargs)
+
+            AIS_BROWSER_RUNTIME._custom_rpc_handler = _flaky_rpc
+            try:
+                resp_flaky = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {"model": "gemini:aistudio/gemini-4-argon-high"},
+                        [{"role": "user", "content": main_user_content}],
+                        stream_mode=False,
+                    )
+                )
+                assert resp_flaky.status_code == 200
+                assert transient_attempts[0] == 2
+                flaky_data = json.loads(bytes(resp_flaky.body).decode("utf-8"))
+                assert (
+                    flaky_data["choices"][0]["message"]["content"]
+                    == "我是 Gemini 4 Argon。"
+                )
+            finally:
+                AIS_BROWSER_RUNTIME._custom_rpc_handler = orig_handler_e
+
+            # 4) Verify parallel `edit` `FS_STALE_VERSION` (`file changed since it was read`) auto-heals with [read, edit] without calling GenerateContent
+            rpc_log.clear()
+            stale_edit_msgs = [
+                {"role": "user", "content": main_user_content},
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_edit_1",
+                            "type": "function",
+                            "function": {
+                                "name": "edit",
+                                "arguments": json.dumps(
+                                    {
+                                        "file_path": f"{_SELFTEST_WORKSPACE}/voice_edge.py",
+                                        "old_string": "a = 1",
+                                        "new_string": "a = 2",
+                                    }
+                                ),
+                            },
+                        },
+                        {
+                            "id": "call_edit_2",
+                            "type": "function",
+                            "function": {
+                                "name": "edit",
+                                "arguments": json.dumps(
+                                    {
+                                        "file_path": f"{_SELFTEST_WORKSPACE}/voice_edge.py",
+                                        "old_string": "b = 1",
+                                        "new_string": "b = 2",
+                                    }
+                                ),
+                            },
+                        },
+                    ],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call_edit_1",
+                    "content": f"The file {_SELFTEST_WORKSPACE}/voice_edge.py has been updated successfully.",
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call_edit_2",
+                    "content": f'Error: cannot edit "{_SELFTEST_WORKSPACE}/voice_edge.py": file changed since it was read — re-read the file, then retry',
+                },
+            ]
+            resp_heal = asyncio.run(
+                _direct_gemini_chat_response(
+                    {"model": "gemini:aistudio/gemini-4-argon-high"},
+                    stale_edit_msgs,
+                    stream_mode=False,
+                )
+            )
+            assert resp_heal.status_code == 200
+            assert (
+                len(rpc_log) == 0
+            )  # Auto-healed locally without upstream GenerateContent
+            heal_data = json.loads(bytes(resp_heal.body).decode("utf-8"))
+            heal_tcs = heal_data["choices"][0]["message"]["tool_calls"]
+            assert len(heal_tcs) == 2
+            assert heal_tcs[0]["function"]["name"] == "read"
+            assert json.loads(heal_tcs[0]["function"]["arguments"]) == {
+                "file_path": f"{_SELFTEST_WORKSPACE}/voice_edge.py",
+                "offset": 1,
+                "limit": 1,
+            }
+            assert heal_tcs[1]["function"]["name"] == "edit"
+            assert json.loads(heal_tcs[1]["function"]["arguments"]) == {
+                "file_path": f"{_SELFTEST_WORKSPACE}/voice_edge.py",
+                "old_string": "b = 1",
+                "new_string": "b = 2",
+            }
+            # Repeating the same stale tool call ID a second time MUST NOT infinite-loop auto-heal
+            resp_no_loop = asyncio.run(
+                _direct_gemini_chat_response(
+                    {"model": "gemini:aistudio/gemini-4-argon-high"},
+                    stale_edit_msgs,
+                    stream_mode=False,
+                )
+            )
+            assert resp_no_loop.status_code == 200
+            assert [r[1] for r in rpc_log] == [
+                "GenerateContent",
+                "UpdatePrompt",
+                "CreatePrompt",
+            ]
+
+            # 5) Verify `TimeoutError: AI Studio timed out waiting for first response byte` and empty `content_filter`
+            #    (`finish_code=19` with 0 emitted tokens) are caught inside `_generate_sse` and retried transparently
+            timeout_and_filter_attempts = [0]
+
+            def _timeout_then_empty_filter_rpc(kind: str, **kwargs: Any) -> Any:
+                url = str(kwargs.get("url") or "")
+                rpc_name = url.rsplit("/", 1)[-1]
+                if kind == "AIS_STREAM" and rpc_name == "GenerateContent":
+                    timeout_and_filter_attempts[0] += 1
+                    if timeout_and_filter_attempts[0] == 1:
+                        raise TimeoutError(
+                            "AI Studio timed out waiting for first response byte"
+                        )
+                    if timeout_and_filter_attempts[0] == 2:
+                        empty_filter_wire = '[[[[[[],"model"],19]],null,[15,0,15,null,[[1,15]],null,null,null,null,0]]]'
+                        return [
+                            {"type": "AIS_HEAD", "status": 200, "headers": {}},
+                            {"type": "AIS_CHUNK", "seq": 0, "data": empty_filter_wire},
+                            {"type": "AIS_END", "seq": 1, "status": 200},
+                        ]
+                return orig_handler_e(kind, **kwargs)
+
+            AIS_BROWSER_RUNTIME._custom_rpc_handler = _timeout_then_empty_filter_rpc
+            try:
+                resp_recovered = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {"model": "gemini:aistudio/gemini-4-argon-high"},
+                        [{"role": "user", "content": "测试超时与空候选重试"}],
+                        stream_mode=False,
+                    )
+                )
+                assert resp_recovered.status_code == 200
+                assert timeout_and_filter_attempts[0] == 3
+                rec_data = json.loads(bytes(resp_recovered.body).decode("utf-8"))
+                assert (
+                    rec_data["choices"][0]["message"]["content"]
+                    == "我是 Gemini 4 Argon。"
+                )
+            finally:
+                AIS_BROWSER_RUNTIME._custom_rpc_handler = orig_handler_e
+
+            # 6) Verify 429 RPM rate limit (`requests_per_model_per_user ... Please retry in 10ms.`) is
+            #    distinguished from daily quota exhaustion (`free_tier_requests_per_day`):
+            #    - RPM rate limit sleeps for the requested window and retries transparently;
+            #    - Daily quota exhaustion fails fast without futile retries.
+            rpm_msg = (
+                "You exceeded your current quota, please check your plan and billing details.\n"
+                "* Quota exceeded for metric: generativelanguage.googleapis.com/generate_requests_per_model_per_user, "
+                "limit: 10, model: gemini-4-argon, description: Generate content requests per user per minute limit exceeded.\n"
+                "Please retry in 10ms."
+            )
+            daily_msg = (
+                "You exceeded your current quota, please check your plan and billing details.\n"
+                "* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests_per_day, "
+                "limit: 50, model: gemini-4-argon, description: GenerateRequestsPerDayPerProjectPerModel-FreeTier."
+            )
+            is_rpm_flag, rpm_wait = _ais_classify_429_rate_limit(rpm_msg)
+            assert is_rpm_flag is True and 0.5 <= rpm_wait <= 2.0
+            is_daily_flag, _ = _ais_classify_429_rate_limit(daily_msg)
+            assert is_daily_flag is False
+            assert _ais_is_transient_retryable_rpc_error(429, rpm_msg) is True
+            assert _ais_is_transient_retryable_rpc_error(429, daily_msg) is False
+
+            rpm_attempts = [0]
+
+            def _rpm_429_then_ok_rpc(kind: str, **kwargs: Any) -> Any:
+                url = str(kwargs.get("url") or "")
+                rpc_name = url.rsplit("/", 1)[-1]
+                if kind == "AIS_STREAM" and rpc_name == "GenerateContent":
+                    rpm_attempts[0] += 1
+                    if rpm_attempts[0] == 1:
+                        err_wire = json.dumps([[None, [429, rpm_msg]]])
+                        return [
+                            {"type": "AIS_HEAD", "status": 429, "headers": {}},
+                            {"type": "AIS_CHUNK", "seq": 0, "data": err_wire},
+                            {"type": "AIS_END", "seq": 1, "status": 429},
+                        ]
+                return orig_handler_e(kind, **kwargs)
+
+            AIS_BROWSER_RUNTIME._custom_rpc_handler = _rpm_429_then_ok_rpc
+            try:
+                resp_rpm_ok = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {"model": "gemini:aistudio/gemini-4-argon-high"},
+                        [{"role": "user", "content": "测试 429 RPM 自动等待重试"}],
+                        stream_mode=False,
+                    )
+                )
+                assert resp_rpm_ok.status_code == 200
+                assert rpm_attempts[0] == 2
+            finally:
+                AIS_BROWSER_RUNTIME._custom_rpc_handler = orig_handler_e
+
+            daily_attempts = [0]
+
+            def _daily_429_rpc(kind: str, **kwargs: Any) -> Any:
+                url = str(kwargs.get("url") or "")
+                rpc_name = url.rsplit("/", 1)[-1]
+                if kind == "AIS_STREAM" and rpc_name == "GenerateContent":
+                    daily_attempts[0] += 1
+                    err_wire = json.dumps([[None, [429, daily_msg]]])
+                    return [
+                        {"type": "AIS_HEAD", "status": 429, "headers": {}},
+                        {"type": "AIS_CHUNK", "seq": 0, "data": err_wire},
+                        {"type": "AIS_END", "seq": 1, "status": 429},
+                    ]
+                return orig_handler_e(kind, **kwargs)
+
+            AIS_BROWSER_RUNTIME._custom_rpc_handler = _daily_429_rpc
+            try:
+                resp_daily_fail = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {"model": "gemini:aistudio/gemini-4-argon-high"},
+                        [{"role": "user", "content": "测试 429 日额度耗尽立即报错"}],
+                        stream_mode=False,
+                    )
+                )
+                assert resp_daily_fail.status_code == 429
+                assert daily_attempts[0] == 1
+            finally:
+                AIS_BROWSER_RUNTIME._custom_rpc_handler = orig_handler_e
     finally:
         AIS_BROWSER_RUNTIME._custom_rpc_handler = prev_handler
         os.environ.pop("VE_GEMINI_LOG_DEBUG", None)
