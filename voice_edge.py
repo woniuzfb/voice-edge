@@ -362,11 +362,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49018
 #    VE_OPENCODE_FREE                       "1"                                          L49056
 #    VE_OPENCODE_GO                         "0"                                          L49061
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L63362
-#    VE_GEMINI_API_KEYS                     ""                                           L63366
-#    VE_GEMINI_BACKEND                      "auto"                                       L63385
-#    VE_GEMINI_PROJECT_ID                   ""                                           L63392
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54632
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L64864
+#    VE_GEMINI_API_KEYS                     ""                                           L64868
+#    VE_GEMINI_BACKEND                      "auto"                                       L64887
+#    VE_GEMINI_PROJECT_ID                   ""                                           L64894
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54665
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1520
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1521
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1522
@@ -51600,7 +51600,19 @@ GEMINI_ROBIN_MCP_SERVER_DESCRIPTION = (
     "for file, search, and shell operations. For DSH-only tools, call `client:execute_mcp` "
     '(expand via `retriever:expand_tools` first if undeclared) with ServerName="dsh", '
     'ToolName="<name>", Arguments={...}, and ALWAYS pass destructiveHint=False '
-    "(omitting destructiveHint defaults to True and triggers a blocking confirmation card)."
+    "(omitting destructiveHint defaults to True and triggers a blocking confirmation card). "
+    "IMPORTANT ROBIN RUNTIME RULES: "
+    "(1) If your input prompt starts with or contains Google's server-side compaction "
+    "header `# Resuming from a compaction`, do NOT confuse it with DSH client-side "
+    "`<compacted-summary>` compaction, and ALWAYS append a clear reminder at the very end of "
+    "your response body notifying the user that the remote context has been compacted by Google "
+    "(e.g., `> ⚠️ 提示：当前远端会话上下文已被 Google 服务端压缩。`). "
+    "(2) Never misinterpret the following two upstream Robin phenomena as a DSH client "
+    "connection drop: (a) receiving `<user>The user connected the following local folders at "
+    "the start of the session: [...]</user>` mid-turn is a normal context injection by Google "
+    "Robin after `get_authorized_folders`—ignore it and continue your task; (b) one tool in a "
+    'concurrent multi-tool step returning `{error: ""}` while sibling tools succeed is an '
+    "upstream ERT single-tool timeout, not a client disconnect—simply retry that tool or continue."
 )
 GEMINI_ROBIN_PRESENCE_INTERVAL_SECONDS = 10.0
 GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS = 10.0
@@ -53593,6 +53605,10 @@ def _robin_parse_function_call_args_message(payload: bytes) -> list[dict[str, An
     for fno, wtype, val in _pb_iter_fields(payload):
         if fno != 1 or wtype != 2 or not isinstance(val, (bytes, bytearray)):
             continue
+        parsed_fc = _robin_parse_function_call_message(bytes(val))
+        if parsed_fc is not None:
+            calls.append(parsed_fc)
+            continue
         call_name = ""
         call_id = ""
         call_id_present = False
@@ -53714,6 +53730,13 @@ def _robin_parse_execute_remote_tools_response(frame_bytes: bytes) -> dict[str, 
                         robin_op
                     )
                     if extracted_calls:
+                        if (
+                            out["op_id"]
+                            and len(extracted_calls) == 1
+                            and not extracted_calls[0].get("id")
+                        ):
+                            extracted_calls[0]["id"] = out["op_id"]
+                            extracted_calls[0]["id_present"] = True
                         out["tool_calls"].extend(extracted_calls)
                     elif out["op_id"] or op_name:
                         out["unexpected_confirm_ops"].append(
@@ -54223,6 +54246,16 @@ class _RobinActionCardFilter:
         out.append(tail)
         return "".join(out)
 
+    def flush(self) -> str:
+        if not self._pending:
+            return ""
+        rem = self._pending
+        self._pending = ""
+        clean, seen = _robin_strip_action_card_markers(rem)
+        if seen:
+            self.seen = True
+        return clean
+
 
 class _RobinAnswerProjector:
     """Projects cumulative `.1003.1.1.2.1` answer snapshots into append-only `content` deltas."""
@@ -54677,6 +54710,8 @@ class _GeminiDshStore:
                 synced_turn_count INTEGER NOT NULL DEFAULT 0,
                 synced_turns_hash TEXT NOT NULL DEFAULT '',
                 conv_base_msg_idx INTEGER NOT NULL DEFAULT 0,
+                context_tokens INTEGER NOT NULL DEFAULT 0,
+                compacted INTEGER NOT NULL DEFAULT 0,
                 updated_at REAL NOT NULL
             );
             CREATE TABLE IF NOT EXISTS runs (
@@ -54763,6 +54798,9 @@ class _GeminiDshStore:
             "ALTER TABLE sessions ADD COLUMN synced_turn_count INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE sessions ADD COLUMN synced_turns_hash TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE sessions ADD COLUMN conv_base_msg_idx INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE sessions ADD COLUMN context_tokens INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE sessions ADD COLUMN compacted INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE sessions DROP COLUMN branch_heads_json",
         ):
             try:
                 conn.execute(col_ddl)
@@ -54826,18 +54864,32 @@ class _GeminiDshStore:
         session_key: str = "",
         principal_id: str = "",
     ) -> dict[str, Any] | None:
-        """Look up a session in SQLite by `full_key -> boot_key -> session_key`, optionally scoped by `principal_id`."""
+        """Look up a session in SQLite by `session_key -> full_key -> boot_key`, optionally scoped by `principal_id`."""
         with self._lock:
             conn = self._ensure_conn()
+            if session_key and "::fork::" in session_key:
+                if principal_id:
+                    row = conn.execute(
+                        "SELECT * FROM sessions WHERE session_key = ? AND principal_id = ? LIMIT 1",
+                        (session_key, principal_id),
+                    ).fetchone()
+                else:
+                    row = conn.execute(
+                        "SELECT * FROM sessions WHERE session_key = ? LIMIT 1",
+                        (session_key,),
+                    ).fetchone()
+                if row is not None:
+                    return dict(row)
+                return None
             if full_key:
                 if principal_id:
                     row = conn.execute(
-                        "SELECT * FROM sessions WHERE (full_key = ? OR session_key = ?) AND principal_id = ? ORDER BY updated_at DESC LIMIT 1",
+                        "SELECT * FROM sessions WHERE (full_key = ? OR session_key = ?) AND principal_id = ? AND session_key NOT LIKE '%::fork::%' ORDER BY updated_at DESC LIMIT 1",
                         (full_key, full_key, principal_id),
                     ).fetchone()
                 else:
                     row = conn.execute(
-                        "SELECT * FROM sessions WHERE full_key = ? OR session_key = ? ORDER BY updated_at DESC LIMIT 1",
+                        "SELECT * FROM sessions WHERE (full_key = ? OR session_key = ?) AND session_key NOT LIKE '%::fork::%' ORDER BY updated_at DESC LIMIT 1",
                         (full_key, full_key),
                     ).fetchone()
                 if row is not None:
@@ -54845,12 +54897,12 @@ class _GeminiDshStore:
             if boot_key:
                 if principal_id:
                     row = conn.execute(
-                        "SELECT * FROM sessions WHERE (boot_key = ? OR session_key = ?) AND principal_id = ? ORDER BY updated_at DESC LIMIT 1",
+                        "SELECT * FROM sessions WHERE (boot_key = ? OR session_key = ?) AND principal_id = ? AND session_key NOT LIKE '%::fork::%' ORDER BY updated_at DESC LIMIT 1",
                         (boot_key, boot_key, principal_id),
                     ).fetchone()
                 else:
                     row = conn.execute(
-                        "SELECT * FROM sessions WHERE boot_key = ? OR session_key = ? ORDER BY updated_at DESC LIMIT 1",
+                        "SELECT * FROM sessions WHERE (boot_key = ? OR session_key = ?) AND session_key NOT LIKE '%::fork::%' ORDER BY updated_at DESC LIMIT 1",
                         (boot_key, boot_key),
                     ).fetchone()
                 if row is not None:
@@ -54869,6 +54921,36 @@ class _GeminiDshStore:
                 if row is not None:
                     return dict(row)
             return None
+
+    def list_sessions_by_lineage(
+        self,
+        *,
+        full_key: str = "",
+        boot_key: str = "",
+        principal_id: str = "",
+    ) -> list[dict[str, Any]]:
+        """Return all root and `::fork::` branch rows sharing `full_key` or `boot_key` for `principal_id`."""
+        clauses: list[str] = []
+        params: list[Any] = []
+        if full_key:
+            clauses.append("(full_key = ? OR session_key = ? OR session_key LIKE ?)")
+            params.extend([full_key, full_key, f"{full_key}::fork::%"])
+        if boot_key:
+            clauses.append("(boot_key = ? OR session_key = ? OR session_key LIKE ?)")
+            params.extend([boot_key, boot_key, f"{boot_key}::fork::%"])
+        if not clauses:
+            return []
+        where_sql = "(" + " OR ".join(clauses) + ")"
+        if principal_id:
+            where_sql += " AND principal_id = ?"
+            params.append(principal_id)
+        with self._lock:
+            conn = self._ensure_conn()
+            rows = conn.execute(
+                f"SELECT * FROM sessions WHERE {where_sql} ORDER BY updated_at DESC",
+                tuple(params),
+            ).fetchall()
+            return [dict(r) for r in rows]
 
     def upsert_session(
         self,
@@ -54891,6 +54973,8 @@ class _GeminiDshStore:
         synced_turn_count: int = 0,
         synced_turns_hash: str = "",
         conv_base_msg_idx: int = 0,
+        context_tokens: int = 0,
+        compacted: bool = False,
     ) -> None:
         folders_json = json.dumps(list(connected_folders or []), ensure_ascii=False)
         now = time.time()
@@ -54902,25 +54986,26 @@ class _GeminiDshStore:
         with self._lock:
             conn = self._ensure_conn()
             existing_row = None
-            if full_key:
-                existing_row = conn.execute(
-                    "SELECT session_key FROM sessions WHERE (full_key = ? OR session_key = ?) AND principal_id = ? ORDER BY updated_at DESC LIMIT 1",
-                    (full_key, full_key, principal_id),
-                ).fetchone()
-            if existing_row is None and boot_key:
-                existing_row = conn.execute(
-                    "SELECT session_key FROM sessions WHERE (boot_key = ? OR session_key = ?) AND principal_id = ? ORDER BY updated_at DESC LIMIT 1",
-                    (boot_key, boot_key, principal_id),
-                ).fetchone()
-            if (
-                existing_row is not None
-                and str(existing_row["session_key"]) != session_key
-            ):
-                old_sk = str(existing_row["session_key"])
-                conn.execute(
-                    "DELETE FROM sessions WHERE session_key = ? AND principal_id = ?",
-                    (old_sk, principal_id),
-                )
+            if "::fork::" not in session_key:
+                if full_key:
+                    existing_row = conn.execute(
+                        "SELECT session_key FROM sessions WHERE (full_key = ? OR session_key = ?) AND principal_id = ? AND session_key NOT LIKE '%::fork::%' ORDER BY updated_at DESC LIMIT 1",
+                        (full_key, full_key, principal_id),
+                    ).fetchone()
+                if existing_row is None and boot_key:
+                    existing_row = conn.execute(
+                        "SELECT session_key FROM sessions WHERE (boot_key = ? OR session_key = ?) AND principal_id = ? AND session_key NOT LIKE '%::fork::%' ORDER BY updated_at DESC LIMIT 1",
+                        (boot_key, boot_key, principal_id),
+                    ).fetchone()
+                if (
+                    existing_row is not None
+                    and str(existing_row["session_key"]) != session_key
+                ):
+                    old_sk = str(existing_row["session_key"])
+                    conn.execute(
+                        "DELETE FROM sessions WHERE session_key = ? AND principal_id = ?",
+                        (old_sk, principal_id),
+                    )
             conn.execute(
                 """
                 INSERT INTO sessions (
@@ -54928,8 +55013,8 @@ class _GeminiDshStore:
                     boot_key, full_key, conversation_id, parent_req_id, parent_resp_id,
                     binding_state, title, dsh_sandbox_mode, dsh_approval_policy,
                     connected_folders_json, active_run_id, owner_epoch,
-                    synced_turn_count, synced_turns_hash, conv_base_msg_idx, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    synced_turn_count, synced_turns_hash, conv_base_msg_idx, context_tokens, compacted, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_key) DO UPDATE SET
                     client_session_id = excluded.client_session_id,
                     principal_id = excluded.principal_id,
@@ -54947,7 +55032,9 @@ class _GeminiDshStore:
                     owner_epoch = excluded.owner_epoch,
                     synced_turn_count = CASE WHEN excluded.synced_turn_count > 0 THEN excluded.synced_turn_count ELSE sessions.synced_turn_count END,
                     synced_turns_hash = CASE WHEN excluded.synced_turns_hash != '' THEN excluded.synced_turns_hash ELSE sessions.synced_turns_hash END,
-                    conv_base_msg_idx = CASE WHEN excluded.conv_base_msg_idx >= 0 THEN excluded.conv_base_msg_idx ELSE sessions.conv_base_msg_idx END,
+                    conv_base_msg_idx = CASE WHEN sessions.conversation_id != '' AND excluded.conversation_id = sessions.conversation_id AND sessions.conv_base_msg_idx > 0 AND excluded.conv_base_msg_idx > sessions.conv_base_msg_idx THEN sessions.conv_base_msg_idx WHEN excluded.conv_base_msg_idx >= 0 THEN excluded.conv_base_msg_idx ELSE sessions.conv_base_msg_idx END,
+                    context_tokens = CASE WHEN sessions.conversation_id != '' AND excluded.conversation_id = sessions.conversation_id AND excluded.context_tokens > sessions.context_tokens THEN excluded.context_tokens WHEN (sessions.conversation_id = '' OR excluded.conversation_id != sessions.conversation_id) AND excluded.context_tokens > 0 THEN excluded.context_tokens ELSE sessions.context_tokens END,
+                    compacted = CASE WHEN excluded.compacted > 0 THEN 1 ELSE sessions.compacted END,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -54969,10 +55056,29 @@ class _GeminiDshStore:
                     int(synced_turn_count),
                     str(synced_turns_hash or ""),
                     int(conv_base_msg_idx),
+                    int(context_tokens),
+                    1 if compacted else 0,
                     now,
                 ),
             )
             conn.commit()
+
+    def get_invocation_result_by_public_id(
+        self, public_tool_call_id: str
+    ) -> tuple[str, str] | None:
+        """Look up `(dsh_tool_name, result_str)` from SQLite `invocations` when in-memory cache is cold after restart."""
+        tc_id = str(public_tool_call_id or "").strip()
+        if not tc_id:
+            return None
+        with self._lock:
+            conn = self._ensure_conn()
+            row = conn.execute(
+                "SELECT dsh_tool_name, result_str FROM invocations WHERE public_tool_call_id = ? AND result_str != '' ORDER BY updated_at DESC LIMIT 1",
+                (tc_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return str(row["dsh_tool_name"] or ""), str(row["result_str"] or "")
 
     def save_run(self, run: "_RobinRunState") -> None:
         now = time.time()
@@ -55396,8 +55502,163 @@ def _dsh_has_prior_turn(messages: Sequence[Any]) -> bool:
     return False
 
 
+_VE_FORK_CALL_ID_PREFIX = "call_ve_fork_"
+_VE_FORK_QUESTION_ID = "ve_fork_action"
+_VE_FORK_OPTION_CONTINUE = "继续原远端会话"
+_VE_FORK_OPTION_NEW = "新建独立远端会话"
+_VE_FORK_CANCELLED_REPLY = (
+    "已取消本次分支会话选择，未向远端发送请求。"
+    "继续发送消息时可重新选择「新建独立远端会话」或「继续原远端会话」。"
+)
+
+
+def _dsh_is_ve_fork_assistant_msg(msg: Any) -> str:
+    """Return the `call_ve_fork_<id>` tool_call id (or `'cancelled_reply'`) when `msg` is a synthetic fork assistant message."""
+    if not isinstance(msg, dict) or str(msg.get("role") or "") != "assistant":
+        return ""
+    tcs = msg.get("tool_calls")
+    if isinstance(tcs, list) and tcs:
+        for tc in tcs:
+            if not isinstance(tc, dict):
+                continue
+            tc_id = str(tc.get("id") or "").strip()
+            if tc_id.startswith(_VE_FORK_CALL_ID_PREFIX):
+                return tc_id
+    txt = _dsh_extract_message_plain_text(msg).strip()
+    if txt == _VE_FORK_CANCELLED_REPLY:
+        return "cancelled_reply"
+    return ""
+
+
+_VE_FORK_TARGET_RE = re.compile(r"\[target=([^\[\]\s]+)\]")
+
+
+def _dsh_extract_ve_fork_choice_from_tool_msg(msg: Any) -> tuple[str, str]:
+    """Return `(fork_call_id, 'continue' | 'continue:<target_sk>' | 'new' | 'cancelled' | '')` from a `role == 'tool'` response to `call_ve_fork_*`."""
+    if not isinstance(msg, dict) or str(msg.get("role") or "") != "tool":
+        return "", ""
+    tc_id = str(msg.get("tool_call_id") or msg.get("id") or "").strip()
+    if not tc_id.startswith(_VE_FORK_CALL_ID_PREFIX):
+        return "", ""
+    raw = _dsh_extract_message_plain_text(msg).strip()
+    if not raw:
+        return tc_id, "cancelled"
+    low = raw.lower()
+    if (
+        low.startswith("error:")
+        or "ask_cancelled" in low
+        or "ask_aborted" in low
+        or "cancelled ask_user_question" in low
+        or "canceled ask_user_question" in low
+        or "was aborted before the user answered" in low
+        or "tool outcome unknown" in low
+    ):
+        return tc_id, "cancelled"
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        parsed = None
+    if isinstance(parsed, dict):
+        if parsed.get("pending") is True:
+            return tc_id, "cancelled"
+        err_obj = parsed.get("error")
+        if isinstance(err_obj, dict) or parsed.get("isError") is True:
+            return tc_id, "cancelled"
+        answers = parsed.get("answers")
+        if isinstance(answers, list):
+            if not answers:
+                return tc_id, "cancelled"
+            for ans_item in answers:
+                if not isinstance(ans_item, dict):
+                    continue
+                sel_list = ans_item.get("selected")
+                selected_strs = (
+                    [str(s).strip() for s in sel_list if str(s).strip()]
+                    if isinstance(sel_list, list)
+                    else []
+                )
+                custom_str = str(ans_item.get("custom") or "").strip()
+                combined = " ".join([*selected_strs, custom_str])
+                comb_low = combined.lower()
+                if not combined or "取消" in combined or "cancel" in comb_low:
+                    return tc_id, "cancelled"
+                if "继续" in combined or "continue" in comb_low:
+                    m_t = _VE_FORK_TARGET_RE.search(combined)
+                    if m_t:
+                        return tc_id, f"continue:{m_t.group(1)}"
+                    return tc_id, "continue"
+                if "新建" in combined or "new" in comb_low:
+                    return tc_id, "new"
+            return tc_id, "cancelled"
+    if "取消" in raw or "cancel" in low:
+        return tc_id, "cancelled"
+    if "继续" in raw or "continue" in low:
+        m_t = _VE_FORK_TARGET_RE.search(raw)
+        if m_t:
+            return tc_id, f"continue:{m_t.group(1)}"
+        return tc_id, "continue"
+    if "新建" in raw or "new" in low:
+        return tc_id, "new"
+    return tc_id, "cancelled"
+
+
+def _dsh_extract_latest_fork_decision(
+    messages: Sequence[Any],
+) -> tuple[str, str, bool]:
+    """Return `(latest_fork_call_id, latest_choice, is_immediate_tail_resolution)` from `messages`."""
+    msgs_list = list(messages)
+    decisions: list[tuple[int, str, str]] = []
+    for idx, m in enumerate(msgs_list):
+        fid, ch = _dsh_extract_ve_fork_choice_from_tool_msg(m)
+        if fid and ch:
+            decisions.append((idx, fid, ch))
+    if not decisions:
+        return "", "", False
+
+    def _is_tail_idx(target_idx: int) -> bool:
+        for after_m in msgs_list[target_idx + 1 :]:
+            if not isinstance(after_m, dict):
+                continue
+            r = str(after_m.get("role") or "")
+            if r == "assistant" and not _dsh_is_ve_fork_assistant_msg(after_m):
+                return False
+            if r == "user":
+                u_clean, _ = _dsh_split_user_text_and_context(
+                    _dsh_extract_message_plain_text(after_m)
+                )
+                if (
+                    u_clean.strip() and not _dsh_is_job_notice_text(u_clean)
+                ) or _dsh_user_msg_has_media_blocks(after_m):
+                    return False
+        return True
+
+    last_idx, last_fid, last_ch = decisions[-1]
+    if last_ch == "cancelled" and _is_tail_idx(last_idx):
+        return last_fid, "cancelled", True
+
+    for idx, fid, ch in reversed(decisions):
+        if ch == "new" or ch.startswith("continue"):
+            return fid, ch, _is_tail_idx(idx)
+    return "", "", False
+
+
+def _dsh_extract_parent_fork_id(messages: Sequence[Any], current_fork_id: str) -> str:
+    """Return the resolved `call_ve_fork_*` id immediately preceding `current_fork_id` for nested forks."""
+    prev_id = ""
+    for m in messages:
+        fid, ch = _dsh_extract_ve_fork_choice_from_tool_msg(m)
+        if not fid or not (ch == "new" or ch.startswith("continue")):
+            continue
+        if fid == current_fork_id:
+            break
+        prev_id = fid
+    return prev_id
+
+
 def _dsh_canonicalize_assistant_turn_for_key(msg: dict[str, Any]) -> str:
     """Build a canonical fingerprint of one `role == 'assistant'` message (content + tool_calls)."""
+    if _dsh_is_ve_fork_assistant_msg(msg):
+        return ""
     parts: list[str] = []
     txt = _dsh_extract_message_plain_text(msg)
     if txt:
@@ -55547,8 +55808,12 @@ def _dsh_extract_first_turn_identity(
             continue
         role = str(msg.get("role") or "")
         if role == "tool":
+            if _dsh_extract_ve_fork_choice_from_tool_msg(msg)[0]:
+                continue
             if seen_first_user:
                 seen_turn1_assistant = True
+            continue
+        if role == "assistant" and _dsh_is_ve_fork_assistant_msg(msg):
             continue
         if role == "user":
             raw_txt = _dsh_extract_message_plain_text(msg)
@@ -55635,6 +55900,10 @@ def _dsh_extract_first_turn_identity(
             if not isinstance(rev_m, dict):
                 continue
             r = str(rev_m.get("role") or "")
+            if r == "tool" and _dsh_extract_ve_fork_choice_from_tool_msg(rev_m)[0]:
+                continue
+            if r == "assistant" and _dsh_is_ve_fork_assistant_msg(rev_m):
+                continue
             if r == "user":
                 u_clean, _ = _dsh_split_user_text_and_context(
                     _dsh_extract_message_plain_text(rev_m)
@@ -55689,7 +55958,7 @@ def _dsh_conversation_keys(
     first_u, first_a = _dsh_extract_first_turn_identity(
         messages, strip_compaction=strip_compaction
     )
-    boot_key = _dsh_boot_key(principal, first_u, strip_compaction=strip_compaction)
+    boot_key = _dsh_boot_key(principal, first_u, strip_compaction=False)
     full_key = ""
     if first_a:
         full_digest = hashlib.sha256(
@@ -55922,7 +56191,10 @@ def _dsh_partition_messages(
             continue
         role = str(msg.get("role") or "")
         if role == "tool":
-            can_merge_user = False
+            if not _dsh_extract_ve_fork_choice_from_tool_msg(msg)[0]:
+                can_merge_user = False
+            continue
+        if role == "assistant" and _dsh_is_ve_fork_assistant_msg(msg):
             continue
         raw_txt = _dsh_extract_message_plain_text(msg)
         if not raw_txt:
@@ -55975,7 +56247,7 @@ def _dsh_partition_messages(
             else:
                 _append_user_turn(clean_u)
         elif role == "assistant":
-            clean_a = raw_txt.strip()
+            clean_a = _robin_strip_action_card_markers(raw_txt)[0].strip()
             if pending_compaction_summary and _dsh_is_compaction_duplicate_assistant(
                 clean_a, pending_compaction_summary
             ):
@@ -56302,6 +56574,17 @@ def _robin_estimate_ert_tool_output_tokens(
             recorded = _ROBIN_SENT_TOOL_TOKENS.get(tc_id)
         if recorded is not None and recorded > 0:
             return recorded
+        if "[... tool result middle pruned ...]" in str(raw_text or ""):
+            try:
+                db_inv = _GEMINI_DSH_STORE.get_invocation_result_by_public_id(tc_id)
+            except Exception:
+                db_inv = None
+            if db_inv is not None:
+                db_tool, db_res = db_inv
+                if len(db_res) > len(str(raw_text or "")):
+                    raw_text = db_res
+                    if not tool_name and db_tool:
+                        tool_name = db_tool
 
     s = str(raw_text or "")
     if not s.strip():
@@ -56342,6 +56625,123 @@ def _robin_estimate_ert_tool_output_tokens(
     return max(1, (eff_len + 3) // 4)
 
 
+def _robin_synced_turns_end_msg_index(
+    messages: Sequence[Any],
+    synced_turn_count: int,
+    default_end_idx: int,
+) -> int:
+    """Return the message index in `messages` where the first `synced_turn_count` clean turns end."""
+    if synced_turn_count <= 0:
+        return default_end_idx
+    msg_list = list(messages or [])
+    if not msg_list:
+        return 0
+    mid_turn_user_indices = _robin_identify_mid_turn_user_indices(msg_list)
+    clean_turns: list[tuple[str, str]] = []
+    pending_compaction_block: str = ""
+    pending_compaction_summary: str = ""
+    can_merge_user: bool = False
+
+    def _would_exceed_on_user(u_txt: str) -> bool:
+        if not u_txt:
+            return False
+        if clean_turns and clean_turns[-1][0] == "user" and can_merge_user:
+            return False
+        return len(clean_turns) >= synced_turn_count
+
+    def _append_user_turn(u_txt: str) -> None:
+        nonlocal can_merge_user
+        if not u_txt:
+            return
+        if clean_turns and clean_turns[-1][0] == "user" and can_merge_user:
+            clean_turns[-1] = ("user", f"{clean_turns[-1][1]}\n\n{u_txt}")
+        else:
+            clean_turns.append(("user", u_txt))
+        can_merge_user = True
+
+    for msg_idx, msg in enumerate(msg_list):
+        if msg_idx >= default_end_idx:
+            break
+        if not isinstance(msg, dict):
+            continue
+        role = str(msg.get("role") or "")
+        if role == "tool":
+            if not _dsh_extract_ve_fork_choice_from_tool_msg(msg)[0]:
+                can_merge_user = False
+            continue
+        if role == "assistant" and _dsh_is_ve_fork_assistant_msg(msg):
+            continue
+        raw_txt = _dsh_extract_message_plain_text(msg)
+        if not raw_txt:
+            if role == "assistant" and (
+                msg.get("tool_calls") or msg.get("reasoning_content")
+            ):
+                can_merge_user = False
+            continue
+        if role == "system":
+            continue
+        if role == "user":
+            clean_u, ctx_list = _dsh_split_user_text_and_context(raw_txt)
+            if any("current runtime context" in c.lower() for c in ctx_list):
+                can_merge_user = False
+            if (
+                not clean_u
+                or msg_idx in mid_turn_user_indices
+                or _dsh_is_job_notice_text(clean_u)
+            ):
+                continue
+            is_comp, comp_blk, sum_inner, trailing_u = _dsh_parse_compaction_user_text(
+                clean_u
+            )
+            if is_comp:
+                if trailing_u:
+                    clean_trailing, _ = _dsh_split_user_text_and_context(trailing_u)
+                    if _dsh_is_job_notice_text(clean_trailing):
+                        clean_trailing = ""
+                    combined_u = (
+                        f"{comp_blk}\n\n{clean_trailing}"
+                        if clean_trailing
+                        else comp_blk
+                    )
+                    if _would_exceed_on_user(combined_u):
+                        return msg_idx
+                    _append_user_turn(combined_u)
+                    pending_compaction_block = ""
+                    pending_compaction_summary = ""
+                else:
+                    pending_compaction_block = comp_blk
+                    pending_compaction_summary = sum_inner
+                continue
+            eff_u = (
+                f"{pending_compaction_block}\n\n{clean_u}"
+                if pending_compaction_block
+                else clean_u
+            )
+            if _would_exceed_on_user(eff_u):
+                return msg_idx
+            _append_user_turn(eff_u)
+            pending_compaction_block = ""
+            pending_compaction_summary = ""
+        elif role == "assistant":
+            clean_a = _robin_strip_action_card_markers(raw_txt)[0].strip()
+            if pending_compaction_summary and _dsh_is_compaction_duplicate_assistant(
+                clean_a, pending_compaction_summary
+            ):
+                pending_compaction_summary = ""
+                continue
+            if pending_compaction_block:
+                if _would_exceed_on_user(pending_compaction_block):
+                    return msg_idx
+                _append_user_turn(pending_compaction_block)
+                pending_compaction_block = ""
+                pending_compaction_summary = ""
+            if len(clean_turns) >= synced_turn_count:
+                return msg_idx
+            can_merge_user = False
+            clean_turns.append(("assistant", clean_a))
+    return default_end_idx
+
+
 def _robin_estimate_session_usage(
     messages: Sequence[Any],
     prompt_context: str,
@@ -56350,14 +56750,20 @@ def _robin_estimate_session_usage(
     has_remote_parent: bool,
     is_tool_continuation: bool,
     conv_base_msg_idx: int = 0,
+    synced_turn_count: int = 0,
+    base_context_tokens: int = 0,
     tools: Sequence[Any] | None = None,
 ) -> tuple[int, int]:
     """Estimate `(prompt_tokens, cached_tokens)` for the active remote Gemini conversation.
 
-    When a conversation is rebuilt after a session fork, account switch, or compaction at
-    `conv_base_msg_idx > 0`, raw `role == "tool"` outputs and intermediate `tool_calls` before
-    `conv_base_msg_idx` were not sent to the new conversation and are excluded so DSH's
-    context-used meter resets to the rebuilt conversation's true context size.
+    1. When a brand-new conversation (`not has_remote_parent`) is opened after a fork, account switch,
+       or compaction at `conv_base_msg_idx > 0`, raw `role == "tool"` outputs and intermediate
+       `tool_calls` before `conv_base_msg_idx` were not sent to the new conversation and are excluded.
+    2. When an existing conversation (`has_remote_parent == True`) is continued—including after switching
+       back to an account that has an older session and bridging the missing turns in `query_text`—the
+       account's old session context (`base_context_tokens` or reconstructed `messages[:synced_end_idx]`)
+       is preserved in full, the bridged intermediate turns are counted via `query_text` (excluding the
+       other account's intermediate tool outputs), and the current turn's active tool steps are added.
     """
     msg_list = list(messages)
     last_comp_idx = 0
@@ -56371,51 +56777,6 @@ def _robin_estimate_session_usage(
         msg_list = msg_list[last_comp_idx:]
         conv_base_msg_idx = max(0, int(conv_base_msg_idx or 0) - last_comp_idx)
 
-    base_idx = max(0, min(int(conv_base_msg_idx or 0), len(msg_list)))
-    pre_parts: list[str] = []
-    if base_idx > 0:
-        pre_turns, _ = _robin_partition_dsh_messages(msg_list[:base_idx])
-        for r, t in pre_turns:
-            if t.strip():
-                label = "User" if r == "user" else "Assistant"
-                pre_parts.append(f"{label}: {t}")
-
-    active_slice = msg_list[base_idx:]
-    active_turns, _ = _robin_partition_dsh_messages(active_slice)
-    active_parts: list[str] = [t for _, t in active_turns if t.strip()]
-    tc_id_to_name: dict[str, str] = {}
-    tool_tokens_total = 0
-    for m_item in active_slice:
-        if not isinstance(m_item, dict):
-            continue
-        r = str(m_item.get("role") or "")
-        if r == "assistant":
-            r_txt = str(m_item.get("reasoning_content") or "").strip()
-            if r_txt:
-                active_parts.append(r_txt)
-            for tc in m_item.get("tool_calls") or []:
-                if isinstance(tc, dict):
-                    tc_id = str(tc.get("id") or "").strip()
-                    fn = tc.get("function") or {}
-                    if isinstance(fn, dict):
-                        fn_name = str(fn.get("name") or "")
-                        fn_args = str(fn.get("arguments") or "")
-                        if tc_id and fn_name:
-                            tc_id_to_name[tc_id] = fn_name
-                        if fn_name or fn_args:
-                            active_parts.append(f"{fn_name}({fn_args})")
-        elif r == "tool":
-            tc_id = str(m_item.get("tool_call_id") or m_item.get("id") or "").strip()
-            t_name = str(m_item.get("name") or tc_id_to_name.get(tc_id, "") or "")
-            t_out = _dsh_stringify_tool_output(m_item.get("content"))
-            if t_out:
-                tool_tokens_total += _robin_estimate_ert_tool_output_tokens(
-                    t_out, t_name, tool_call_id=tc_id
-                )
-
-    if not pre_parts and not active_parts and tool_tokens_total == 0 and query_text:
-        active_parts.append(query_text)
-
     tools_tokens = 0
     if isinstance(tools, Sequence) and tools:
         try:
@@ -56424,13 +56785,170 @@ def _robin_estimate_session_usage(
             ) // 4 + 4
         except Exception:
             tools_tokens = 0
+    prompt_ctx_tokens = (
+        _robin_estimate_tokens(prompt_context) if prompt_context.strip() else 0
+    )
+    sys_and_tools_tokens = prompt_ctx_tokens + tools_tokens
 
-    all_parts = [prompt_context, *pre_parts, *active_parts]
-    text_tokens = _robin_estimate_tokens("\n".join(p for p in all_parts if p))
-    prompt_tokens = max(1, text_tokens + tool_tokens_total + tools_tokens)
+    tc_id_to_name: dict[str, str] = {}
+    for m_scan in msg_list:
+        if isinstance(m_scan, dict) and str(m_scan.get("role") or "") == "assistant":
+            for tc in m_scan.get("tool_calls") or []:
+                if isinstance(tc, dict):
+                    tc_id = str(tc.get("id") or "").strip()
+                    fn = tc.get("function") or {}
+                    if isinstance(fn, dict):
+                        fn_name = str(fn.get("name") or "")
+                        if tc_id and fn_name:
+                            tc_id_to_name[tc_id] = fn_name
 
-    if not has_remote_parent and not is_tool_continuation:
-        return prompt_tokens, 0
+    def _estimate_slice_history_tokens(
+        slice_msgs: Sequence[Any],
+        slice_base_idx: int,
+        *,
+        fallback_query_text: str = "",
+    ) -> int:
+        s_list = list(slice_msgs)
+        b_idx = max(0, min(int(slice_base_idx or 0), len(s_list)))
+        pre_parts: list[str] = []
+        if b_idx > 0:
+            pre_turns, _ = _robin_partition_dsh_messages(s_list[:b_idx])
+            for r, t in pre_turns:
+                if t.strip():
+                    label = "User" if r == "user" else "Assistant"
+                    pre_parts.append(f"{label}: {t}")
+        active_slice = s_list[b_idx:]
+        active_turns, _ = _robin_partition_dsh_messages(active_slice)
+        active_parts: list[str] = [t for _, t in active_turns if t.strip()]
+        tool_tok_sum = 0
+        for m_item in active_slice:
+            if not isinstance(m_item, dict):
+                continue
+            r = str(m_item.get("role") or "")
+            if r == "assistant":
+                r_txt = str(m_item.get("reasoning_content") or "").strip()
+                if r_txt:
+                    active_parts.append(r_txt)
+                for tc in m_item.get("tool_calls") or []:
+                    if isinstance(tc, dict):
+                        fn = tc.get("function") or {}
+                        if isinstance(fn, dict):
+                            fn_name = str(fn.get("name") or "")
+                            fn_args = str(fn.get("arguments") or "")
+                            if fn_name or fn_args:
+                                active_parts.append(f"{fn_name}({fn_args})")
+            elif r == "tool":
+                tc_id = str(
+                    m_item.get("tool_call_id") or m_item.get("id") or ""
+                ).strip()
+                t_name = str(m_item.get("name") or tc_id_to_name.get(tc_id, "") or "")
+                t_out = _dsh_stringify_tool_output(m_item.get("content"))
+                if t_out:
+                    tool_tok_sum += _robin_estimate_ert_tool_output_tokens(
+                        t_out, t_name, tool_call_id=tc_id
+                    )
+        if (
+            not pre_parts
+            and not active_parts
+            and tool_tok_sum == 0
+            and fallback_query_text
+        ):
+            active_parts.append(fallback_query_text)
+        joined_txt = "\n".join(p for p in (*pre_parts, *active_parts) if p)
+        txt_tok = _robin_estimate_tokens(joined_txt) if joined_txt.strip() else 0
+        return txt_tok + tool_tok_sum
+
+    base_idx = max(0, min(int(conv_base_msg_idx or 0), len(msg_list)))
+    if not has_remote_parent:
+        hist_tokens = _estimate_slice_history_tokens(
+            msg_list, base_idx, fallback_query_text=query_text
+        )
+        prompt_tokens = max(1, sys_and_tools_tokens + hist_tokens)
+        if not is_tool_continuation:
+            return prompt_tokens, 0
+    else:
+        trailing_idx = _robin_trailing_user_start_index(msg_list)
+        eff_synced_cnt = int(synced_turn_count or 0)
+        if eff_synced_cnt <= 0 and query_text.startswith("User: "):
+            bridged_pairs = query_text.count("\n\nAssistant: ")
+            if bridged_pairs > 0:
+                _, prior_turns_inf, _ = _robin_extract_turn_anchors(msg_list)
+                eff_synced_cnt = max(0, len(prior_turns_inf) - bridged_pairs * 2)
+        synced_end_idx = _robin_synced_turns_end_msg_index(
+            msg_list, eff_synced_cnt, default_end_idx=trailing_idx
+        )
+        orig_base_idx = base_idx if 0 <= base_idx < synced_end_idx else 0
+        reconstructed_old_hist = (
+            _estimate_slice_history_tokens(
+                msg_list[:synced_end_idx], orig_base_idx, fallback_query_text=""
+            )
+            if synced_end_idx > 0
+            else 0
+        )
+        old_history_tokens = (
+            int(base_context_tokens)
+            if int(base_context_tokens or 0) > 0
+            else reconstructed_old_hist
+        )
+        if query_text.strip():
+            turn_query_tokens = _robin_estimate_tokens(query_text)
+        else:
+            bridged_and_cur, _ = _robin_partition_dsh_messages(
+                msg_list[synced_end_idx:]
+            )
+            joined_q = "\n\n".join(t for _, t in bridged_and_cur if t.strip())
+            turn_query_tokens = (
+                _robin_estimate_tokens(joined_q) if joined_q.strip() else 0
+            )
+        step_asst_parts: list[str] = []
+        step_tool_tokens = 0
+        for m_item in msg_list[trailing_idx:]:
+            if not isinstance(m_item, dict):
+                continue
+            r = str(m_item.get("role") or "")
+            if r == "assistant":
+                if _dsh_is_ve_fork_assistant_msg(m_item):
+                    continue
+                r_txt = str(m_item.get("reasoning_content") or "").strip()
+                if r_txt:
+                    step_asst_parts.append(r_txt)
+                a_txt = _robin_strip_action_card_markers(
+                    _dsh_extract_message_plain_text(m_item)
+                )[0].strip()
+                if a_txt:
+                    step_asst_parts.append(a_txt)
+                for tc in m_item.get("tool_calls") or []:
+                    if isinstance(tc, dict):
+                        fn = tc.get("function") or {}
+                        if isinstance(fn, dict):
+                            fn_name = str(fn.get("name") or "")
+                            fn_args = str(fn.get("arguments") or "")
+                            if fn_name or fn_args:
+                                step_asst_parts.append(f"{fn_name}({fn_args})")
+            elif r == "tool":
+                if _dsh_extract_ve_fork_choice_from_tool_msg(m_item)[0]:
+                    continue
+                tc_id = str(
+                    m_item.get("tool_call_id") or m_item.get("id") or ""
+                ).strip()
+                t_name = str(m_item.get("name") or tc_id_to_name.get(tc_id, "") or "")
+                t_out = _dsh_stringify_tool_output(m_item.get("content"))
+                if t_out:
+                    step_tool_tokens += _robin_estimate_ert_tool_output_tokens(
+                        t_out, t_name, tool_call_id=tc_id
+                    )
+        step_asst_joined = "\n".join(p for p in step_asst_parts if p)
+        step_asst_tokens = (
+            _robin_estimate_tokens(step_asst_joined) if step_asst_joined.strip() else 0
+        )
+        current_turn_step_tokens = step_asst_tokens + step_tool_tokens
+        prompt_tokens = max(
+            1,
+            sys_and_tools_tokens
+            + old_history_tokens
+            + turn_query_tokens
+            + current_turn_step_tokens,
+        )
 
     if is_tool_continuation:
         delta_tokens = 0
@@ -58063,17 +58581,13 @@ class _RobinToolLedger:
             if (
                 not wire_id
                 and not existing.wire_call_id
-                and existing.status in ("DISPATCHED", "BACKGROUNDED")
+                and existing.status == "BACKGROUNDED"
                 and existing.orig_call_name == orig_name
                 and existing.dsh_tool_name == dsh_name
                 and existing.adapted_args == adapted_args
+                and existing.background_response_frame
             ):
-                if (
-                    existing.status == "BACKGROUNDED"
-                    and existing.background_response_frame
-                ):
-                    return None, existing.background_response_frame
-                return None, None
+                return None, existing.background_response_frame
 
         inv_id = f"inv_{uuid.uuid4().hex[:12]}"
         if wire_id and wire_id not in self.by_public_id:
@@ -58273,7 +58787,10 @@ class _RobinRunState:
     query_text: str = ""
     owner_epoch: int = 1
     conv_base_msg_idx: int = 0
+    synced_turn_count: int = 0
+    base_context_tokens: int = 0
     max_prompt_tokens: int = 0
+    initial_messages: list[Any] = field(default_factory=list)
 
     # Orthogonal state dimensions
     submission_state: str = "PREPARED"  # PREPARED / SENT / IDENTIFIED / UNKNOWN
@@ -58364,6 +58881,8 @@ class _RobinSessionState:
     synced_turn_count: int = 0
     synced_turns_hash: str = ""
     conv_base_msg_idx: int = 0
+    context_tokens: int = 0
+    compacted: bool = False
     updated_at: float = field(default_factory=time.time)
     conversation_ready_event: asyncio.Event | None = None
     title_ready_event: asyncio.Event | None = None
@@ -58376,12 +58895,341 @@ _ROBIN_ACTIVE_RUNS: dict[str, _RobinRunState] = {}
 _ROBIN_BG_TASKS: set[asyncio.Task[Any]] = set()
 
 
-def _robin_bind_session_in_cache(state: _RobinSessionState) -> None:
-    """Index `state` under its `session_key`, `boot_key`, and `full_key` in memory."""
+def _robin_extract_turn_anchors(
+    messages: Sequence[Any],
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]], list[tuple[str, str]]]:
+    """Return `(cur_turns, prior_turns, turns_through_user)` for branch matching and fork key derivation.
+
+    - `prior_turns`: all completed `(user, assistant)` pairs strictly before the active turn's `user` message.
+    - `turns_through_user`: `[*prior_turns, ("user", active_user_text)]` (invariant across initial turn and all tool hops).
+    """
+    cur_turns, _ = _robin_partition_dsh_messages(messages)
+    if not cur_turns:
+        return [], [], []
+    last_non_sys_msg = next(
+        (
+            m
+            for m in reversed(list(messages))
+            if isinstance(m, dict)
+            and str(m.get("role") or "") not in ("system", "developer")
+            and not _dsh_is_ve_fork_assistant_msg(m)
+            and not _dsh_extract_ve_fork_choice_from_tool_msg(m)[0]
+        ),
+        None,
+    )
+    last_is_terminal_assistant = bool(
+        isinstance(last_non_sys_msg, dict)
+        and str(last_non_sys_msg.get("role") or "") == "assistant"
+        and not last_non_sys_msg.get("tool_calls")
+    )
+    if last_is_terminal_assistant:
+        return list(cur_turns), list(cur_turns), list(cur_turns)
+    last_user_idx = max(
+        (i for i, (r, _) in enumerate(cur_turns) if r == "user"),
+        default=-1,
+    )
+    if last_user_idx < 0:
+        return list(cur_turns), list(cur_turns), list(cur_turns)
+    prior_turns = list(cur_turns[:last_user_idx])
+    turns_through_user = list(cur_turns[: last_user_idx + 1])
+    return list(cur_turns), prior_turns, turns_through_user
+
+
+def _robin_row_to_session_state(
+    row: dict[str, Any],
+    *,
+    default_session_key: str,
+    default_client_sid: str,
+    default_principal: str,
+    default_boot_key: str,
+    default_full_key: str,
+) -> _RobinSessionState:
+    """Convert a SQLite `sessions` row dictionary into a `_RobinSessionState` instance."""
+    try:
+        folders = json.loads(row.get("connected_folders_json") or "[]")
+    except json.JSONDecodeError:
+        folders = []
+    sk = str(row.get("session_key") or default_session_key)
+    resp_id = str(row.get("parent_resp_id") or "")
+    binding = str(row.get("binding_state") or "provisional")
+    if binding == "committed" and not resp_id:
+        binding = "provisional"
+    return _RobinSessionState(
+        session_key=sk,
+        client_session_id=str(row.get("client_session_id") or default_client_sid or sk),
+        principal_id=str(row.get("principal_id") or default_principal),
+        boot_key=str(row.get("boot_key") or default_boot_key),
+        full_key=str(row.get("full_key") or default_full_key),
+        conversation_id=str(row.get("conversation_id") or ""),
+        parent_request_id=str(row.get("parent_req_id") or ""),
+        parent_response_id=resp_id,
+        binding_state=binding,
+        title=str(row.get("title") or ""),
+        dsh_sandbox_mode=str(row.get("dsh_sandbox_mode") or "workspace-write"),
+        dsh_approval_policy=str(row.get("dsh_approval_policy") or "ask"),
+        connected_folders=folders if isinstance(folders, list) else [],
+        active_run_id=str(row.get("active_run_id") or ""),
+        owner_epoch=int(row.get("owner_epoch") or 1),
+        synced_turn_count=int(row.get("synced_turn_count") or 0),
+        synced_turns_hash=str(row.get("synced_turns_hash") or ""),
+        conv_base_msg_idx=int(row.get("conv_base_msg_idx") or 0),
+        context_tokens=int(row.get("context_tokens") or 0),
+        compacted=bool(row.get("compacted")),
+        updated_at=float(row.get("updated_at") or time.time()),
+    )
+
+
+def _robin_load_lineage_sessions(
+    *,
+    full_key: str,
+    boot_key: str,
+    client_sid: str,
+    principal: str,
+    credential_id: str,
+    effective_body: dict[str, Any],
+    messages: Sequence[Any],
+) -> list[_RobinSessionState]:
+    """Load all root and `::fork::` branch sessions sharing `(principal, full_key / boot_key)`."""
+    by_sk: dict[str, _RobinSessionState] = {}
+    base_key = full_key or boot_key
+    for cand in list(_ROBIN_SESSION_STATE_CACHE.values()):
+        if cand is None or not cand.session_key or not cand.conversation_id:
+            continue
+        if credential_id and cand.principal_id != principal:
+            continue
+        if (
+            full_key
+            and (
+                cand.full_key == full_key
+                or cand.session_key == full_key
+                or cand.session_key.startswith(f"{full_key}::fork::")
+            )
+        ) or (
+            boot_key
+            and (
+                cand.boot_key == boot_key
+                or cand.session_key == boot_key
+                or cand.session_key.startswith(f"{boot_key}::fork::")
+            )
+        ):
+            by_sk[cand.session_key] = cand
+
+    db_rows = _GEMINI_DSH_STORE.list_sessions_by_lineage(
+        full_key=full_key,
+        boot_key=boot_key,
+        principal_id=principal if credential_id else "",
+    )
+    for r in db_rows:
+        sk = str(r.get("session_key") or "")
+        if not sk or not r.get("conversation_id") or sk in by_sk:
+            continue
+        by_sk[sk] = _robin_row_to_session_state(
+            r,
+            default_session_key=sk,
+            default_client_sid=client_sid,
+            default_principal=principal,
+            default_boot_key=boot_key,
+            default_full_key=full_key,
+        )
+
+    if not by_sk:
+        _, legacy_boot_key, legacy_full_key = _dsh_conversation_keys(
+            principal,
+            messages,
+            body=effective_body,
+            strip_compaction=False,
+        )
+        if legacy_boot_key != boot_key or legacy_full_key != full_key:
+            cand_legacy = (
+                _ROBIN_SESSION_STATE_CACHE.get(legacy_full_key)
+                if legacy_full_key
+                else None
+            ) or _ROBIN_SESSION_STATE_CACHE.get(legacy_boot_key)
+            if (
+                cand_legacy is not None
+                and cand_legacy.conversation_id
+                and (not credential_id or cand_legacy.principal_id == principal)
+            ):
+                by_sk[cand_legacy.session_key] = cand_legacy
+            else:
+                row_leg = _GEMINI_DSH_STORE.find_session(
+                    full_key=legacy_full_key,
+                    boot_key=legacy_boot_key,
+                    session_key=legacy_full_key or legacy_boot_key,
+                    principal_id=principal if credential_id else "",
+                )
+                if row_leg is not None and row_leg.get("conversation_id"):
+                    leg_state = _robin_row_to_session_state(
+                        row_leg,
+                        default_session_key=base_key,
+                        default_client_sid=client_sid,
+                        default_principal=principal,
+                        default_boot_key=boot_key,
+                        default_full_key=full_key,
+                    )
+                    leg_state.session_key = base_key
+                    leg_state.boot_key = boot_key
+                    leg_state.full_key = full_key
+                    _GEMINI_DSH_STORE.upsert_session(
+                        session_key=base_key,
+                        client_session_id=client_sid,
+                        principal_id=leg_state.principal_id,
+                        boot_key=boot_key,
+                        full_key=full_key,
+                        conversation_id=leg_state.conversation_id,
+                        parent_req_id=leg_state.parent_request_id,
+                        parent_resp_id=leg_state.parent_response_id,
+                        title=leg_state.title,
+                        dsh_sandbox_mode=leg_state.dsh_sandbox_mode,
+                        dsh_approval_policy=leg_state.dsh_approval_policy,
+                        connected_folders=leg_state.connected_folders,
+                        active_run_id=leg_state.active_run_id,
+                        owner_epoch=leg_state.owner_epoch,
+                        binding_state=leg_state.binding_state,
+                        synced_turn_count=leg_state.synced_turn_count,
+                        synced_turns_hash=leg_state.synced_turns_hash,
+                        conv_base_msg_idx=leg_state.conv_base_msg_idx,
+                        context_tokens=leg_state.context_tokens,
+                        compacted=leg_state.compacted,
+                    )
+                    by_sk[base_key] = leg_state
+
+    return sorted(by_sk.values(), key=lambda s: s.updated_at, reverse=True)
+
+
+def _robin_extract_completed_turns_before_compaction(
+    messages: Sequence[Any],
+) -> list[tuple[str, str]]:
+    """Extract only completed `(user, assistant)` pairs before compaction (handling both pre-turn and mid-turn compaction).
+
+    - Between-turn compaction (`[U_1, A_1, ..., U_K, A_K, user(compaction_prompt)]`): returns `[(U_1, A_1), ..., (U_K, A_K)]` (`2K` items).
+    - Mid-turn compaction (`[U_1, A_1, ..., U_K, A_K, U_{K+1}, asst(tc_1), tool(out_1), ..., user(compaction_prompt)]` or `initial_messages` `[U_1..A_K, U_{K+1}]`):
+      strips the trailing compaction prompt AND the uncompleted in-flight turn `U_{K+1}...`, returning `[(U_1, A_1), ..., (U_K, A_K)]` (`2K` items).
+    """
+    msg_list = list(messages or [])
+    if (
+        msg_list
+        and isinstance(msg_list[-1], dict)
+        and _is_gemini_compaction_summary_request(msg_list, None)
+    ):
+        msg_list = msg_list[:-1]
+    # Walk backwards to find the last completed terminal assistant message (`role == 'assistant'` without `tool_calls`)
+    last_completed_asst_idx = -1
+    for idx in range(len(msg_list) - 1, -1, -1):
+        m = msg_list[idx]
+        if not isinstance(m, dict):
+            continue
+        r = str(m.get("role") or "")
+        if r in ("system", "developer"):
+            continue
+        if (
+            _dsh_is_ve_fork_assistant_msg(m)
+            or _dsh_extract_ve_fork_choice_from_tool_msg(m)[0]
+        ):
+            continue
+        if r == "assistant" and not m.get("tool_calls"):
+            txt = _robin_strip_action_card_markers(_dsh_extract_message_plain_text(m))[
+                0
+            ].strip()
+            if txt:
+                last_completed_asst_idx = idx
+                break
+    if last_completed_asst_idx < 0:
+        return []
+    completed_slice = msg_list[: last_completed_asst_idx + 1]
+    completed_turns, _ = _robin_partition_dsh_messages(completed_slice)
+    return list(completed_turns)
+
+
+def _robin_mark_session_compacted(
+    messages: Sequence[Any],
+    *,
+    credential_id: str = "",
+    body: dict[str, Any] | None = None,
+) -> None:
+    """Mark the pre-compaction branch session as `compacted=True` while preserving its last committed parent."""
+    principal = credential_id or "default"
+    effective_body = body if isinstance(body, dict) else {}
+    client_sid, boot_key, full_key = _dsh_conversation_keys(
+        principal, messages, body=effective_body
+    )
+    fork_id, _, _ = _dsh_extract_latest_fork_decision(messages)
+    base_key = full_key or boot_key
+    explicit_fork_key = f"{base_key}::fork::{fork_id}" if (fork_id and base_key) else ""
+    completed_turns = _robin_extract_completed_turns_before_compaction(messages)
+    comp_cnt = len(completed_turns)
+    comp_hash = _robin_compute_turns_hash(completed_turns) if completed_turns else ""
+
     with _ROBIN_SESSION_STATE_LOCK:
-        for k in (state.session_key, state.boot_key, state.full_key):
-            if k:
-                _ROBIN_SESSION_STATE_CACHE[k] = state
+        candidates = _robin_load_lineage_sessions(
+            full_key=full_key,
+            boot_key=boot_key,
+            client_sid=client_sid,
+            principal=principal,
+            credential_id=credential_id,
+            effective_body=effective_body,
+            messages=messages,
+        )
+        state: _RobinSessionState | None = None
+        if explicit_fork_key:
+            state = next(
+                (c for c in candidates if c.session_key == explicit_fork_key), None
+            )
+        if state is None and comp_cnt > 0:
+            state = next(
+                (
+                    c
+                    for c in candidates
+                    if c.synced_turn_count == comp_cnt
+                    and c.synced_turns_hash == comp_hash
+                ),
+                None,
+            )
+        if state is None:
+            state = next(
+                (c for c in candidates if "::fork::" not in c.session_key),
+                candidates[0] if candidates else None,
+            )
+        if state is None:
+            return
+        state.compacted = True
+        if comp_cnt > 0 and state.synced_turn_count <= 0:
+            state.synced_turn_count = comp_cnt
+            state.synced_turns_hash = comp_hash
+        _robin_bind_session_in_cache(state)
+        _GEMINI_DSH_STORE.upsert_session(
+            session_key=state.session_key,
+            client_session_id=state.client_session_id,
+            principal_id=state.principal_id,
+            boot_key=state.boot_key,
+            full_key=state.full_key,
+            conversation_id=state.conversation_id,
+            parent_req_id=state.parent_request_id,
+            parent_resp_id=state.parent_response_id,
+            title=state.title,
+            dsh_sandbox_mode=state.dsh_sandbox_mode,
+            dsh_approval_policy=state.dsh_approval_policy,
+            connected_folders=state.connected_folders,
+            active_run_id=state.active_run_id,
+            owner_epoch=state.owner_epoch,
+            binding_state=state.binding_state,
+            synced_turn_count=state.synced_turn_count,
+            synced_turns_hash=state.synced_turns_hash,
+            conv_base_msg_idx=state.conv_base_msg_idx,
+            context_tokens=state.context_tokens,
+            compacted=True,
+        )
+
+
+def _robin_bind_session_in_cache(state: _RobinSessionState) -> None:
+    """Index `state` under its `session_key` (and `boot_key`/`full_key` for non-fork root sessions) in memory."""
+    with _ROBIN_SESSION_STATE_LOCK:
+        if state.session_key:
+            _ROBIN_SESSION_STATE_CACHE[state.session_key] = state
+        if "::fork::" not in state.session_key:
+            for k in (state.boot_key, state.full_key):
+                if k:
+                    _ROBIN_SESSION_STATE_CACHE[k] = state
 
 
 def _robin_find_session_by_boot_key(
@@ -58417,16 +59265,22 @@ def _robin_messages_prefix_hash(messages: Sequence[Any], count: int) -> str:
 
 
 def _robin_trailing_user_start_index(messages: Sequence[Any]) -> int:
-    """Return the index of the first message in the trailing `role == 'user'` turn segment."""
+    """Return the index of the first message in the active/trailing `role == 'user'` turn segment."""
+    msg_list = list(messages or [])
+    mid_turn_indices = _robin_identify_mid_turn_user_indices(msg_list)
     trailing_user_start_idx: int | None = None
-    for i, m in enumerate(messages):
+    for i, m in enumerate(msg_list):
         if not isinstance(m, dict):
             continue
         r = str(m.get("role") or "")
-        if r in ("assistant", "tool"):
+        if r == "tool" and _dsh_extract_ve_fork_choice_from_tool_msg(m)[0]:
+            continue
+        if r == "assistant" and _dsh_is_ve_fork_assistant_msg(m):
+            continue
+        if r == "assistant" and not m.get("tool_calls"):
             trailing_user_start_idx = None
             continue
-        if r != "user":
+        if r != "user" or i in mid_turn_indices:
             continue
         u_clean, _ = _dsh_split_user_text_and_context(
             _dsh_extract_message_plain_text(m)
@@ -58445,42 +59299,118 @@ def _robin_session_history_diverged(
     """Return True when `messages` branched at an earlier turn or diverged from `state`'s synced turns."""
     if state.synced_turn_count <= 0 or not state.synced_turns_hash:
         return False
-    cur_turns, _ = _robin_partition_dsh_messages(messages)
-    has_trailing_user = False
-    for rev_m in reversed(list(messages)):
-        if not isinstance(rev_m, dict):
-            continue
-        r = str(rev_m.get("role") or "")
-        if r == "user":
-            u_clean, _ = _dsh_split_user_text_and_context(
-                _dsh_extract_message_plain_text(rev_m)
-            )
-            if (
-                u_clean.strip() and not _dsh_is_job_notice_text(u_clean)
-            ) or _dsh_user_msg_has_media_blocks(rev_m):
-                has_trailing_user = True
-                break
-        elif r in ("assistant", "tool"):
-            break
-    if has_trailing_user:
-        prior_turns = (
-            cur_turns[:-1] if (cur_turns and cur_turns[-1][0] == "user") else cur_turns
-        )
-        if len(prior_turns) < state.synced_turn_count:
-            return True
-        if (
-            _robin_compute_turns_hash(prior_turns[: state.synced_turn_count])
-            != state.synced_turns_hash
-        ):
-            return True
-    else:
+    cur_turns, prior_turns, turns_through_user = _robin_extract_turn_anchors(messages)
+    if (
+        state.binding_state == "provisional"
+        and len(turns_through_user) == state.synced_turn_count
+    ):
+        return _robin_compute_turns_hash(turns_through_user) != state.synced_turns_hash
+    if not prior_turns:
+        # Still inside Turn 1 (e.g., Turn 1 tool hops): not diverged unless Turn 1 already completed
+        # and `cur_turns` has >= state.synced_turn_count turns with a mismatched hash.
         if len(cur_turns) >= state.synced_turn_count:
-            if (
+            return (
                 _robin_compute_turns_hash(cur_turns[: state.synced_turn_count])
                 != state.synced_turns_hash
-            ):
-                return True
+            )
+        return False
+    if len(prior_turns) < state.synced_turn_count:
+        return True
+    if (
+        _robin_compute_turns_hash(prior_turns[: state.synced_turn_count])
+        != state.synced_turns_hash
+    ):
+        return True
     return False
+
+
+def _robin_load_session_by_keys(
+    *,
+    session_key: str,
+    full_key: str,
+    boot_key: str,
+    client_sid: str,
+    principal: str,
+    credential_id: str,
+    effective_body: dict[str, Any],
+    messages: Sequence[Any],
+) -> _RobinSessionState | None:
+    """Load `_RobinSessionState` from memory cache or SQLite for `session_key` / `full_key` / `boot_key`."""
+    state: _RobinSessionState | None = None
+    if "::fork::" in session_key:
+        cand_f = _ROBIN_SESSION_STATE_CACHE.get(session_key)
+        if cand_f is not None and (
+            not credential_id or cand_f.principal_id == principal
+        ):
+            state = cand_f
+        if state is None:
+            row_f = _GEMINI_DSH_STORE.find_session(
+                session_key=session_key,
+                principal_id=principal if credential_id else "",
+            )
+            if row_f is not None and row_f.get("conversation_id"):
+                state = _robin_row_to_session_state(
+                    row_f,
+                    default_session_key=session_key,
+                    default_client_sid=session_key,
+                    default_principal=principal,
+                    default_boot_key=boot_key,
+                    default_full_key=full_key,
+                )
+        return state
+
+    candidates = _robin_load_lineage_sessions(
+        full_key=full_key,
+        boot_key=boot_key,
+        client_sid=client_sid,
+        principal=principal,
+        credential_id=credential_id,
+        effective_body=effective_body,
+        messages=messages,
+    )
+    for c in candidates:
+        if "::fork::" not in c.session_key:
+            return c
+    return None
+
+
+def _robin_derive_unprompted_fork_session_key(
+    base_key: str,
+    messages: Sequence[Any],
+    candidates: Sequence[_RobinSessionState],
+) -> str:
+    """Derive a deterministic `f"{base_key}::fork::br_<12hex>"` key for an uncompacted fork branch."""
+    if not base_key:
+        return ""
+    _, _, turns_through_user = _robin_extract_turn_anchors(messages)
+    if not turns_through_user:
+        return base_key
+    through_cnt = len(turns_through_user)
+    through_hash = _robin_compute_turns_hash(turns_through_user)
+    br_id = through_hash[:12]
+    cand_key = f"{base_key}::fork::br_{br_id}"
+    by_sk = {c.session_key: c for c in candidates if c.session_key}
+    existing = by_sk.get(cand_key)
+    if existing is None:
+        return cand_key
+    if (
+        existing.binding_state == "provisional"
+        and existing.synced_turn_count == through_cnt
+        and existing.synced_turns_hash == through_hash
+    ):
+        return cand_key
+    # If an earlier fork already used `cand_key` and progressed beyond `through_cnt`, append a suffix
+    suffix = 2
+    while f"{cand_key}_{suffix}" in by_sk:
+        ex_s = by_sk[f"{cand_key}_{suffix}"]
+        if (
+            ex_s.binding_state == "provisional"
+            and ex_s.synced_turn_count == through_cnt
+            and ex_s.synced_turns_hash == through_hash
+        ):
+            return f"{cand_key}_{suffix}"
+        suffix += 1
+    return f"{cand_key}_{suffix}"
 
 
 def _robin_lookup_continuation(
@@ -58489,8 +59419,14 @@ def _robin_lookup_continuation(
     *,
     credential_id: str = "",
     body: dict[str, Any] | None = None,
-) -> tuple[_RobinSessionState | None, int, str]:
-    """Look up an existing Robin session for `principal` and return `(session_state, start_idx, mismatch_owner)`."""
+) -> tuple[_RobinSessionState | None, int, bool]:
+    """Look up an existing Robin branch session for `principal` and return `(session_state, start_idx, needs_fork_prompt)`.
+
+    - Uncompacted forks (`compacted == False` and history diverged): return `(None, trailing_idx, False)` so a new
+      remote conversation starts automatically without popping up `ask_user_question`.
+    - Compacted sessions (`compacted == True`): return `(compacted_state, trailing_idx, True)` so `chat_stream`
+      prompts the user via `ask_user_question` ("继续原远端会话" vs "新建独立远端会话").
+    """
     principal = credential_id or "default"
     effective_body = (
         body
@@ -58506,134 +59442,280 @@ def _robin_lookup_continuation(
     )
 
     if not _dsh_has_prior_turn(messages):
-        return None, 0, ""
+        return None, 0, False
 
     trailing_idx = _robin_trailing_user_start_index(messages)
+    fork_id, fork_choice, is_immediate_fork_answer = _dsh_extract_latest_fork_decision(
+        messages
+    )
+    if fork_id and fork_choice == "cancelled" and is_immediate_fork_answer:
+        return None, trailing_idx, False
+    base_key = full_key or boot_key
+    explicit_fork_key = f"{base_key}::fork::{fork_id}" if (fork_id and base_key) else ""
+    _, prior_turns, turns_through_user = _robin_extract_turn_anchors(messages)
+    prior_cnt = len(prior_turns)
+    prior_hash = _robin_compute_turns_hash(prior_turns) if prior_turns else ""
+    through_cnt = len(turns_through_user)
+    through_hash = (
+        _robin_compute_turns_hash(turns_through_user) if turns_through_user else ""
+    )
 
     with _ROBIN_SESSION_STATE_LOCK:
-        state: _RobinSessionState | None = None
-        if full_key:
-            cand = _ROBIN_SESSION_STATE_CACHE.get(full_key)
-            if cand is not None and (
-                not credential_id or cand.principal_id == principal
-            ):
-                state = cand
-        if state is None and boot_key:
-            cand = _ROBIN_SESSION_STATE_CACHE.get(boot_key)
-            if cand is not None and (
-                not credential_id or cand.principal_id == principal
-            ):
-                state = cand
-        if state is None:
-            row = _GEMINI_DSH_STORE.find_session(
-                full_key=full_key,
-                boot_key=boot_key,
-                session_key=full_key or boot_key,
-                principal_id=principal if credential_id else "",
+        candidates = _robin_load_lineage_sessions(
+            full_key=full_key,
+            boot_key=boot_key,
+            client_sid=client_sid,
+            principal=principal,
+            credential_id=credential_id,
+            effective_body=effective_body,
+            messages=messages,
+        )
+
+        if fork_id and is_immediate_fork_answer:
+            # The user just answered `ask_user_question` for a fork!
+            if fork_choice == "new":
+                return None, trailing_idx, False
+            # `fork_choice == "continue"` or `"continue:<target_sk>"`: inherit the selected parent session
+            target_sk = (
+                fork_choice.split(":", 1)[1].strip() if ":" in fork_choice else ""
             )
-            if row is None:
-                legacy_sid, legacy_boot_key, legacy_full_key = _dsh_conversation_keys(
-                    principal,
-                    messages,
-                    body=effective_body,
-                    strip_compaction=False,
-                )
-                if legacy_boot_key != boot_key or legacy_full_key != full_key:
-                    cand_legacy = (
-                        _ROBIN_SESSION_STATE_CACHE.get(legacy_full_key)
-                        if legacy_full_key
-                        else None
-                    ) or _ROBIN_SESSION_STATE_CACHE.get(legacy_boot_key)
-                    if cand_legacy is not None and (
-                        not credential_id or cand_legacy.principal_id == principal
-                    ):
-                        state = cand_legacy
-                    if state is None:
-                        row = _GEMINI_DSH_STORE.find_session(
-                            full_key=legacy_full_key,
-                            boot_key=legacy_boot_key,
-                            session_key=legacy_full_key or legacy_boot_key,
-                            principal_id=principal if credential_id else "",
+            parent_state: _RobinSessionState | None = None
+            if target_sk:
+                parent_state = next(
+                    (
+                        c
+                        for c in candidates
+                        if c.conversation_id
+                        and (
+                            c.session_key == target_sk
+                            or c.session_key.endswith(target_sk)
+                            or c.conversation_id == target_sk
                         )
-                    if row is not None and row.get("conversation_id"):
-                        try:
-                            mig_folders = json.loads(
-                                row.get("connected_folders_json") or "[]"
-                            )
-                        except json.JSONDecodeError:
-                            mig_folders = []
-                        _GEMINI_DSH_STORE.upsert_session(
-                            session_key=full_key or boot_key,
-                            client_session_id=client_sid,
-                            principal_id=str(row.get("principal_id") or principal),
-                            boot_key=boot_key,
-                            full_key=full_key,
-                            conversation_id=str(row.get("conversation_id") or ""),
-                            parent_req_id=str(row.get("parent_req_id") or ""),
-                            parent_resp_id=str(row.get("parent_resp_id") or ""),
-                            title=str(row.get("title") or ""),
-                            dsh_sandbox_mode=str(
-                                row.get("dsh_sandbox_mode") or "workspace-write"
-                            ),
-                            dsh_approval_policy=str(
-                                row.get("dsh_approval_policy") or "ask"
-                            ),
-                            connected_folders=(
-                                mig_folders if isinstance(mig_folders, list) else []
-                            ),
-                            active_run_id=str(row.get("active_run_id") or ""),
-                            owner_epoch=int(row.get("owner_epoch") or 1),
-                            binding_state=str(row.get("binding_state") or "committed"),
-                            synced_turn_count=int(row.get("synced_turn_count") or 0),
-                            synced_turns_hash=str(row.get("synced_turns_hash") or ""),
-                            conv_base_msg_idx=int(row.get("conv_base_msg_idx") or 0),
-                        )
-            if row is not None and row.get("conversation_id"):
-                try:
-                    folders = json.loads(row.get("connected_folders_json") or "[]")
-                except json.JSONDecodeError:
-                    folders = []
-                row_resp_id = str(row.get("parent_resp_id") or "")
-                row_binding = str(row.get("binding_state") or "provisional")
-                if row_binding == "committed" and not row_resp_id:
-                    row_binding = "provisional"
-                state = _RobinSessionState(
-                    session_key=str(row.get("session_key") or full_key or boot_key),
-                    client_session_id=str(row.get("client_session_id") or client_sid),
-                    principal_id=str(row.get("principal_id") or principal),
-                    boot_key=str(row.get("boot_key") or boot_key),
-                    full_key=str(row.get("full_key") or full_key),
-                    conversation_id=str(row.get("conversation_id") or ""),
-                    parent_request_id=str(row.get("parent_req_id") or ""),
-                    parent_response_id=row_resp_id,
-                    binding_state=row_binding,
-                    title=str(row.get("title") or ""),
-                    dsh_sandbox_mode=str(
-                        row.get("dsh_sandbox_mode") or "workspace-write"
                     ),
-                    dsh_approval_policy=str(row.get("dsh_approval_policy") or "ask"),
-                    connected_folders=folders if isinstance(folders, list) else [],
-                    active_run_id=str(row.get("active_run_id") or ""),
-                    owner_epoch=int(row.get("owner_epoch") or 1),
-                    synced_turn_count=int(row.get("synced_turn_count") or 0),
-                    synced_turns_hash=str(row.get("synced_turns_hash") or ""),
-                    conv_base_msg_idx=int(row.get("conv_base_msg_idx") or 0),
+                    None,
                 )
-        if state is not None:
-            if _robin_session_history_diverged(state, messages):
-                return None, trailing_idx, ""
-            if boot_key and state.boot_key != boot_key:
-                state.boot_key = boot_key
-            if full_key and state.full_key != full_key:
-                state.full_key = full_key
-                state.session_key = full_key
-                state.client_session_id = client_sid
-            _robin_bind_session_in_cache(state)
-            if state.conversation_id and (
-                state.parent_request_id or state.binding_state == "provisional"
+            if parent_state is None:
+                prev_fork_id = _dsh_extract_parent_fork_id(messages, fork_id)
+                parent_lookup_key = (
+                    f"{base_key}::fork::{prev_fork_id}"
+                    if (prev_fork_id and base_key)
+                    else base_key
+                )
+                parent_state = next(
+                    (
+                        c
+                        for c in candidates
+                        if c.session_key == parent_lookup_key and c.conversation_id
+                    ),
+                    None,
+                )
+            if parent_state is None and prior_cnt > 0:
+                parent_state = next(
+                    (
+                        c
+                        for c in candidates
+                        if c.conversation_id
+                        and c.synced_turn_count == prior_cnt
+                        and c.synced_turns_hash == prior_hash
+                    ),
+                    None,
+                )
+            if parent_state is None:
+                parent_state = next(
+                    (c for c in candidates if c.conversation_id and c.compacted),
+                    next(
+                        (
+                            c
+                            for c in candidates
+                            if c.conversation_id and "::fork::" not in c.session_key
+                        ),
+                        candidates[0] if candidates else None,
+                    ),
+                )
+            if parent_state is not None and parent_state.conversation_id:
+                if (
+                    0 < prior_cnt <= parent_state.synced_turn_count
+                    or parent_state.synced_turn_count <= 0
+                ):
+                    eff_synced_cnt = prior_cnt
+                    eff_synced_hash = prior_hash or parent_state.synced_turns_hash
+                else:
+                    eff_synced_cnt = parent_state.synced_turn_count
+                    eff_synced_hash = parent_state.synced_turns_hash
+                fork_ctx_tokens = (
+                    parent_state.context_tokens
+                    if eff_synced_cnt == parent_state.synced_turn_count
+                    else 0
+                )
+                fork_state = _RobinSessionState(
+                    session_key=explicit_fork_key or base_key,
+                    client_session_id=explicit_fork_key or base_key,
+                    principal_id=parent_state.principal_id,
+                    boot_key=boot_key or parent_state.boot_key,
+                    full_key=full_key or parent_state.full_key,
+                    conversation_id=parent_state.conversation_id,
+                    parent_request_id=parent_state.parent_request_id,
+                    parent_response_id=parent_state.parent_response_id,
+                    binding_state=parent_state.binding_state,
+                    title=parent_state.title,
+                    dsh_sandbox_mode=parent_state.dsh_sandbox_mode,
+                    dsh_approval_policy=parent_state.dsh_approval_policy,
+                    connected_folders=list(parent_state.connected_folders),
+                    owner_epoch=parent_state.owner_epoch,
+                    synced_turn_count=eff_synced_cnt,
+                    synced_turns_hash=eff_synced_hash,
+                    conv_base_msg_idx=parent_state.conv_base_msg_idx,
+                    context_tokens=fork_ctx_tokens,
+                    compacted=False,
+                )
+                _robin_bind_session_in_cache(fork_state)
+                _GEMINI_DSH_STORE.upsert_session(
+                    session_key=fork_state.session_key,
+                    client_session_id=fork_state.client_session_id,
+                    principal_id=fork_state.principal_id,
+                    boot_key=fork_state.boot_key,
+                    full_key=fork_state.full_key,
+                    conversation_id=fork_state.conversation_id,
+                    parent_req_id=fork_state.parent_request_id,
+                    parent_resp_id=fork_state.parent_response_id,
+                    title=fork_state.title,
+                    dsh_sandbox_mode=fork_state.dsh_sandbox_mode,
+                    dsh_approval_policy=fork_state.dsh_approval_policy,
+                    connected_folders=fork_state.connected_folders,
+                    active_run_id="",
+                    owner_epoch=fork_state.owner_epoch,
+                    binding_state=fork_state.binding_state,
+                    synced_turn_count=fork_state.synced_turn_count,
+                    synced_turns_hash=fork_state.synced_turns_hash,
+                    conv_base_msg_idx=fork_state.conv_base_msg_idx,
+                    context_tokens=fork_state.context_tokens,
+                    compacted=False,
+                )
+                return fork_state, trailing_idx, False
+            return None, trailing_idx, False
+
+        if not candidates:
+            return None, trailing_idx, False
+
+        def _finalize_matched_branch(matched: _RobinSessionState) -> _RobinSessionState:
+            if boot_key and matched.boot_key != boot_key:
+                matched.boot_key = boot_key
+            if full_key and matched.full_key != full_key:
+                matched.full_key = full_key
+                if "::fork::" not in matched.session_key:
+                    matched.session_key = full_key
+                    matched.client_session_id = client_sid
+            _robin_bind_session_in_cache(matched)
+            return matched
+
+        # 1. In-flight provisional branch match (e.g., tool hops during Turn 1 or the 1st turn of a fork)
+        for cand in candidates:
+            if cand.binding_state == "provisional" and cand.conversation_id:
+                if (
+                    (
+                        through_cnt > 0
+                        and cand.synced_turn_count == through_cnt
+                        and cand.synced_turns_hash == through_hash
+                    )
+                    or (
+                        prior_cnt > 0
+                        and cand.synced_turn_count == prior_cnt
+                        and cand.synced_turns_hash == prior_hash
+                    )
+                    or (
+                        cand.synced_turn_count == 0
+                        and (
+                            cand.session_key == (explicit_fork_key or base_key)
+                            or "::fork::" not in cand.session_key
+                        )
+                    )
+                ):
+                    return _finalize_matched_branch(cand), trailing_idx, False
+
+        # 2. Exact branch head match (`synced_turn_count == prior_cnt` and `synced_turns_hash == prior_hash`)
+        exact_matches = [
+            c
+            for c in candidates
+            if c.conversation_id
+            and c.synced_turn_count > 0
+            and c.synced_turn_count == prior_cnt
+            and c.synced_turns_hash == prior_hash
+        ]
+        if exact_matches:
+            chosen_exact: _RobinSessionState | None = None
+            if explicit_fork_key:
+                chosen_exact = next(
+                    (c for c in exact_matches if c.session_key == explicit_fork_key),
+                    None,
+                )
+            if chosen_exact is None:
+                chosen_exact = next(
+                    (c for c in exact_matches if not c.compacted),
+                    exact_matches[0],
+                )
+            if chosen_exact.compacted and (
+                not explicit_fork_key or chosen_exact.session_key != explicit_fork_key
             ):
-                return state, trailing_idx, ""
-    return None, trailing_idx, ""
+                return chosen_exact, trailing_idx, True
+            return _finalize_matched_branch(chosen_exact), trailing_idx, False
+
+        # 3. Legacy fallback when no branch in the lineage has `synced_turn_count > 0` yet
+        if all(c.synced_turn_count <= 0 for c in candidates):
+            leg_cand = next(
+                (c for c in candidates if "::fork::" not in c.session_key),
+                candidates[0],
+            )
+            if leg_cand.compacted:
+                return leg_cand, trailing_idx, True
+            return _finalize_matched_branch(leg_cand), trailing_idx, False
+
+        # 4. Cross-account switch-back prefix match (`0 < cand.synced_turn_count < prior_cnt`)
+        #    Valid only if NO branch along `prior_turns` on this account has already progressed past `prior_cnt`.
+        path_branch_keys: set[str] = {k for k in (base_key, full_key, boot_key) if k}
+        if explicit_fork_key:
+            path_branch_keys.add(explicit_fork_key)
+        for k_idx in range(1, prior_cnt + 1):
+            if prior_turns[k_idx - 1][0] == "user" and base_key:
+                p_hash = _robin_compute_turns_hash(prior_turns[:k_idx])[:12]
+                path_branch_keys.add(f"{base_key}::fork::br_{p_hash}")
+        has_advanced_branch_on_path = any(
+            c.synced_turn_count > prior_cnt
+            and (
+                c.session_key in path_branch_keys
+                or any(
+                    c.session_key.startswith(f"{pk}_")
+                    for pk in path_branch_keys
+                    if "::fork::br_" in pk
+                )
+            )
+            for c in candidates
+        )
+        if not has_advanced_branch_on_path:
+            prefix_matches = [
+                c
+                for c in candidates
+                if c.conversation_id
+                and 0 < c.synced_turn_count < prior_cnt
+                and _robin_compute_turns_hash(prior_turns[: c.synced_turn_count])
+                == c.synced_turns_hash
+            ]
+            if prefix_matches:
+                best_prefix = max(
+                    prefix_matches, key=lambda c: (c.synced_turn_count, c.updated_at)
+                )
+                if best_prefix.compacted:
+                    return best_prefix, trailing_idx, True
+                return _finalize_matched_branch(best_prefix), trailing_idx, False
+
+        # 5. History diverged / earlier-turn fork (`prior_cnt < synced_turn_count` or hash mismatch):
+        #    - If the parent session was compacted (`compacted == True`), prompt via `ask_user_question`;
+        #    - If the session has NOT been compacted (`compacted == False`), do NOT prompt and start a new branch!
+        compacted_cand = next(
+            (c for c in candidates if c.compacted and c.conversation_id), None
+        )
+        if compacted_cand is not None:
+            return compacted_cand, trailing_idx, True
+    return None, trailing_idx, False
 
 
 def _robin_store_continuation(
@@ -58652,8 +59734,11 @@ def _robin_store_continuation(
     parent_conv_id: str = "",
     committed_answer: str = "",
     conv_base_msg_idx: int | None = None,
+    context_tokens: int | None = None,
+    pin_checkpoint: bool = False,
 ) -> _RobinSessionState | None:
     """Persist `(c_, r_, rc_)` parent and `(boot_key, full_key)` as `provisional` or `committed`."""
+    _ = pin_checkpoint
     norm_binding = (
         "provisional"
         if str(binding_state or "").strip().lower() == "provisional"
@@ -58671,7 +59756,9 @@ def _robin_store_continuation(
         if isinstance(body, dict)
         else (
             {"session_id": session_id}
-            if session_id and not session_id.startswith(("boot_", "full_", "dsh_"))
+            if session_id
+            and not session_id.startswith(("boot_", "full_", "dsh_"))
+            and "::fork::" not in session_id
             else {}
         )
     )
@@ -58679,14 +59766,27 @@ def _robin_store_continuation(
         principal, messages, body=effective_body
     )
     if not full_key and first_assistant_override:
-        _, _, full_key = _dsh_conversation_keys(
-            principal,
-            [*messages, {"role": "assistant", "content": first_assistant_override}],
-            body=effective_body,
-        )
-        if full_key:
-            client_sid = full_key
-    primary_key = full_key or boot_key
+        clean_first_a = _robin_strip_action_card_markers(first_assistant_override)[
+            0
+        ].strip()
+        if clean_first_a:
+            _, _, full_key = _dsh_conversation_keys(
+                principal,
+                [*messages, {"role": "assistant", "content": clean_first_a}],
+                body=effective_body,
+            )
+            if full_key:
+                client_sid = full_key
+    fork_id, _, _ = _dsh_extract_latest_fork_decision(messages)
+    base_key = full_key or boot_key
+    cur_turns, prior_turns, turns_through_user = _robin_extract_turn_anchors(messages)
+    prior_cnt = len(prior_turns)
+    prior_hash = _robin_compute_turns_hash(prior_turns) if prior_turns else ""
+    through_cnt = len(turns_through_user)
+    through_hash = (
+        _robin_compute_turns_hash(turns_through_user) if turns_through_user else ""
+    )
+
     policy = _dsh_extract_policy(messages)
     folders = (
         list(connected_folders)
@@ -58695,15 +59795,88 @@ def _robin_store_continuation(
     )
     trailing_idx = _robin_trailing_user_start_index(messages)
     with _ROBIN_SESSION_STATE_LOCK:
-        existing = (
-            _ROBIN_SESSION_STATE_CACHE.get(full_key) if full_key else None
-        ) or _ROBIN_SESSION_STATE_CACHE.get(boot_key)
-        if (
-            existing is not None
-            and credential_id
-            and existing.principal_id != principal
-        ):
-            existing = None
+        candidates = _robin_load_lineage_sessions(
+            full_key=full_key,
+            boot_key=boot_key,
+            client_sid=client_sid,
+            principal=principal,
+            credential_id=credential_id,
+            effective_body=effective_body,
+            messages=messages,
+        )
+        if session_id and "::fork::" in session_id:
+            primary_key = session_id
+        elif fork_id and base_key:
+            primary_key = f"{base_key}::fork::{fork_id}"
+        else:
+            matched_existing: _RobinSessionState | None = None
+            for cand in candidates:
+                if (
+                    cand.binding_state == "provisional"
+                    and through_cnt > 0
+                    and cand.synced_turn_count == through_cnt
+                    and cand.synced_turns_hash == through_hash
+                ):
+                    matched_existing = cand
+                    break
+            if matched_existing is None and prior_cnt > 0:
+                matched_existing = next(
+                    (
+                        c
+                        for c in candidates
+                        if c.synced_turn_count == prior_cnt
+                        and c.synced_turns_hash == prior_hash
+                    ),
+                    None,
+                )
+            if matched_existing is not None:
+                primary_key = (
+                    matched_existing.session_key
+                    if "::fork::" in matched_existing.session_key
+                    else base_key
+                )
+            elif (
+                _dsh_has_prior_turn(messages)
+                and prior_cnt > 0
+                and any(
+                    c.conversation_id and c.binding_state == "committed"
+                    for c in candidates
+                )
+                and not parent_conv_id
+            ):
+                primary_key = _robin_derive_unprompted_fork_session_key(
+                    base_key, messages, candidates
+                )
+            else:
+                primary_key = base_key
+
+        if "::fork::" in primary_key:
+            client_sid = primary_key
+
+        existing = next(
+            (c for c in candidates if c.session_key == primary_key),
+            None,
+        )
+        if existing is None and "::fork::" not in primary_key:
+            existing = next(
+                (c for c in candidates if "::fork::" not in c.session_key),
+                None,
+            )
+        if existing is None:
+            for k_cache in (
+                (primary_key,)
+                if "::fork::" in primary_key
+                else (primary_key, full_key, boot_key)
+            ):
+                if not k_cache:
+                    continue
+                cand_mem = _ROBIN_SESSION_STATE_CACHE.get(k_cache)
+                if cand_mem is not None and (
+                    not credential_id or cand_mem.principal_id == principal
+                ):
+                    existing = cand_mem
+                    break
+
         diverged_from_existing = (
             _robin_session_history_diverged(existing, messages)
             if existing is not None
@@ -58720,7 +59893,7 @@ def _robin_store_continuation(
             return existing
         has_existing_committed_parent = bool(
             existing is not None
-            and not diverged_from_existing
+            and (not diverged_from_existing or norm_binding == "provisional")
             and existing.binding_state == "committed"
             and existing.conversation_id
             and existing.parent_request_id
@@ -58729,6 +59902,7 @@ def _robin_store_continuation(
         if norm_binding == "provisional" and has_existing_committed_parent:
             # Never overwrite an already-committed complete parent from a prior turn (§10.2)
             return existing
+
         epoch = (existing.owner_epoch + 1) if existing is not None else 1
         first_u_for_title, _ = _dsh_extract_first_turn_identity(messages)
         cand_title = title or (existing.title if existing is not None else "")
@@ -58754,36 +59928,103 @@ def _robin_store_continuation(
             )
             else "provisional"
         )
-        if conv_base_msg_idx is not None:
-            resolved_base_idx = max(0, int(conv_base_msg_idx))
-        elif (
+        has_existing_same_conv = bool(
             existing is not None
             and not diverged_from_existing
             and (existing.conversation_id == conversation_id or bool(parent_conv_id))
-        ):
+        )
+        if conv_base_msg_idx is not None:
+            resolved_base_idx = max(0, int(conv_base_msg_idx))
+        elif has_existing_same_conv and existing is not None:
             resolved_base_idx = existing.conv_base_msg_idx
         else:
             resolved_base_idx = trailing_idx
 
+        prev_synced_cnt = (
+            existing.synced_turn_count
+            if (has_existing_same_conv and existing is not None)
+            else 0
+        )
+        prev_context_tokens = (
+            existing.context_tokens
+            if (has_existing_same_conv and existing is not None)
+            else 0
+        )
+
         if norm_binding == "committed" and bool(resolved_resp_id):
-            cur_turns, _ = _robin_partition_dsh_messages(messages)
-            ans_clean = (committed_answer or first_assistant_override or "").strip()
-            if ans_clean and (not cur_turns or cur_turns[-1][0] != "assistant"):
+            raw_ans = (committed_answer or first_assistant_override or "").strip()
+            ans_clean = _robin_strip_action_card_markers(raw_ans)[0].strip()
+            last_non_sys_msg = next(
+                (
+                    m
+                    for m in reversed(list(messages))
+                    if isinstance(m, dict)
+                    and str(m.get("role") or "") != "system"
+                    and not _dsh_is_ve_fork_assistant_msg(m)
+                    and not _dsh_extract_ve_fork_choice_from_tool_msg(m)[0]
+                ),
+                None,
+            )
+            last_is_terminal_assistant = bool(
+                isinstance(last_non_sys_msg, dict)
+                and str(last_non_sys_msg.get("role") or "") == "assistant"
+                and not last_non_sys_msg.get("tool_calls")
+            )
+            if ans_clean and not last_is_terminal_assistant:
                 synced_turns = [*cur_turns, ("assistant", ans_clean)]
+                effective_committed_msgs = [
+                    *messages,
+                    {"role": "assistant", "content": ans_clean},
+                ]
             else:
                 synced_turns = list(cur_turns)
+                effective_committed_msgs = list(messages)
             resolved_synced_count = len(synced_turns)
             resolved_synced_hash = _robin_compute_turns_hash(synced_turns)
+            if context_tokens is not None and int(context_tokens) > 0:
+                resolved_context_tokens = int(context_tokens)
+            else:
+                est_q = _robin_extract_aligned_user_query(
+                    messages,
+                    has_remote_parent=bool(
+                        has_existing_same_conv and prev_synced_cnt > 0
+                    ),
+                    synced_turn_count=prev_synced_cnt,
+                )
+                resolved_context_tokens, _ = _robin_estimate_session_usage(
+                    effective_committed_msgs,
+                    "",
+                    est_q,
+                    has_remote_parent=bool(
+                        has_existing_same_conv and prev_synced_cnt > 0
+                    ),
+                    is_tool_continuation=False,
+                    conv_base_msg_idx=resolved_base_idx,
+                    synced_turn_count=prev_synced_cnt,
+                    base_context_tokens=prev_context_tokens,
+                    tools=None,
+                )
         elif (
             existing is not None
             and not diverged_from_existing
             and existing.conversation_id == conversation_id
+            and existing.synced_turn_count > 0
         ):
             resolved_synced_count = existing.synced_turn_count
             resolved_synced_hash = existing.synced_turns_hash
+            resolved_context_tokens = (
+                int(context_tokens)
+                if (context_tokens is not None and int(context_tokens) > 0)
+                else existing.context_tokens
+            )
+        elif through_cnt > 0:
+            resolved_synced_count = through_cnt
+            resolved_synced_hash = through_hash
+            resolved_context_tokens = int(context_tokens or 0)
         else:
             resolved_synced_count = 0
             resolved_synced_hash = ""
+            resolved_context_tokens = int(context_tokens or 0)
 
         if existing is not None:
             existing.session_key = primary_key
@@ -58807,6 +60048,9 @@ def _robin_store_continuation(
             existing.synced_turn_count = resolved_synced_count
             existing.synced_turns_hash = resolved_synced_hash
             existing.conv_base_msg_idx = resolved_base_idx
+            existing.context_tokens = resolved_context_tokens
+            existing.compacted = False
+            existing.updated_at = time.time()
             state = existing
         else:
             state = _RobinSessionState(
@@ -58830,6 +60074,8 @@ def _robin_store_continuation(
                 synced_turn_count=resolved_synced_count,
                 synced_turns_hash=resolved_synced_hash,
                 conv_base_msg_idx=resolved_base_idx,
+                context_tokens=resolved_context_tokens,
+                compacted=False,
                 updated_at=time.time(),
             )
         if state.conversation_ready_event is not None:
@@ -58856,6 +60102,8 @@ def _robin_store_continuation(
             synced_turn_count=resolved_synced_count,
             synced_turns_hash=resolved_synced_hash,
             conv_base_msg_idx=resolved_base_idx,
+            context_tokens=resolved_context_tokens,
+            compacted=False,
         )
         return state
 
@@ -58868,20 +60116,24 @@ def _robin_resolve_or_create_session(
     body: dict[str, Any] | None = None,
     connected_folders: Sequence[str] | None = None,
 ) -> _RobinSessionState:
-    """Resolve an existing `_RobinSession` for Turn 2+ or create an isolated fresh `_RobinSession` for Turn 1."""
+    """Resolve an existing `_RobinSession` for Turn 2+ or create an isolated fresh `_RobinSession` for Turn 1 / Fork."""
     principal = credential_id or "default"
     effective_body = (
         body
         if isinstance(body, dict)
         else (
             {"session_id": session_id}
-            if session_id and not session_id.startswith(("boot_", "full_", "dsh_"))
+            if session_id
+            and not session_id.startswith(("boot_", "full_", "dsh_"))
+            and "::fork::" not in session_id
             else {}
         )
     )
     client_sid, boot_key, full_key = _dsh_conversation_keys(
         principal, messages, body=effective_body
     )
+    fork_id, _, _ = _dsh_extract_latest_fork_decision(messages)
+    base_key = full_key or boot_key
     policy = _dsh_extract_policy(messages)
     folders = (
         list(connected_folders)
@@ -58889,10 +60141,10 @@ def _robin_resolve_or_create_session(
         else _robin_extract_connected_folders(messages, effective_body)
     )
     if _dsh_has_prior_turn(messages):
-        cont_state, _, _ = _robin_lookup_continuation(
+        cont_state, _, needs_fork_prompt = _robin_lookup_continuation(
             client_sid, messages, credential_id=credential_id, body=effective_body
         )
-        if cont_state is not None:
+        if cont_state is not None and not needs_fork_prompt:
             cont_state.dsh_sandbox_mode = policy["sandbox_mode"]
             cont_state.dsh_approval_policy = policy["approval_policy"]
             if folders:
@@ -58900,8 +60152,62 @@ def _robin_resolve_or_create_session(
             _robin_bind_session_in_cache(cont_state)
             return cont_state
 
+    with _ROBIN_SESSION_STATE_LOCK:
+        candidates = _robin_load_lineage_sessions(
+            full_key=full_key,
+            boot_key=boot_key,
+            client_sid=client_sid,
+            principal=principal,
+            credential_id=credential_id,
+            effective_body=effective_body,
+            messages=messages,
+        )
+        if session_id and "::fork::" in session_id:
+            primary_key = session_id
+        elif fork_id and base_key:
+            primary_key = f"{base_key}::fork::{fork_id}"
+        elif _dsh_has_prior_turn(messages) and any(
+            c.conversation_id and c.binding_state == "committed" for c in candidates
+        ):
+            primary_key = _robin_derive_unprompted_fork_session_key(
+                base_key, messages, candidates
+            )
+        else:
+            primary_key = base_key
+        if "::fork::" in primary_key:
+            client_sid = primary_key
+
+        existing_cached = (
+            (_ROBIN_SESSION_STATE_CACHE.get(primary_key) if primary_key else None)
+            or (
+                _ROBIN_SESSION_STATE_CACHE.get(full_key)
+                if (full_key and "::fork::" not in primary_key)
+                else None
+            )
+            or (
+                _ROBIN_SESSION_STATE_CACHE.get(boot_key)
+                if "::fork::" not in primary_key
+                else None
+            )
+        )
+        if (
+            existing_cached is not None
+            and credential_id
+            and existing_cached.principal_id != principal
+        ):
+            existing_cached = None
+        if (
+            existing_cached is not None
+            and existing_cached.binding_state == "committed"
+            and existing_cached.conversation_id
+            and existing_cached.parent_request_id
+            and existing_cached.parent_response_id
+        ):
+            # Do not wipe out an already-committed session in cache when starting a divergent branch
+            return existing_cached
+
     state = _RobinSessionState(
-        session_key=full_key or boot_key,
+        session_key=primary_key,
         client_session_id=client_sid,
         principal_id=principal,
         boot_key=boot_key,
@@ -58991,6 +60297,9 @@ class _RobinRunActor:
     last_pq_close_diag: dict[str, Any] = field(default_factory=dict)
     awaiting_post_tool_progress: bool = False
     progress_at_tool_submit: tuple[int, int] = (0, 0)
+    last_tool_submit_monotonic: float = 0.0
+    last_ert_wakeup_monotonic: float = 0.0
+    state_updates_at_tool_submit: int = 0
     last_submitted_ert_frames: list[bytes] = field(default_factory=list)
     ert_flush_lock: Any = None
     created_at: float = field(default_factory=time.monotonic)
@@ -59021,10 +60330,19 @@ class _RobinRunActor:
                 needs_refresh = False
         if not needs_refresh and self.access_token:
             return self.access_token
+        old_token = self.access_token
         try:
             refreshed = await refresher(self.http_session, cred, force_refresh=force)
             if refreshed:
                 self.access_token = str(refreshed)
+                if old_token and self.device_id and self.access_token != old_token:
+                    old_reg = _ROBIN_REGISTERED_DEVICES.get(
+                        f"{old_token[:24]}:{self.device_id}"
+                    )
+                    if old_reg is not None:
+                        _ROBIN_REGISTERED_DEVICES[
+                            f"{self.access_token[:24]}:{self.device_id}"
+                        ] = old_reg
         except Exception as exc:
             _llm_log.warning(
                 "Robin actor access_token refresh failed (run=%s force=%s): %s",
@@ -59462,6 +60780,21 @@ class _RobinRunActor:
         self.decoder.pending_tool_calls = remaining_pending
         self.pending_tool_calls = list(remaining_pending)
         self.decoder.finish_reason = "tool_calls" if remaining_pending else None
+        if not remaining_pending:
+            if getattr(self.decoder, "step_announced_count", 0) <= getattr(
+                self.decoder, "step_ert_received_count", 0
+            ):
+                self.decoder.step_announced_count = 0
+                self.decoder.step_ert_received_count = 0
+                self.decoder.step_ert_received_any = False
+                self.decoder.step_ert_wakeup_done = False
+                self.decoder.step_unmatched_pq_tool_monotonic = 0.0
+            else:
+                # Only a subset of the concurrent tools announced in this ProcessQuery step
+                # arrived on ERT before DSH returned the first tool batch; keep the deficit
+                # counters active and re-arm the 2.0s wakeup timer to pull the remaining tool(s)!
+                self.decoder.step_ert_wakeup_done = False
+                self.decoder.step_unmatched_pq_tool_monotonic = time.monotonic()
         self.decoder.role_sent = False
         self.decoder.emitted_reasoning_chars = 0
         self.decoder.emitted_reasoning_text = ""
@@ -59926,6 +61259,7 @@ class _RobinRunActor:
         if not (conv_id and req_id):
             return False
         await self._ensure_fresh_access_token()
+        shared_mux = getattr(self.response, "_mux", None)
         account_mode_id = _robin_account_bard_mode_id(self.access_token)
         robin_tools = self.run.dsh_tools if self.has_robin_tools else None
         connected_folders = list(self.run.connected_folders or [os.getcwd()])
@@ -59940,6 +61274,7 @@ class _RobinRunActor:
                 tools=robin_tools,
                 session_id=self.session_id,
                 dsh_sandbox_mode=dsh_sandbox_mode,
+                mux=shared_mux,
             )
         resume_frames = _robin_build_resume_turn_frames(
             conversation_id=conv_id,
@@ -59963,7 +61298,6 @@ class _RobinRunActor:
         }
         if self.server_token:
             headers["X-Server-Token"] = self.server_token
-        shared_mux = getattr(self.response, "_mux", None)
         self.run.pq_transport_state = "ROLLING_OVER"
         new_resp = await _robin_post_http2_grpc(
             GEMINI_ROBIN_PROD_URL,
@@ -60003,20 +61337,27 @@ class _RobinRunActor:
         self.pq_opened_monotonic = time.monotonic()
         self.run.pq_transport_state = "OPEN"
         if self.has_robin_tools and conv_id:
+            shared_mux = getattr(self.response, "_mux", None)
             await _robin_send_report_presence(
                 self.http_session,
                 self.access_token,
                 conv_id,
                 device_id=self.device_id,
                 server_token=self.server_token,
+                mux=shared_mux,
             )
-            await self._rollover_ert_stream()
+            if (
+                not self.decoder.pending_tool_calls
+                and self.run.execution_state != "WAITING_TOOLS"
+            ):
+                await self._rollover_ert_stream()
         return True
 
     async def _ert_driver_loop(self, initial_iter: Any = None) -> None:
-        """Background ERT bidirectional stream driver with in-place `list_mcp` and 240s rollover watchdog."""
+        """Background ERT bidirectional stream driver with in-place `list_mcp`, wake-up watchdog, and 240s rollover."""
         cur_iter: Any = initial_iter
-        self.ert_opened_monotonic = time.monotonic()
+        if self.ert_opened_monotonic <= 0.0:
+            self.ert_opened_monotonic = time.monotonic()
         ert_connect_failures: int = 0
         try:
             while (
@@ -60057,6 +61398,7 @@ class _RobinRunActor:
                     (_RobinHTTP2Response, _RobinMuxResponse),
                 )
                 next_ert_task: asyncio.Task[bytes] | None = None
+                wakeup_reconnect = False
                 try:
                     while True:
                         ledger = getattr(self.run, "tool_ledger", None)
@@ -60072,7 +61414,55 @@ class _RobinRunActor:
                                     async_frames
                                 )
                                 await self.flush_pending_ert_outbound()
-                        needs_async_poll = (
+
+                        now_mono = time.monotonic()
+                        has_unmatched_pq_tools = (
+                            self.decoder.step_announced_count
+                            > self.decoder.step_ert_received_count
+                            and self.decoder.step_unmatched_pq_tool_monotonic > 0.0
+                            and not self.decoder.step_ert_wakeup_done
+                        )
+                        if (
+                            has_unmatched_pq_tools
+                            and not self.decoder.pending_tool_calls
+                            and not self.decoder.is_completed
+                        ):
+                            unmatched_since = (
+                                self.decoder.step_unmatched_pq_tool_monotonic
+                                or now_mono
+                            )
+                            last_ert_act = max(
+                                self.ert_opened_monotonic,
+                                self.decoder.last_ert_inbound_monotonic,
+                                self.last_ert_wakeup_monotonic,
+                            )
+                            if (now_mono - unmatched_since) >= 2.0 and (
+                                now_mono - last_ert_act
+                            ) >= 2.0:
+                                self.last_ert_wakeup_monotonic = now_mono
+                                self.decoder.step_unmatched_pq_tool_monotonic = 0.0
+                                self.decoder.step_ert_wakeup_done = True
+                                _gemini_debug_log_event(
+                                    self.session_id,
+                                    "ert_wakeup_reconnect",
+                                    {
+                                        "run_id": self.run.run_id,
+                                        "conversation_id": self.decoder.conversation_id,
+                                        "reason": "pq_announced_tool_deficit",
+                                        "announced_client_tools": len(
+                                            self.decoder.announced_client_tool_ids
+                                        ),
+                                        "ert_seen_tools": len(
+                                            self.decoder.ert_seen_wire_call_ids
+                                        ),
+                                        "step_announced": self.decoder.step_announced_count,
+                                        "step_received": self.decoder.step_ert_received_count,
+                                    },
+                                )
+                                wakeup_reconnect = True
+                                break
+
+                        busy_with_tools = (
                             self.run.execution_state == "WAITING_TOOLS"
                             or bool(self.decoder.pending_tool_calls)
                             or (
@@ -60080,12 +61470,20 @@ class _RobinRunActor:
                                 and ledger.has_active_background_or_dispatched()
                             )
                         )
+                        needs_async_poll = (
+                            busy_with_tools
+                            or has_unmatched_pq_tools
+                            or (
+                                self.run.execution_state == "RUNNING"
+                                and not self.decoder.is_completed
+                            )
+                        )
                         wait_timeout: float | None = None
                         if use_ert_watchdog:
                             elapsed = time.monotonic() - self.ert_opened_monotonic
                             remaining = GEMINI_ERT_ROLLOVER_SECONDS - elapsed
                             if remaining <= 0 or self.ert_rollover_deferred:
-                                if needs_async_poll:
+                                if busy_with_tools:
                                     self.ert_rollover_deferred = True
                                     remaining = 0.5
                                 else:
@@ -60163,7 +61561,7 @@ class _RobinRunActor:
                 if self.ert_iterator is not None and self.ert_iterator is not cur_iter:
                     cur_iter = self.ert_iterator
                     continue
-                # ERT stream closed or reached 240s rollover window; release only ERT handle
+                # ERT stream closed, triggered wake-up reconnect, or reached 240s rollover window; release only ERT handle
                 if self.ert_response is not None:
                     try:
                         self.ert_response.keep_open = False
@@ -60177,14 +61575,18 @@ class _RobinRunActor:
                     self.run.execution_state == "TERMINAL"
                     or self.run.cancellation_state != "NONE"
                     or getattr(self.decoder, "ert_session_complete", False)
-                    or not isinstance(
-                        self.response,
-                        (_RobinHTTP2Response, _RobinMuxResponse),
+                    or not (
+                        wakeup_reconnect
+                        or isinstance(
+                            self.response,
+                            (_RobinHTTP2Response, _RobinMuxResponse),
+                        )
                     )
                 ):
                     break
                 self.run.ert_transport_state = "ROLLING_OVER"
-                await asyncio.sleep(0.2)
+                if not wakeup_reconnect:
+                    await asyncio.sleep(0.2)
         except asyncio.CancelledError:
             pass
 
@@ -60198,12 +61600,14 @@ class _RobinRunActor:
                 await asyncio.sleep(GEMINI_ROBIN_PRESENCE_INTERVAL_SECONDS)
                 if self.run.execution_state == "TERMINAL":
                     break
+                await self._ensure_fresh_access_token()
                 await _robin_send_report_presence(
                     self.http_session,
                     self.access_token,
                     conv_id,
                     device_id=self.device_id,
                     server_token=self.server_token,
+                    mux=getattr(self.response, "_mux", None),
                 )
         except asyncio.CancelledError:
             pass
@@ -60233,6 +61637,7 @@ class _RobinRunActor:
                 conv_id,
                 device_id=self.device_id,
                 server_token=self.server_token,
+                mux=getattr(self.response, "_mux", None),
             )
             self.presence_task = asyncio.create_task(
                 self._presence_driver_loop(conv_id)
@@ -60275,9 +61680,14 @@ _ROBIN_PARKED_STREAMS: dict[str, _RobinRunActor] = {}
 def _robin_park_stream(
     session_id: str, parked: _RobinRunActor, *, is_auxiliary: bool = False
 ) -> None:
+    is_fork_actor = "::fork::" in str(parked.session_key or session_id or "")
     keys = [
         k
-        for k in (session_id, parked.session_key, parked.boot_key, parked.full_key)
+        for k in (
+            (session_id, parked.session_key)
+            if is_fork_actor
+            else (session_id, parked.session_key, parked.boot_key, parked.full_key)
+        )
         if k
     ]
     old_to_release: list[_RobinRunActor] = []
@@ -60300,13 +61710,19 @@ def _robin_park_stream(
                 _robin_release_parked_stream_sync(parked)
                 return
         for old in old_to_release:
-            for k in (
-                old.session_id,
-                old.session_key,
-                old.boot_key,
-                old.full_key,
-                *keys,
-            ):
+            old_is_fork = "::fork::" in str(old.session_key or old.session_id or "")
+            old_keys = (
+                (old.session_id, old.session_key, *keys)
+                if old_is_fork
+                else (
+                    old.session_id,
+                    old.session_key,
+                    old.boot_key,
+                    old.full_key,
+                    *keys,
+                )
+            )
+            for k in old_keys:
                 if k and _ROBIN_PARKED_STREAMS.get(k) is old:
                     _ROBIN_PARKED_STREAMS.pop(k, None)
         for key in keys:
@@ -60324,14 +61740,22 @@ def _robin_pop_parked_stream(*keys: str) -> _RobinRunActor | None:
                 if parked is not None:
                     break
         if parked is not None:
-            for k in (
-                parked.session_id,
-                parked.session_key,
-                parked.boot_key,
-                parked.full_key,
-                *keys,
-            ):
-                if k:
+            parked_is_fork = "::fork::" in str(
+                parked.session_key or parked.session_id or ""
+            )
+            cleanup_keys = (
+                (parked.session_id, parked.session_key, *keys)
+                if parked_is_fork
+                else (
+                    parked.session_id,
+                    parked.session_key,
+                    parked.boot_key,
+                    parked.full_key,
+                    *keys,
+                )
+            )
+            for k in cleanup_keys:
+                if k and _ROBIN_PARKED_STREAMS.get(k) is parked:
                     _ROBIN_PARKED_STREAMS.pop(k, None)
         return parked
 
@@ -60411,6 +61835,15 @@ class _RobinStreamDecoder:
         self.pending_tool_calls: list[dict[str, Any]] = []
         self.pending_ert_outbound_frames: list[bytes] = []
         self.tool_call_count = 0
+        self.announced_client_tool_ids: set[str] = set()
+        self.ert_seen_wire_call_ids: set[str] = set()
+        self.step_announced_count = 0
+        self.step_ert_received_count = 0
+        self.step_unmatched_pq_tool_monotonic = 0.0
+        self.step_ert_wakeup_done = False
+        self.step_ert_received_any = False
+        self.last_pq_activity_monotonic = time.monotonic()
+        self.last_ert_inbound_monotonic = 0.0
         self.emitted_reasoning_chars = 0
         self.emitted_reasoning_text = ""
         self.emitted_answer_chars = 0
@@ -60487,16 +61920,9 @@ class _RobinStreamDecoder:
 
     def feed_pq_frame(self, frame_bytes: bytes) -> list[dict[str, Any]]:
         """Process one decoded ProcessQueryResponse gRPC frame."""
+        self.last_pq_activity_monotonic = time.monotonic()
         parsed = _robin_parse_process_query_response(frame_bytes)
         out: list[dict[str, Any]] = []
-
-        if parsed["error_code"] or parsed["error_message"]:
-            msg = parsed["error_message"] or f"Robin error {parsed['error_code']}"
-            raise GeminiStreamError(msg)
-        if parsed["downgrade_reason"]:
-            raise GeminiStreamError(
-                f"Robin model downgraded by server: {parsed['downgrade_reason']}"
-            )
 
         if parsed["conversation_id"]:
             self.conversation_id = parsed["conversation_id"]
@@ -60530,27 +61956,67 @@ class _RobinStreamDecoder:
         if parsed.get("completion_status"):
             self.completion_status = int(parsed["completion_status"])
 
+        pq_dbg_payload: dict[str, Any] = {
+            "conversation_id": parsed["conversation_id"],
+            "request_id": parsed["request_id"],
+            "response_id": parsed["response_id"],
+            "conversation_title": parsed.get("conversation_title", ""),
+            "attribution": parsed["attribution"]
+            or parsed.get("fallback_attribution", ""),
+            "live_states_count": len(parsed["live_states_raw"]),
+            "history_states_count": len(parsed["history_states_raw"]),
+            "answer_len": len(parsed["answer_text"]),
+            "is_completed": parsed["is_completed"],
+            "eod": parsed["eod"],
+        }
+        if parsed["error_code"]:
+            pq_dbg_payload["error_code"] = parsed["error_code"]
+        if parsed["error_message"]:
+            pq_dbg_payload["error_message"] = parsed["error_message"]
+        if parsed["downgrade_reason"]:
+            pq_dbg_payload["downgrade_reason"] = parsed["downgrade_reason"]
         _gemini_debug_log_event(
             self.run.client_session_id,
             "pq_frame",
-            {
-                "conversation_id": parsed["conversation_id"],
-                "request_id": parsed["request_id"],
-                "response_id": parsed["response_id"],
-                "conversation_title": parsed.get("conversation_title", ""),
-                "attribution": parsed["attribution"]
-                or parsed.get("fallback_attribution", ""),
-                "live_states_count": len(parsed["live_states_raw"]),
-                "history_states_count": len(parsed["history_states_raw"]),
-                "answer_len": len(parsed["answer_text"]),
-                "is_completed": parsed["is_completed"],
-                "eod": parsed["eod"],
-            },
+            pq_dbg_payload,
         )
 
-        # 1. Append live status entries L = .1003.1.6 to StateTape
+        if parsed["error_code"] or parsed["error_message"]:
+            msg = parsed["error_message"] or f"Robin error {parsed['error_code']}"
+            raise GeminiStreamError(msg)
+        if parsed["downgrade_reason"]:
+            raise GeminiStreamError(
+                f"Robin model downgraded by server: {parsed['downgrade_reason']}"
+            )
+
+        # 1. Append live status entries L = .1003.1.6 to StateTape and track announced client tool items
         for live_raw in parsed["live_states_raw"]:
-            self.run.state_tape.append_live(live_raw, response_id=self.response_id)
+            entry = self.run.state_tape.append_live(
+                live_raw, response_id=self.response_id
+            )
+            if entry is not None:
+                disp = _robin_parse_display_state(live_raw)
+                for it in disp.tool_items:
+                    if (
+                        it.tool_namespace in ("client", "dsh")
+                        and it.raw_status == 1
+                        and it.tool_name != "list_mcp"
+                        and it.call_id
+                    ):
+                        cid = it.call_id
+                        if cid not in self.announced_client_tool_ids:
+                            self.announced_client_tool_ids.add(cid)
+                            if cid not in self.ert_seen_wire_call_ids:
+                                self.step_announced_count += 1
+                                if (
+                                    self.step_announced_count
+                                    > self.step_ert_received_count
+                                    and not self.step_ert_wakeup_done
+                                    and self.step_unmatched_pq_tool_monotonic <= 0.0
+                                ):
+                                    self.step_unmatched_pq_tool_monotonic = (
+                                        time.monotonic()
+                                    )
 
         # 2. Reconcile terminal history H = .1003.1.8[] if present
         if parsed["history_states_raw"]:
@@ -60598,6 +62064,11 @@ class _RobinStreamDecoder:
         self.last_frame_eod = bool(parsed["eod"])
         self.last_frame_completed = bool(parsed["is_completed"] or self.is_completed)
         if parsed["is_completed"]:
+            tail_delta = self.action_card_filter.flush()
+            if tail_delta:
+                self.emitted_answer_chars += len(tail_delta)
+                self.emitted_answer_text += tail_delta
+                out.append(self._make_chunk({"content": tail_delta}))
             card_seen = bool(
                 parsed.get("action_card_text")
                 or parsed.get("has_action_card")
@@ -60654,6 +62125,7 @@ class _RobinStreamDecoder:
 
     def feed_ert_frame(self, frame_bytes: bytes) -> list[dict[str, Any]]:
         """Process one decoded ExecuteRemoteToolsResponse gRPC frame."""
+        self.last_ert_inbound_monotonic = time.monotonic()
         parsed = _robin_parse_execute_remote_tools_response(frame_bytes)
         if parsed["op_id"]:
             self.op_id = parsed["op_id"]
@@ -60684,7 +62156,25 @@ class _RobinStreamDecoder:
         out: list[dict[str, Any]] = []
         dsh_tool_deltas: list[dict[str, Any]] = []
         for raw_call in raw_calls:
+            raw_name = str(raw_call.get("name") or "").strip()
+            for pfx in ("client:", "dsh:", "client/", "dsh/"):
+                if raw_name.startswith(pfx):
+                    raw_name = raw_name[len(pfx) :].strip()
+                    break
+            wire_id = str(raw_call.get("id") or "").strip()
             inv, immediate_frame = self.run.tool_ledger.register_ert_call(raw_call)
+            if raw_name != "list_mcp":
+                if inv is not None or immediate_frame is not None:
+                    self.step_ert_received_any = True
+                    self.step_ert_received_count += 1
+                    if self.step_ert_received_count >= self.step_announced_count:
+                        self.step_unmatched_pq_tool_monotonic = 0.0
+                    else:
+                        self.step_unmatched_pq_tool_monotonic = time.monotonic()
+                    if wire_id:
+                        self.ert_seen_wire_call_ids.add(wire_id)
+                    if inv is not None and inv.wire_call_id:
+                        self.ert_seen_wire_call_ids.add(inv.wire_call_id)
             if immediate_frame is not None:
                 self.pending_ert_outbound_frames.append(immediate_frame)
                 continue
@@ -60725,6 +62215,25 @@ class _RobinStreamDecoder:
             _GEMINI_DSH_STORE.save_run(self.run)
         return out
 
+    def estimated_completion_tokens(self) -> int:
+        """Estimate the completion tokens (reasoning + answer + tool_calls) emitted in this segment."""
+        tc_out_parts: list[str] = []
+        for tc in self.pending_tool_calls:
+            if isinstance(tc, dict):
+                tc_n = str(tc.get("name") or "")
+                tc_a = json.dumps(tc.get("args") or {}, ensure_ascii=False)
+                if tc_n or tc_a:
+                    tc_out_parts.append(f"{tc_n}({tc_a})")
+        tc_out_text = "\n".join(tc_out_parts)
+        combined_out = (
+            f"{self.emitted_reasoning_text}{self.emitted_answer_text}{tc_out_text}"
+        )
+        return (
+            _robin_estimate_tokens(combined_out)
+            if combined_out.strip()
+            else max(1, (self.emitted_reasoning_chars + self.emitted_answer_chars) // 4)
+        )
+
     def finalize(self) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         if self._buf:
@@ -60756,24 +62265,7 @@ class _RobinStreamDecoder:
                 if self.emitted_reasoning_text.strip()
                 else 0
             )
-            tc_out_parts: list[str] = []
-            for tc in self.pending_tool_calls:
-                if isinstance(tc, dict):
-                    tc_n = str(tc.get("name") or "")
-                    tc_a = json.dumps(tc.get("args") or {}, ensure_ascii=False)
-                    if tc_n or tc_a:
-                        tc_out_parts.append(f"{tc_n}({tc_a})")
-            tc_out_text = "\n".join(tc_out_parts)
-            combined_out = (
-                f"{self.emitted_reasoning_text}{self.emitted_answer_text}{tc_out_text}"
-            )
-            c_tok = (
-                _robin_estimate_tokens(combined_out)
-                if combined_out.strip()
-                else max(
-                    1, (self.emitted_reasoning_chars + self.emitted_answer_chars) // 4
-                )
-            )
+            c_tok = self.estimated_completion_tokens()
             usage_payload: dict[str, Any] = {
                 "prompt_tokens": p_tok,
                 "completion_tokens": c_tok,
@@ -62090,6 +63582,7 @@ async def _robin_ensure_device_registered(
     tools: Sequence[Any] | None = None,
     session_id: str = "default",
     dsh_sandbox_mode: str = "workspace-write",
+    mux: _RobinHTTP2Mux | None = None,
 ) -> bool:
     """Register or update local device capabilities, tool schemas, and `connected_folders` via `RegisterDevice`."""
     if not device_id or not access_token:
@@ -62156,7 +63649,11 @@ async def _robin_ensure_device_registered(
                 return True
             return False
         resp = await _robin_post_http2_grpc(
-            GEMINI_ROBIN_REGISTER_DEVICE_URL, headers, payload, end_stream=True
+            GEMINI_ROBIN_REGISTER_DEVICE_URL,
+            headers,
+            payload,
+            end_stream=True,
+            mux=mux,
         )
         try:
             await resp.read()
@@ -62523,6 +64020,7 @@ async def _robin_send_report_presence(
     *,
     device_id: str = "",
     server_token: str = "",
+    mux: _RobinHTTP2Mux | None = None,
 ) -> bool:
     """Send unary `ReportClientPresence` heartbeat for an active task conversation."""
     if not conversation_id or not access_token:
@@ -62551,7 +64049,11 @@ async def _robin_send_report_presence(
                 resp.release()
             return getattr(resp, "status", 200) < 400
         resp = await _robin_post_http2_grpc(
-            GEMINI_ROBIN_REPORT_PRESENCE_URL, headers, payload, end_stream=True
+            GEMINI_ROBIN_REPORT_PRESENCE_URL,
+            headers,
+            payload,
+            end_stream=True,
+            mux=mux,
         )
         try:
             await resp.read()
@@ -63624,9 +65126,13 @@ _GEMINI_INTERNAL_PAYLOAD_KEYS: frozenset[str] = frozenset(
         "_ve_dsh_sandbox_mode",
         "_ve_dsh_approval_policy",
         "_ve_conv_base_msg_idx",
+        "_ve_synced_turn_count",
+        "_ve_base_context_tokens",
         "_ve_robin_attachments",
         "_ve_robin_uploaded_attachments",
         "_ve_robin_bard_mode_id",
+        "_ve_fork_prompt_needed",
+        "_ve_fork_candidate_conv_id",
     }
 )
 
@@ -63680,12 +65186,27 @@ def _gemini_base_payload(
     client_sid, boot_key, full_key = _dsh_conversation_keys(
         principal, messages, body=body
     )
-    session_key = full_key or boot_key
+    fork_id, fork_choice, is_immediate_fork_answer = _dsh_extract_latest_fork_decision(
+        messages
+    )
+    is_valid_fork_choice = bool(
+        fork_id and (fork_choice == "new" or fork_choice.startswith("continue"))
+    )
+    base_key = full_key or boot_key
+    session_key = (
+        f"{base_key}::fork::{fork_id}"
+        if (is_valid_fork_choice and base_key)
+        else base_key
+    )
+    if "::fork::" in session_key:
+        client_sid = session_key
     base["_ve_session_id"] = client_sid
     base["_ve_session_key"] = session_key
     base["_ve_boot_key"] = boot_key
     base["_ve_full_key"] = full_key
     base["_ve_include_thinking_field_48"] = include_f48
+    if fork_id and fork_choice == "cancelled" and is_immediate_fork_answer:
+        base["_ve_fork_cancelled"] = True
 
     dsh_policy = _dsh_extract_policy(messages)
     base["_ve_dsh_sandbox_mode"] = dsh_policy["sandbox_mode"]
@@ -63693,13 +65214,137 @@ def _gemini_base_payload(
 
     raw_tools = body.get("tools")
     is_compaction_req = _is_gemini_compaction_summary_request(messages, raw_tools)
-    cont_state, trailing_user_start_idx, _ = (
+    if is_compaction_req:
+        _robin_mark_session_compacted(messages, credential_id=credential_id, body=body)
+    cont_state, trailing_user_start_idx, needs_fork_prompt = (
         (None, 0, False)
-        if is_compaction_req
+        if (is_compaction_req or base.get("_ve_fork_cancelled"))
         else _robin_lookup_continuation(
             client_sid, messages, credential_id=credential_id, body=body
         )
     )
+    has_ask_user_tool = False
+    has_ask_user_timeout_param = False
+    if isinstance(raw_tools, list):
+        for t_item in raw_tools:
+            if not isinstance(t_item, dict):
+                continue
+            fn_obj = t_item.get("function")
+            t_name = str(
+                (fn_obj.get("name") if isinstance(fn_obj, dict) else None)
+                or t_item.get("name")
+                or ""
+            ).strip()
+            if t_name == "ask_user_question":
+                has_ask_user_tool = True
+                params_obj = (
+                    fn_obj.get("parameters")
+                    if isinstance(fn_obj, dict)
+                    else t_item.get("parameters")
+                )
+                props_obj = (
+                    params_obj.get("properties")
+                    if isinstance(params_obj, dict)
+                    else None
+                )
+                if isinstance(props_obj, dict) and "timeout" in props_obj:
+                    has_ask_user_timeout_param = True
+                break
+    if needs_fork_prompt and cont_state is not None and cont_state.conversation_id:
+        if has_ask_user_tool and not is_immediate_fork_answer:
+            base["_ve_fork_prompt_needed"] = True
+            base["_ve_fork_prompt_use_neg_timeout"] = has_ask_user_timeout_param
+            base["_ve_fork_candidate_conv_id"] = cont_state.conversation_id
+            # Collect candidate branches when multiple branches exist under this lineage and cannot be uniquely narrowed to 1
+            with _ROBIN_SESSION_STATE_LOCK:
+                _, prior_turns_cand, _ = _robin_extract_turn_anchors(messages)
+                prior_cnt_cand = len(prior_turns_cand)
+                prior_hash_cand = (
+                    _robin_compute_turns_hash(prior_turns_cand)
+                    if prior_turns_cand
+                    else ""
+                )
+                all_cands = _robin_load_lineage_sessions(
+                    full_key=full_key,
+                    boot_key=boot_key,
+                    client_sid=client_sid,
+                    principal=principal,
+                    credential_id=credential_id,
+                    effective_body=body if isinstance(body, dict) else {},
+                    messages=messages,
+                )
+                exact_comp_cands = [
+                    c
+                    for c in all_cands
+                    if c.conversation_id
+                    and c.synced_turn_count == prior_cnt_cand
+                    and c.synced_turns_hash == prior_hash_cand
+                ]
+                prompt_cands = (
+                    exact_comp_cands
+                    if len(exact_comp_cands) == 1
+                    else [c for c in all_cands if c.conversation_id]
+                )
+                seen_conv_req: set[tuple[str, str]] = set()
+                cand_specs: list[dict[str, Any]] = []
+                for c_item in prompt_cands:
+                    dedup_k = (c_item.conversation_id, c_item.parent_request_id)
+                    if dedup_k in seen_conv_req:
+                        continue
+                    seen_conv_req.add(dedup_k)
+                    cand_specs.append(
+                        {
+                            "session_key": c_item.session_key,
+                            "conversation_id": c_item.conversation_id,
+                            "parent_req_id": c_item.parent_request_id,
+                            "synced_turn_count": c_item.synced_turn_count,
+                            "title": c_item.title,
+                            "compacted": c_item.compacted,
+                        }
+                    )
+                base["_ve_fork_candidates"] = cand_specs
+            cont_state = None
+        elif not cont_state.compacted:
+            # Non-interactive test/call without `ask_user_question`: mid-conversation fork defaults to new session
+            cont_state = None
+
+    if cont_state is not None and cont_state.session_key:
+        session_key = (
+            cont_state.session_key if "::fork::" in cont_state.session_key else base_key
+        )
+    elif (
+        not is_compaction_req
+        and not base.get("_ve_fork_cancelled")
+        and not base.get("_ve_fork_prompt_needed")
+        and not is_valid_fork_choice
+        and _dsh_has_prior_turn(messages)
+    ):
+        with _ROBIN_SESSION_STATE_LOCK:
+            _, prior_turns_payload_chk, _ = _robin_extract_turn_anchors(messages)
+            lineage_cands = (
+                _robin_load_lineage_sessions(
+                    full_key=full_key,
+                    boot_key=boot_key,
+                    client_sid=client_sid,
+                    principal=principal,
+                    credential_id=credential_id,
+                    effective_body=body if isinstance(body, dict) else {},
+                    messages=messages,
+                )
+                if prior_turns_payload_chk
+                else []
+            )
+            if any(
+                c.conversation_id and c.binding_state == "committed"
+                for c in lineage_cands
+            ):
+                session_key = _robin_derive_unprompted_fork_session_key(
+                    base_key, messages, lineage_cands
+                )
+    if "::fork::" in session_key:
+        client_sid = session_key
+    base["_ve_session_id"] = client_sid
+    base["_ve_session_key"] = session_key
 
     has_remote_parent = bool(
         cont_state is not None
@@ -63716,20 +65361,9 @@ def _gemini_base_payload(
             base["_ve_robin_parent_req_id"] = cont_state.parent_request_id
         if cont_state.parent_response_id:
             base["_ve_robin_parent_resp_id"] = cont_state.parent_response_id
-        cur_ua_turns, _ = _robin_partition_dsh_messages(messages)
-        has_unsynced_prior_turns = bool(
-            has_remote_parent
-            and 0 < cont_state.synced_turn_count < len(cur_ua_turns) - 1
-            and any(
-                role == "assistant"
-                for role, _ in cur_ua_turns[cont_state.synced_turn_count : -1]
-            )
-        )
-        base["_ve_conv_base_msg_idx"] = (
-            trailing_user_start_idx
-            if has_unsynced_prior_turns
-            else cont_state.conv_base_msg_idx
-        )
+        base["_ve_conv_base_msg_idx"] = cont_state.conv_base_msg_idx
+        base["_ve_synced_turn_count"] = cont_state.synced_turn_count
+        base["_ve_base_context_tokens"] = cont_state.context_tokens
         extracted_folders = _robin_extract_connected_folders(messages, body)
         if (
             dsh_policy["sandbox_mode"] == "danger-full-access"
@@ -63743,6 +65377,8 @@ def _gemini_base_payload(
             folders = extracted_folders or list(cont_state.connected_folders)
     else:
         base["_ve_conv_base_msg_idx"] = trailing_user_start_idx
+        base["_ve_synced_turn_count"] = 0
+        base["_ve_base_context_tokens"] = 0
         folders = _robin_extract_connected_folders(messages, body)
 
     prompt_ctx = _robin_extract_dsh_prompt_context(messages)
@@ -64845,6 +66481,14 @@ class GeminiHTTPClient:
                     break
             tail_tool_outputs.reverse()
             tail_spliced_user_texts.reverse()
+            # Synthetic `call_ve_fork_*` answers are resolved directly by opening a ProcessQuery
+            # (either inheriting the parent session or starting a new branch), never via ERT.
+            is_ve_fork_tool_reply = bool(
+                tail_tool_ids
+                and all(
+                    tid.startswith(_VE_FORK_CALL_ID_PREFIX) for tid in tail_tool_ids
+                )
+            )
             # A parked run is by definition mid-answer: the client is handing back the
             # results of the tool calls this run is waiting on. Judged purely by
             # structure (roles + ids), never by matching tool-output text.
@@ -64852,66 +66496,83 @@ class GeminiHTTPClient:
             # actor owns those historical tool outputs, it is a new human turn after an
             # earlier interrupted/failed step, not an orphaned tool hop.
             is_tool_continuation = bool(
-                (bool(tail_tool_outputs) and not bool(tail_spliced_user_texts))
-                or effective_last_role == "tool"
+                not is_ve_fork_tool_reply
+                and (
+                    (bool(tail_tool_outputs) and not bool(tail_spliced_user_texts))
+                    or effective_last_role == "tool"
+                )
             )
 
             lookup_actor_keys: list[str] = [
-                k for k in (session_id, session_key, boot_key, full_key) if k
+                k
+                for k in (
+                    (session_id, session_key)
+                    if "::fork::" in session_key
+                    else (session_id, session_key, boot_key, full_key)
+                )
+                if k
             ]
             seen_actor_ids: set[int] = set()
             cand_actors: list[_RobinRunActor] = []
-            for k in lookup_actor_keys:
-                cand = _robin_peek_parked_stream(k)
-                if (
-                    cand is not None
-                    and id(cand) not in seen_actor_ids
-                    and not cand.http_session.closed
-                    and cand.run.execution_state != "TERMINAL"
-                    and not cand.unplanned_no_progress_failed
-                ):
-                    seen_actor_ids.add(id(cand))
-                    cand_actors.append(cand)
-            if not cand_actors and (tail_tool_ids or last_asst_tc_ids):
-                probe_tc_ids = tail_tool_ids | last_asst_tc_ids
-                with _ROBIN_PARKED_STREAMS_LOCK:
-                    for cand in list(_ROBIN_PARKED_STREAMS.values()):
-                        if (
-                            cand is None
-                            or id(cand) in seen_actor_ids
-                            or cand.http_session.closed
-                            or cand.run.execution_state == "TERMINAL"
-                            or cand.unplanned_no_progress_failed
-                        ):
-                            continue
-                        p_ids = {
-                            str(tc.get("id") or "").strip()
-                            for tc in (
-                                cand.pending_tool_calls
-                                or cand.decoder.pending_tool_calls
-                                or []
-                            )
-                            if isinstance(tc, dict) and str(tc.get("id") or "").strip()
-                        }
-                        by_pub = getattr(
-                            getattr(cand.run, "tool_ledger", None),
-                            "by_public_id",
-                            None,
-                        )
-                        l_ids = (
-                            set(by_pub.keys()) if isinstance(by_pub, dict) else set()
-                        )
-                        if probe_tc_ids & (p_ids | l_ids):
-                            seen_actor_ids.add(id(cand))
-                            cand_actors.append(cand)
-                            for ak in (
-                                cand.session_id,
-                                cand.session_key,
-                                cand.boot_key,
-                                cand.full_key,
+            if (
+                not is_ve_fork_tool_reply
+                and not base_payload.get("_ve_fork_prompt_needed")
+                and not base_payload.get("_ve_fork_cancelled")
+            ):
+                for k in lookup_actor_keys:
+                    cand = _robin_peek_parked_stream(k)
+                    if (
+                        cand is not None
+                        and id(cand) not in seen_actor_ids
+                        and not cand.http_session.closed
+                        and cand.run.execution_state != "TERMINAL"
+                        and not cand.unplanned_no_progress_failed
+                    ):
+                        seen_actor_ids.add(id(cand))
+                        cand_actors.append(cand)
+                if not cand_actors and (tail_tool_ids or last_asst_tc_ids):
+                    probe_tc_ids = tail_tool_ids | last_asst_tc_ids
+                    with _ROBIN_PARKED_STREAMS_LOCK:
+                        for cand in list(_ROBIN_PARKED_STREAMS.values()):
+                            if (
+                                cand is None
+                                or id(cand) in seen_actor_ids
+                                or cand.http_session.closed
+                                or cand.run.execution_state == "TERMINAL"
+                                or cand.unplanned_no_progress_failed
                             ):
-                                if ak and ak not in lookup_actor_keys:
-                                    lookup_actor_keys.append(ak)
+                                continue
+                            p_ids = {
+                                str(tc.get("id") or "").strip()
+                                for tc in (
+                                    cand.pending_tool_calls
+                                    or cand.decoder.pending_tool_calls
+                                    or []
+                                )
+                                if isinstance(tc, dict)
+                                and str(tc.get("id") or "").strip()
+                            }
+                            by_pub = getattr(
+                                getattr(cand.run, "tool_ledger", None),
+                                "by_public_id",
+                                None,
+                            )
+                            l_ids = (
+                                set(by_pub.keys())
+                                if isinstance(by_pub, dict)
+                                else set()
+                            )
+                            if probe_tc_ids & (p_ids | l_ids):
+                                seen_actor_ids.add(id(cand))
+                                cand_actors.append(cand)
+                                for ak in (
+                                    cand.session_id,
+                                    cand.session_key,
+                                    cand.boot_key,
+                                    cand.full_key,
+                                ):
+                                    if ak and ak not in lookup_actor_keys:
+                                        lookup_actor_keys.append(ak)
 
             # A live parked actor means this run is still waiting on its tool hops.
             # There is exactly one valid delivery channel for that state — the
@@ -65003,7 +66664,12 @@ class GeminiHTTPClient:
             mid_turn_compacted = _dsh_messages_has_compaction_checkpoint(
                 messages
             ) and bool(actor.boot_key and boot_key and actor.boot_key != boot_key)
-            if not mid_turn_compacted:
+            if mid_turn_compacted:
+                _robin_mark_session_compacted(
+                    actor.run.initial_messages or messages,
+                    credential_id=actor.credential_id,
+                )
+            else:
                 actor.session_id = session_id
                 actor.session_key = session_key
                 if boot_key:
@@ -65091,6 +66757,174 @@ class GeminiHTTPClient:
                 run=actor.run,
             )
         else:
+            if not is_auxiliary_req and bool(base_payload.get("_ve_fork_cancelled")):
+                _gemini_debug_log_event(
+                    session_id,
+                    "fork_choice_cancelled",
+                    {"session_key": session_key},
+                )
+                completion_id_c = f"chatcmpl-{uuid.uuid4().hex[:24]}"
+                created_c = int(time.time())
+
+                async def _fork_cancelled_sse() -> AsyncGenerator[bytes, None]:
+                    chunk_body = {
+                        "id": completion_id_c,
+                        "object": "chat.completion.chunk",
+                        "created": created_c,
+                        "model": spec.public_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {
+                                    "role": "assistant",
+                                    "content": _VE_FORK_CANCELLED_REPLY,
+                                },
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    chunk_end = {
+                        "id": completion_id_c,
+                        "object": "chat.completion.chunk",
+                        "created": created_c,
+                        "model": spec.public_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {},
+                                "finish_reason": "stop",
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(chunk_body, ensure_ascii=False)}\n\n".encode(
+                        "utf-8"
+                    )
+                    yield f"data: {json.dumps(chunk_end, ensure_ascii=False)}\n\n".encode(
+                        "utf-8"
+                    )
+                    yield b"data: [DONE]\n\n"
+
+                return _fork_cancelled_sse(), None
+
+            if not is_auxiliary_req and bool(
+                base_payload.get("_ve_fork_prompt_needed")
+            ):
+                fork_call_id = f"{_VE_FORK_CALL_ID_PREFIX}{uuid.uuid4().hex[:12]}"
+                cand_conv = str(base_payload.get("_ve_fork_candidate_conv_id") or "")
+                cand_list = base_payload.get("_ve_fork_candidates")
+                fork_options: list[dict[str, str]] = [
+                    {
+                        "label": _VE_FORK_OPTION_NEW,
+                        "description": "将前序历史作为背景开启全新的 Google 远端会话，不影响原会话历史",
+                    }
+                ]
+                if isinstance(cand_list, list) and len(cand_list) > 1:
+                    for idx_c, c_spec in enumerate(cand_list, 1):
+                        if not isinstance(c_spec, dict):
+                            continue
+                        c_sk = str(c_spec.get("session_key") or "")
+                        c_cid = str(c_spec.get("conversation_id") or "")
+                        c_cnt = int(c_spec.get("synced_turn_count") or 0) // 2
+                        c_tag = (
+                            c_sk.split("::fork::", 1)[1]
+                            if "::fork::" in c_sk
+                            else "主分支"
+                        )
+                        fork_options.append(
+                            {
+                                "label": f"{_VE_FORK_OPTION_CONTINUE} ({c_tag} · {c_cid[:10]}) [target={c_sk}]",
+                                "description": f"挂载到候选远端分支 #{idx_c} ({c_cid}，已同步 {c_cnt} 轮问答)",
+                            }
+                        )
+                else:
+                    fork_options.append(
+                        {
+                            "label": _VE_FORK_OPTION_CONTINUE,
+                            "description": "直接挂载到原远端会话继续对话，保留原远端会话的完整上下文",
+                        }
+                    )
+                fork_payload_dict: dict[str, Any] = {
+                    "questions": [
+                        {
+                            "id": _VE_FORK_QUESTION_ID,
+                            "header": "分支对话 (Fork)",
+                            "question": (
+                                f"检测到当前请求从压缩前的对话分叉（存在 {len(cand_list)} 个候选远端分支），请选择要继续的分支或新建远端会话："
+                                if (isinstance(cand_list, list) and len(cand_list) > 1)
+                                else (
+                                    f"检测到当前请求源自压缩前的对话 ({cand_conv})，请选择远端会话处理方式："
+                                    if cand_conv
+                                    else "检测到当前请求从压缩前的历史节点分叉，请选择远端会话处理方式："
+                                )
+                            ),
+                            "options": fork_options,
+                        }
+                    ]
+                }
+                if base_payload.get("_ve_fork_prompt_use_neg_timeout"):
+                    fork_payload_dict["timeout"] = -1
+                fork_args = json.dumps(fork_payload_dict, ensure_ascii=False)
+                _gemini_debug_log_event(
+                    session_id,
+                    "fork_choice_prompt",
+                    {
+                        "fork_call_id": fork_call_id,
+                        "candidate_conv_id": cand_conv,
+                    },
+                )
+                completion_id_f = f"chatcmpl-{uuid.uuid4().hex[:24]}"
+                created_f = int(time.time())
+
+                async def _fork_prompt_sse() -> AsyncGenerator[bytes, None]:
+                    chunk_tc = {
+                        "id": completion_id_f,
+                        "object": "chat.completion.chunk",
+                        "created": created_f,
+                        "model": spec.public_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {
+                                    "role": "assistant",
+                                    "tool_calls": [
+                                        {
+                                            "index": 0,
+                                            "id": fork_call_id,
+                                            "type": "function",
+                                            "function": {
+                                                "name": "ask_user_question",
+                                                "arguments": fork_args,
+                                            },
+                                        }
+                                    ],
+                                },
+                                "finish_reason": None,
+                            }
+                        ],
+                    }
+                    chunk_end = {
+                        "id": completion_id_f,
+                        "object": "chat.completion.chunk",
+                        "created": created_f,
+                        "model": spec.public_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {},
+                                "finish_reason": "tool_calls",
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(chunk_tc, ensure_ascii=False)}\n\n".encode(
+                        "utf-8"
+                    )
+                    yield f"data: {json.dumps(chunk_end, ensure_ascii=False)}\n\n".encode(
+                        "utf-8"
+                    )
+                    yield b"data: [DONE]\n\n"
+
+                return _fork_prompt_sse(), None
+
             if is_tool_continuation:
                 # The client is handing back tool results but no live parked run owns
                 # them. Opening a ProcessQuery here is what turns one model answer into
@@ -65196,6 +67030,11 @@ class GeminiHTTPClient:
                 prompt_context=prompt_context,
                 query_text=str(base_payload.get("_ve_query_text") or ""),
                 conv_base_msg_idx=int(base_payload.get("_ve_conv_base_msg_idx") or 0),
+                synced_turn_count=int(base_payload.get("_ve_synced_turn_count") or 0),
+                base_context_tokens=int(
+                    base_payload.get("_ve_base_context_tokens") or 0
+                ),
+                initial_messages=list(messages),
                 submission_state="SENT",
                 execution_state="RUNNING",
                 attachment_state="STREAMING",
@@ -65218,6 +67057,8 @@ class GeminiHTTPClient:
             ),
             is_tool_continuation=(actor is not None),
             conv_base_msg_idx=run.conv_base_msg_idx,
+            synced_turn_count=run.synced_turn_count,
+            base_context_tokens=run.base_context_tokens,
             tools=run.dsh_tools,
         )
         if actor is not None and not mid_turn_compacted and run.max_prompt_tokens > 0:
@@ -65250,9 +67091,12 @@ class GeminiHTTPClient:
 
         if actor is None:
             if not is_auxiliary_req:
-                stale_actor = _robin_pop_parked_stream(
-                    session_id, session_key, boot_key, full_key
+                pop_keys = (
+                    (session_id, session_key)
+                    if "::fork::" in session_key
+                    else (session_id, session_key, boot_key, full_key)
                 )
+                stale_actor = _robin_pop_parked_stream(*pop_keys)
                 if stale_actor is not None:
                     _robin_release_parked_stream_sync(stale_actor)
             actor = _RobinRunActor(
@@ -65301,6 +67145,7 @@ class GeminiHTTPClient:
             normal_completion_or_handoff = False
             incomplete_remote_turn = False
             upstream_failed = False
+            upstream_error_msg = ""
             provisional_stored = False
             provisional_resp_stored = False
             delivered_tool_ids: set[str] = set()
@@ -65337,7 +67182,19 @@ class GeminiHTTPClient:
                     kind, item = await mux_q.get()
                     if kind == "pq":
                         assert isinstance(item, bytes)
-                        chunks = decoder.feed_bytes(item)
+                        try:
+                            chunks = decoder.feed_bytes(item)
+                        except GeminiStreamError as pq_decode_exc:
+                            upstream_failed = True
+                            upstream_error_msg = (
+                                str(pq_decode_exc) or "Gemini stream error"
+                            )
+                            run.execution_state = "TERMINAL"
+                            run.outcome_state = "FAILED"
+                            run.attachment_state = "CLOSED"
+                            run.finalization_state = "CLOSED"
+                            _GEMINI_DSH_STORE.save_run(run)
+                            break
                         actor.conversation_id = decoder.conversation_id
                         actor.request_id = decoder.request_id
                         actor.response_id = decoder.response_id
@@ -65433,7 +67290,19 @@ class GeminiHTTPClient:
                                     coalesce_deadline = time.monotonic() + coalesce_sec
                                 elif nxt_kind == "pq":
                                     assert isinstance(nxt_item, bytes)
-                                    nxt_chunks = decoder.feed_bytes(nxt_item)
+                                    try:
+                                        nxt_chunks = decoder.feed_bytes(nxt_item)
+                                    except GeminiStreamError as pq_decode_exc2:
+                                        upstream_failed = True
+                                        upstream_error_msg = (
+                                            str(pq_decode_exc2) or "Gemini stream error"
+                                        )
+                                        run.execution_state = "TERMINAL"
+                                        run.outcome_state = "FAILED"
+                                        run.attachment_state = "CLOSED"
+                                        run.finalization_state = "CLOSED"
+                                        _GEMINI_DSH_STORE.save_run(run)
+                                        break
                                     if decoder.conversation_id:
                                         await actor.ensure_ert_and_presence(
                                             decoder.conversation_id
@@ -65450,6 +67319,8 @@ class GeminiHTTPClient:
                                 else:
                                     mux_q.put_nowait((nxt_kind, nxt_item))
                                     break
+                            if upstream_failed:
+                                break
                         if _handoff_ready():
                             normal_completion_or_handoff = True
                             break
@@ -65460,8 +67331,14 @@ class GeminiHTTPClient:
                             or "requested turn to resume" in err_low
                             or getattr(actor, "resume_turn_already_finished", False)
                         )
+                        is_terminal_quota_or_downgrade = (
+                            "quota" in err_low
+                            or "exhausted" in err_low
+                            or "downgraded by server" in err_low
+                        )
                         if (
-                            not decoder.is_completed
+                            not is_terminal_quota_or_downgrade
+                            and not decoder.is_completed
                             and decoder.conversation_id
                             and decoder.request_id
                         ):
@@ -65511,15 +67388,20 @@ class GeminiHTTPClient:
                             if decoder.is_completed:
                                 normal_completion_or_handoff = True
                                 break
-                        if decoder.pending_tool_calls and not _handoff_ready():
+                        if (
+                            not is_terminal_quota_or_downgrade
+                            and decoder.pending_tool_calls
+                            and not _handoff_ready()
+                        ):
                             incomplete_remote_turn = True
                             break
                         upstream_failed = True
+                        upstream_error_msg = str(item) or "Gemini stream error"
                         run.execution_state = "TERMINAL"
                         run.outcome_state = "FAILED"
+                        run.attachment_state = "CLOSED"
+                        run.finalization_state = "CLOSED"
                         _GEMINI_DSH_STORE.save_run(run)
-                        if isinstance(item, BaseException):
-                            raise item
                         break
                     elif kind == "pq_eof":
                         if (
@@ -65617,39 +67499,121 @@ class GeminiHTTPClient:
                         run.finalization_state = "CLOSED"
                         if (
                             not is_auxiliary_req
-                            and not mid_turn_compacted
                             and decoder.conversation_id
                             and decoder.request_id
                             and decoder.response_id
                         ):
+                            delivered_final_answer = (
+                                decoder.emitted_answer_text.strip()
+                                or _robin_strip_action_card_markers(
+                                    run.answer_projector.committed_text
+                                )[0].strip()
+                            )
                             first_a_override = ""
                             if not _dsh_has_prior_turn(messages):
                                 first_a_override = re.sub(
                                     r"\s+",
                                     " ",
-                                    run.answer_projector.committed_text,
+                                    delivered_final_answer,
                                 ).strip()
-                            _robin_store_continuation(
-                                session_id,
-                                messages,
-                                decoder.conversation_id,
-                                decoder.request_id,
-                                decoder.response_id,
-                                credential_id=actor.credential_id,
-                                connected_folders=run.tool_ledger.connected_folders,
-                                title=(
-                                    ""
-                                    if _dsh_title_is_provisional(
-                                        decoder.conversation_title, run.query_text
-                                    )
-                                    else decoder.conversation_title
-                                ),
-                                first_assistant_override=first_a_override,
-                                binding_state="committed",
-                                parent_conv_id=run.parent_conv_id,
-                                committed_answer=run.answer_projector.committed_text.strip(),
-                                conv_base_msg_idx=run.conv_base_msg_idx,
+                            run_tools_tok = 0
+                            if run.dsh_tools:
+                                try:
+                                    run_tools_tok = (
+                                        len(
+                                            json.dumps(
+                                                list(run.dsh_tools), ensure_ascii=False
+                                            )
+                                        )
+                                        + 3
+                                    ) // 4 + 4
+                                except Exception:
+                                    run_tools_tok = 0
+                            run_pctx_tok = (
+                                _robin_estimate_tokens(run.prompt_context)
+                                if run.prompt_context.strip()
+                                else 0
                             )
+                            run_sys_and_tools_tok = run_pctx_tok + run_tools_tok
+                            committed_ctx_tokens = max(
+                                1,
+                                max(0, decoder.prompt_tokens - run_sys_and_tools_tok)
+                                + decoder.estimated_completion_tokens(),
+                            )
+                            if mid_turn_compacted:
+                                # Mid-turn compaction occurred during this turn:
+                                # - Never overwrite the pre-compaction session with post-compaction `messages`
+                                #   (which contain `<compacted-summary>`) and never reset `compacted=False`!
+                                # - If compaction occurred during Turn 1 (`not _dsh_has_prior_turn(run.initial_messages)`),
+                                #   commit Turn 1 using `run.initial_messages` + `delivered_final_answer` (`synced_turn_count=2`)
+                                #   and immediately mark it `compacted=True`; otherwise keep the pre-compaction session's
+                                #   committed `2K` turns (`[(U_1, A_1), ..., (U_K, A_K)]`) and `compacted=True` frozen.
+                                init_msgs = list(run.initial_messages or [])
+                                if init_msgs and not _dsh_has_prior_turn(init_msgs):
+                                    init_first_a = re.sub(
+                                        r"\s+", " ", delivered_final_answer
+                                    ).strip()
+                                    _robin_store_continuation(
+                                        run.session_key or session_id,
+                                        init_msgs,
+                                        decoder.conversation_id,
+                                        decoder.request_id,
+                                        decoder.response_id,
+                                        credential_id=actor.credential_id,
+                                        connected_folders=run.tool_ledger.connected_folders,
+                                        title=(
+                                            ""
+                                            if _dsh_title_is_provisional(
+                                                decoder.conversation_title,
+                                                run.query_text,
+                                            )
+                                            else decoder.conversation_title
+                                        ),
+                                        first_assistant_override=init_first_a,
+                                        binding_state="committed",
+                                        parent_conv_id=run.parent_conv_id,
+                                        committed_answer=delivered_final_answer,
+                                        conv_base_msg_idx=run.conv_base_msg_idx,
+                                        context_tokens=committed_ctx_tokens,
+                                    )
+                                    _robin_mark_session_compacted(
+                                        [
+                                            *init_msgs,
+                                            {
+                                                "role": "assistant",
+                                                "content": delivered_final_answer,
+                                            },
+                                        ],
+                                        credential_id=actor.credential_id,
+                                    )
+                                elif init_msgs:
+                                    _robin_mark_session_compacted(
+                                        init_msgs,
+                                        credential_id=actor.credential_id,
+                                    )
+                            else:
+                                _robin_store_continuation(
+                                    session_id,
+                                    messages,
+                                    decoder.conversation_id,
+                                    decoder.request_id,
+                                    decoder.response_id,
+                                    credential_id=actor.credential_id,
+                                    connected_folders=run.tool_ledger.connected_folders,
+                                    title=(
+                                        ""
+                                        if _dsh_title_is_provisional(
+                                            decoder.conversation_title, run.query_text
+                                        )
+                                        else decoder.conversation_title
+                                    ),
+                                    first_assistant_override=first_a_override,
+                                    binding_state="committed",
+                                    parent_conv_id=run.parent_conv_id,
+                                    committed_answer=delivered_final_answer,
+                                    conv_base_msg_idx=run.conv_base_msg_idx,
+                                    context_tokens=committed_ctx_tokens,
+                                )
                     _GEMINI_DSH_STORE.save_run(run)
                     for final_chunk in decoder.finalize():
                         yield f"data: {json.dumps(final_chunk, ensure_ascii=False)}\n\n".encode(
@@ -65712,6 +67676,91 @@ class GeminiHTTPClient:
                         + json.dumps(message, ensure_ascii=False)
                         + ', "type": "gemini_task_incomplete", "code": "'
                         + code
+                        + '"}}\n\n'
+                    ).encode("utf-8")
+                    yield b"data: [DONE]\n\n"
+                elif upstream_failed:
+                    if (
+                        provisional_stored
+                        and not is_auxiliary_req
+                        and not mid_turn_compacted
+                        and run.parent_conv_id
+                        and run.parent_req_id
+                    ):
+                        # Roll back any provisional parent_req_id written during this failed turn
+                        # so the session's prior committed parent remains intact.
+                        prior_msgs = (
+                            messages[: _robin_trailing_user_start_index(messages)]
+                            if _robin_trailing_user_start_index(messages) > 0
+                            else messages
+                        )
+                        _robin_store_continuation(
+                            session_id,
+                            prior_msgs,
+                            run.parent_conv_id,
+                            run.parent_req_id,
+                            run.parent_resp_id,
+                            credential_id=actor.credential_id,
+                            connected_folders=run.tool_ledger.connected_folders,
+                            binding_state="committed",
+                            parent_conv_id=run.parent_conv_id,
+                            conv_base_msg_idx=run.conv_base_msg_idx,
+                            context_tokens=run.base_context_tokens,
+                        )
+                    err_raw = (
+                        upstream_error_msg or "Gemini upstream stream error"
+                    ).strip()
+                    err_low = err_raw.lower()
+                    _gemini_debug_log_event(
+                        session_id,
+                        "pq_stream_error",
+                        {
+                            "conversation_id": decoder.conversation_id
+                            or run.parent_conv_id,
+                            "request_id": decoder.request_id,
+                            "error": err_raw,
+                        },
+                    )
+                    if (
+                        "quota" in err_low
+                        or "exhausted" in err_low
+                        or "downgraded by server" in err_low
+                    ):
+                        err_type = "gemini_quota_exhausted"
+                        err_code = "quota_exhausted"
+                        if (
+                            "quota exhausted" not in err_low
+                            and "quota exceeded" not in err_low
+                            and "insufficient quota" not in err_low
+                        ):
+                            sse_msg = f"{err_raw} (quota exhausted)"
+                        else:
+                            sse_msg = err_raw
+                    else:
+                        err_type = "gemini_stream_error"
+                        err_code = "stream_error"
+                        # Sanitize transient transport/timeout keywords so DSH's `classifyPiAiError`
+                        # maps this terminal Robin failure to non-retryable `PI_AI_ERROR` instead of
+                        # spinning through 5 automatic transport/timeout retries.
+                        sse_msg = re.sub(
+                            r"\btime(?:d)?\s*out\b|\btimeout\b",
+                            "stalled",
+                            err_raw,
+                            flags=re.IGNORECASE,
+                        )
+                        sse_msg = re.sub(
+                            r"\b(?:network|connection|socket|fetch|terminated|premature close)\b",
+                            "channel",
+                            sse_msg,
+                            flags=re.IGNORECASE,
+                        )
+                    yield (
+                        'data: {"error": {"message": '
+                        + json.dumps(sse_msg, ensure_ascii=False)
+                        + ', "type": "'
+                        + err_type
+                        + '", "code": "'
+                        + err_code
                         + '"}}\n\n'
                     ).encode("utf-8")
                     yield b"data: [DONE]\n\n"
@@ -65824,6 +67873,11 @@ class GeminiHTTPClient:
                     chunk = json.loads(payload_str)
                 except json.JSONDecodeError:
                     continue
+                if isinstance(chunk.get("error"), dict):
+                    err_obj = chunk["error"]
+                    err_str = str(err_obj.get("message") or "").lower()
+                    status_c = 429 if "quota" in err_str else 502
+                    return JSONResponse({"error": err_obj}, status_code=status_c)
                 if chunk.get("id"):
                     completion_id = str(chunk["id"])
                 if chunk.get("created"):
@@ -79428,6 +81482,160 @@ def test_robin_long_running_tool_background_and_command_status():
 
     asyncio.run(_verify_post_tool_ert_resend_and_timeout())
 
+    # 2c) When ProcessQuery announces an in-progress client tool item (raw_status=1) in
+    # `live_states_raw` (.1003.1.6) while `ProcessQuery` stays open, if the current ERT
+    # stream is stale on the backend and does not deliver the tool call within 2.0s,
+    # `_ert_driver_loop` must proactively reconnect ERT (`ert_wakeup_reconnect`) and
+    # receive the pending tool call well before the 30s server wake-up timeout.
+    async def _verify_ert_wakeup_reconnect_on_pq_tool_deficit() -> None:
+        class _WakeupDummyMux:
+            conn = None
+
+            def __init__(self) -> None:
+                self.released_streams: list[int] = []
+
+            async def release_stream(
+                self, stream_id: int, *, reset: bool = False
+            ) -> None:
+                self.released_streams.append(stream_id)
+
+        wk_mux = _WakeupDummyMux()
+        stale_st = _RobinHTTP2StreamState(
+            stream_id=91,
+            status=200,
+            headers={":status": "200"},
+            queue=asyncio.Queue(),
+            headers_ready=asyncio.get_running_loop().create_future(),
+            ended_event=asyncio.Event(),
+        )
+        stale_ert_resp = _RobinMuxResponse(cast(Any, wk_mux), stale_st)
+        stale_ert_resp.keep_open = True
+        stale_ert_iter = stale_ert_resp.content.iter_any()
+
+        fresh_st = _RobinHTTP2StreamState(
+            stream_id=93,
+            status=200,
+            headers={":status": "200"},
+            queue=asyncio.Queue(),
+            headers_ready=asyncio.get_running_loop().create_future(),
+            ended_event=asyncio.Event(),
+        )
+        # Build a synthetic ExecuteRemoteToolsResponse carrying client:view_file
+        arg_entry = _pb_bytes_field(1, b"AbsolutePath") + _pb_bytes_field(
+            2, _pb_bytes_field(3, f"{_SELFTEST_WORKSPACE}/sample.py".encode("utf-8"))
+        )
+        fc_pb = (
+            _pb_bytes_field(1, b"client:view_file")
+            + _pb_bytes_field(2, b"call_wakeup_selftest_1")
+            + _pb_bytes_field(3, _pb_bytes_field(1, arg_entry))
+        )
+        ert_call_resp_pb = _pb_bytes_field(2, _pb_bytes_field(1, fc_pb))
+        fresh_st.queue.put_nowait(_robin_pack_grpc_frames([ert_call_resp_pb]))
+        fresh_ert_resp = _RobinMuxResponse(cast(Any, wk_mux), fresh_st)
+        fresh_ert_resp.keep_open = True
+
+        wk_run = _RobinRunState(
+            run_id="run_wk_test",
+            session_key="wk_key",
+            client_session_id="wk_key",
+            principal_id="p",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            conversation_id="c_wk_conv",
+            request_id="r_wk_req",
+        )
+        wk_run.tool_ledger = _RobinToolLedger(
+            "run_wk_test", tools, connected_folders=[_SELFTEST_WORKSPACE]
+        )
+        wk_dec = _RobinStreamDecoder(
+            "chatcmpl-wk", 0, "gemini:gemini-4-argon", run=wk_run
+        )
+        # Feed a ProcessQuery frame announcing an in-progress client tool (raw_status=1)
+        tool_ns_pb = _pb_bytes_field(1, b"client") + _pb_bytes_field(2, b"execute_mcp")
+        tool_item_pb = (
+            _pb_bytes_field(1, b"Reading sample.py")
+            + _pb_varint_field(4, 1)
+            + _pb_bytes_field(8, _pb_bytes_field(1, tool_ns_pb))
+            + _pb_bytes_field(10, b"call_wakeup_selftest_1")
+        )
+        live_state_pb = _pb_bytes_field(13, _pb_bytes_field(1, tool_item_pb))
+        ext1003_inner = (
+            _pb_bytes_field(
+                2,
+                _pb_bytes_field(1, b"c_wk_conv") + _pb_bytes_field(2, b"r_wk_req"),
+            )
+            + _pb_bytes_field(4, _pb_bytes_field(1, b"rc_wk_resp"))
+            + _pb_bytes_field(6, live_state_pb)
+        )
+        pq_announce_frame = _pb_bytes_field(1003, _pb_bytes_field(1, ext1003_inner))
+        wk_dec.feed_pq_frame(pq_announce_frame)
+        assert "call_wakeup_selftest_1" in wk_dec.announced_client_tool_ids
+        assert wk_dec.step_ert_received_any is False
+        # Backdate timestamps by 2.1s so the 2.0s deficit watchdog triggers on the first iteration
+        wk_dec.step_unmatched_pq_tool_monotonic = time.monotonic() - 2.1
+
+        class _FakeCustomSession:
+            closed = False
+
+            def __init__(self) -> None:
+                self.ert_connect_calls = 0
+
+            async def post(
+                self, url: str, data: Any = None, headers: Any = None, **kw: Any
+            ) -> Any:
+                if url == GEMINI_ROBIN_EXECUTE_REMOTE_TOOLS_URL:
+                    self.ert_connect_calls += 1
+                    return fresh_ert_resp
+                dummy_resp = type(
+                    "DummyResp",
+                    (),
+                    {"status": 200, "release": lambda self: None},
+                )
+                return dummy_resp()
+
+        fake_sess = _FakeCustomSession()
+        wk_actor = _RobinRunActor(
+            session_id="wk_key",
+            session_key="wk_key",
+            boot_key="wk_key",
+            full_key="",
+            http_session=cast(Any, fake_sess),
+            response=stale_ert_resp,
+            iterator=None,
+            decoder=wk_dec,
+            run=wk_run,
+            conversation_id="c_wk_conv",
+            access_token="tok_wk_selftest",
+            ert_response=stale_ert_resp,
+            ert_iterator=stale_ert_iter,
+        )
+        wk_actor.ert_opened_monotonic = time.monotonic() - 2.5
+        wk_task = asyncio.create_task(wk_actor._ert_driver_loop(stale_ert_iter))
+        try:
+            q_item = await asyncio.wait_for(wk_actor.mux_queue.get(), timeout=1.5)
+            assert q_item[0] == "ert_chunks"
+            assert fake_sess.ert_connect_calls == 1
+            assert 91 in wk_mux.released_streams
+            assert wk_dec.step_ert_received_any is True
+            assert wk_dec.step_ert_wakeup_done is True
+            assert wk_dec.step_unmatched_pq_tool_monotonic == 0.0
+            assert len(wk_dec.pending_tool_calls) == 1
+            assert wk_dec.pending_tool_calls[0]["name"] == "read"
+        finally:
+            wk_run.execution_state = "TERMINAL"
+            wk_task.cancel()
+            try:
+                await wk_task
+            except asyncio.CancelledError:
+                pass
+
+    orig_save_wk = _GEMINI_DSH_STORE.save_run
+    cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+    try:
+        asyncio.run(_verify_ert_wakeup_reconnect_on_pq_tool_deficit())
+    finally:
+        cast(Any, _GEMINI_DSH_STORE).save_run = orig_save_wk
+
     # 3) Layer 3: DSH background job notices (including summaries with nested `)`) never
     # pollute first-turn boot_key, while a human question mentioning a known jobId is preserved.
     u_id, _ = _dsh_extract_first_turn_identity(
@@ -82814,10 +85022,36 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     )
     assert rebuilt_c_tok == 0
 
-    # Commit Turn 2 on Account B (`c_acc_b`)
+    # Commit Turn 2 on Account B (`c_acc_b`) with its own heavy tool output (~12k tokens)
+    huge_b_tool_output = (
+        "ACCT_B_TOOL_LINE_0123456\n" * 1920
+    )  # ~48k chars -> ~12k tokens
+    turn2_b_msgs = [
+        *forked_switch_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_b_heavy",
+                    "type": "function",
+                    "function": {
+                        "name": "read",
+                        "arguments": '{"file_path":"other.py"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_b_heavy",
+            "name": "read",
+            "content": huge_b_tool_output,
+        },
+    ]
     _robin_store_continuation(
         str(base_b["_ve_session_id"]),
-        forked_switch_msgs,
+        turn2_b_msgs,
         "c_acc_b",
         "r_b_2",
         "rc_b_2",
@@ -82828,10 +85062,13 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     )
 
     # Now switch BACK to Account A on Turn 3: Account A (`c_wire_conv`) was at `synced_turn_count == 2`
-    # (only Turn 1), so `_gemini_base_payload` must reuse `c_wire_conv` AND include the missing Turn 2
-    # (`在账号 B 上继续第二轮开发` + `账号 B 第二轮已完成。`) in `_ve_query_text`!
+    # (only Turn 1, where `huge_old_tool_output` ~25k tokens was executed on `c_wire_conv`), so:
+    # 1. `_gemini_base_payload` must reuse `c_wire_conv` with `conv_base_msg_idx == 0` (NOT overwritten to 8!);
+    # 2. `_ve_query_text` must include the missing Turn 2 (`在账号 B 上继续第二轮开发` + `账号 B 第二轮已完成。`);
+    # 3. `back_a_p_tok` must preserve Account A's old session context (~25k tokens) + bridged Turn 2 plain text
+    #    + Turn 3 query, while excluding Account B's `huge_b_tool_output` (~12k tokens)!
     switch_back_a_msgs = [
-        *forked_switch_msgs,
+        *turn2_b_msgs,
         {"role": "assistant", "content": "账号 B 第二轮已完成。"},
         {"role": "user", "content": "切回账号 A 执行第三轮"},
     ]
@@ -82843,7 +85080,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     )
     assert base_back_a.get("_ve_robin_conv_id") == "c_wire_conv"
     assert base_back_a.get("_ve_robin_parent_req_id") == "r_wire_99"
-    assert int(base_back_a.get("_ve_conv_base_msg_idx") or 0) == 6
+    assert int(base_back_a.get("_ve_conv_base_msg_idx") or 0) == 0
+    assert int(base_back_a.get("_ve_synced_turn_count") or 0) == 2
+    assert int(base_back_a.get("_ve_base_context_tokens") or 0) > 25000
     assert (
         base_back_a["_ve_query_text"]
         == "User: 在账号 B 上继续第二轮开发\n\nAssistant: 账号 B 第二轮已完成。\n\n切回账号 A 执行第三轮"
@@ -82855,11 +85094,57 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         has_remote_parent=True,
         is_tool_continuation=False,
         conv_base_msg_idx=int(base_back_a["_ve_conv_base_msg_idx"]),
+        synced_turn_count=int(base_back_a.get("_ve_synced_turn_count") or 0),
+        base_context_tokens=int(base_back_a.get("_ve_base_context_tokens") or 0),
     )
-    assert back_a_p_tok < 250, (
-        f"expected bridged Account A prompt_tokens < 250, got {back_a_p_tok}"
+    assert 25000 < back_a_p_tok < 26000, (
+        f"expected Account A old session (~25k) + bridged Turn 2 text, got {back_a_p_tok}"
     )
-    assert back_a_c_tok > 0
+    assert back_a_c_tok > 25000
+
+    # Commit Turn 3 on Account A (`c_wire_conv`), then switch BACK to Account B (`c_acc_b`) on Turn 4:
+    # Account B (`c_acc_b`) must preserve its own old session context (~12k tokens from Turn 2) + bridged Turn 3
+    # plain text + Turn 4 query, while excluding Account A's ~25k Turn 1 tool output!
+    _robin_store_continuation(
+        str(base_back_a["_ve_session_id"]),
+        switch_back_a_msgs,
+        "c_wire_conv",
+        "r_a_3",
+        "rc_a_3",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="committed",
+        committed_answer="账号 A 第三轮已完成。",
+        conv_base_msg_idx=int(base_back_a["_ve_conv_base_msg_idx"]),
+    )
+    switch_back_b_msgs = [
+        *switch_back_a_msgs,
+        {"role": "assistant", "content": "账号 A 第三轮已完成。"},
+        {"role": "user", "content": "再次切回账号 B 执行第四轮"},
+    ]
+    base_back_b = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        switch_back_b_msgs,
+        credential_id=fake_cred_b.credential_id,
+    )
+    assert base_back_b.get("_ve_robin_conv_id") == "c_acc_b"
+    assert int(base_back_b.get("_ve_conv_base_msg_idx") or 0) == 4
+    assert int(base_back_b.get("_ve_synced_turn_count") or 0) == 4
+    assert 12000 < int(base_back_b.get("_ve_base_context_tokens") or 0) < 13000
+    back_b_p_tok, back_b_c_tok = _robin_estimate_session_usage(
+        switch_back_b_msgs,
+        str(base_back_b.get("_ve_robin_prompt_context") or ""),
+        str(base_back_b.get("_ve_query_text") or ""),
+        has_remote_parent=True,
+        is_tool_continuation=False,
+        conv_base_msg_idx=int(base_back_b["_ve_conv_base_msg_idx"]),
+        synced_turn_count=int(base_back_b.get("_ve_synced_turn_count") or 0),
+        base_context_tokens=int(base_back_b.get("_ve_base_context_tokens") or 0),
+    )
+    assert 12000 < back_b_p_tok < 13000, (
+        f"expected Account B old session (~12k) + bridged Turn 3 text, got {back_b_p_tok}"
+    )
+    assert back_b_c_tok > 12000
 
     # Verify ERT-aligned tool output estimation and prune invariance:
     # - `bash` output is capped at `GEMINI_ROBIN_COMMAND_OUTPUT_MAX_CHARS` (10,000 chars -> 2,500 tokens);
@@ -82919,24 +85204,113 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         committed_answer="账号 A 第三轮已完成。",
     )
 
-    # Now fork from Turn 1 on Account A (`prior_turns` has length 2 < `synced_turn_count == 6`):
-    # `_robin_lookup_continuation` must detect the branch divergence and NOT reuse `(c_wire_conv, r_a_3, rc_a_3)`!
+    # Now fork from Turn 1 on Account A while `c_wire_conv` has NOT been compacted (`compacted == False`,
+    # `prior_turns` has length 2 < `synced_turn_count == 6`):
+    # - Even when `ask_user_question` is in `tools`, an uncompacted fork must NOT pop up `ask_user_question`
+    #   (`_ve_fork_prompt_needed` is False/None) and must automatically start a new conversation (`_ve_robin_conv_id == ""`);
+    # - It marks the fork under `f"{full_key}::fork::br_<12hex>"` and distinguishes multiple forks (`Fork 1`, `Fork 2`, and `Main`)!
+    uncomp_ask_tools = [{"type": "function", "function": {"name": "ask_user_question"}}]
     branched_from_t1_msgs = [
         {"role": "user", "content": "请总结修改内容"},
         {"role": "assistant", "content": "最终完整答复内容。"},
-        {"role": "user", "content": "从第一轮分叉出的新方向"},
+        {"role": "user", "content": "从第一轮分叉出的新方向 A"},
     ]
     base_branched = _gemini_base_payload(
         spec,
-        {"model": spec.public_id, "stream": True},
+        {"model": spec.public_id, "stream": True, "tools": uncomp_ask_tools},
         branched_from_t1_msgs,
         credential_id=fake_cred_a.credential_id,
     )
+    assert not base_branched.get("_ve_fork_prompt_needed")
     assert base_branched.get("_ve_robin_conv_id", "") == ""
+    fork1_sk = str(base_branched.get("_ve_session_key") or "")
+    assert "::fork::br_" in fork1_sk
     assert (
         base_branched["_ve_query_text"]
-        == "User: 请总结修改内容\n\nAssistant: 最终完整答复内容。\n\n从第一轮分叉出的新方向"
+        == "User: 请总结修改内容\n\nAssistant: 最终完整答复内容。\n\n从第一轮分叉出的新方向 A"
     )
+    _robin_store_continuation(
+        str(base_branched["_ve_session_id"]),
+        branched_from_t1_msgs,
+        "c_uncomp_fork_1",
+        "r_uf1_1",
+        "rc_uf1_1",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="committed",
+        committed_answer="分叉 A 的第二轮回答。",
+    )
+    # Fork a SECOND time (`Fork 2`) from Turn 1 before compaction: gets a distinct `::fork::br_` key
+    branched_from_t1_msgs_b = [
+        {"role": "user", "content": "请总结修改内容"},
+        {"role": "assistant", "content": "最终完整答复内容。"},
+        {"role": "user", "content": "从第一轮分叉出的新方向 B"},
+    ]
+    base_branched_b = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": uncomp_ask_tools},
+        branched_from_t1_msgs_b,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert not base_branched_b.get("_ve_fork_prompt_needed")
+    assert base_branched_b.get("_ve_robin_conv_id", "") == ""
+    fork2_sk = str(base_branched_b.get("_ve_session_key") or "")
+    assert "::fork::br_" in fork2_sk and fork2_sk != fork1_sk
+    _robin_store_continuation(
+        str(base_branched_b["_ve_session_id"]),
+        branched_from_t1_msgs_b,
+        "c_uncomp_fork_2",
+        "r_uf2_1",
+        "rc_uf2_1",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="committed",
+        committed_answer="分叉 B 的第二轮回答。",
+    )
+    # Continuing `Fork 1` on Turn 3 resolves `c_uncomp_fork_1` (`fork1_sk`), while `Fork 2` resolves `c_uncomp_fork_2` (`fork2_sk`),
+    # and `Main` still resolves `c_wire_conv`!
+    fork1_turn3_msgs = [
+        *branched_from_t1_msgs,
+        {"role": "assistant", "content": "分叉 A 的第二轮回答。"},
+        {"role": "user", "content": "继续分叉 A 的第三轮"},
+    ]
+    base_fork1_t3 = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": uncomp_ask_tools},
+        fork1_turn3_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_fork1_t3.get("_ve_session_key") == fork1_sk
+    assert base_fork1_t3.get("_ve_robin_conv_id") == "c_uncomp_fork_1"
+    assert base_fork1_t3.get("_ve_robin_parent_req_id") == "r_uf1_1"
+
+    fork2_turn3_msgs = [
+        *branched_from_t1_msgs_b,
+        {"role": "assistant", "content": "分叉 B 的第二轮回答。"},
+        {"role": "user", "content": "继续分叉 B 的第三轮"},
+    ]
+    base_fork2_t3 = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": uncomp_ask_tools},
+        fork2_turn3_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_fork2_t3.get("_ve_session_key") == fork2_sk
+    assert base_fork2_t3.get("_ve_robin_conv_id") == "c_uncomp_fork_2"
+    assert base_fork2_t3.get("_ve_robin_parent_req_id") == "r_uf2_1"
+
+    main_turn4_msgs = [
+        *switch_back_a_msgs,
+        {"role": "assistant", "content": "账号 A 第三轮已完成。"},
+        {"role": "user", "content": "主分支继续第四轮"},
+    ]
+    base_main_t4 = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": uncomp_ask_tools},
+        main_turn4_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert "::fork::" not in str(base_main_t4.get("_ve_session_key") or "")
+    assert base_main_t4.get("_ve_robin_conv_id") == "c_wire_conv"
+    assert base_main_t4.get("_ve_robin_parent_req_id") == "r_a_3"
 
     # 5. DSH mid-turn / multi-turn Compaction Isolation, Post-Compaction New Session, & Pre-Compaction Fork:
     #    - Compaction summary request (`is_compaction_request=True`) strips `tools` and `conv_id`,
@@ -83053,19 +85427,325 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         base_post_comp.get("_ve_query_text") or ""
     )
 
-    # Forking from pre-compaction history (`pre_comp_msgs`) must STILL find `c_wire_conv` without divergence!
+    # When `ask_user_question` is declared in `tools`, forking from Turn 1 or from pre-compaction
+    # history sets `_ve_fork_prompt_needed = True` so `chat_stream` emits a synthetic `ask_user_question`
+    # tool call (`call_ve_fork_*`), and answering it with "新建独立远端会话" vs "继续原远端会话"
+    # isolates each branch under `f"{full_key}::fork::{fork_call_id}"` without overwriting `c_wire_conv`!
+    ask_user_tool_decl = [
+        {"type": "function", "function": {"name": "ask_user_question"}}
+    ]
+    turn1_fork_msgs = [
+        *pre_comp_msgs[:2],
+        {"role": "user", "content": "从第一轮分叉测试另一个问题"},
+    ]
+    base_t1_fork_prompt = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": ask_user_tool_decl},
+        turn1_fork_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_t1_fork_prompt.get("_ve_fork_prompt_needed") is True
+    assert base_t1_fork_prompt.get("_ve_fork_candidate_conv_id") == "c_wire_conv"
+    assert base_t1_fork_prompt.get("_ve_robin_conv_id", "") == ""
+
+    # User chooses "新建独立远端会话" on the Turn 1 fork (`call_ve_fork_t1new01`):
+    turn1_fork_new_msgs = [
+        *turn1_fork_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_ve_fork_t1new01",
+                    "type": "function",
+                    "function": {
+                        "name": "ask_user_question",
+                        "arguments": '{"questions":[{"id":"ve_fork_action"}]}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_ve_fork_t1new01",
+            "name": "ask_user_question",
+            "content": '{"answers":[{"id":"ve_fork_action","selected":["新建独立远端会话"]}]}',
+        },
+    ]
+    base_t1_fork_new = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": ask_user_tool_decl},
+        turn1_fork_new_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert not base_t1_fork_new.get("_ve_fork_prompt_needed")
+    assert base_t1_fork_new.get("_ve_robin_conv_id", "") == ""
+    assert "::fork::call_ve_fork_t1new01" in str(
+        base_t1_fork_new.get("_ve_session_key") or ""
+    )
+    _robin_store_continuation(
+        str(base_t1_fork_new["_ve_session_id"]),
+        turn1_fork_new_msgs,
+        "c_turn1_branch",
+        "r_t1_fork",
+        "rc_t1_fork",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="committed",
+        committed_answer="第一轮分叉的回答",
+    )
+
+    # Now fork from pre-compaction history (`pre_comp_msgs`):
+    # 1) With `ask_user_question` in `tools`, it prompts the user first (`_ve_fork_prompt_needed=True`),
+    #    and when the user selects "继续原远端会话", it resumes `(c_wire_conv, r_pre_comp, rc_pre_comp)`!
     fork_pre_comp_msgs = [
         *pre_comp_msgs,
         {"role": "user", "content": "从压缩前的历史分叉继续"},
     ]
-    base_fork_pre = _gemini_base_payload(
+    base_fork_pre_prompt = _gemini_base_payload(
         spec,
-        {"model": spec.public_id, "stream": True},
+        {"model": spec.public_id, "stream": True, "tools": ask_user_tool_decl},
         fork_pre_comp_msgs,
         credential_id=fake_cred_a.credential_id,
     )
+    assert base_fork_pre_prompt.get("_ve_fork_prompt_needed") is True
+    assert base_fork_pre_prompt.get("_ve_fork_candidate_conv_id") == "c_wire_conv"
+
+    fork_pre_comp_cont_msgs = [
+        *fork_pre_comp_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_ve_fork_precont01",
+                    "type": "function",
+                    "function": {
+                        "name": "ask_user_question",
+                        "arguments": '{"questions":[{"id":"ve_fork_action"}]}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_ve_fork_precont01",
+            "name": "ask_user_question",
+            "content": '{"answers":[{"id":"ve_fork_action","selected":["继续原远端会话"]}]}',
+        },
+    ]
+    base_fork_pre = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": ask_user_tool_decl},
+        fork_pre_comp_cont_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert not base_fork_pre.get("_ve_fork_prompt_needed")
     assert base_fork_pre.get("_ve_robin_conv_id") == "c_wire_conv"
+    assert base_fork_pre.get("_ve_robin_parent_req_id") == "r_pre_comp"
+    assert base_fork_pre.get("_ve_robin_parent_resp_id") == "rc_pre_comp"
     assert base_fork_pre.get("_ve_query_text") == "从压缩前的历史分叉继续"
+
+    # Simulate completing a turn on `fork_pre_comp_cont_msgs` (bound to `::fork::call_ve_fork_precont01`),
+    # and verify that forking AGAIN from `pre_comp_msgs` STILL finds the root pre-compaction state `(c_wire_conv, r_pre_comp, rc_pre_comp)`!
+    _robin_store_continuation(
+        str(base_fork_pre["_ve_session_id"]),
+        fork_pre_comp_cont_msgs,
+        "c_wire_conv",
+        "r_wire_3",
+        "rc_wire_3",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="committed",
+        committed_answer="压缩前分叉的第三轮回答",
+    )
+    fork_pre_comp_again_msgs = [
+        *pre_comp_msgs,
+        {"role": "user", "content": "再次从倒数第二轮分叉测试"},
+    ]
+    base_fork_pre_again = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        fork_pre_comp_again_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_fork_pre_again.get("_ve_robin_conv_id") == "c_wire_conv"
+    assert base_fork_pre_again.get("_ve_robin_parent_req_id") == "r_pre_comp"
+    assert base_fork_pre_again.get("_ve_robin_parent_resp_id") == "rc_pre_comp"
+    assert base_fork_pre_again.get("_ve_query_text") == "再次从倒数第二轮分叉测试"
+
+    # Verify `ask_user_question` cancellation (`ASK_CANCELLED` or skipped empty `selected: []`):
+    # 1) Immediate cancellation sets `_ve_fork_cancelled=True` (no upstream ProcessQuery opened);
+    # 2) Subsequent human turn in the same branch ignores the cancelled `call_ve_fork_*` and re-prompts `ask_user_question`!
+    fork_cancelled_msgs = [
+        *fork_pre_comp_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_ve_fork_cancel01",
+                    "type": "function",
+                    "function": {
+                        "name": "ask_user_question",
+                        "arguments": '{"questions":[{"id":"ve_fork_action"}]}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_ve_fork_cancel01",
+            "name": "ask_user_question",
+            "content": "Error: the user cancelled ask_user_question",
+        },
+    ]
+    base_fork_cancelled = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": ask_user_tool_decl},
+        fork_cancelled_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_fork_cancelled.get("_ve_fork_cancelled") is True
+    assert not base_fork_cancelled.get("_ve_fork_prompt_needed")
+    assert base_fork_cancelled.get("_ve_robin_conv_id", "") == ""
+
+    fork_after_cancel_msgs = [
+        *fork_cancelled_msgs,
+        {"role": "assistant", "content": _VE_FORK_CANCELLED_REPLY},
+        {"role": "user", "content": "取消后重新发送消息应再次弹出选择卡片"},
+    ]
+    base_fork_reprompt = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": ask_user_tool_decl},
+        fork_after_cancel_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_fork_reprompt.get("_ve_fork_prompt_needed") is True
+    assert base_fork_reprompt.get("_ve_fork_candidate_conv_id") == "c_wire_conv"
+
+    # 8. Regression: trailing `http://googleusercontent.com/action_card_content/<id>` in raw `committed_text`
+    #    or intermediate assistant prose during tool-calling steps must NOT cause `_robin_session_history_diverged`
+    #    to falsely trigger a new conversation on the subsequent user turn.
+    card_turn_msgs: list[dict[str, Any]] = [
+        {"role": "user", "content": "开始第一轮工具调用"},
+        {
+            "role": "assistant",
+            "content": "正在读取配置...",
+            "tool_calls": [
+                {
+                    "id": "call_card_1",
+                    "type": "function",
+                    "function": {"name": "read", "arguments": '{"file_path":"a.txt"}'},
+                }
+            ],
+        },
+        {"role": "tool", "tool_call_id": "call_card_1", "content": "file-body"},
+    ]
+    visible_final_reply = "第一轮工具调用已完成，请指示下一步。"
+    raw_committed_with_card = (
+        f"{visible_final_reply}\n\n"
+        "http://googleusercontent.com/action_card_content/000000000000000000001"
+    )
+    _robin_store_continuation(
+        "",
+        card_turn_msgs,
+        "c_card_continuity",
+        "r_card_1",
+        "rc_card_1",
+        credential_id=fake_cred_a.credential_id,
+        first_assistant_override=raw_committed_with_card,
+        binding_state="committed",
+        committed_answer=raw_committed_with_card,
+        conv_base_msg_idx=0,
+    )
+    next_turn_after_card_msgs: list[dict[str, Any]] = [
+        *card_turn_msgs,
+        {"role": "assistant", "content": visible_final_reply},
+        {"role": "user", "content": "继续第二轮对话，不要新开会话"},
+    ]
+    base_after_card = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        next_turn_after_card_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_after_card.get("_ve_robin_conv_id") == "c_card_continuity"
+    assert base_after_card.get("_ve_query_text") == "继续第二轮对话，不要新开会话"
+
+    # 8. `Remy quota exhausted` / `GeminiStreamError` mid-stream handling:
+    #    - Must NOT raise an unhandled `GeminiStreamError` out of `_robin_gen` (which would drop the
+    #      HTTP stream without `finish_reason` and trigger 5 automatic `TRANSPORT` retries in DSH);
+    #    - Must roll back any provisional `parent_req_id` written before the error so the prior
+    #      committed parent (`r_card_1` / `rc_card_1`) remains intact;
+    #    - Must emit a terminal SSE `data: {"error": {"message": "...Remy quota exhausted...", "type": "gemini_quota_exhausted", "code": "quota_exhausted"}}`
+    #      followed by `data: [DONE]` so DSH classifies it as non-retryable `QUOTA` and stops immediately.
+    class _QuotaExhaustedIter:
+        def __init__(self) -> None:
+            self.step = 0
+
+        def __aiter__(self) -> "_QuotaExhaustedIter":
+            return self
+
+        async def __anext__(self) -> bytes:
+            self.step += 1
+            if self.step == 1:
+                inner_1003_1 = _pb_bytes_field(
+                    2,
+                    _pb_bytes_field(1, "c_card_continuity")
+                    + _pb_bytes_field(2, "r_quota_fail_99"),
+                )
+                return _robin_pack_grpc_frames(
+                    [_pb_bytes_field(1003, _pb_bytes_field(1, inner_1003_1))]
+                )
+            raise GeminiStreamError(
+                "com.google.assistant.boq.bard.application.utils.BardStatusException: "
+                "Remy quota exhausted"
+            )
+
+    async def _fake_open_quota_stream(
+        _spec: GeminiModelSpec, _payload: dict[str, Any]
+    ) -> tuple[_GeminiOpenedStream | None, Response | None]:
+        return (
+            _GeminiOpenedStream(
+                session=cast(Any, _FakeSession()),
+                response=_DummyResp(),
+                backend=GEMINI_BACKEND_ROBIN,
+                prefetched_chunks=[],
+                iterator=_QuotaExhaustedIter(),
+                credential_id=fake_cred_a.credential_id,
+                access_token="tok_cred_a",
+                device_id="dev_test_quota",
+            ),
+            None,
+        )
+
+    cast(Any, client)._open_stream = _fake_open_quota_stream
+
+    async def _run_quota_turn() -> list[str]:
+        gen_q, err_q = await client.chat_stream(
+            spec, dict(base_after_card), next_turn_after_card_msgs
+        )
+        assert err_q is None and gen_q is not None
+        out_q: list[str] = []
+        async for raw_b in gen_q:
+            out_q.append(raw_b.decode("utf-8", errors="replace"))
+        return out_q
+
+    quota_sse_lines = asyncio.run(_run_quota_turn())
+    joined_quota_sse = "".join(quota_sse_lines)
+    assert '"type": "gemini_quota_exhausted"' in joined_quota_sse
+    assert '"code": "quota_exhausted"' in joined_quota_sse
+    assert "Remy quota exhausted" in joined_quota_sse
+    assert "data: [DONE]" in joined_quota_sse
+    # Verify provisional `r_quota_fail_99` was rolled back to committed `r_card_1`:
+    base_after_quota_retry = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        next_turn_after_card_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_after_quota_retry.get("_ve_robin_conv_id") == "c_card_continuity"
+    assert base_after_quota_retry.get("_ve_robin_parent_req_id") == "r_card_1"
+    assert base_after_quota_retry.get("_ve_robin_parent_resp_id") == "rc_card_1"
 
 
 def run_self_tests():
