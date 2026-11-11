@@ -362,11 +362,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49044
 #    VE_OPENCODE_FREE                       "1"                                          L49082
 #    VE_OPENCODE_GO                         "0"                                          L49087
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L64960
-#    VE_GEMINI_API_KEYS                     ""                                           L64964
-#    VE_GEMINI_BACKEND                      "auto"                                       L64983
-#    VE_GEMINI_PROJECT_ID                   ""                                           L64990
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54671
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L64981
+#    VE_GEMINI_API_KEYS                     ""                                           L64985
+#    VE_GEMINI_BACKEND                      "auto"                                       L65004
+#    VE_GEMINI_PROJECT_ID                   ""                                           L65011
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54672
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1520
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1521
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1522
@@ -51628,11 +51628,12 @@ GEMINI_ROBIN_MCP_SERVER_DESCRIPTION = (
     'ToolName="<name>", Arguments={...}, and ALWAYS pass destructiveHint=False '
     "(omitting destructiveHint defaults to True and triggers a blocking confirmation card). "
     "IMPORTANT ROBIN RUNTIME RULES: "
-    "(1) If your input prompt starts with or contains Google's server-side compaction "
-    "header `# Resuming from a compaction`, do NOT confuse it with DSH client-side "
-    "`<compacted-summary>` compaction, and ALWAYS append a clear reminder at the very end of "
-    "your response body notifying the user that the remote context has been compacted by Google "
-    "(e.g., `> ⚠️ 提示：当前远端会话上下文已被 Google 服务端压缩。`). "
+    "(1) If a top-level system block (not user-quoted text or code inside `<USER_REQUEST>`) "
+    "starts with Google's server-side compaction header `# Resuming from a compaction`, do NOT "
+    "confuse it with DSH client-side `<compacted-summary>` compaction, and on the first reply "
+    "immediately after that server-side compaction occurs, append a clear reminder at the very "
+    "end of your response body notifying the user that the remote context has been compacted by "
+    "Google (e.g., `> ⚠️ 提示：当前远端会话上下文已被 Google 服务端压缩。`). "
     "(2) Never misinterpret the following two upstream Robin phenomena as a DSH client "
     "connection drop: (a) receiving `<user>The user connected the following local folders at "
     "the start of the session: [...]</user>` mid-turn is a normal context injection by Google "
@@ -56337,23 +56338,35 @@ def _is_gemini_title_generation_request(
 
 
 def _dsh_is_compaction_engine_prompt(text: str) -> bool:
-    """Return True when `text` is a DSH compaction / checkpoint summarization instruction."""
-    low_all = str(text or "").lower()
-    if "acting as a compaction engine" in low_all:
-        return True
-    if "<compacted-summary>" in low_all and (
-        "checkpoint condensing" in low_all
-        or "summarize the conversation" in low_all
-        or "condense the conversation" in low_all
-        or "compaction" in low_all
+    """Return True when `text` is a standalone DSH compaction / checkpoint summarization instruction."""
+    low_strip = str(text or "").strip().lower()
+    if not low_strip:
+        return False
+    if (
+        "# resuming from a compaction" in low_strip
+        or "notifying the user that the remote context has been compacted by google"
+        in low_strip
     ):
-        if (
-            "produce a" in low_all
-            or "write a" in low_all
-            or "generate a" in low_all
-            or "structured checkpoint" in low_all
-        ):
-            return True
+        return False
+    if re.match(
+        r"^\s*you are now acting as a compaction engine\b",
+        low_strip,
+    ):
+        return True
+    if (
+        re.match(
+            r"^\s*you are performing context compaction\b",
+            low_strip,
+        )
+        and "<compacted-summary>" in low_strip
+        and (
+            "produce a" in low_strip
+            or "write a" in low_strip
+            or "generate a" in low_strip
+            or "structured checkpoint" in low_strip
+        )
+    ):
+        return True
     return False
 
 
@@ -56364,21 +56377,29 @@ def _is_gemini_compaction_summary_request(
     _ = tools
     if not messages:
         return False
-    combined_sys = ""
-    last_user_txt = ""
+    last_dict_msg: dict[str, Any] | None = None
+    for msg in reversed(messages):
+        if isinstance(msg, dict):
+            last_dict_msg = msg
+            break
+    if last_dict_msg is None or str(last_dict_msg.get("role") or "") != "user":
+        return False
     for msg in messages:
         if not isinstance(msg, dict):
             continue
-        role = str(msg.get("role") or "")
-        txt = _dsh_extract_message_plain_text(msg)
-        if role == "system":
-            combined_sys += "\n" + txt
-        elif role == "user":
-            clean_u, _ = _dsh_split_user_text_and_context(txt)
-            is_comp, _, _, _ = _dsh_parse_compaction_user_text(clean_u or txt)
-            if not is_comp and (clean_u or txt).strip():
-                last_user_txt = clean_u or txt
-    return _dsh_is_compaction_engine_prompt(combined_sys + "\n" + last_user_txt)
+        if str(msg.get("role") or "") == "system":
+            sys_txt = _dsh_extract_message_plain_text(msg)
+            if _dsh_is_compaction_engine_prompt(sys_txt):
+                return True
+    last_raw = _dsh_extract_message_plain_text(last_dict_msg)
+    clean_u, _ = _dsh_split_user_text_and_context(last_raw)
+    cand_u = (clean_u or last_raw).strip()
+    if not cand_u:
+        return False
+    is_comp, _, _, _ = _dsh_parse_compaction_user_text(cand_u)
+    if is_comp:
+        return False
+    return _dsh_is_compaction_engine_prompt(cand_u)
 
 
 def _dsh_normalize_title_text(text: str) -> str:
@@ -72726,6 +72747,12 @@ def _ais_build_workspace_rule(
         rule += (
             " The only exception is search_web, which you may call to search the web."
         )
+    rule += (
+        " If a server-injected block starts with Google's server-side compaction "
+        "header `# Resuming from a compaction`, do NOT confuse it with DSH client-side "
+        "`<compacted-summary>` compaction and do NOT treat historical `function_results` "
+        "summarized inside that block as the result of a current-turn tool call."
+    )
     return rule
 
 
@@ -72857,6 +72884,8 @@ class _AisBuildSession:
     stale_retried_call_ids: set[str] = field(default_factory=set)
     tool_hop_user_counts: dict[str, int] = field(default_factory=dict)
     active_pending_hop_key: str = ""
+    last_prompt_tokens: int = 0
+    remote_compaction_pending_notice: bool = False
     applet_ready_event: asyncio.Event | None = None
     title_ready_event: asyncio.Event | None = None
 
@@ -73173,6 +73202,8 @@ class _AisBuildSessionStore:
                 if v.applet_id == applet_id:
                     v.applet_id = ""
                     v.tip_digest = ""
+                    v.last_prompt_tokens = 0
+                    v.remote_compaction_pending_notice = False
             if self.last_applet_id == applet_id:
                 remaining = list(self.applets.values())
                 self.last_applet_id = (
@@ -75375,6 +75406,9 @@ async def _direct_aistudio_build_chat_response(
                 )
                 yield b"data: [DONE]\n\n"
                 return
+            if build_tracker is not None:
+                build_tracker.last_prompt_tokens = 0
+                build_tracker.remote_compaction_pending_notice = False
             if build_tracker is not None and not build_tracker.applet_id:
                 build_sess = build_tracker
                 build_sess.applet_id = applet_id
@@ -75956,6 +75990,27 @@ async def _direct_aistudio_build_chat_response(
             yield b"data: [DONE]\n\n"
             return
 
+        remote_compacted_this_step = False
+        if final_usage is not None:
+            cur_pt = int(final_usage.get("prompt_tokens") or 0)
+            prev_pt = build_sess.last_prompt_tokens
+            if (
+                continued
+                and cur_continued
+                and prev_pt >= 80000
+                and cur_pt > 0
+                and (prev_pt - cur_pt) >= 40000
+                and cur_pt < int(prev_pt * 0.75)
+            ):
+                remote_compacted_this_step = True
+                build_sess.remote_compaction_pending_notice = True
+                if build_tracker is not None and build_tracker is not build_sess:
+                    build_tracker.remote_compaction_pending_notice = True
+            if cur_pt > 0:
+                build_sess.last_prompt_tokens = cur_pt
+                if build_tracker is not None and build_tracker is not build_sess:
+                    build_tracker.last_prompt_tokens = cur_pt
+
         if accumulated_tool_calls:
             if not banner_sent:
                 yield _make_banner_sse_bytes()
@@ -75967,6 +76022,29 @@ async def _direct_aistudio_build_chat_response(
                 "utf-8"
             )
             final_finish_reason = "tool_calls"
+        elif (
+            build_sess.remote_compaction_pending_notice
+            and not is_auxiliary_req
+            and accumulated_answer
+        ):
+            build_sess.remote_compaction_pending_notice = False
+            if build_tracker is not None and build_tracker is not build_sess:
+                build_tracker.remote_compaction_pending_notice = False
+            joined_so_far = "".join(accumulated_answer)
+            if "当前远端会话上下文已被 Google 服务端压缩" not in joined_so_far:
+                comp_notice_txt = (
+                    "\n\n> ⚠️ 提示：当前远端会话上下文已被 Google 服务端压缩。"
+                )
+                if not banner_sent:
+                    yield _make_banner_sse_bytes()
+                accumulated_answer.append(comp_notice_txt)
+                delta_cn: dict[str, Any] = {"content": comp_notice_txt}
+                if not role_sent:
+                    delta_cn["role"] = "assistant"
+                    role_sent = True
+                yield f"data: {json.dumps({'id': completion_id, 'object': 'chat.completion.chunk', 'created': created_ts, 'model': spec.public_id, 'choices': [{'index': 0, 'delta': delta_cn, 'finish_reason': None}]}, ensure_ascii=False)}\n\n".encode(
+                    "utf-8"
+                )
 
         full_answer_str = "".join(accumulated_answer)
         full_reasoning_str = "".join(accumulated_reasoning)
@@ -76067,6 +76145,7 @@ async def _direct_aistudio_build_chat_response(
                     last_decoder is not None and last_decoder.step_failed_after_call
                 ),
                 "overran": bool(last_decoder is not None and last_decoder.overran),
+                "remote_compacted": remote_compacted_this_step,
                 "usage": final_usage if report_usage else None,
                 "elapsed_ms": round((time.monotonic() - t_start) * 1000.0, 1),
             },
@@ -86734,6 +86813,51 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
         _is_gemini_compaction_summary_request(compacted_messages, tools=synth_tools)
         is False
     )
+    # User or tool-continuation messages quoting `<compacted-summary>`, `compaction`,
+    # `# Resuming from a compaction`, or multiline code blocks containing compaction instructions
+    # alongside a DSH system prompt with `write a` must NOT be misclassified as compaction requests.
+    dsh_sys_with_write_a = {
+        "role": "system",
+        "content": "Use the workflow tool: you write a JavaScript script that fans work out.",
+    }
+    user_quoting_compaction = {
+        "role": "user",
+        "content": (
+            "Why did `<compacted-summary>` and `compaction` trigger `is_compaction_request` "
+            "after `# Resuming from a compaction`?"
+        ),
+    }
+    user_quoting_engine_codeblock = {
+        "role": "user",
+        "content": (
+            "请检查下面这段代码片段：\n```text\n"
+            "You are now acting as a compaction engine for this AI coding assistant.\n```"
+        ),
+    }
+    assert (
+        _is_gemini_compaction_summary_request(
+            [dsh_sys_with_write_a, user_quoting_compaction], tools=synth_tools
+        )
+        is False
+    )
+    assert (
+        _is_gemini_compaction_summary_request(
+            [dsh_sys_with_write_a, user_quoting_engine_codeblock], tools=synth_tools
+        )
+        is False
+    )
+    assert (
+        _is_gemini_compaction_summary_request(
+            [
+                dsh_sys_with_write_a,
+                user_quoting_compaction,
+                {"role": "assistant", "content": "", "tool_calls": [{"id": "c1"}]},
+                {"role": "tool", "tool_call_id": "c1", "content": "ok"},
+            ],
+            tools=synth_tools,
+        )
+        is False
+    )
 
     # (g) Multi-message Turn 1 & Turn N:
     #     - Standalone `The approval policy changed from ...` enters prompt_context, while a human
@@ -89298,6 +89422,239 @@ def test_aistudio_playground_protocol_and_routing():
                 assert retry_ca_wires[1][5] == 2
                 assert retry_ca_wires[1][20] == synth_applet_retry
                 assert "view_file" in retry_ca_wires[1][0][0][0][0][1]
+
+                # Verify remote server-side compaction detection on AI Studio Build:
+                # 1) Turn 1 sets `last_prompt_tokens = 100000` without notice;
+                # 2) Turn 2 (`continued=True` tool_calls step) drops `prompt_tokens` to 35000 -> sets `remote_compaction_pending_notice = True` and defers notice across `tool_calls`;
+                # 3) Turn 3 (`continued=True` final text reply) appends the one-shot notice once before computing `tip_digest`, and Turn 4 continues the same Applet without repeating the notice.
+                comp_ca_wires: list[Any] = []
+                synth_applet_comp = "00000000-0000-4000-8000-000000000b32"
+                synth_gen_c1 = "00000000-0000-4000-8000-000000000b33"
+                synth_gen_c2 = "00000000-0000-4000-8000-000000000b34"
+                synth_gen_c3 = "00000000-0000-4000-8000-000000000b35"
+                synth_gen_c4 = "00000000-0000-4000-8000-000000000b36"
+
+                def _mock_build_comp_rpc(kind: str, **kwargs: Any) -> Any:
+                    url = str(kwargs.get("url") or "")
+                    rpc_n = url.rsplit("/", 1)[-1]
+                    b_wire = kwargs.get("body_wire")
+                    if kind == "AIS_CALL" and rpc_n == "CreateApplet":
+                        return [synth_applet_comp, [synth_applet_comp]]
+                    if kind == "AIS_CALL" and rpc_n == "CodeAssistantOffline":
+                        comp_ca_wires.append(b_wire)
+                        gen_seq = (
+                            synth_gen_c1,
+                            synth_gen_c2,
+                            synth_gen_c3,
+                            synth_gen_c4,
+                        )
+                        return [
+                            gen_seq[min(len(comp_ca_wires) - 1, 3)],
+                            synth_applet_comp,
+                        ]
+                    if (
+                        kind == "AIS_STREAM"
+                        and rpc_n == "StreamCodeAssistantOfflineGeneration"
+                    ):
+                        g_id = b_wire[0] if isinstance(b_wire, list) and b_wire else ""
+                        if g_id == synth_gen_c1:
+                            step_c1 = [
+                                [[[[None, "第一轮长上下文答复。"]], "model"]],
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                1,
+                                1,
+                                "models/gemini-4-argon",
+                                None,
+                                ["60000", "80", "40000"],
+                                synth_gen_c1,
+                            ]
+                        elif g_id == synth_gen_c2:
+                            step_c1 = [
+                                [
+                                    [
+                                        [
+                                            [
+                                                None,
+                                                '```function_calls\n[{"name": "read", "arguments": {"file_path": "/w/workspace/sample.js"}}]\n```',
+                                            ]
+                                        ],
+                                        "model",
+                                    ]
+                                ],
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                handoff_q_action,
+                                None,
+                                1,
+                                1,
+                                "models/gemini-4-argon",
+                                None,
+                                ["25000", "45", "10000"],
+                                synth_gen_c2,
+                            ]
+                        elif g_id == synth_gen_c3:
+                            step_c1 = [
+                                [[[[None, "工具结果核对完毕。"]], "model"]],
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                1,
+                                1,
+                                "models/gemini-4-argon",
+                                None,
+                                ["26000", "50", "10000"],
+                                synth_gen_c3,
+                            ]
+                        else:
+                            step_c1 = [
+                                [[[[None, "后续轮正常回复。"]], "model"]],
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                1,
+                                1,
+                                "models/gemini-4-argon",
+                                None,
+                                ["27000", "40", "10000"],
+                                synth_gen_c4,
+                            ]
+                        return [
+                            {"type": "AIS_HEAD", "status": 200, "headers": {}},
+                            {
+                                "type": "AIS_CHUNK",
+                                "seq": 0,
+                                "data": json.dumps(
+                                    [[[None, None, [step_c1], synth_applet_comp]]]
+                                ),
+                            },
+                            {"type": "AIS_END", "seq": 1, "status": 200},
+                        ]
+                    return []
+
+                _ais_reset_sessions_for_tests()
+                AIS_BROWSER_RUNTIME._custom_rpc_handler = _mock_build_comp_rpc
+                read_tool_decl = [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "read",
+                            "parameters": {"type": "object"},
+                        },
+                    }
+                ]
+                c_msgs_1: list[dict[str, Any]] = [
+                    {"role": "user", "content": "开始长上下文分析"}
+                ]
+                r_c1 = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {
+                            "model": "gemini:aistudio/gemini-4-argon-build-medium",
+                            "tools": read_tool_decl,
+                        },
+                        c_msgs_1,
+                        stream_mode=False,
+                    )
+                )
+                d_c1 = json.loads(bytes(r_c1.body).decode("utf-8"))
+                assert (
+                    d_c1["choices"][0]["message"]["content"] == "第一轮长上下文答复。"
+                )
+                assert d_c1["usage"]["prompt_tokens"] == 100000
+
+                c_msgs_2 = [
+                    *c_msgs_1,
+                    {"role": "assistant", "content": "第一轮长上下文答复。"},
+                    {"role": "user", "content": "继续读取 sample.js"},
+                ]
+                r_c2 = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {
+                            "model": "gemini:aistudio/gemini-4-argon-build-medium",
+                            "tools": read_tool_decl,
+                        },
+                        c_msgs_2,
+                        stream_mode=False,
+                    )
+                )
+                d_c2 = json.loads(bytes(r_c2.body).decode("utf-8"))
+                assert d_c2["choices"][0]["finish_reason"] == "tool_calls"
+                assert d_c2["usage"]["prompt_tokens"] == 35000
+                tc_c2 = d_c2["choices"][0]["message"]["tool_calls"]
+
+                c_msgs_3 = [
+                    *c_msgs_2,
+                    {"role": "assistant", "content": None, "tool_calls": tc_c2},
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc_c2[0]["id"],
+                        "name": "read",
+                        "content": "const x = 1;",
+                    },
+                ]
+                r_c3 = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {
+                            "model": "gemini:aistudio/gemini-4-argon-build-medium",
+                            "tools": read_tool_decl,
+                        },
+                        c_msgs_3,
+                        stream_mode=False,
+                    )
+                )
+                d_c3 = json.loads(bytes(r_c3.body).decode("utf-8"))
+                ans_c3 = d_c3["choices"][0]["message"]["content"]
+                assert ans_c3 == (
+                    "工具结果核对完毕。\n\n> ⚠️ 提示：当前远端会话上下文已被 Google 服务端压缩。"
+                )
+
+                c_msgs_4 = [
+                    *c_msgs_3,
+                    {"role": "assistant", "content": ans_c3},
+                    {"role": "user", "content": "继续下一步"},
+                ]
+                r_c4 = asyncio.run(
+                    _direct_gemini_chat_response(
+                        {
+                            "model": "gemini:aistudio/gemini-4-argon-build-medium",
+                            "tools": read_tool_decl,
+                        },
+                        c_msgs_4,
+                        stream_mode=False,
+                    )
+                )
+                d_c4 = json.loads(bytes(r_c4.body).decode("utf-8"))
+                assert d_c4["choices"][0]["message"]["content"] == "后续轮正常回复。"
+                assert len(comp_ca_wires) == 4
+                assert all(w[5] == 2 for w in comp_ca_wires[1:])
             finally:
                 AIS_BROWSER_RUNTIME._custom_rpc_handler = orig_handler_e
     finally:
