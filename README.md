@@ -6,7 +6,7 @@
 - **Speech & Voice Interaction**: Real-time STT (`faster-whisper` / Apple Speech), streaming Edge-TTS, global macOS dictation, HUD overlay, and local wake-word voice chat
 - **Unified OpenAI & MCP Gateway**: Standard OpenAI-compatible HTTP endpoints (`/v1/chat/completions`, `/v1/audio/*`, `/v1/embeddings`, `/v1/rerank`, `/v1/completions`) and MCP server
 - **Browser-Backed Model Relays**: DeepSeek, Doubao, Qwen, Microsoft 365 Copilot, and Google AI Studio Playground (`gemini:aistudio/*`), powered by the [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) Firefox extension
-- **Gemini App Task-Mode Relay**: Native macOS Gemini app Argon models (`gemini:app/*`) with bidirectional `ExecuteRemoteTools` (ERT) streaming for [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
+- **Gemini App Task-Mode Relay**: Native macOS Gemini app Carbon/Argon models (`gemini:app/*`) with bidirectional `ExecuteRemoteTools` (ERT) streaming for [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
 - **Third-Party API Relays**: OpenRouter (`openrouter:*`) and OpenCode (`opencode:zen/*`, `opencode:go/*`) with multi-key round-robin rotation and protocol translation
 - **Xiaomi XiaoAI Bridge**: Smart speaker LAN bridge with wake-word routing, streaming TTS playback, and native Xiaomi assistant fallback
 
@@ -34,7 +34,7 @@ Install the Firefox authentication-sync extension when using browser-backed prov
 
 Install the Continue extension when using Voice Edge through VS Code.
 
-Install the Voice-Edge Harness (`veh`) when using Gemini App Argon (`gemini:app/*`) or AI Studio Playground (`gemini:aistudio/*`) models in agentic task mode.
+Install the Voice-Edge Harness (`veh`) when using Gemini App Carbon/Argon (`gemini:app/*`) or AI Studio Playground (`gemini:aistudio/*`) models in agentic task mode.
 
 ## Running
 
@@ -467,7 +467,7 @@ models:
 
 ## Google AI Studio and Gemini App Relays
 
-Voice Edge exposes two distinct Gemini relay endpoints under the `gemini:` namespace over `POST /v1/chat/completions`:
+Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `POST /v1/chat/completions`:
 
 ### 1. Google AI Studio Playground (`gemini:aistudio/*`)
 
@@ -479,17 +479,33 @@ Voice Edge exposes two distinct Gemini relay endpoints under the `gemini:` names
   - Multimodal inputs (inline images, audio, PDFs, and YouTube links) and Google Search grounding citations
   - Automatic Playground history persistence (`prompts/<id>`) and generated session title synchronization
 - **Model IDs**:
+  - `gemini:aistudio/gemini-4-carbon` (`-high`, `-medium`, `-low`)
   - `gemini:aistudio/gemini-4-argon` (`-high`, `-medium`, `-low`)
   - `gemini:aistudio/gemini-3.8-flash-high`, `gemini:aistudio/gemini-3.8-flash-medium`, `gemini:aistudio/gemini-3.8-flash-low`
   - Any upstream model dynamically discovered via `ListModels` (`gemini:aistudio/<model-slug>`)
 
-### 2. Gemini macOS App Task Mode (`gemini:app/*`)
+### 2. Google AI Studio Build (`gemini:aistudio/*-build*`)
+
+- **Coding Assistant RPC Pipeline (`CodeAssistantOffline`)**: Drives `MakerSuiteService/CreateApplet`, `CodeAssistantOffline`, `StreamCodeAssistantOfflineGeneration`, `CancelCodeAssistantOfflineGeneration`, and `AppletService/DeleteApplet` over the same `ws://127.0.0.1:5003/ws` browser extension bridge, using AI Studio Build's dedicated quota pool without requiring navigation away from `/u/<N>/prompts/new_chat`.
+- **Capabilities**:
+  - Full client-side tool calling for [Voice-Edge Harness (`veh`)](https://github.com/woniuzfb/voice-edge-harness): suppresses remote Applet workspace tools in `wire[8]` (`customInstructions`), injects compact JSON tool declarations with the fenced ```` ```function_calls ```` + `ask_question` handoff protocol, repairs malformed JSON strings on the fly, and performs in-Applet self-healing retries (`continued=True`) if the model invokes an undeclared/web tool or emits a malformed block
+  - Stateful single-Applet multi-turn continuation (`continued=True`, cumulative SHA-256 link digest matching) with `<conversation_history>` XML transcription fallback on context compaction or history edits, isolated from Playground session state (`build::<key>`)
+  - Resumable two-step attachment uploads (`https://aistudio.google.com/_/upload`, `AIS_UPLOAD` $\rightarrow$ `part[17]` `UploadRef`) for images, audio, PDFs, and local DSH file/image handles, plus multi-level stream self-healing (automatic stream `Reopen` on premature EOF, empty-reply follow-up, and `<partial_reply>` continuation)
+  - Dedicated `Build History (Voice Edge)` panel in the browser extension popup and automatic session title synchronization via `CreateApplet` / `GetApplet`
+- **Model IDs**:
+  - `gemini:aistudio/gemini-4-carbon-build` (`-high`, `-medium`, `-low`)
+  - `gemini:aistudio/gemini-4-argon-build` (`-high`, `-medium`, `-low`)
+  - `gemini:aistudio/gemini-3.8-flash-build` (`-high`, `-medium`, `-low`)
+  - Any upstream model advertising capability `48` (`code_assistant`) in `ListModels` (`gemini:aistudio/<model-slug>-build`)
+
+### 3. Gemini macOS App Task Mode (`gemini:app/*`)
 
 - **Native Robin gRPC & ERT Relay**: Reuses local macOS `Gemini.app` credentials to drive `RobinService/ProcessQuery` and bidirectional `ExecuteRemoteTools` (ERT) streams for [Voice-Edge Harness (`veh`)](https://github.com/woniuzfb/voice-edge-harness).
 - **Capabilities**:
   - Stateful multi-turn continuation, `StateTape` `state_seq` synchronization, and automatic `resumeTurn` stream rollover
   - Hot-reloadable multi-account switching, history divergence (`fork`) detection, and SQLite state persistence (`~/.voice-edge/gemini_dsh_state.sqlite3`)
 - **Model IDs**:
+  - `gemini:app/gemini-4-carbon` (`-high`, `-medium`, `-low`)
   - `gemini:app/gemini-4-argon` (`-high`, `-medium`, `-low`)
 
 ## OpenRouter and OpenCode Relays
