@@ -6,7 +6,7 @@
 - **语音与交互引擎**：实时语音转写（`faster-whisper` / Apple Speech）、流式 Edge-TTS 语音合成、macOS 全局听写、原生 HUD 浮层与本地唤醒词语音助手
 - **统一 OpenAI 与 MCP 网关**：标准 OpenAI 兼容 HTTP 接口（`/v1/chat/completions`、`/v1/audio/*`、`/v1/embeddings`、`/v1/rerank`、`/v1/completions`）与 MCP 服务
 - **浏览器模型中继**：配合 [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) Firefox 扩展接入 DeepSeek、豆包（Doubao）、Qwen、Microsoft 365 Copilot 以及 Google AI Studio Playground（`gemini:aistudio/*`）
-- **Gemini App 任务模式中继**：复用 macOS 原生 `Gemini.app` 接入 Argon 模型（`gemini:app/*`），通过 Robin gRPC 与 `ExecuteRemoteTools`（ERT）双向流驱动 [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
+- **Gemini App 任务模式中继**：复用 macOS 原生 `Gemini.app` 接入 Carbon/Argon 模型（`gemini:app/*`），通过 Robin gRPC 与 `ExecuteRemoteTools`（ERT）双向流驱动 [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
 - **第三方 API 中继**：OpenRouter（`openrouter:*`）与 OpenCode（`opencode:zen/*`、`opencode:go/*`），支持多 Key 轮询与上游协议自动转换
 - **小米小爱同学桥接**：局域网智能音箱桥接，支持唤醒词路由、流式 TTS 播报与小米原生助手兜底
 
@@ -34,7 +34,7 @@ uv run python -m camoufox fetch
 
 通过 VS Code 使用 Voice Edge 时，请安装上面的 Continue 插件。
 
-使用 Gemini App Argon 模型（`gemini:app/*`）或 AI Studio Playground 模型（`gemini:aistudio/*`）进行 Agent 任务编排时，请安装上面的 Voice-Edge Harness（`veh`）。
+使用 Gemini App Carbon/Argon 模型（`gemini:app/*`）或 AI Studio Playground 模型（`gemini:aistudio/*`）进行 Agent 任务编排时，请安装上面的 Voice-Edge Harness（`veh`）。
 
 ## 运行
 
@@ -461,7 +461,7 @@ models:
 
 ## Google AI Studio 与 Gemini App 中继
 
-Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴露两条独立的 Gemini 中继通道：
+Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴露三条独立的 Gemini 中继通道：
 
 ### 1. Google AI Studio Playground（`gemini:aistudio/*`）
 
@@ -473,17 +473,33 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
   - 多模态输入（内联图片、音频、PDF、YouTube 链接）与 Google Search 联网引用（Grounding Citations）
   - 自动持久化 Playground 会话历史（`prompts/<id>`）并同步生成标题
 - **模型 ID**：
+  - `gemini:aistudio/gemini-4-carbon`（`-high`、`-medium`、`-low`）
   - `gemini:aistudio/gemini-4-argon`（`-high`、`-medium`、`-low`）
   - `gemini:aistudio/gemini-3.8-flash-high`、`gemini:aistudio/gemini-3.8-flash-medium`、`gemini:aistudio/gemini-3.8-flash-low`
   - 任意由 `ListModels` 动态发现的上游模型（`gemini:aistudio/<model-slug>`）
 
-### 2. Gemini macOS App 任务模式（`gemini:app/*`）
+### 2. Google AI Studio Build（`gemini:aistudio/*-build*`）
+
+- **代码助手 RPC 管线（`CodeAssistantOffline`）**：复用同一条 `ws://127.0.0.1:5003/ws` 浏览器扩展桥驱动 `MakerSuiteService/CreateApplet`、`CodeAssistantOffline`、`StreamCodeAssistantOfflineGeneration`、`CancelCodeAssistantOfflineGeneration` 与 `AppletService/DeleteApplet`，走 AI Studio Build 独立配额池，且无需将标签页跳出 `/u/<N>/prompts/new_chat`。
+- **核心能力**：
+  - 面向 [Voice-Edge Harness（`veh`）](https://github.com/woniuzfb/voice-edge-harness) 的完整客户端工具调用：在 `wire[8]`（`customInstructions`）中封禁远端空容器工作区工具，注入紧凑 JSON 工具声明与 ```` ```function_calls ```` + `ask_question` 控制权交回协议，内置流式 JSON 字符串容错修复，并在模型误调网页端/未声明工具或产出损坏代码块时于同一 Applet 内自动发消息纠错重发（`continued=True`）
+  - 单会话严格绑定单一 Applet 多轮续接（`continued=True`，基于累积 SHA-256 摘要链匹配），在发生上下文压缩或历史改写时自动回退为 `<conversation_history>` XML 转录，并与 Playground 会话存储完全隔离（`build::<key>`）
+  - 同源两步可续传附件上传（`https://aistudio.google.com/_/upload`，`AIS_UPLOAD` $\rightarrow$ `part[17]` `UploadRef`），支持图片、音频、PDF 及 DSH 本地文件/截图句柄上传，并具备三级流式自愈（提前断流自动 `Reopen`、空回复自动追问、中途报错携带 `<partial_reply>` 断点续写）
+  - 浏览器扩展弹窗内置独立的 `Build History (Voice Edge)` 面板，并通过 `CreateApplet` / `GetApplet` 自动同步会话标题
+- **模型 ID**：
+  - `gemini:aistudio/gemini-4-carbon-build`（`-high`、`-medium`、`-low`）
+  - `gemini:aistudio/gemini-4-argon-build`（`-high`、`-medium`、`-low`）
+  - `gemini:aistudio/gemini-3.8-flash-build`（`-high`、`-medium`、`-low`）
+  - 任意在 `ListModels` 中声明能力码 `48`（`code_assistant`）的上游模型（`gemini:aistudio/<model-slug>-build`）
+
+### 3. Gemini macOS App 任务模式（`gemini:app/*`）
 
 - **原生 Robin gRPC 与 ERT 双向流中继**：复用本机 macOS `Gemini.app` 登录凭据，通过 `RobinService/ProcessQuery` 与 `ExecuteRemoteTools`（ERT）双向流驱动 [Voice-Edge Harness（`veh`）](https://github.com/woniuzfb/voice-edge-harness)。
 - **核心能力**：
   - 有状态多轮会话续接、`StateTape` `state_seq` 同步以及长连接 `resumeTurn` 自动流轮转（Rollover）
   - 多账号凭据指纹热切换、历史回滚/分叉（`fork`）检测，以及 SQLite 状态库持久化（`~/.voice-edge/gemini_dsh_state.sqlite3`）
 - **模型 ID**：
+  - `gemini:app/gemini-4-carbon`（`-high`、`-medium`、`-low`）
   - `gemini:app/gemini-4-argon`（`-high`、`-medium`、`-low`）
 
 ## OpenRouter 与 OpenCode 中继
