@@ -148,28 +148,28 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2665
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2677
 #    VE_VLM_KV_BITS                         3.5                                          L501
 #    VE_VLM_KV_GROUP_SIZE                   None                                         L506
 #    VE_VLM_QUANTIZED_KV_START              "0"                                          L511
 #    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L512
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2248
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2253
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2256
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2260
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2269
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2277
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2332
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2783
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42906
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43555
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43567
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19508
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19505
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19471
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19486
-#    AUTH_SYNC_ENABLED                      "1"                                          L19459
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19460
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2260
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2265
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2268
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2272
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2281
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2289
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2344
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2795
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42918
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43567
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43579
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19520
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19517
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19483
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19498
+#    AUTH_SYNC_ENABLED                      "1"                                          L19471
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19472
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
 #    VE_APP_LOG_DEBUG                           "0"                                      L390
@@ -200,173 +200,173 @@ if sys.version_info < (3, 11):
 #    VE_XIAOAI_LOG_DEBUG                        "0"                                      L427
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42792
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42815
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42842
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42901
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43444
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43447
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43455
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43467
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43469
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43478
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43484
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43490
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43506
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43511
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43518
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43525
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43534
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43541
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43589
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45357
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45358
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45359
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42804
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42827
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42854
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42913
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43456
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43459
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43467
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43479
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43481
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43490
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43496
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43502
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43518
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43523
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43530
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43537
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43546
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43553
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43601
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45369
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45370
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45371
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15014
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15016
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L15017
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15023
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15025
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15028
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15036
-#    QWEN_COOKIE_HEADER                     ""                                           L15040
-#    QWEN_TOKENS                            ""                                           L15048
-#    QWEN_TOKEN                             ""                                           L15049
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15026
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15028
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L15029
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15035
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15037
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15040
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15048
+#    QWEN_COOKIE_HEADER                     ""                                           L15052
+#    QWEN_TOKENS                            ""                                           L15060
+#    QWEN_TOKEN                             ""                                           L15061
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1849
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16683
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16684
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16686
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16688
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16690
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16693
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16696
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16699
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16820
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16823
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1861
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16695
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16696
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16698
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16700
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16702
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16705
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16708
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16711
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16832
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16835
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19369
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19370
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19376
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19377
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19385
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19387
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19390
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19392
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19394
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19398
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19425
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19428
-#    DOUBAO_WEB_AID                         "497858"                                     L19430
-#    DOUBAO_WEB_REGION                      "CN"                                         L19431
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19432
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19433
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19435
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19484
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19476
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19786
-#    DOUBAO_SESSION_IDS                     ""                                           L19828
-#    DOUBAO_SESSION_ID                      ""                                           L19832
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20343
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20352
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20534
-#    DOUBAO_SID_TT                          ""                                           L20537
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19381
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19382
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19388
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19389
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19397
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19399
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19402
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19404
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19406
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19410
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19437
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19440
+#    DOUBAO_WEB_AID                         "497858"                                     L19442
+#    DOUBAO_WEB_REGION                      "CN"                                         L19443
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19444
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19445
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19447
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19496
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19488
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19798
+#    DOUBAO_SESSION_IDS                     ""                                           L19840
+#    DOUBAO_SESSION_ID                      ""                                           L19844
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20355
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20364
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20546
+#    DOUBAO_SID_TT                          ""                                           L20549
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24930
-#    SHAREPOINT_HOME_URL                    ""                                           L24931
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24932
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24933
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24960
-#    M365_BRIDGE_PORT                       "5003"                                       L24961
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24962
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24963
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24965
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24968
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L24971
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24979
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L24981
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25001
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25008
-#    M365_CONV_MAP_MAX                      "1024"                                       L25177
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25824
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25842
+#    M365_ENTRY_URL                         ""                                           L24942
+#    SHAREPOINT_HOME_URL                    ""                                           L24943
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24944
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24945
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24972
+#    M365_BRIDGE_PORT                       "5003"                                       L24973
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24974
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24975
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24977
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24980
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24983
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24991
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L24993
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25013
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25020
+#    M365_CONV_MAP_MAX                      "1024"                                       L25189
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25836
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25854
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38130
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38340
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38402
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38424
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38431
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38526
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38528
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38532
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39725
-#    MI_USER                                ""                                           L39451
-#    MI_PASS                                ""                                           L39477
-#    XIAOAI_HARDWARE                        "LX06"                                       L39479
-#    MI_DID                                 ""                                           L39481
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39484
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39488
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39491
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39494
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39500
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39511
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39516
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39497
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39507
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39527
-#    XIAOAI_VOICE                           "zh"                                         L39529
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39531
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39534
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39537
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39540
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39544
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39548
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39553
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39558
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39563
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39568
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39573
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39581
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39586
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39591
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39596
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39601
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39606
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39611
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39614
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39618
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39622
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39626
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39631
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39636
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39640
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39643
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39646
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39649
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39652
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39655
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39658
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39661
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39668
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39674
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39678
+#    XIAOAI_ENABLED                         "0"                                          L38142
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38352
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38414
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38436
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38443
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38538
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38540
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38544
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39737
+#    MI_USER                                ""                                           L39463
+#    MI_PASS                                ""                                           L39489
+#    XIAOAI_HARDWARE                        "LX06"                                       L39491
+#    MI_DID                                 ""                                           L39493
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39496
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39500
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39503
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39506
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39512
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39523
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39528
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39509
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39519
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39539
+#    XIAOAI_VOICE                           "zh"                                         L39541
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39543
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39546
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39549
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39552
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39556
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39560
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39565
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39570
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39575
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39580
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39585
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39593
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39598
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39603
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39608
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39613
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39618
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39623
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39626
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39630
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39634
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39638
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39643
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39648
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39652
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39655
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39658
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39661
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39664
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39667
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39670
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39673
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39680
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39686
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39690
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48119
-#    VE_OPENCODE_API_KEYS                   ""                                           L49044
-#    VE_OPENCODE_FREE                       "1"                                          L49082
-#    VE_OPENCODE_GO                         "0"                                          L49087
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L64981
-#    VE_GEMINI_API_KEYS                     ""                                           L64985
-#    VE_GEMINI_BACKEND                      "auto"                                       L65004
-#    VE_GEMINI_PROJECT_ID                   ""                                           L65011
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54672
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48131
+#    VE_OPENCODE_API_KEYS                   ""                                           L49056
+#    VE_OPENCODE_FREE                       "1"                                          L49094
+#    VE_OPENCODE_GO                         "0"                                          L49099
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L65228
+#    VE_GEMINI_API_KEYS                     ""                                           L65232
+#    VE_GEMINI_BACKEND                      "auto"                                       L65251
+#    VE_GEMINI_PROJECT_ID                   ""                                           L65258
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54831
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1520
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1521
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1522
@@ -1689,6 +1689,18 @@ GEMINI_APP_EXPOSED_MODELS: tuple[str, ...] = (
     "gemini-4-argon-high",
     "gemini-4-argon-medium",
     "gemini-4-argon-low",
+    "gemini-3.8-flash",
+    "gemini-3.8-flash-high",
+    "gemini-3.8-flash-medium",
+    "gemini-3.8-flash-low",
+    "gemini-3.1-pro",
+    "gemini-3.1-pro-high",
+    "gemini-3.1-pro-medium",
+    "gemini-3.1-pro-low",
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash-lite-high",
+    "gemini-3.5-flash-lite-medium",
+    "gemini-3.5-flash-lite-low",
 )
 GEMINI_AISTUDIO_EXPOSED_MODELS: tuple[str, ...] = (
     "gemini-4-carbon",
@@ -51866,13 +51878,34 @@ GEMINI_ROBIN_APP_BUNDLE_CANDIDATES: tuple[str, ...] = (
     "/Applications/Gemini.app",
     "~/Applications/Gemini.app",
 )
-# `RequestMetadata.bard_mode_id` selects the desktop client's task mode. It is
-# server-owned: `GetUserStatusResponse` repeats the selectable modes at `f17`, each
-# `{ 1: mode_id, 2: family, 16: variant, 19: display name, 21: default flag,
-# 23: mode category }`, and the complex-task desktop mode is the one whose category is
-# 8. The id therefore rotates with the account's model roster and is resolved per
-# account, never treated as a constant.
+# `RequestMetadata.bard_mode_id` (`f16`), `ClientGenerateRequest.requested_mode_category`
+# (`f47`), and `ClientGenerateRequest.mode_variant_id` (`f66`) select the target model.
+# `GetUserStatusResponse` repeats the selectable modes at `f17` (`{ 1: mode_id, 2: family,
+# 16: variant, 19: display name, 21: default flag, 23: mode category }`) and the detailed
+# mode policy at `f34` (`RobinGeminiModePolicy.configs`: `{ 1: RobinGeminiModeConfig { 3:
+# mode_category, 5: mode_variant_id, 6: primary_text, 7: secondary_text, 14: title, 16:
+# upsell_config, 17: thinking_menu_style }, 2: repeated RobinThinkingLevelConfig, 4:
+# packed mode_picker_display_config }`).
+GEMINI_ROBIN_MODE_CATEGORY_FLASH = 1
+GEMINI_ROBIN_MODE_CATEGORY_PRO = 3
+GEMINI_ROBIN_MODE_CATEGORY_FLASH_LITE = 6
 GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK = 8
+
+
+def _robin_resolve_model_category_and_variant(model_slug: str) -> tuple[int, str]:
+    """Map a model slug to `(mode_category, mode_variant_id)` for `ClientGenerateRequest` (`f47`, `f66`)."""
+    low = str(model_slug or "").strip().lower()
+    if "flash-lite" in low or low.endswith("-lite") or low == "lite":
+        return GEMINI_ROBIN_MODE_CATEGORY_FLASH_LITE, ""
+    if "flash" in low:
+        return GEMINI_ROBIN_MODE_CATEGORY_FLASH, ""
+    if "pro" in low:
+        return GEMINI_ROBIN_MODE_CATEGORY_PRO, ""
+    if "carbon" in low:
+        return GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK, ""
+    if "argon" in low or not low:
+        return GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK, "argon"
+    return GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK, ""
 
 
 @dataclass(frozen=True)
@@ -51913,6 +51946,8 @@ class _RobinDesktopIdentity:
 _ROBIN_IDENTITY_LOCK = threading.Lock()
 _ROBIN_DESKTOP_IDENTITY: _RobinDesktopIdentity | None = None
 _ROBIN_BARD_MODE_BY_ACCOUNT: dict[str, str] = {}
+_ROBIN_BARD_MODES_BY_ACCOUNT: dict[str, dict[int, str]] = {}
+_ROBIN_MODE_POLICY_BY_ACCOUNT: dict[str, list[dict[str, Any]]] = {}
 _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT: dict[str, dict[str, int | float]] = {}
 
 
@@ -52469,14 +52504,114 @@ def _robin_parse_mode_option(payload: bytes) -> dict[str, Any]:
     return mode
 
 
-def _robin_select_bard_mode(modes: Sequence[dict[str, Any]]) -> str:
-    """Pick the mode id the desktop client uses for complex tasks."""
+def _robin_parse_policy_config(payload: bytes) -> dict[str, Any]:
+    """Decode one `GetUserStatusResponse.f34.f2` (`RobinGeminiModePolicy.Configs`) entry.
+
+    Wire layout:
+      - `f1` (`RobinGeminiModeConfig`): `{ 3: mode_category, 4: is_disabled, 5: mode_variant_id,
+        6: picker_button_primary_text, 7: picker_button_secondary_text, 14: title_for_picker,
+        16: upsell_config { 1: leading_icon, 2: vertex_model_id }, 17: thinking_level_menu_display_style,
+        18: thinking_level_menu_header_title }`
+      - `f2` (repeated `RobinThinkingLevelConfig`): `{ 2: title, 3: description, 4: thinking_level,
+        5: is_disabled, 6: picker_button_primary_text, 7: picker_button_secondary_text, 8: routing_variant_id }`
+      - `f3`: `implicit_thinking_level` (`varint`)
+      - `f4`: `mode_picker_display_config` (packed varint surfaces: `1` = chat, `2` = task)
+    """
+    cfg: dict[str, Any] = {
+        "category": 0,
+        "disabled": False,
+        "mode_variant_id": "",
+        "family": "",
+        "model_name": "",
+        "display_name": "",
+        "upsell_model_id": "",
+        "locked": False,
+        "thinking_menu_style": 0,
+        "thinking_levels": [],
+        "surfaces": [],
+    }
+    for fno, wtype, val in _pb_iter_fields(payload):
+        if fno == 1 and wtype == 2 and isinstance(val, (bytes, bytearray)):
+            for mfno, mwtype, mval in _pb_iter_fields(bytes(val)):
+                if mwtype == 0:
+                    if mfno == 3:
+                        cfg["category"] = int(mval)
+                    elif mfno == 4:
+                        cfg["disabled"] = bool(int(mval))
+                    elif mfno == 17:
+                        cfg["thinking_menu_style"] = int(mval)
+                elif mwtype == 2 and isinstance(mval, (bytes, bytearray)):
+                    if mfno == 16:
+                        cfg["locked"] = True
+                        for ufno, uwtype, uval in _pb_iter_fields(bytes(mval)):
+                            if (
+                                ufno == 2
+                                and uwtype == 2
+                                and isinstance(uval, (bytes, bytearray))
+                            ):
+                                cfg["upsell_model_id"] = (
+                                    bytes(uval)
+                                    .decode("utf-8", errors="replace")
+                                    .strip()
+                                )
+                        continue
+                    mtext = bytes(mval).decode("utf-8", errors="replace").strip()
+                    if mfno == 5:
+                        cfg["mode_variant_id"] = mtext
+                    elif mfno == 6:
+                        cfg["family"] = mtext
+                    elif mfno == 7:
+                        cfg["model_name"] = mtext
+                    elif mfno == 14:
+                        cfg["display_name"] = mtext
+        elif fno == 2 and wtype == 2 and isinstance(val, (bytes, bytearray)):
+            lvl: dict[str, Any] = {
+                "title": "",
+                "description": "",
+                "thinking_level": 0,
+                "routing_variant_id": "",
+            }
+            for lfno, lwtype, lval in _pb_iter_fields(bytes(val)):
+                if lwtype == 0 and lfno == 4:
+                    lvl["thinking_level"] = int(lval)
+                elif lwtype == 2 and isinstance(lval, (bytes, bytearray)):
+                    ltext = bytes(lval).decode("utf-8", errors="replace").strip()
+                    if lfno == 2:
+                        lvl["title"] = ltext
+                    elif lfno == 3:
+                        lvl["description"] = ltext
+                    elif lfno == 8:
+                        lvl["routing_variant_id"] = ltext
+            cfg["thinking_levels"].append(lvl)
+        elif fno == 4 and wtype == 2 and isinstance(val, (bytes, bytearray)):
+            cfg["surfaces"].extend(int(b) for b in bytes(val) if int(b) > 0)
+        elif fno == 4 and wtype == 0:
+            if int(val) > 0:
+                cfg["surfaces"].append(int(val))
+    return cfg
+
+
+def _robin_select_bard_mode(
+    modes: Sequence[dict[str, Any]],
+    *,
+    category: int = GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+) -> str:
+    """Pick the server-assigned `mode_id` matching `category` (falling back to category 8 or default)."""
+    target_cat = int(category or GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK)
     for mode in modes:
         if (
-            int(mode.get("category") or 0) == GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+            int(mode.get("category") or 0) == target_cat
             and str(mode.get("mode_id") or "").strip()
         ):
             return str(mode["mode_id"]).strip()
+    if target_cat != GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK:
+        for mode in modes:
+            if (
+                int(mode.get("category") or 0)
+                == GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+                and str(mode.get("mode_id") or "").strip()
+            ):
+                return str(mode["mode_id"]).strip()
     for mode in modes:
         if mode.get("selected") and str(mode.get("mode_id") or "").strip():
             return str(mode["mode_id"]).strip()
@@ -52484,11 +52619,13 @@ def _robin_select_bard_mode(modes: Sequence[dict[str, Any]]) -> str:
 
 
 def _robin_parse_get_user_status_response(payload_bytes: bytes) -> dict[str, Any]:
-    """Parse GetUserStatusResponse (user status blob + selectable desktop modes)."""
+    """Parse GetUserStatusResponse (`f17` mode configs, `f18` selected ids, and `f34` `RobinGeminiModePolicy`)."""
     out: dict[str, Any] = {
         "requested_mode_category": GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
         "modes": [],
         "selected_mode_ids": [],
+        "policy_name": "",
+        "policy_configs": [],
     }
     frames = _robin_unpack_grpc_frames(bytearray(payload_bytes)) or [payload_bytes]
     for frame in frames:
@@ -52511,6 +52648,18 @@ def _robin_parse_get_user_status_response(payload_bytes: bytes) -> dict[str, Any
                         text = bytes(sval).decode("utf-8", errors="replace").strip()
                         if text:
                             out["selected_mode_ids"].append(text)
+            elif fno == 34:
+                for pfno, pwtype, pval in _pb_iter_fields(bytes(val)):
+                    if pwtype != 2 or not isinstance(pval, (bytes, bytearray)):
+                        continue
+                    if pfno == 1:
+                        out["policy_name"] = (
+                            bytes(pval).decode("utf-8", errors="replace").strip()
+                        )
+                    elif pfno == 2:
+                        cfg = _robin_parse_policy_config(bytes(pval))
+                        if cfg["category"] > 0 or cfg["model_name"]:
+                            out["policy_configs"].append(cfg)
     return out
 
 
@@ -52864,6 +53013,8 @@ def _robin_build_client_generate_request(
     include_thinking_field_48: bool = False,
     dsh_sandbox_mode: str = "workspace-write",
     attachments: Sequence[_RobinAttachmentSpec | dict[str, Any]] | None = None,
+    mode_category: int = GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+    mode_variant_id: str = "",
 ) -> bytes:
     """Build ClientGenerateRequest (`[1000].[1001].f1`)."""
     _ = remy_settings
@@ -52894,6 +53045,7 @@ def _robin_build_client_generate_request(
         dev_settings += _pb_bytes_field(12, _pb_bytes_field(1, device_id))
     device_context = _pb_bytes_field(1004, dev_settings)
 
+    eff_category = int(mode_category or GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK)
     cgr = (
         _pb_bytes_field(1, user_query)
         + _pb_bytes_field(4, identifiers)
@@ -52904,7 +53056,7 @@ def _robin_build_client_generate_request(
         + _pb_varint_field(17, 2)
         + _pb_varint_field(18, 1)
         + _pb_varint_field(26, 41)
-        + _pb_varint_field(47, 8)
+        + _pb_varint_field(47, eff_category)
     )
 
     if include_thinking_field_48 and thinking_level:
@@ -52950,6 +53102,9 @@ def _robin_build_client_generate_request(
         cgr += _pb_bytes_field(51, remote_target)
 
     cgr += _pb_varint_field_always(56, 0)
+    clean_variant = str(mode_variant_id or "").strip()
+    if clean_variant:
+        cgr += _pb_bytes_field(66, clean_variant)
     return cgr
 
 
@@ -52970,6 +53125,8 @@ def _robin_build_process_query_frames(
     dsh_sandbox_mode: str = "workspace-write",
     bard_mode_id: str | None = None,
     attachments: Sequence[_RobinAttachmentSpec | dict[str, Any]] | None = None,
+    mode_category: int = GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+    mode_variant_id: str = "",
 ) -> list[bytes]:
     """Build the ProcessQuery outbound gRPC frame sequence (4 frames when device_id is set)."""
     req_meta = _robin_build_request_metadata(
@@ -52990,6 +53147,8 @@ def _robin_build_process_query_frames(
         include_thinking_field_48=include_thinking_field_48,
         dsh_sandbox_mode=dsh_sandbox_mode,
         attachments=attachments,
+        mode_category=mode_category,
+        mode_variant_id=mode_variant_id,
     )
     init_req = (
         _pb_bytes_field(1, req_meta)
@@ -60318,6 +60477,8 @@ class _RobinRunActor:
     access_token: str = ""
     server_token: str = ""
     device_id: str = ""
+    bard_mode_id: str = ""
+    mode_category: int = GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
     has_robin_tools: bool = False
     credential: Any = None
     token_refresher: Any = None
@@ -60375,6 +60536,14 @@ class _RobinRunActor:
                         old_mode = _ROBIN_BARD_MODE_BY_ACCOUNT.get(old_acct_key)
                         if old_mode is not None:
                             _ROBIN_BARD_MODE_BY_ACCOUNT[new_acct_key] = old_mode
+                        old_modes_map = _ROBIN_BARD_MODES_BY_ACCOUNT.get(old_acct_key)
+                        if old_modes_map is not None:
+                            _ROBIN_BARD_MODES_BY_ACCOUNT[new_acct_key] = dict(
+                                old_modes_map
+                            )
+                        old_pol = _ROBIN_MODE_POLICY_BY_ACCOUNT.get(old_acct_key)
+                        if old_pol is not None:
+                            _ROBIN_MODE_POLICY_BY_ACCOUNT[new_acct_key] = list(old_pol)
                         old_lim = _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT.get(old_acct_key)
                         if old_lim is not None:
                             _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT[new_acct_key] = old_lim
@@ -61307,7 +61476,9 @@ class _RobinRunActor:
             return False
         await self._ensure_fresh_access_token()
         shared_mux = getattr(self.response, "_mux", None)
-        account_mode_id = _robin_account_bard_mode_id(self.access_token)
+        account_mode_id = self.bard_mode_id or _robin_account_bard_mode_id(
+            self.access_token, category=self.mode_category
+        )
         if not account_mode_id and self.device_id:
             account_mode_id = await _robin_resolve_bard_mode_id(
                 self.http_session,
@@ -61315,6 +61486,7 @@ class _RobinRunActor:
                 self.device_id,
                 server_token=self.server_token,
                 session_id=self.session_id,
+                category=self.mode_category,
             )
         resume_frames = _robin_build_resume_turn_frames(
             conversation_id=conv_id,
@@ -61642,6 +61814,7 @@ class _RobinRunActor:
                     self.access_token,
                     conv_id,
                     device_id=self.device_id,
+                    bard_mode_id=self.bard_mode_id or None,
                     server_token=self.server_token,
                     mux=getattr(self.response, "_mux", None),
                     is_active=True,
@@ -61696,6 +61869,7 @@ class _RobinRunActor:
                 self.access_token,
                 conv_id,
                 device_id=self.device_id,
+                bard_mode_id=self.bard_mode_id or None,
                 server_token=self.server_token,
                 mux=getattr(self.response, "_mux", None),
                 is_active=True,
@@ -61898,12 +62072,18 @@ class _RobinStreamDecoder:
         if attr:
             return attr
         low_m = str(self.model_id or "").lower()
+        if "carbon" in low_m:
+            return "使用了 4 Carbon 模型"
         if "argon" in low_m:
             return "使用了 4 Argon 模型"
         if "pro" in low_m:
             return "使用了 3.1 Pro 模型"
+        if "3.5-flash-lite" in low_m:
+            return "使用了 3.5 Flash-Lite 模型"
         if "flash-lite" in low_m:
             return "使用了 Flash-Lite 模型"
+        if "3.8-flash" in low_m:
+            return "使用了 3.8 Flash 模型"
         if "flash" in low_m:
             return "使用了 Flash 模型"
         clean_id = str(self.model_id or "Gemini").removeprefix("gemini:")
@@ -63178,13 +63358,19 @@ def _robin_account_key(access_token: str) -> str:
     return hashlib.sha256(access_token.encode("utf-8", "replace")).hexdigest()[:16]
 
 
-def _robin_account_bard_mode_id(access_token: str) -> str:
-    """Return the cached `bard_mode_id` for `access_token`, or the current identity's mode id."""
+def _robin_account_bard_mode_id(
+    access_token: str, *, category: int | None = None
+) -> str:
+    """Return the cached `bard_mode_id` for `access_token` (and optional `category`), or the current identity's mode id."""
     identity = _robin_desktop_identity()
     if not access_token:
         return identity.bard_mode_id
     account_key = _robin_account_key(access_token)
     with _ROBIN_IDENTITY_LOCK:
+        if category is not None and category > 0:
+            by_cat = _ROBIN_BARD_MODES_BY_ACCOUNT.get(account_key)
+            if by_cat and int(category) in by_cat:
+                return by_cat[int(category)]
         cached = _ROBIN_BARD_MODE_BY_ACCOUNT.get(account_key)
     return cached if cached is not None else identity.bard_mode_id
 
@@ -63520,15 +63706,28 @@ async def _robin_resolve_bard_mode_id(
     *,
     server_token: str = "",
     session_id: str = "default",
+    category: int | None = None,
 ) -> str:
-    """Resolve `RequestMetadata.bard_mode_id` and per-account upload limits from `GetUserStatus`."""
+    """Resolve `RequestMetadata.bard_mode_id`, per-category mode map, and upload limits from `GetUserStatus`."""
     identity = _robin_desktop_identity()
     if not access_token or identity.missing_fields():
         return identity.bard_mode_id
+    target_cat = (
+        int(category)
+        if category is not None and int(category) > 0
+        else GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+    )
     account_key = _robin_account_key(access_token)
+    cached_cat = ""
     with _ROBIN_IDENTITY_LOCK:
+        by_cat = _ROBIN_BARD_MODES_BY_ACCOUNT.get(account_key)
+        if by_cat and target_cat in by_cat:
+            cached_cat = by_cat[target_cat]
         cached = _ROBIN_BARD_MODE_BY_ACCOUNT.get(account_key)
-    if cached:
+    if cached_cat:
+        _robin_apply_bard_mode_id(cached_cat)
+        return cached_cat
+    if cached and category is None:
         _robin_apply_bard_mode_id(cached)
         return cached
 
@@ -63544,8 +63743,15 @@ async def _robin_resolve_bard_mode_id(
     }
     if server_token:
         headers["X-Server-Token"] = server_token
-    parsed: dict[str, Any] = {"modes": [], "selected_mode_ids": []}
+    parsed: dict[str, Any] = {
+        "modes": [],
+        "selected_mode_ids": [],
+        "policy_name": "",
+        "policy_configs": [],
+    }
     resolved = ""
+    resolved_default = ""
+    modes_by_cat: dict[int, str] = {}
     resolved_limits: dict[str, int | float] = {}
     try:
         if session is not None and _robin_session_post_is_custom(session):
@@ -63572,7 +63778,20 @@ async def _robin_resolve_bard_mode_id(
             status = int(getattr(resp, "status", 0) or 0)
         if status < 400 and raw:
             parsed = _robin_parse_get_user_status_response(raw)
-            resolved = _robin_select_bard_mode(parsed["modes"])
+            for m_opt in parsed.get("modes") or []:
+                if not isinstance(m_opt, dict):
+                    continue
+                m_cat = int(m_opt.get("category") or 0)
+                m_id = str(m_opt.get("mode_id") or "").strip()
+                if m_cat > 0 and m_id and m_cat not in modes_by_cat:
+                    modes_by_cat[m_cat] = m_id
+            resolved_default = _robin_select_bard_mode(
+                parsed["modes"], category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+            )
+            resolved = (
+                _robin_select_bard_mode(parsed["modes"], category=target_cat)
+                or resolved_default
+            )
             for m_opt in parsed.get("modes") or []:
                 if isinstance(m_opt, dict) and (
                     m_opt.get("mode_id") == resolved or not resolved_limits
@@ -63585,22 +63804,36 @@ async def _robin_resolve_bard_mode_id(
     except Exception as exc:
         _llm_log.debug("GetUserStatus bard_mode_id resolve failed: %s", exc)
 
-    if resolved:
+    if resolved or modes_by_cat:
         with _ROBIN_IDENTITY_LOCK:
-            _ROBIN_BARD_MODE_BY_ACCOUNT[account_key] = resolved
+            if resolved_default or resolved:
+                _ROBIN_BARD_MODE_BY_ACCOUNT[account_key] = resolved_default or resolved
+            if modes_by_cat:
+                existing_map = dict(_ROBIN_BARD_MODES_BY_ACCOUNT.get(account_key) or {})
+                existing_map.update(modes_by_cat)
+                _ROBIN_BARD_MODES_BY_ACCOUNT[account_key] = existing_map
+            pol_cfgs = parsed.get("policy_configs")
+            if isinstance(pol_cfgs, list) and pol_cfgs:
+                _ROBIN_MODE_POLICY_BY_ACCOUNT[account_key] = list(pol_cfgs)
             if resolved_limits:
                 _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT[account_key] = resolved_limits
-        _robin_apply_bard_mode_id(resolved)
+        if resolved:
+            _robin_apply_bard_mode_id(resolved)
     else:
         _llm_log.warning(
-            "GetUserStatus carried no complex-task mode; sending RequestMetadata without "
-            "bard_mode_id instead of guessing one"
+            "GetUserStatus carried no matching mode for category=%d; sending RequestMetadata without "
+            "bard_mode_id instead of guessing one",
+            target_cat,
         )
     _gemini_debug_log_event(
         session_id,
         "user_status",
         {
+            "requested_category": target_cat,
             "resolved_bard_mode_id": resolved,
+            "modes_by_category": modes_by_cat,
+            "policy_name": parsed.get("policy_name", ""),
+            "policy_configs_count": len(parsed.get("policy_configs") or []),
             "attachment_limits": resolved_limits,
             "modes_count": len(parsed.get("modes") or []),
             "selected_mode_ids": parsed.get("selected_mode_ids") or [],
@@ -63615,6 +63848,7 @@ async def _robin_ensure_device_registered(
     access_token: str,
     device_id: str,
     *,
+    bard_mode_id: str | None = None,
     server_token: str = "",
     connected_folders: Sequence[str] | None = None,
     tools: Sequence[Any] | None = None,
@@ -63643,7 +63877,7 @@ async def _robin_ensure_device_registered(
     cache_key = f"{access_token[:24]}:{device_id}"
     if _ROBIN_REGISTERED_DEVICES.get(cache_key) == cache_val:
         return True
-    account_mode_id = _robin_account_bard_mode_id(access_token)
+    account_mode_id = bard_mode_id or _robin_account_bard_mode_id(access_token)
     req_pb = _robin_build_register_device_request(
         device_id=device_id,
         connected_folders=folders_tuple,
@@ -64221,6 +64455,8 @@ class GeminiModelSpec:
     thinking_level: str | None = None
     thinking_budget: int | None = None
     explicit_thinking_suffix: bool = False
+    robin_mode_category: int = GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+    robin_mode_variant_id: str = ""
     capabilities: frozenset[str] = GEMINI_DEFAULT_CAPABILITIES
 
     @classmethod
@@ -64331,7 +64567,12 @@ class GeminiModelSpec:
         else:
             if lower_slug == "gemini-4-argon":
                 upstream_id = "gemini-4-argon-high"
-                thinking_level = "HIGH"
+                if thinking_level is None:
+                    thinking_level = "HIGH"
+            elif lower_slug == "gemini-4-carbon":
+                upstream_id = "gemini-4-carbon-high"
+                if thinking_level is None:
+                    thinking_level = "HIGH"
             else:
                 upstream_id = base_slug
 
@@ -64342,6 +64583,10 @@ class GeminiModelSpec:
         ):
             slug = f"{slug}-build"
 
+        robin_cat, robin_variant = _robin_resolve_model_category_and_variant(
+            stripped_dash_base
+        )
+
         return cls(
             public_id=f"{GEMINI_MODEL_PREFIX}{endpoint}/{slug}",
             model_slug=slug,
@@ -64351,6 +64596,8 @@ class GeminiModelSpec:
             thinking_level=thinking_level,
             thinking_budget=thinking_budget,
             explicit_thinking_suffix=explicit_suffix,
+            robin_mode_category=robin_cat,
+            robin_mode_variant_id=robin_variant,
         )
 
     def as_openai_model(self) -> dict[str, Any]:
@@ -65248,6 +65495,8 @@ _GEMINI_INTERNAL_PAYLOAD_KEYS: frozenset[str] = frozenset(
         "_ve_robin_attachments",
         "_ve_robin_uploaded_attachments",
         "_ve_robin_bard_mode_id",
+        "_ve_robin_mode_category",
+        "_ve_robin_mode_variant_id",
         "_ve_fork_prompt_needed",
         "_ve_fork_candidate_conv_id",
     }
@@ -65322,6 +65571,8 @@ def _gemini_base_payload(
     base["_ve_boot_key"] = boot_key
     base["_ve_full_key"] = full_key
     base["_ve_include_thinking_field_48"] = include_f48
+    base["_ve_robin_mode_category"] = spec.robin_mode_category
+    base["_ve_robin_mode_variant_id"] = spec.robin_mode_variant_id
     if fork_id and fork_choice == "cancelled" and is_immediate_fork_answer:
         base["_ve_fork_cancelled"] = True
 
@@ -65582,6 +65833,8 @@ class _GeminiOpenedStream:
     access_token: str = ""
     server_token: str = ""
     device_id: str = ""
+    bard_mode_id: str = ""
+    mode_category: int = GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
     ert_response: Any = None
     ert_iterator: Any = None
     mux_queue: Any = None
@@ -65914,14 +66167,26 @@ class GeminiHTTPClient:
         dsh_sandbox_mode = str(
             base_payload.get("_ve_dsh_sandbox_mode") or "workspace-write"
         )
+        mode_cat = int(
+            base_payload.get("_ve_robin_mode_category")
+            or spec.robin_mode_category
+            or GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+        )
+        mode_var = str(
+            base_payload.get("_ve_robin_mode_variant_id")
+            if "_ve_robin_mode_variant_id" in base_payload
+            else spec.robin_mode_variant_id
+        ).strip()
         bard_mode_id = str(
             base_payload.get("_ve_robin_bard_mode_id") or ""
-        ).strip() or _robin_account_bard_mode_id(access_token)
+        ).strip() or _robin_account_bard_mode_id(access_token, category=mode_cat)
 
         robin_frames = _robin_build_process_query_frames(
             query_text=query_text,
             conversation_id=conv_id,
             thinking_level=spec.thinking_level or "HIGH",
+            mode_category=mode_cat,
+            mode_variant_id=mode_var,
             remy_settings=remy_cfg,
             parent_request_id=parent_req_id,
             parent_response_id=parent_resp_id,
@@ -66012,6 +66277,11 @@ class GeminiHTTPClient:
                 and active_cred.auth_method == "gemini_app"
             )
             project_id = ""
+            mode_cat_req = int(
+                base_payload.get("_ve_robin_mode_category")
+                or spec.robin_mode_category
+                or GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+            )
             if is_robin_target:
                 missing_id_fields = _robin_desktop_identity().missing_fields()
                 if missing_id_fields:
@@ -66038,14 +66308,15 @@ class GeminiHTTPClient:
                 server_tok_pre = str(base_payload.get("_ve_robin_server_token") or "")
                 resolved_mode = ""
                 if device_id_pre:
-                    # Resolve the account's task-mode id before building ProcessQuery frames
-                    # so even the very first request carries `RequestMetadata.bard_mode_id`.
+                    # Resolve the account's mode id for the requested model category before building
+                    # ProcessQuery frames so even the very first request carries `RequestMetadata.bard_mode_id`.
                     resolved_mode = await _robin_resolve_bard_mode_id(
                         session,
                         access_token,
                         device_id_pre,
                         server_token=server_tok_pre,
                         session_id=sid_dbg_pre,
+                        category=mode_cat_req,
                     )
                     if resolved_mode:
                         base_payload["_ve_robin_bard_mode_id"] = resolved_mode
@@ -66054,7 +66325,9 @@ class GeminiHTTPClient:
                     mode_for_upload = (
                         resolved_mode
                         or str(base_payload.get("_ve_robin_bard_mode_id") or "").strip()
-                        or _robin_account_bard_mode_id(access_token)
+                        or _robin_account_bard_mode_id(
+                            access_token, category=mode_cat_req
+                        )
                     )
                     try:
                         uploaded_attachments = (
@@ -66117,11 +66390,17 @@ class GeminiHTTPClient:
                     dsh_sandbox_mode = str(
                         base_payload.get("_ve_dsh_sandbox_mode") or "workspace-write"
                     )
+                    active_bard_mode_id = str(
+                        base_payload.get("_ve_robin_bard_mode_id") or ""
+                    ).strip() or _robin_account_bard_mode_id(
+                        access_token, category=mode_cat_req
+                    )
                     if device_id and robin_tools:
                         await _robin_ensure_device_registered(
                             session,
                             access_token,
                             device_id,
+                            bard_mode_id=active_bard_mode_id or None,
                             connected_folders=folders,
                             tools=robin_tools,
                             session_id=sid_dbg,
@@ -66138,6 +66417,11 @@ class GeminiHTTPClient:
                         {
                             "url": url,
                             "device_id": device_id,
+                            "mode_category": mode_cat_req,
+                            "mode_variant_id": base_payload.get(
+                                "_ve_robin_mode_variant_id", spec.robin_mode_variant_id
+                            ),
+                            "bard_mode_id": active_bard_mode_id,
                             "conv_id": base_payload.get("_ve_robin_conv_id", ""),
                             "parent_req_id": base_payload.get(
                                 "_ve_robin_parent_req_id", ""
@@ -66246,6 +66530,10 @@ class GeminiHTTPClient:
                         credential_id=active_cred.credential_id,
                         access_token=access_token,
                         device_id=str(base_payload.get("_ve_robin_device_id") or ""),
+                        bard_mode_id=str(
+                            base_payload.get("_ve_robin_bard_mode_id") or ""
+                        ).strip(),
+                        mode_category=mode_cat_req,
                     ),
                     None,
                 )
@@ -67240,6 +67528,8 @@ class GeminiHTTPClient:
                 access_token=opened.access_token,
                 server_token=opened.server_token,
                 device_id=opened.device_id,
+                bard_mode_id=opened.bard_mode_id,
+                mode_category=opened.mode_category,
                 has_robin_tools=has_robin_tools,
                 credential=self.credentials[0] if self.credentials else None,
                 token_refresher=self.ensure_access_token,
@@ -83162,11 +83452,29 @@ def test_gemini_model_spec_and_envelopes():
     assert len(proj_blocks.rows) == 6
 
     # 2. Verify ProcessQuery 3-frame and 4-frame wire layout, connected_folders in all 3 places,
-    #    and optional field 48 behavior.
+    #    model category / variant routing (f47 & f66), and optional field 48 behavior.
+    spec_argon = GeminiModelSpec.from_public_id("gemini:app/gemini-4-argon-high")
+    assert spec_argon.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+    assert spec_argon.robin_mode_variant_id == "argon"
+    spec_carbon = GeminiModelSpec.from_public_id("gemini:app/gemini-4-carbon-high")
+    assert spec_carbon.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+    assert spec_carbon.robin_mode_variant_id == ""
+    spec_flash38 = GeminiModelSpec.from_public_id("gemini:app/gemini-3.8-flash-high")
+    assert spec_flash38.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_FLASH
+    assert spec_flash38.robin_mode_variant_id == ""
+    spec_pro31 = GeminiModelSpec.from_public_id("gemini:app/gemini-3.1-pro-high")
+    assert spec_pro31.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_PRO
+    assert spec_pro31.robin_mode_variant_id == ""
+    spec_lite35 = GeminiModelSpec.from_public_id("gemini:app/gemini-3.5-flash-lite")
+    assert spec_lite35.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_FLASH_LITE
+    assert spec_lite35.robin_mode_variant_id == ""
+
     robin_frames_3 = _robin_build_process_query_frames(
         query_text="Explain quantum computing",
         conversation_id="",
         thinking_level="HIGH",
+        mode_category=spec_argon.robin_mode_category,
+        mode_variant_id=spec_argon.robin_mode_variant_id,
         include_thinking_field_48=False,
     )
     assert len(robin_frames_3) == 3
@@ -83177,7 +83485,29 @@ def test_gemini_model_spec_and_envelopes():
     cgr_fields = {fno: val for fno, _, val in _pb_iter_fields(bytes(cgr_outer[1]))}
     # Turn 1 RequestIdentifiers (field 4) must be 3 present-empty strings: 0a 00 12 00 1a 00
     assert bytes(cgr_fields[4]) == b"\n\x00\x12\x00\x1a\x00"
+    assert cgr_fields.get(47) == GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+    assert bytes(cgr_fields.get(66, b"")) == b"argon"
     assert 48 not in cgr_fields
+
+    robin_frames_flash = _robin_build_process_query_frames(
+        query_text="Quick question",
+        conversation_id="",
+        thinking_level="LOW",
+        mode_category=spec_flash38.robin_mode_category,
+        mode_variant_id=spec_flash38.robin_mode_variant_id,
+        include_thinking_field_48=True,
+    )
+    f0_fl_top = {fno: val for fno, _, val in _pb_iter_fields(robin_frames_flash[0])}
+    init_fl_map = {fno: val for fno, _, val in _pb_iter_fields(bytes(f0_fl_top[1000]))}
+    cgr_fl_outer = {
+        fno: val for fno, _, val in _pb_iter_fields(bytes(init_fl_map[1001]))
+    }
+    cgr_fl_fields = {
+        fno: val for fno, _, val in _pb_iter_fields(bytes(cgr_fl_outer[1]))
+    }
+    assert cgr_fl_fields.get(47) == GEMINI_ROBIN_MODE_CATEGORY_FLASH
+    assert cgr_fl_fields.get(48) == 3  # LOW = 3
+    assert 66 not in cgr_fl_fields
 
     # When include_thinking_field_48=True, field 48 is passed through
     robin_frames_4 = _robin_build_process_query_frames(
@@ -84402,11 +84732,16 @@ def test_robin_desktop_identity_reads_installed_bundle():
 
 
 def test_robin_bard_mode_id_is_resolved_from_user_status():
-    """`bard_mode_id` is server state: pick the complex-task mode, never a constant."""
+    """`bard_mode_id` is server state: pick the mode matching `category` and parse `f34` policy."""
     other_mode = (
         _pb_bytes_field(1, "aaaaaaaaaaaaaaaa")
         + _pb_bytes_field(2, "Flash")
-        + _pb_varint_field(23, 1)
+        + _pb_varint_field(23, GEMINI_ROBIN_MODE_CATEGORY_FLASH)
+    )
+    pro_mode = (
+        _pb_bytes_field(1, "dddddddddddddddd")
+        + _pb_bytes_field(2, "Pro")
+        + _pb_varint_field(23, GEMINI_ROBIN_MODE_CATEGORY_PRO)
     )
     complex_mode = (
         _pb_bytes_field(1, "bbbbbbbbbbbbbbbb")
@@ -84416,27 +84751,66 @@ def test_robin_bard_mode_id_is_resolved_from_user_status():
         + _pb_varint_field(21, 1)
         + _pb_varint_field(23, GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK)
     )
+    policy_argon_cfg = _pb_bytes_field(
+        1,
+        _pb_varint_field(3, GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK)
+        + _pb_bytes_field(5, "argon")
+        + _pb_bytes_field(6, "4 Argon"),
+    ) + _pb_bytes_field(4, _pb_varint_field(1, 1) + _pb_varint_field(2, 1))
+    policy_carbon_cfg = _pb_bytes_field(
+        1,
+        _pb_varint_field(3, GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK)
+        + _pb_bytes_field(6, "4 Carbon")
+        + _pb_bytes_field(16, _pb_bytes_field(2, "gemini-4-carbon")),
+    ) + _pb_bytes_field(4, _pb_varint_field(1, 1) + _pb_varint_field(2, 2))
+    policy_msg = (
+        _pb_bytes_field(1, "test_policy")
+        + _pb_bytes_field(2, policy_argon_cfg)
+        + _pb_bytes_field(2, policy_carbon_cfg)
+    )
     response = (
         _pb_bytes_field(1, "status")
         + _pb_bytes_field(17, other_mode)
+        + _pb_bytes_field(17, pro_mode)
         + _pb_bytes_field(17, complex_mode)
         + _pb_bytes_field(
             18,
             _pb_bytes_field(1, "aaaaaaaaaaaaaaaa")
+            + _pb_bytes_field(1, "dddddddddddddddd")
             + _pb_bytes_field(1, "bbbbbbbbbbbbbbbb"),
         )
+        + _pb_bytes_field(34, policy_msg)
     )
     parsed = _robin_parse_get_user_status_response(response)
     assert [m["mode_id"] for m in parsed["modes"]] == [
         "aaaaaaaaaaaaaaaa",
+        "dddddddddddddddd",
         "bbbbbbbbbbbbbbbb",
     ], parsed["modes"]
     assert parsed["selected_mode_ids"] == [
         "aaaaaaaaaaaaaaaa",
+        "dddddddddddddddd",
         "bbbbbbbbbbbbbbbb",
     ], parsed["selected_mode_ids"]
+    assert parsed["policy_name"] == "test_policy"
+    assert len(parsed["policy_configs"]) == 2
+    assert parsed["policy_configs"][0]["mode_variant_id"] == "argon"
+    assert parsed["policy_configs"][1]["mode_variant_id"] == ""
+    assert parsed["policy_configs"][1]["upsell_model_id"] == "gemini-4-carbon"
     picked = _robin_select_bard_mode(parsed["modes"])
     assert picked == "bbbbbbbbbbbbbbbb", picked
+    assert (
+        _robin_select_bard_mode(
+            parsed["modes"], category=GEMINI_ROBIN_MODE_CATEGORY_FLASH
+        )
+        == "aaaaaaaaaaaaaaaa"
+    )
+    assert (
+        _robin_select_bard_mode(
+            parsed["modes"], category=GEMINI_ROBIN_MODE_CATEGORY_PRO
+        )
+        == "dddddddddddddddd"
+    )
 
     saved_mode = _robin_desktop_identity().bard_mode_id
     baseline = "cccccccccccccccc"
@@ -84454,6 +84828,82 @@ def test_robin_bard_mode_id_is_resolved_from_user_status():
         after = _robin_build_request_metadata(device_id="device-under-test")
         assert _pb_bytes_field(16, picked) in after
         assert _pb_bytes_field(16, baseline) not in after
+
+        # Verify `_robin_resolve_bard_mode_id` populates per-category cache on first call
+        # and hits the cached category branch on subsequent calls without self-deadlocking
+        # on `_ROBIN_IDENTITY_LOCK`.
+        selftest_tok = "tok_selftest_user_status_cache_0001"
+        selftest_acct = _robin_account_key(selftest_tok)
+        post_calls = 0
+
+        class _FakeUserStatusResp:
+            status = 200
+
+            async def read(self) -> bytes:
+                return _robin_pack_grpc_frames([response])
+
+            def release(self) -> None:
+                pass
+
+        class _FakeUserStatusSession:
+            async def post(
+                self, url: str, *, data: bytes = b"", headers: Any = None
+            ) -> _FakeUserStatusResp:
+                nonlocal post_calls
+                post_calls += 1
+                assert url == GEMINI_ROBIN_USER_STATUS_URL
+                assert data
+                assert headers
+                return _FakeUserStatusResp()
+
+        fake_sess: Any = _FakeUserStatusSession()
+        try:
+            first_resolved = asyncio.run(
+                _robin_resolve_bard_mode_id(
+                    fake_sess,
+                    selftest_tok,
+                    "device-under-test",
+                    category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+                )
+            )
+            assert first_resolved == "bbbbbbbbbbbbbbbb", first_resolved
+            assert post_calls == 1
+            assert _robin_desktop_identity().bard_mode_id == "bbbbbbbbbbbbbbbb"
+
+            # Reset desktop identity's bard_mode_id to baseline so the second (cache-hit) call
+            # must execute the full `_robin_apply_bard_mode_id` update path under lock.
+            _robin_apply_bard_mode_id(baseline)
+            second_resolved = asyncio.run(
+                _robin_resolve_bard_mode_id(
+                    fake_sess,
+                    selftest_tok,
+                    "device-under-test",
+                    category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+                )
+            )
+            assert second_resolved == "bbbbbbbbbbbbbbbb", second_resolved
+            assert post_calls == 1, (
+                "second call must hit _ROBIN_BARD_MODES_BY_ACCOUNT cache"
+            )
+            assert _robin_desktop_identity().bard_mode_id == "bbbbbbbbbbbbbbbb"
+
+            pro_resolved = asyncio.run(
+                _robin_resolve_bard_mode_id(
+                    fake_sess,
+                    selftest_tok,
+                    "device-under-test",
+                    category=GEMINI_ROBIN_MODE_CATEGORY_PRO,
+                )
+            )
+            assert pro_resolved == "dddddddddddddddd", pro_resolved
+            assert post_calls == 1
+            assert _robin_desktop_identity().bard_mode_id == "dddddddddddddddd"
+        finally:
+            with _ROBIN_IDENTITY_LOCK:
+                _ROBIN_BARD_MODE_BY_ACCOUNT.pop(selftest_acct, None)
+                _ROBIN_BARD_MODES_BY_ACCOUNT.pop(selftest_acct, None)
+                _ROBIN_MODE_POLICY_BY_ACCOUNT.pop(selftest_acct, None)
+                _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT.pop(selftest_acct, None)
     finally:
         _robin_apply_bard_mode_id(saved_mode, allow_empty=True)
 
