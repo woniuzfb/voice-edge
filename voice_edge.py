@@ -148,246 +148,247 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2687
-#    VE_VLM_KV_BITS                         3.5                                          L511
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L516
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L521
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L522
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2270
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2275
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2278
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2282
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2291
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2299
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2354
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2805
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42928
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43577
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43589
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19530
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19527
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19493
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19508
-#    AUTH_SYNC_ENABLED                      "1"                                          L19481
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19482
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2688
+#    VE_VLM_KV_BITS                         3.5                                          L512
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L517
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L522
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L523
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2271
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2276
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2279
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2283
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2292
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2300
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2355
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2806
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42929
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43578
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43590
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19531
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19528
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19494
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19509
+#    AUTH_SYNC_ENABLED                      "1"                                          L19482
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19483
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L400
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L401
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L402
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L403
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L404
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L408
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L412
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L413
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L414
-#    VE_GEMINI_LOG_DEBUG                        "0"                                      L415
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L416
-#    VE_HUD_LOG_DEBUG                           "0"                                      L417
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L418
-#    VE_KWS_LOG_DEBUG                           "0"                                      L419
-#    VE_LLM_LOG_DEBUG                           "0"                                      L420
-#    VE_M365_LOG_DEBUG                          "0"                                      L421
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L422
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L426
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L430
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L431
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L432
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L433
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L434
-#    VE_TTS_LOG_DEBUG                           "0"                                      L435
-#    VE_VLM_LOG_DEBUG                           "0"                                      L436
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L437
+#    VE_APP_LOG_DEBUG                           "0"                                      L401
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L402
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L403
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L404
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L405
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L409
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L413
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L414
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L415
+#    VE_GEMINI_LOG_DEBUG                        "0"                                      L416
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L417
+#    VE_HUD_LOG_DEBUG                           "0"                                      L418
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L419
+#    VE_KWS_LOG_DEBUG                           "0"                                      L420
+#    VE_LLM_LOG_DEBUG                           "0"                                      L421
+#    VE_M365_LOG_DEBUG                          "0"                                      L422
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L423
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L427
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L431
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L432
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L433
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L434
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L435
+#    VE_TTS_LOG_DEBUG                           "0"                                      L436
+#    VE_VLM_LOG_DEBUG                           "0"                                      L437
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L438
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42814
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42837
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42864
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42923
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43466
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43469
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43477
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43489
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43491
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43500
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43506
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43512
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43528
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43533
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43540
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43547
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43556
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43563
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43611
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45379
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45380
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45381
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42815
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42838
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42865
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42924
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43467
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43470
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43478
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43490
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43492
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43501
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43507
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43513
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43529
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43534
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43541
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43548
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43557
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43564
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43612
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45380
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45381
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45382
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15036
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15038
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L15039
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15045
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15047
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15050
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15058
-#    QWEN_COOKIE_HEADER                     ""                                           L15062
-#    QWEN_TOKENS                            ""                                           L15070
-#    QWEN_TOKEN                             ""                                           L15071
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15037
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15039
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L15040
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15046
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15048
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15051
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15059
+#    QWEN_COOKIE_HEADER                     ""                                           L15063
+#    QWEN_TOKENS                            ""                                           L15071
+#    QWEN_TOKEN                             ""                                           L15072
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1871
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16705
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16706
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16708
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16710
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16712
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16715
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16718
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16721
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16842
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16845
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1872
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16706
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16707
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16709
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16711
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16713
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16716
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16719
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16722
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16843
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16846
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19391
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19392
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19398
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19399
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19407
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19409
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19412
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19414
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19416
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19420
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19447
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19450
-#    DOUBAO_WEB_AID                         "497858"                                     L19452
-#    DOUBAO_WEB_REGION                      "CN"                                         L19453
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19454
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19455
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19457
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19506
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19498
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19808
-#    DOUBAO_SESSION_IDS                     ""                                           L19850
-#    DOUBAO_SESSION_ID                      ""                                           L19854
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20365
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20374
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20556
-#    DOUBAO_SID_TT                          ""                                           L20559
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19392
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19393
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19399
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19400
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19408
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19410
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19413
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19415
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19417
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19421
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19448
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19451
+#    DOUBAO_WEB_AID                         "497858"                                     L19453
+#    DOUBAO_WEB_REGION                      "CN"                                         L19454
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19455
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19456
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19458
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19507
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19499
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19809
+#    DOUBAO_SESSION_IDS                     ""                                           L19851
+#    DOUBAO_SESSION_ID                      ""                                           L19855
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20366
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20375
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20557
+#    DOUBAO_SID_TT                          ""                                           L20560
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24952
-#    SHAREPOINT_HOME_URL                    ""                                           L24953
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24954
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24955
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24982
-#    M365_BRIDGE_PORT                       "5003"                                       L24983
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24984
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24985
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24987
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24990
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L24993
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25001
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L25003
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25023
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25030
-#    M365_CONV_MAP_MAX                      "1024"                                       L25199
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25846
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25864
+#    M365_ENTRY_URL                         ""                                           L24953
+#    SHAREPOINT_HOME_URL                    ""                                           L24954
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24955
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24956
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24983
+#    M365_BRIDGE_PORT                       "5003"                                       L24984
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24985
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24986
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24988
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24991
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24994
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25002
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L25004
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25024
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25031
+#    M365_CONV_MAP_MAX                      "1024"                                       L25200
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25847
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25865
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38152
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38362
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38424
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38446
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38453
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38548
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38550
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38554
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39747
-#    MI_USER                                ""                                           L39473
-#    MI_PASS                                ""                                           L39499
-#    XIAOAI_HARDWARE                        "LX06"                                       L39501
-#    MI_DID                                 ""                                           L39503
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39506
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39510
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39513
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39516
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39522
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39533
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39538
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39519
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39529
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39549
-#    XIAOAI_VOICE                           "zh"                                         L39551
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39553
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39556
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39559
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39562
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39566
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39570
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39575
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39580
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39585
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39590
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39595
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39603
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39608
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39613
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39618
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39623
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39628
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39633
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39636
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39640
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39644
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39648
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39653
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39658
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39662
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39665
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39668
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39671
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39674
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39677
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39680
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39683
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39690
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39696
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39700
+#    XIAOAI_ENABLED                         "0"                                          L38153
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38363
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38425
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38447
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38454
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38549
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38551
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38555
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39748
+#    MI_USER                                ""                                           L39474
+#    MI_PASS                                ""                                           L39500
+#    XIAOAI_HARDWARE                        "LX06"                                       L39502
+#    MI_DID                                 ""                                           L39504
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39507
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39511
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39514
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39517
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39523
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39534
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39539
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39520
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39530
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39550
+#    XIAOAI_VOICE                           "zh"                                         L39552
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39554
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39557
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39560
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39563
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39567
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39571
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39576
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39581
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39586
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39591
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39596
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39604
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39609
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39614
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39619
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39624
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39629
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39634
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39637
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39641
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39645
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39649
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39654
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39659
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39663
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39666
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39669
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39672
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39675
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39678
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39681
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39684
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39691
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39697
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39701
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48141
-#    VE_OPENCODE_API_KEYS                   ""                                           L49066
-#    VE_OPENCODE_FREE                       "1"                                          L49104
-#    VE_OPENCODE_GO                         "0"                                          L49109
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L66004
-#    VE_GEMINI_API_KEYS                     ""                                           L66008
-#    VE_GEMINI_BACKEND                      "auto"                                       L66027
-#    VE_GEMINI_PROJECT_ID                   ""                                           L66034
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54854
-#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1530
-#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1531
-#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1532
-#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1533
-#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1534
-#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1535
-#    VE_GEMINI_APP_BINARY                   ""                                           L1555
-#    VE_GEMINI_AGY_BINARY                   ""                                           L1570
-#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1588
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48142
+#    VE_OPENCODE_API_KEYS                   ""                                           L49067
+#    VE_OPENCODE_FREE                       "1"                                          L49105
+#    VE_OPENCODE_GO                         "0"                                          L49110
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L66071
+#    VE_GEMINI_API_KEYS                     ""                                           L66075
+#    VE_GEMINI_BACKEND                      "auto"                                       L66094
+#    VE_GEMINI_PROJECT_ID                   ""                                           L66101
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54855
+#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
+#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
+#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1533
+#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1534
+#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1535
+#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1536
+#    VE_GEMINI_APP_BINARY                   ""                                           L1556
+#    VE_GEMINI_AGY_BINARY                   ""                                           L1571
+#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1589
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L66725
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L66729
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L66734
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L66721
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L66711
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L66699
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L66707
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L66703
-# 合计 220 个唯一环境变量。
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L66792
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L66796
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L66800
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L66822
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L66788
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L66778
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L66766
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L66774
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L66770
+# 合计 221 个唯一环境变量。
 # ============================================================================
 
 
@@ -59183,6 +59184,7 @@ class _RobinToolOutputReconcile:
     synth_pending_calls: list[dict[str, Any]] = field(default_factory=list)
     synth_tool_deltas: list[dict[str, Any]] = field(default_factory=list)
     absorbed_bg: bool = False
+    ert_absorbed_bg: bool = False
     relay_deliveries: list[_RobinRelayDelivery] = field(default_factory=list)
     pending_before: list[dict[str, Any]] = field(default_factory=list)
     remaining_pending: list[dict[str, Any]] = field(default_factory=list)
@@ -61079,6 +61081,7 @@ class _RobinRunActor:
                 if str(out_item.get("_source") or "ert") == "relay":
                     rec.relay_touched = True
                 else:
+                    rec.ert_absorbed_bg = True
                     rec.ert_touched = True
                 continue
             out_str = _dsh_stringify_tool_output(out_item.get("output"))
@@ -61287,6 +61290,7 @@ class _RobinRunActor:
                         if is_relay:
                             rec.relay_touched = True
                         else:
+                            rec.ert_absorbed_bg = True
                             rec.ert_touched = True
                     continue
             if inv is not None and inv.status == "BACKGROUNDED":
@@ -61296,6 +61300,7 @@ class _RobinRunActor:
                 if is_relay:
                     rec.relay_touched = True
                 else:
+                    rec.ert_absorbed_bg = True
                     rec.ert_touched = True
                 prev_status = inv.status
                 prev_result_str = inv.result_str
@@ -61473,7 +61478,7 @@ class _RobinRunActor:
         self.decoder.emitted_reasoning_text = ""
         self.decoder.emitted_answer_chars = 0
         self.decoder.emitted_answer_text = ""
-        if rec.ert_touched and (rec.frames or rec.absorbed_bg):
+        if rec.ert_touched and (rec.frames or rec.ert_absorbed_bg):
             self.awaiting_post_tool_progress = True
             self.last_tool_submit_monotonic = time.monotonic()
             self.state_updates_at_tool_submit = self.run.state_tape.update_count
@@ -61659,7 +61664,6 @@ class _RobinRunActor:
                     self.decoder.step_unmatched_pq_tool_monotonic = 0.0
         else:
             self.run.relay_mode = True
-            self.decoder.step_unmatched_pq_tool_monotonic = 0.0
         chunks = self.decoder._robin_ingest_dsh_tool_calls([inv])
         self.pending_tool_calls = list(self.decoder.pending_tool_calls)
         if chunks:
@@ -61736,6 +61740,13 @@ class _RobinRunActor:
                 max_output_chars=out_chars or bg_inv.carrier_output_char_count,
                 done=True,
             )
+            _robin_record_sent_tool_tokens(
+                job_id,
+                _robin_estimate_ert_tool_output_tokens(
+                    json.dumps(done_dict, ensure_ascii=False),
+                    bg_inv.dsh_tool_name,
+                ),
+            )
             bg_inv.bg_done_delivered = True
             return done_dict, "done"
         if bg_inv.relay_carrier_ctx:
@@ -61768,6 +61779,13 @@ class _RobinRunActor:
                 max_output_chars=bg_inv.carrier_output_char_count,
                 done=False,
             )
+            _robin_record_sent_tool_tokens(
+                job_id,
+                _robin_estimate_ert_tool_output_tokens(
+                    json.dumps(running_dict, ensure_ascii=False),
+                    bg_inv.dsh_tool_name,
+                ),
+            )
             bg_inv.relay_carrier_ctx = {}
             bg_inv.carrier_call_name = ""
             bg_inv.carrier_mcp_tool = ""
@@ -61790,14 +61808,54 @@ class _RobinRunActor:
                 "timeout_ms": wait_ms,
             }
             ledger.by_public_id[pub_id] = bg_inv
-            self.run.relay_mode = True
+            if not str(bg_inv.relay_ctx.get("relay_wire_call_id") or "").strip():
+                self.run.relay_mode = True
             chunks = self.decoder._robin_ingest_dsh_tool_calls([bg_inv])
             self.pending_tool_calls = list(self.decoder.pending_tool_calls)
             if chunks:
                 await self.mux_queue.put(("ert_chunks", chunks))
             return None, "dispatched"
-        # No DSH job id yet: the payload will arrive with the original call's `role:tool`.
+        # No DSH job id yet: wait up to `wait_sec` for the original call's `role:tool`.
         return None, "carrier"
+
+    async def _relay_release_carrier(
+        self, job_id: str, *, build_snapshot: bool = False
+    ) -> dict[str, Any] | None:
+        """Release a Relay `command_status` carrier on abort or `WaitDurationSeconds` expiry."""
+        ledger = getattr(self.run, "tool_ledger", None)
+        if ledger is None or not job_id:
+            return None
+        for inv in ledger._source_candidates("relay"):
+            if str((inv.relay_carrier_ctx or {}).get("relay_job_id") or "") != job_id:
+                continue
+            max_chars = inv.carrier_output_char_count
+            inv.relay_carrier_ctx = {}
+            inv.carrier_call_name = ""
+            inv.carrier_mcp_tool = ""
+            inv.carrier_call_id = ""
+            inv.carrier_dispatched_monotonic = 0.0
+            inv.carrier_wait_duration_seconds = 0.0
+            if not build_snapshot:
+                return None
+            done = inv.status == "REPORTED"
+            result_dict = ledger._build_command_status_result_dict(
+                inv,
+                call_name="command_status",
+                mcp_tool_name="command_status",
+                max_output_chars=max_chars,
+                done=done,
+            )
+            if done:
+                inv.bg_done_delivered = True
+            _robin_record_sent_tool_tokens(
+                job_id,
+                _robin_estimate_ert_tool_output_tokens(
+                    json.dumps(result_dict, ensure_ascii=False),
+                    inv.dsh_tool_name,
+                ),
+            )
+            return result_dict
+        return None
 
     async def _relay_try_background(
         self, inv: _RobinToolInvocation
@@ -61811,7 +61869,16 @@ class _RobinRunActor:
         if not inv.bg_command_id:
             inv.bg_command_id = str(uuid.uuid4()).upper()
         _GEMINI_DSH_STORE.save_run(self.run)
-        return self.run.tool_ledger._build_background_handoff_dict(inv)
+        handoff_dict = self.run.tool_ledger._build_background_handoff_dict(inv)
+        if inv.public_tool_call_id:
+            _robin_record_sent_tool_tokens(
+                inv.public_tool_call_id,
+                _robin_estimate_ert_tool_output_tokens(
+                    json.dumps(handoff_dict, ensure_ascii=False),
+                    inv.dsh_tool_name,
+                ),
+            )
+        return handoff_dict
 
     def _relay_cancel_pending(self, reason: str = "cancelled") -> None:
         """Cancel Relay invocations of this actor and answer their waiting HTTP requests."""
@@ -66729,6 +66796,27 @@ def _relay_oauth_client_secret() -> str:
     return str(os.getenv("VE_RELAY_OAUTH_CLIENT_SECRET", "") or "").strip()
 
 
+def _relay_oauth_redirect_uri() -> str:
+    return str(os.getenv("VE_RELAY_OAUTH_REDIRECT_URI", "") or "").strip()
+
+
+VE_RELAY_DEFAULT_GOOGLE_REDIRECT_RE = re.compile(
+    r"^https://oauth-redirect\.googleusercontent\.com/r/user_bound_custom-mcp-[0-9a-f]+$"
+)
+
+
+def _relay_redirect_uri_allowed(redirect_uri: str) -> bool:
+    """Verify `redirect_uri` against pre-registered `VE_RELAY_OAUTH_REDIRECT_URI` (or Gemini's official callback)."""
+    cand = str(redirect_uri or "").strip()
+    if not cand:
+        return False
+    configured = _relay_oauth_redirect_uri()
+    if configured:
+        allowed = {u.strip() for u in configured.split(",") if u.strip()}
+        return cand in allowed
+    return bool(VE_RELAY_DEFAULT_GOOGLE_REDIRECT_RE.match(cand))
+
+
 def _relay_oauth_db_path() -> Path:
     raw = str(
         os.getenv("VE_RELAY_OAUTH_DB", "~/.voice-edge/relay_oauth.sqlite3") or ""
@@ -67004,6 +67092,8 @@ def _relay_authorize(raw_query: str) -> tuple[int, dict[str, str], bytes]:
         )
     if not redirect_uri:
         return _relay_jsonrpc_error(None, -32600, "redirect_uri required", status=400)
+    if not _relay_redirect_uri_allowed(redirect_uri):
+        return _relay_jsonrpc_error(None, -32600, "invalid redirect_uri", status=400)
     if not code_challenge:
         return _relay_jsonrpc_error(None, -32600, "code_challenge required", status=400)
     if method.upper() != "S256":
@@ -67193,25 +67283,179 @@ def _relay_schema_type_ok(value: Any, expected: str) -> bool:
     return True
 
 
-def _relay_validate_tool_args(schema: dict[str, Any], args: dict[str, Any]) -> str:
-    """Minimal JSON Schema check: required keys and top-level primitive types."""
+def _relay_validate_schema_value(
+    schema: dict[str, Any], value: Any, path: str = "arguments"
+) -> str:
+    """Recursive JSON Schema validation for MCP tool arguments."""
     if not isinstance(schema, dict):
         return ""
-    required = schema.get("required")
-    if isinstance(required, (list, tuple)):
-        for name in required:
-            if str(name) not in args:
-                return f"missing required argument: {name}"
-    props = schema.get("properties")
-    if isinstance(props, dict):
-        for name, value in args.items():
-            spec = props.get(name)
-            if not isinstance(spec, dict):
-                continue
-            expected = spec.get("type")
-            if isinstance(expected, str) and not _relay_schema_type_ok(value, expected):
-                return f"argument {name} must be of type {expected}"
+    for comb_key in ("allOf", "anyOf", "oneOf"):
+        subschemas = schema.get(comb_key)
+        if isinstance(subschemas, (list, tuple)) and subschemas:
+            valid_subs = [s for s in subschemas if isinstance(s, dict)]
+            if valid_subs:
+                results = [
+                    _relay_validate_schema_value(s, value, path) for s in valid_subs
+                ]
+                if comb_key == "allOf":
+                    for err in results:
+                        if err:
+                            return err
+                elif comb_key == "anyOf":
+                    if all(bool(err) for err in results):
+                        return results[0]
+                elif comb_key == "oneOf":
+                    matched_count = sum(1 for err in results if not err)
+                    if matched_count != 1:
+                        return (
+                            results[0]
+                            if matched_count == 0
+                            else f"{path} matched multiple oneOf schemas"
+                        )
+    if "const" in schema and value != schema["const"]:
+        return f"{path} must equal {schema['const']!r}"
+    enum_vals = schema.get("enum")
+    if isinstance(enum_vals, (list, tuple)):
+        if not any(
+            value == item and type(value) is type(item)
+            if isinstance(value, bool) or isinstance(item, bool)
+            else value == item
+            for item in enum_vals
+        ):
+            return f"{path} must be one of {list(enum_vals)!r}"
+    expected = schema.get("type")
+    if isinstance(expected, str):
+        if not _relay_schema_type_ok(value, expected):
+            return f"argument {path} must be of type {expected}"
+    elif isinstance(expected, (list, tuple)) and expected:
+        type_names = [str(t) for t in expected if isinstance(t, str)]
+        if type_names and not any(_relay_schema_type_ok(value, t) for t in type_names):
+            return f"argument {path} must be of type {'|'.join(type_names)}"
+    if isinstance(value, str):
+        min_len = schema.get("minLength")
+        if (
+            isinstance(min_len, int)
+            and not isinstance(min_len, bool)
+            and len(value) < min_len
+        ):
+            return f"argument {path} length must be >= {min_len}"
+        max_len = schema.get("maxLength")
+        if (
+            isinstance(max_len, int)
+            and not isinstance(max_len, bool)
+            and len(value) > max_len
+        ):
+            return f"argument {path} length must be <= {max_len}"
+        pattern = schema.get("pattern")
+        if isinstance(pattern, str):
+            try:
+                if re.search(pattern, value) is None:
+                    return f"argument {path} does not match pattern {pattern!r}"
+            except re.error:
+                pass
+    elif isinstance(value, (int, float)) and not isinstance(value, bool):
+        minimum = schema.get("minimum")
+        if (
+            isinstance(minimum, (int, float))
+            and not isinstance(minimum, bool)
+            and value < minimum
+        ):
+            return f"argument {path} must be >= {minimum}"
+        maximum = schema.get("maximum")
+        if (
+            isinstance(maximum, (int, float))
+            and not isinstance(maximum, bool)
+            and value > maximum
+        ):
+            return f"argument {path} must be <= {maximum}"
+        excl_min = schema.get("exclusiveMinimum")
+        if (
+            isinstance(excl_min, (int, float))
+            and not isinstance(excl_min, bool)
+            and value <= excl_min
+        ):
+            return f"argument {path} must be > {excl_min}"
+        excl_max = schema.get("exclusiveMaximum")
+        if (
+            isinstance(excl_max, (int, float))
+            and not isinstance(excl_max, bool)
+            and value >= excl_max
+        ):
+            return f"argument {path} must be < {excl_max}"
+    elif isinstance(value, (list, tuple)):
+        min_items = schema.get("minItems")
+        if (
+            isinstance(min_items, int)
+            and not isinstance(min_items, bool)
+            and len(value) < min_items
+        ):
+            return f"argument {path} must have at least {min_items} items"
+        max_items = schema.get("maxItems")
+        if (
+            isinstance(max_items, int)
+            and not isinstance(max_items, bool)
+            and len(value) > max_items
+        ):
+            return f"argument {path} must have at most {max_items} items"
+        items_schema = schema.get("items")
+        if isinstance(items_schema, dict):
+            for idx, elem in enumerate(value):
+                err = _relay_validate_schema_value(items_schema, elem, f"{path}[{idx}]")
+                if err:
+                    return err
+    elif isinstance(value, dict):
+        required = schema.get("required")
+        if isinstance(required, (list, tuple)):
+            for req_key in required:
+                req_name = str(req_key)
+                if req_name not in value:
+                    return (
+                        f"missing required argument: {req_name}"
+                        if path == "arguments"
+                        else f"missing required argument: {path}.{req_name}"
+                    )
+        min_props = schema.get("minProperties")
+        if (
+            isinstance(min_props, int)
+            and not isinstance(min_props, bool)
+            and len(value) < min_props
+        ):
+            return f"argument {path} must have at least {min_props} properties"
+        max_props = schema.get("maxProperties")
+        if (
+            isinstance(max_props, int)
+            and not isinstance(max_props, bool)
+            and len(value) > max_props
+        ):
+            return f"argument {path} must have at most {max_props} properties"
+        props = schema.get("properties")
+        props_dict = props if isinstance(props, dict) else {}
+        addl = schema.get("additionalProperties", True)
+        for key, prop_val in value.items():
+            key_str = str(key)
+            child_path = key_str if path == "arguments" else f"{path}.{key_str}"
+            if key_str in props_dict:
+                spec = props_dict[key_str]
+                if isinstance(spec, dict):
+                    err = _relay_validate_schema_value(spec, prop_val, child_path)
+                    if err:
+                        return err
+            elif addl is False:
+                return f"unexpected argument: {child_path}"
+            elif isinstance(addl, dict):
+                err = _relay_validate_schema_value(addl, prop_val, child_path)
+                if err:
+                    return err
     return ""
+
+
+def _relay_validate_tool_args(schema: dict[str, Any], args: Any) -> str:
+    """Validate MCP tool `arguments` against the tool's JSON Schema."""
+    if not isinstance(args, dict):
+        return "arguments must be an object"
+    if not isinstance(schema, dict):
+        return ""
+    return _relay_validate_schema_value(schema, args, "arguments")
 
 
 def _relay_mcp_tool_result(
@@ -67295,6 +67539,9 @@ async def _relay_mcp_tools_call(
         tool_name not in ledger.local_tool_names and tool_name != "command_status"
     ):
         return _relay_jsonrpc_error(rpc_id, -32602, f"unknown tool: {tool_name}")
+    if not isinstance(tool_args, dict):
+        return _relay_jsonrpc_error(rpc_id, -32602, "arguments must be an object")
+    wire_call_id = str(tool_args.pop("_ve_wire_call_id", "") or "")
     schema = {}
     for item in _relay_mcp_tool_catalog(ledger):
         if item.get("name") == tool_name:
@@ -67310,7 +67557,7 @@ async def _relay_mcp_tools_call(
         "relay_http_id": str(http_id or ""),
         "relay_connection_id": str(connection_id or ""),
         "relay_rpc_id": str(rpc_id) if rpc_id is not None else "",
-        "relay_wire_call_id": str(tool_args.pop("_ve_wire_call_id", "") or ""),
+        "relay_wire_call_id": wire_call_id,
     }
     fut = _relay_open_waiter(job_id)
     if fut is None:
@@ -67325,8 +67572,44 @@ async def _relay_mcp_tools_call(
                 rpc_id,
                 _relay_mcp_tool_result(immediate or {}, is_error=(state == "error")),
             )
-        payload_state, payload = await _relay_wait_with_abort(fut, abort_evt, None)
+        carrier_wait: float | None = None
+        if state == "carrier":
+            raw_wait = (
+                tool_args.get("WaitDurationSeconds")
+                if "WaitDurationSeconds" in tool_args
+                else tool_args.get("wait_duration_seconds")
+            )
+            try:
+                carrier_wait = max(
+                    0.0, float(raw_wait) if raw_wait is not None else 10.0
+                )
+            except (TypeError, ValueError):
+                carrier_wait = 10.0
+        payload_state, payload = await _relay_wait_with_abort(
+            fut, abort_evt, carrier_wait
+        )
+        if payload_state == "timeout":
+            timeout_dict = await _relay_call_on_actor(
+                actor, actor._relay_release_carrier(job_id, build_snapshot=True)
+            )
+            if fut.done():
+                payload = fut.result()
+                return _relay_jsonrpc_result(
+                    rpc_id,
+                    _relay_mcp_tool_result(
+                        payload.get("result") or {},
+                        is_error=bool(payload.get("is_error")),
+                    ),
+                )
+            _relay_drop_waiter(job_id)
+            return _relay_jsonrpc_result(
+                rpc_id,
+                _relay_mcp_tool_result(timeout_dict or {}, is_error=False),
+            )
         if payload_state != "result" or payload is None:
+            await _relay_call_on_actor(
+                actor, actor._relay_release_carrier(job_id, build_snapshot=False)
+            )
             _relay_drop_waiter(job_id)
             return _relay_jsonrpc_result(
                 rpc_id,
@@ -67462,7 +67745,6 @@ async def _relay_mcp_post(
         _relay_mcp_reject_log(
             "body is not valid JSON",
             body_len=len(body),
-            body_preview=body[:200].decode("utf-8", "replace"),
             protocol_version=requested_version,
         )
         return _relay_jsonrpc_error(None, -32700, "Parse error", status=400)
@@ -67539,10 +67821,15 @@ async def _relay_mcp_post(
         if not isinstance(params, dict):
             return _relay_jsonrpc_error(rpc_id, -32602, "params must be an object")
         tool_name = str(params.get("name") or "").strip()
-        raw_args = params.get("arguments")
-        tool_args: dict[str, Any] = dict(raw_args) if isinstance(raw_args, dict) else {}
         if not tool_name:
             return _relay_jsonrpc_error(rpc_id, -32602, "tool name is required")
+        raw_args = params.get("arguments")
+        if raw_args is None:
+            tool_args: dict[str, Any] = {}
+        elif isinstance(raw_args, dict):
+            tool_args = dict(raw_args)
+        else:
+            return _relay_jsonrpc_error(rpc_id, -32602, "arguments must be an object")
         return await _relay_mcp_tools_call(
             tool_name,
             tool_args,
@@ -87836,10 +88123,12 @@ def test_relay_oauth_mcp_endpoints():
     _RELAY_HTTP_WAITERS.clear()
     _relay_clear_active_run()
     tmp_dir = Path(tempfile.mkdtemp(prefix="ve_relay_oauth_"))
+    redirect_uri = "https://client.example.test/callback"
     env_keys = (
         "VE_RELAY_OAUTH_DB",
         "VE_RELAY_OAUTH_CLIENT_ID",
         "VE_RELAY_OAUTH_CLIENT_SECRET",
+        "VE_RELAY_OAUTH_REDIRECT_URI",
         "VE_RELAY_PUBLIC_BASE_URL",
     )
     saved = {key: os.environ.get(key) for key in env_keys}
@@ -87848,11 +88137,11 @@ def test_relay_oauth_mcp_endpoints():
     os.environ["VE_RELAY_OAUTH_DB"] = str(tmp_dir / "relay_oauth.sqlite3")
     os.environ["VE_RELAY_OAUTH_CLIENT_ID"] = "veh-selftest-client"
     os.environ["VE_RELAY_OAUTH_CLIENT_SECRET"] = "veh-selftest-secret"
+    os.environ["VE_RELAY_OAUTH_REDIRECT_URI"] = redirect_uri
     os.environ["VE_RELAY_PUBLIC_BASE_URL"] = "https://relay.example.test"
     _RELAY_OAUTH_STORE = None
     verifier = "selftest-pkce-verifier-0000000000000000000000000"
     challenge = _relay_pkce_s256(verifier)
-    redirect_uri = "https://client.example.test/callback"
 
     def _call(req: dict[str, Any]) -> tuple[int, dict[str, str], bytes]:
         return asyncio.run(_relay_http_handle(req))
@@ -87874,6 +88163,23 @@ def test_relay_oauth_mcp_endpoints():
                         "response_type": "code",
                         "client_id": "wrong-client",
                         "redirect_uri": redirect_uri,
+                        "code_challenge": challenge,
+                        "code_challenge_method": "S256",
+                    }
+                ),
+            )
+        )
+        assert status == 400
+
+        # Unregistered redirect_uri must be rejected (400) to prevent open redirects.
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/oauth/authorize",
+                query=urllib.parse.urlencode(
+                    {
+                        "response_type": "code",
+                        "client_id": "veh-selftest-client",
+                        "redirect_uri": "https://evil.example.test/callback",
                         "code_challenge": challenge,
                         "code_challenge_method": "S256",
                     }
@@ -88163,10 +88469,47 @@ def test_relay_catalog_handoff_and_veh_injection():
     )
     assert command_status_entry["inputSchema"]["required"] == ["CommandId"]
 
-    # Schema gate: missing required argument and a wrong primitive type are invalid params.
+    # Schema gate: missing required argument, wrong primitive type, nested/array/enum/additionalProperties.
     assert _relay_validate_tool_args(bash_entry["inputSchema"], {})
     assert _relay_validate_tool_args(bash_entry["inputSchema"], {"command": 42})
     assert _relay_validate_tool_args(bash_entry["inputSchema"], {"command": "ok"}) == ""
+    nested_schema = {
+        "type": "object",
+        "properties": {
+            "mode": {"type": "string", "enum": ["fast", "deep"]},
+            "count": {"type": "integer", "minimum": 1, "maximum": 10},
+            "tags": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+            "nested": {
+                "type": "object",
+                "properties": {"flag": {"type": "boolean"}},
+                "required": ["flag"],
+                "additionalProperties": False,
+            },
+        },
+        "required": ["mode"],
+        "additionalProperties": False,
+    }
+    assert (
+        _relay_validate_tool_args(
+            nested_schema,
+            {
+                "mode": "fast",
+                "count": 3,
+                "tags": ["a"],
+                "nested": {"flag": True},
+            },
+        )
+        == ""
+    )
+    assert _relay_validate_tool_args(nested_schema, {"mode": "invalid"})
+    assert _relay_validate_tool_args(nested_schema, {"mode": "fast", "count": 0})
+    assert _relay_validate_tool_args(nested_schema, {"mode": "fast", "tags": [123]})
+    assert _relay_validate_tool_args(nested_schema, {"mode": "fast", "nested": {}})
+    assert _relay_validate_tool_args(
+        nested_schema, {"mode": "fast", "nested": {"flag": True, "extra": 1}}
+    )
+    assert _relay_validate_tool_args(nested_schema, {"mode": "fast", "unknown": 1})
+    assert _relay_validate_tool_args(nested_schema, ["not-an-object"])
 
     relay_inv, _ = _robin_register_dsh_tool_call(
         ledger,
@@ -88284,6 +88627,18 @@ def test_relay_catalog_handoff_and_veh_injection():
             assert st_lmcp == 200
             assert json.loads(body_lmcp)["error"]["code"] == -32602
 
+            # Non-object `arguments` in `tools/call` must return JSON-RPC Invalid params (-32602).
+            st_bad_args, _, body_bad_args = await _relay_mcp_tools_call(
+                "bash",
+                cast(Any, ["not", "an", "object"]),
+                78,
+                http_id="h_selftest_bad_args",
+                connection_id="ws_selftest_0001",
+                abort_evt=live_abort,
+            )
+            assert st_bad_args == 200
+            assert json.loads(body_bad_args)["error"]["code"] == -32602
+
             # PQ announcement split: known wire id stays in `relay_announced_call_ids`
             # without enabling `relay_mode`, while unknown wire id enables `relay_mode`.
             run.relay_mode = False
@@ -88307,9 +88662,62 @@ def test_relay_catalog_handoff_and_veh_injection():
             assert decoder.step_unmatched_pq_tool_monotonic == 0.0
             assert run.relay_mode is False
 
-            # Backgrounded Relay completion without an active carrier still reconciles as `ok`.
+            # Issue 2 & 3: `command_status` without `dsh_job_id`:
+            # - Honours positive `WaitDurationSeconds` and returns `status == "running"` on expiry.
+            # - Releases `relay_carrier_ctx` on HTTP abort so the next poll is not blocked as busy.
             inv_w.status = "BACKGROUNDED"
             inv_w.bg_command_id = "BG-WIRE-0001"
+            inv_w.dsh_job_id = ""
+            inv_w.result_str = "partial-bg-line\n"
+            t_poll = time.monotonic()
+            st_cs_wait, _, body_cs_wait = await _relay_mcp_tools_call(
+                "command_status",
+                {"CommandId": "BG-WIRE-0001", "WaitDurationSeconds": 0.05},
+                79,
+                http_id="h_selftest_cs_wait",
+                connection_id="ws_selftest_0001",
+                abort_evt=live_abort,
+            )
+            cs_elapsed = time.monotonic() - t_poll
+            assert st_cs_wait == 200 and cs_elapsed < 0.5
+            cs_wait_res = json.loads(
+                json.loads(body_cs_wait)["result"]["content"][0]["text"]
+            )
+            assert cs_wait_res["status"] == "running"
+            assert cs_wait_res["command_id"] == "BG-WIRE-0001"
+            assert inv_w.relay_carrier_ctx == {}
+
+            abort_cs_evt = asyncio.Event()
+            asyncio.get_running_loop().call_later(0.02, abort_cs_evt.set)
+            st_cs_ab, _, body_cs_ab = await _relay_mcp_tools_call(
+                "command_status",
+                {"CommandId": "BG-WIRE-0001", "WaitDurationSeconds": 5.0},
+                80,
+                http_id="h_selftest_cs_abort",
+                connection_id="ws_selftest_0001",
+                abort_evt=abort_cs_evt,
+            )
+            assert st_cs_ab == 200
+            assert json.loads(body_cs_ab)["result"]["isError"] is True
+            assert inv_w.relay_carrier_ctx == {}
+            assert inv_w.carrier_call_name == ""
+
+            # Subsequent poll after abort succeeds immediately instead of reporting busy.
+            st_cs_next, _, body_cs_next = await _relay_mcp_tools_call(
+                "command_status",
+                {"CommandId": "BG-WIRE-0001", "WaitDurationSeconds": 0},
+                81,
+                http_id="h_selftest_cs_next",
+                connection_id="ws_selftest_0001",
+                abort_evt=live_abort,
+            )
+            assert st_cs_next == 200
+            cs_next_res = json.loads(
+                json.loads(body_cs_next)["result"]["content"][0]["text"]
+            )
+            assert cs_next_res["status"] == "running"
+
+            # Backgrounded Relay completion without an active carrier still reconciles as `ok`.
             orig_save_fn = _GEMINI_DSH_STORE.save_run
             cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
             try:
