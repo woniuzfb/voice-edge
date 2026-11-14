@@ -475,7 +475,7 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
 - **模型 ID**：
   - `gemini:aistudio/gemini-4-carbon`（`-high`、`-medium`、`-low`）
   - `gemini:aistudio/gemini-4-argon`（`-high`、`-medium`、`-low`）
-  - `gemini:aistudio/gemini-3.8-flash-high`、`gemini:aistudio/gemini-3.8-flash-medium`、`gemini:aistudio/gemini-3.8-flash-low`
+  - `gemini:aistudio/gemini-4-hydrogen`（`-high`、`-medium`、`-low`）
   - 任意由 `ListModels` 动态发现的上游模型（`gemini:aistudio/<model-slug>`）
 
 ### 2. Google AI Studio Build（`gemini:aistudio/*-build*`）
@@ -489,7 +489,7 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
 - **模型 ID**：
   - `gemini:aistudio/gemini-4-carbon-build`（`-high`、`-medium`、`-low`）
   - `gemini:aistudio/gemini-4-argon-build`（`-high`、`-medium`、`-low`）
-  - `gemini:aistudio/gemini-3.8-flash-build`（`-high`、`-medium`、`-low`）
+  - `gemini:aistudio/gemini-4-hydrogen-build`（`-high`、`-medium`、`-low`）
   - 任意在 `ListModels` 中声明能力码 `48`（`code_assistant`）的上游模型（`gemini:aistudio/<model-slug>-build`）
 
 ### 3. Gemini macOS App 任务模式（`gemini:app/*`）
@@ -502,6 +502,7 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
 - **模型 ID**：
   - `gemini:app/gemini-4-carbon`（`-high`、`-medium`、`-low`）
   - `gemini:app/gemini-4-argon`（`-high`、`-medium`、`-low`）
+  - `gemini:app/gemini-4-hydrogen`（`-high`、`-medium`、`-low`）
 
 #### 公网 MCP 用户工具中继（`tools/veh_relay.py`）
 
@@ -512,23 +513,23 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
    ```bash
    export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
    export VE_RELAY_HOST="0.0.0.0"
-   export VE_RELAY_PORT="8443"
+   export VE_RELAY_PORT="443"
    export VE_RELAY_CERT="/path/to/fullchain.pem"
    export VE_RELAY_KEY="/path/to/privkey.pem"
 
    python3 tools/veh_relay.py
    # 或显式传入参数（仅在本地测试或由前置反向代理卸载 TLS 时使用 --no-tls）：
-   python3 tools/veh_relay.py --host 127.0.0.1 --port 8443 --no-tls
+   python3 tools/veh_relay.py --host 127.0.0.1 --port 443 --no-tls
    ```
 
 2. **在 Mac 本机配置 `voice_edge`**（出站 WSS 客户端 + OAuth 2.0 / MCP 路由处理）：
 
    ```bash
    export VE_USER_TOOL_RELAY_ENABLED=1
-   export VE_USER_TOOL_RELAY_URL="wss://<relay-host>:8443/v1/edge"
+   export VE_USER_TOOL_RELAY_URL="wss://<relay-host>/v1/edge"
    export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
    export VE_USER_TOOL_RELAY_EDGE_ID="mac-mini"
-   export VE_RELAY_PUBLIC_BASE_URL="https://<relay-host>:8443"
+   export VE_RELAY_PUBLIC_BASE_URL="https://<relay-host>"
    export VE_RELAY_OAUTH_CLIENT_ID="<oauth-client-id>"
    export VE_RELAY_OAUTH_CLIENT_SECRET="<oauth-client-secret>"
    # 可选：自定义 OAuth SHA-256 摘要 SQLite 库路径（权限自动设为 0600）
@@ -536,7 +537,7 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
    ```
 
 3. **在 Gemini 中注册连接 MCP Server（“Connect to an MCP server”）**：
-   - **MCP Server URL**：`https://<relay-host>:8443/mcp`
+   - **MCP Server URL**：`https://<relay-host>/mcp`
    - **Client ID**：与 `VE_RELAY_OAUTH_CLIENT_ID` 一致
    - **Client secret**：与 `VE_RELAY_OAUTH_CLIENT_SECRET` 一致
 

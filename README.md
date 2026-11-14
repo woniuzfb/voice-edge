@@ -481,7 +481,7 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
 - **Model IDs**:
   - `gemini:aistudio/gemini-4-carbon` (`-high`, `-medium`, `-low`)
   - `gemini:aistudio/gemini-4-argon` (`-high`, `-medium`, `-low`)
-  - `gemini:aistudio/gemini-3.8-flash-high`, `gemini:aistudio/gemini-3.8-flash-medium`, `gemini:aistudio/gemini-3.8-flash-low`
+  - `gemini:aistudio/gemini-4-hydrogen` (`-high`, `-medium`, `-low`)
   - Any upstream model dynamically discovered via `ListModels` (`gemini:aistudio/<model-slug>`)
 
 ### 2. Google AI Studio Build (`gemini:aistudio/*-build*`)
@@ -495,7 +495,7 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
 - **Model IDs**:
   - `gemini:aistudio/gemini-4-carbon-build` (`-high`, `-medium`, `-low`)
   - `gemini:aistudio/gemini-4-argon-build` (`-high`, `-medium`, `-low`)
-  - `gemini:aistudio/gemini-3.8-flash-build` (`-high`, `-medium`, `-low`)
+  - `gemini:aistudio/gemini-4-hydrogen-build` (`-high`, `-medium`, `-low`)
   - Any upstream model advertising capability `48` (`code_assistant`) in `ListModels` (`gemini:aistudio/<model-slug>-build`)
 
 ### 3. Gemini macOS App Task Mode (`gemini:app/*`)
@@ -508,6 +508,7 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
 - **Model IDs**:
   - `gemini:app/gemini-4-carbon` (`-high`, `-medium`, `-low`)
   - `gemini:app/gemini-4-argon` (`-high`, `-medium`, `-low`)
+  - `gemini:app/gemini-4-hydrogen` (`-high`, `-medium`, `-low`)
 
 #### Public MCP User-Tool Relay (`tools/veh_relay.py`)
 
@@ -518,23 +519,23 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
    ```bash
    export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
    export VE_RELAY_HOST="0.0.0.0"
-   export VE_RELAY_PORT="8443"
+   export VE_RELAY_PORT="443"
    export VE_RELAY_CERT="/path/to/fullchain.pem"
    export VE_RELAY_KEY="/path/to/privkey.pem"
 
    python3 tools/veh_relay.py
    # Or pass flags explicitly (use --no-tls only behind a local TLS-terminating reverse proxy or for local tests):
-   python3 tools/veh_relay.py --host 127.0.0.1 --port 8443 --no-tls
+   python3 tools/veh_relay.py --host 127.0.0.1 --port 443 --no-tls
    ```
 
 2. **Configure `voice_edge` on your Mac** (outbound WSS client + OAuth 2.0 / MCP endpoint handler):
 
    ```bash
    export VE_USER_TOOL_RELAY_ENABLED=1
-   export VE_USER_TOOL_RELAY_URL="wss://<relay-host>:8443/v1/edge"
+   export VE_USER_TOOL_RELAY_URL="wss://<relay-host>/v1/edge"
    export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
    export VE_USER_TOOL_RELAY_EDGE_ID="mac-mini"
-   export VE_RELAY_PUBLIC_BASE_URL="https://<relay-host>:8443"
+   export VE_RELAY_PUBLIC_BASE_URL="https://<relay-host>"
    export VE_RELAY_OAUTH_CLIENT_ID="<oauth-client-id>"
    export VE_RELAY_OAUTH_CLIENT_SECRET="<oauth-client-secret>"
    # Optional custom SQLite path for SHA-256 OAuth code/token digests (mode 0600):
@@ -542,7 +543,7 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
    ```
 
 3. **Register the MCP server in Gemini ("Connect to an MCP server")**:
-   - **MCP Server URL**: `https://<relay-host>:8443/mcp`
+   - **MCP Server URL**: `https://<relay-host>/mcp`
    - **Client ID**: value of `VE_RELAY_OAUTH_CLIENT_ID`
    - **Client secret**: value of `VE_RELAY_OAUTH_CLIENT_SECRET`
 

@@ -745,7 +745,7 @@ def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="VEH relay (public HTTPS to edge WSS)")
     parser.add_argument("--host", default=os.environ.get("VE_RELAY_HOST", "0.0.0.0"))
     parser.add_argument(
-        "--port", type=int, default=int(os.environ.get("VE_RELAY_PORT", "8443"))
+        "--port", type=int, default=int(os.environ.get("VE_RELAY_PORT", "443"))
     )
     parser.add_argument("--cert", default=os.environ.get("VE_RELAY_CERT", ""))
     parser.add_argument("--key", default=os.environ.get("VE_RELAY_KEY", ""))

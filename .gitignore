@@ -1,0 +1,18 @@
+__pycache__/
+.ruff_cache/
+.venv/
+.vscode/
+models/
+*.egg-info/
+
+.python-version
+
+tools/audio_route_monitor
+tools/apple_speech_helper
+
+# Vim swap files
+*.swp
+*.swo
+.*.sw*
+
+.DS_Store
