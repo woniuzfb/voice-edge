@@ -362,10 +362,10 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49074
 #    VE_OPENCODE_FREE                       "1"                                          L49112
 #    VE_OPENCODE_GO                         "0"                                          L49117
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L66089
-#    VE_GEMINI_API_KEYS                     ""                                           L66093
-#    VE_GEMINI_BACKEND                      "auto"                                       L66112
-#    VE_GEMINI_PROJECT_ID                   ""                                           L66119
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L66147
+#    VE_GEMINI_API_KEYS                     ""                                           L66151
+#    VE_GEMINI_BACKEND                      "auto"                                       L66170
+#    VE_GEMINI_PROJECT_ID                   ""                                           L66177
 #    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54862
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
@@ -379,15 +379,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L66810
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L66814
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L66818
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L66840
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L66806
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L66796
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L66784
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L66792
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L66788
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L66868
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L66872
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L66876
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L66898
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L66864
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L66854
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L66842
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L66850
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L66846
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -61455,6 +61455,30 @@ class _RobinRunActor:
             for tc in self.decoder.pending_tool_calls
             if str(tc.get("id") or "").strip() not in reconciled_ids
         ]
+        synth_ids = {
+            str(tc.get("id") or "").strip()
+            for tc in rec.synth_pending_calls
+            if isinstance(tc, dict) and str(tc.get("id") or "").strip()
+        }
+        delivered_ids = getattr(self.decoder, "delivered_tool_call_ids", set())
+        for tc in remaining_pending:
+            if not isinstance(tc, dict):
+                continue
+            tc_id_rem = str(tc.get("id") or "").strip()
+            if tc_id_rem and tc_id_rem not in synth_ids and tc_id_rem in delivered_ids:
+                rec.synth_tool_deltas.append(
+                    {
+                        "index": len(rec.synth_tool_deltas),
+                        "id": tc_id_rem,
+                        "type": "function",
+                        "function": {
+                            "name": str(tc.get("name") or ""),
+                            "arguments": json.dumps(
+                                tc.get("args") or {}, ensure_ascii=False
+                            ),
+                        },
+                    }
+                )
         if rec.synth_pending_calls:
             remaining_pending.extend(rec.synth_pending_calls)
         for idx, tc in enumerate(remaining_pending):
@@ -61886,6 +61910,35 @@ class _RobinRunActor:
                 ),
             )
         return handoff_dict
+
+    async def _relay_abort_tool_call(self, job_id: str) -> None:
+        """Remove an aborted Relay `tools/call` from pending state so it cannot deadlock the run."""
+        if not job_id:
+            return
+        ledger = getattr(self.run, "tool_ledger", None)
+        inv = ledger.by_public_id.get(job_id) if ledger is not None else None
+        if inv is not None and inv.status in ("DISPATCHED", "BACKGROUNDED"):
+            inv.status = "REPORTED"
+        before_len = len(self.decoder.pending_tool_calls)
+        remaining = [
+            tc
+            for tc in self.decoder.pending_tool_calls
+            if str(tc.get("id") or "").strip() != job_id
+        ]
+        if len(remaining) != before_len:
+            for idx, tc in enumerate(remaining):
+                tc["index"] = idx
+            self.decoder.pending_tool_calls = remaining
+            self.pending_tool_calls = list(remaining)
+            self.decoder.finish_reason = "tool_calls" if remaining else None
+            if not remaining:
+                self.run.execution_state = "RUNNING"
+                self.run.attachment_state = "STREAMING"
+                if self.tools_resumed_event is not None:
+                    self.tools_resumed_event.set()
+            else:
+                await self.mux_queue.put(("ert_chunks", []))
+            _GEMINI_DSH_STORE.save_run(self.run)
 
     def _relay_cancel_pending(self, reason: str = "cancelled") -> None:
         """Cancel Relay invocations of this actor and answer their waiting HTTP requests."""
@@ -62855,6 +62908,7 @@ class _RobinStreamDecoder:
         self.conversation_title = self.run.conversation_title
         self.op_id = ""
         self.pending_tool_calls: list[dict[str, Any]] = []
+        self.delivered_tool_call_ids: set[str] = set()
         self.pending_ert_outbound_frames: list[bytes] = []
         self.tool_call_count = 0
         self.announced_client_tool_ids: set[str] = set()
@@ -67671,7 +67725,7 @@ async def _relay_mcp_tools_call(
             ),
         )
     if state == "abort":
-        # Best-effort: the public client vanished. DSH keeps running; the answer is dropped.
+        await _relay_call_on_actor(actor, actor._relay_abort_tool_call(job_id))
         _relay_drop_waiter(job_id)
         return _relay_jsonrpc_result(
             rpc_id,
@@ -67696,6 +67750,7 @@ async def _relay_mcp_tools_call(
     # Not backgroundable: this request owns the call until DSH answers.
     state, payload = await _relay_wait_with_abort(fut, abort_evt, None)
     if state != "result" or payload is None:
+        await _relay_call_on_actor(actor, actor._relay_abort_tool_call(job_id))
         _relay_drop_waiter(job_id)
         return _relay_jsonrpc_result(
             rpc_id,
@@ -70056,6 +70111,7 @@ class GeminiHTTPClient:
             provisional_stored = False
             provisional_resp_stored = False
             delivered_tool_ids: set[str] = set()
+            sse_tool_index_by_id: dict[str, int] = {}
 
             def _record_delivered(chunk_dict: dict[str, Any]) -> None:
                 for choice in chunk_dict.get("choices") or []:
@@ -70064,7 +70120,13 @@ class GeminiHTTPClient:
                     ) or []:
                         tc_id_str = str(tool_call.get("id") or "")
                         if tc_id_str:
+                            if tc_id_str not in sse_tool_index_by_id:
+                                sse_tool_index_by_id[tc_id_str] = len(
+                                    sse_tool_index_by_id
+                                )
+                            tool_call["index"] = sse_tool_index_by_id[tc_id_str]
                             delivered_tool_ids.add(tc_id_str)
+                            decoder.delivered_tool_call_ids.add(tc_id_str)
                             inv_deliv = run.tool_ledger.by_public_id.get(tc_id_str)
                             if inv_deliv is not None:
                                 inv_deliv.dispatched_monotonic = time.monotonic() + 2.5
@@ -70172,9 +70234,15 @@ class GeminiHTTPClient:
                         if isinstance(
                             actor.response, (_RobinHTTP2Response, _RobinMuxResponse)
                         ):
-                            coalesce_sec = max(
-                                0.0, float(GEMINI_WEB_ERT_COALESCE_WINDOW_MS) / 1000.0
+                            coalesce_ms = (
+                                max(GEMINI_WEB_ERT_COALESCE_WINDOW_MS, 200)
+                                if (
+                                    run.relay_mode
+                                    or bool(decoder._relay_pending_tool_calls())
+                                )
+                                else GEMINI_WEB_ERT_COALESCE_WINDOW_MS
                             )
+                            coalesce_sec = max(0.0, float(coalesce_ms) / 1000.0)
                             coalesce_deadline = time.monotonic() + coalesce_sec
                             while True:
                                 rem_wait = coalesce_deadline - time.monotonic()
@@ -87955,6 +88023,69 @@ def test_relay_channel_isolation_and_relay_only_submit():
         "bash",
     )
     assert _ROBIN_SENT_TOOL_TOKENS.get(job_id) == projected_tok
+
+    # Verify cross-hop concurrent Relay calls re-emit previously delivered pending
+    # calls when omitted from a partial continuation batch, and `_relay_abort_tool_call`
+    # removes aborted pending calls and wakes `tools_resumed_event`.
+    cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+    try:
+
+        async def _cross_hop_and_abort_scenario() -> None:
+            inv_a, _ = await actor._relay_dispatch_tool_call(
+                "bash",
+                {"command": "step-a"},
+                "call_relay_hop_a",
+                {"relay_job_id": "call_relay_hop_a", "relay_http_id": "h_hop_a"},
+            )
+            inv_b, _ = await actor._relay_dispatch_tool_call(
+                "bash",
+                {"command": "step-b"},
+                "call_relay_hop_b",
+                {"relay_job_id": "call_relay_hop_b", "relay_http_id": "h_hop_b"},
+            )
+            assert inv_a is not None and inv_b is not None
+            # Drain initial mux_queue chunks and simulate that both were delivered in SSE
+            while not actor.mux_queue.empty():
+                actor.mux_queue.get_nowait()
+            decoder.delivered_tool_call_ids.update(
+                {"call_relay_hop_a", "call_relay_hop_b"}
+            )
+            fut_a = _relay_open_waiter("call_relay_hop_a")
+            assert fut_a is not None
+            # Client submits only `call_relay_hop_a`; `call_relay_hop_b` must be re-queued
+            # in `mux_queue` as a synthetic tool delta so the next SSE hop never deadlocks.
+            st_a = await actor.submit_tool_results(
+                [
+                    {
+                        "role": "tool",
+                        "tool_call_id": "call_relay_hop_a",
+                        "name": "bash",
+                        "content": "out-a\n",
+                    }
+                ]
+            )
+            assert st_a == "ok"
+            assert fut_a.done()
+            assert len(decoder.pending_tool_calls) == 1
+            assert decoder.pending_tool_calls[0]["id"] == "call_relay_hop_b"
+            assert not actor.mux_queue.empty()
+            q_kind, q_chunks = actor.mux_queue.get_nowait()
+            assert q_kind == "ert_chunks" and len(q_chunks) == 1
+            re_emitted = q_chunks[0]["choices"][0]["delta"]["tool_calls"]
+            assert len(re_emitted) == 1 and re_emitted[0]["id"] == "call_relay_hop_b"
+
+            # Aborting the remaining Relay call clears `pending_tool_calls` and sets `tools_resumed_event`.
+            actor.tools_resumed_event.clear()
+            await actor._relay_abort_tool_call("call_relay_hop_b")
+            assert decoder.pending_tool_calls == []
+            assert actor.pending_tool_calls == []
+            assert inv_b.status == "REPORTED"
+            assert actor.run.execution_state == "RUNNING"
+            assert actor.tools_resumed_event.is_set()
+
+        asyncio.run(_cross_hop_and_abort_scenario())
+    finally:
+        cast(Any, _GEMINI_DSH_STORE).save_run = orig_save
     _RELAY_HTTP_WAITERS.clear()
 
 
