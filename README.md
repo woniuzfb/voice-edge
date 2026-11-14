@@ -504,9 +504,49 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
 - **Capabilities**:
   - Stateful multi-turn continuation, `StateTape` `state_seq` synchronization, and automatic `resumeTurn` stream rollover
   - Hot-reloadable multi-account switching, history divergence (`fork`) detection, and SQLite state persistence (`~/.voice-edge/gemini_dsh_state.sqlite3`)
+  - Optional public HTTPS $\leftrightarrow$ outbound WSS user-tool relay (`tools/veh_relay.py`, `VEH MCP Server`) that exposes the active turn's DSH tools as a standard Streamable HTTP MCP server (`/mcp`) with OAuth 2.0 + PKCE (`S256`), replacing ERT's `FunctionCall` / `FunctionResponse` delivery while keeping all OAuth state, MCP routing, `job_id` generation, background `command_status` polling, and tool reconciliation on the Mac without opening inbound local ports
 - **Model IDs**:
   - `gemini:app/gemini-4-carbon` (`-high`, `-medium`, `-low`)
   - `gemini:app/gemini-4-argon` (`-high`, `-medium`, `-low`)
+
+#### Public MCP User-Tool Relay (`tools/veh_relay.py`)
+
+`tools/veh_relay.py` is a zero-dependency (Python standard library only) transport tunnel deployed on a public HTTPS host. It terminates public HTTPS requests from Gemini (`/.well-known/*`, `/oauth/*`, `/mcp`), accepts a single outbound WebSocket from `voice_edge` on `/v1/edge`, and forwards whole HTTP requests and responses (`http_request` / `http_response` / `http_abort`) over that WebSocket. It holds no OAuth, MCP, or tool state.
+
+1. **Start `tools/veh_relay.py` on the public relay server** (reads CLI flags or `.env` in the working/script directory):
+
+   ```bash
+   export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
+   export VE_RELAY_HOST="0.0.0.0"
+   export VE_RELAY_PORT="8443"
+   export VE_RELAY_CERT="/path/to/fullchain.pem"
+   export VE_RELAY_KEY="/path/to/privkey.pem"
+
+   python3 tools/veh_relay.py
+   # Or pass flags explicitly (use --no-tls only behind a local TLS-terminating reverse proxy or for local tests):
+   python3 tools/veh_relay.py --host 127.0.0.1 --port 8443 --no-tls
+   ```
+
+2. **Configure `voice_edge` on your Mac** (outbound WSS client + OAuth 2.0 / MCP endpoint handler):
+
+   ```bash
+   export VE_USER_TOOL_RELAY_ENABLED=1
+   export VE_USER_TOOL_RELAY_URL="wss://<relay-host>:8443/v1/edge"
+   export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
+   export VE_USER_TOOL_RELAY_EDGE_ID="mac-mini"
+   export VE_RELAY_PUBLIC_BASE_URL="https://<relay-host>:8443"
+   export VE_RELAY_OAUTH_CLIENT_ID="<oauth-client-id>"
+   export VE_RELAY_OAUTH_CLIENT_SECRET="<oauth-client-secret>"
+   # Optional custom SQLite path for SHA-256 OAuth code/token digests (mode 0600):
+   export VE_RELAY_OAUTH_DB="~/.voice-edge/relay_oauth.sqlite3"
+   ```
+
+3. **Register the MCP server in Gemini ("Connect to an MCP server")**:
+   - **MCP Server URL**: `https://<relay-host>:8443/mcp`
+   - **Client ID**: value of `VE_RELAY_OAUTH_CLIENT_ID`
+   - **Client secret**: value of `VE_RELAY_OAUTH_CLIENT_SECRET`
+
+When `VE_USER_TOOL_RELAY_ENABLED=1`, `voice_edge` verifies the outbound WSS tunnel is ready (up to 10s) before opening `ProcessQuery` on tool-bearing user turns, publishes the active turn's DSH tool catalog (plus `command_status` when shell tools are present), and injects `@VEH MCP Server` into the outbound Robin query once per session (`boot_key`) without altering local session keys or persisted history.
 
 ## OpenRouter and OpenCode Relays
 

@@ -498,9 +498,49 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
 - **核心能力**：
   - 有状态多轮会话续接、`StateTape` `state_seq` 同步以及长连接 `resumeTurn` 自动流轮转（Rollover）
   - 多账号凭据指纹热切换、历史回滚/分叉（`fork`）检测，以及 SQLite 状态库持久化（`~/.voice-edge/gemini_dsh_state.sqlite3`）
+  - 可选公网 HTTPS $\leftrightarrow$ 出站 WSS 用户工具中继（`tools/veh_relay.py`，`VEH MCP Server`）：将当前活跃回合的 DSH 工具暴露为带单客户端 OAuth 2.0 + PKCE（`S256`）认证的标准 Streamable HTTP MCP 服务（`/mcp`），替代 ERT 的 `FunctionCall` 下发与 `FunctionResponse` 回传，同时将 OAuth 状态、MCP 路由、`job_id` 生成、后台 `command_status` 轮询与工具结果对账全部保留在 Mac 本机 `voice_edge` 内（Mac 无需开放任何入站端口）
 - **模型 ID**：
   - `gemini:app/gemini-4-carbon`（`-high`、`-medium`、`-low`）
   - `gemini:app/gemini-4-argon`（`-high`、`-medium`、`-low`）
+
+#### 公网 MCP 用户工具中继（`tools/veh_relay.py`）
+
+`tools/veh_relay.py` 是部署在公网 HTTPS 主机上的零第三方依赖（仅使用 Python 标准库）纯传输隧道脚本。它负责接收来自 Gemini 的公网 HTTPS 请求（`/.well-known/*`、`/oauth/*`、`/mcp`），在 `/v1/edge` 接收来自 Mac 端 `voice_edge` 的单条出站 WebSocket 连接，并在两者之间原样转发完整 HTTP 请求与响应（`http_request` / `http_response` / `http_abort`），自身不保存任何 OAuth、MCP 或工具状态。
+
+1. **在公网中继服务器上启动 `tools/veh_relay.py`**（支持命令行参数，或自动加载工作目录 / 脚本同级目录下的 `.env`）：
+
+   ```bash
+   export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
+   export VE_RELAY_HOST="0.0.0.0"
+   export VE_RELAY_PORT="8443"
+   export VE_RELAY_CERT="/path/to/fullchain.pem"
+   export VE_RELAY_KEY="/path/to/privkey.pem"
+
+   python3 tools/veh_relay.py
+   # 或显式传入参数（仅在本地测试或由前置反向代理卸载 TLS 时使用 --no-tls）：
+   python3 tools/veh_relay.py --host 127.0.0.1 --port 8443 --no-tls
+   ```
+
+2. **在 Mac 本机配置 `voice_edge`**（出站 WSS 客户端 + OAuth 2.0 / MCP 路由处理）：
+
+   ```bash
+   export VE_USER_TOOL_RELAY_ENABLED=1
+   export VE_USER_TOOL_RELAY_URL="wss://<relay-host>:8443/v1/edge"
+   export VE_USER_TOOL_RELAY_TOKEN="<relay-transport-token>"
+   export VE_USER_TOOL_RELAY_EDGE_ID="mac-mini"
+   export VE_RELAY_PUBLIC_BASE_URL="https://<relay-host>:8443"
+   export VE_RELAY_OAUTH_CLIENT_ID="<oauth-client-id>"
+   export VE_RELAY_OAUTH_CLIENT_SECRET="<oauth-client-secret>"
+   # 可选：自定义 OAuth SHA-256 摘要 SQLite 库路径（权限自动设为 0600）
+   export VE_RELAY_OAUTH_DB="~/.voice-edge/relay_oauth.sqlite3"
+   ```
+
+3. **在 Gemini 中注册连接 MCP Server（“Connect to an MCP server”）**：
+   - **MCP Server URL**：`https://<relay-host>:8443/mcp`
+   - **Client ID**：与 `VE_RELAY_OAUTH_CLIENT_ID` 一致
+   - **Client secret**：与 `VE_RELAY_OAUTH_CLIENT_SECRET` 一致
+
+启用 `VE_USER_TOOL_RELAY_ENABLED=1` 后，`voice_edge` 会在携带工具的主用户新回合启动 `ProcessQuery` 前检查出站 WSS 隧道就绪状态（最多等待 10 秒），预先就绪当前回合的 MCP 工具目录（含 `bash` / `run_command` 时的 `command_status`），并在发往 Robin 的副本中按会话（`boot_key`）首轮单次注入 `@VEH MCP Server`，不影响本地会话哈希、标题关联或持久化历史。
 
 ## OpenRouter 与 OpenCode 中继
 

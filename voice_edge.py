@@ -148,236 +148,246 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2677
-#    VE_VLM_KV_BITS                         3.5                                          L501
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L506
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L511
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L512
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2260
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2265
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2268
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2272
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2281
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2289
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2344
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2795
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42918
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43567
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43579
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19520
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19517
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19483
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19498
-#    AUTH_SYNC_ENABLED                      "1"                                          L19471
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19472
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2687
+#    VE_VLM_KV_BITS                         3.5                                          L511
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L516
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L521
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L522
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2270
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2275
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2278
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2282
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2291
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2299
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2354
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2805
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42928
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43577
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43589
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19530
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19527
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19493
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19508
+#    AUTH_SYNC_ENABLED                      "1"                                          L19481
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19482
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L390
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L391
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L392
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L393
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L394
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L398
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L402
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L403
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L404
-#    VE_GEMINI_LOG_DEBUG                        "0"                                      L405
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L406
-#    VE_HUD_LOG_DEBUG                           "0"                                      L407
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L408
-#    VE_KWS_LOG_DEBUG                           "0"                                      L409
-#    VE_LLM_LOG_DEBUG                           "0"                                      L410
-#    VE_M365_LOG_DEBUG                          "0"                                      L411
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L412
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L416
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L420
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L421
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L422
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L423
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L424
-#    VE_TTS_LOG_DEBUG                           "0"                                      L425
-#    VE_VLM_LOG_DEBUG                           "0"                                      L426
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L427
+#    VE_APP_LOG_DEBUG                           "0"                                      L400
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L401
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L402
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L403
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L404
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L408
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L412
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L413
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L414
+#    VE_GEMINI_LOG_DEBUG                        "0"                                      L415
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L416
+#    VE_HUD_LOG_DEBUG                           "0"                                      L417
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L418
+#    VE_KWS_LOG_DEBUG                           "0"                                      L419
+#    VE_LLM_LOG_DEBUG                           "0"                                      L420
+#    VE_M365_LOG_DEBUG                          "0"                                      L421
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L422
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L426
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L430
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L431
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L432
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L433
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L434
+#    VE_TTS_LOG_DEBUG                           "0"                                      L435
+#    VE_VLM_LOG_DEBUG                           "0"                                      L436
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L437
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42804
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42827
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42854
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42913
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43456
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43459
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43467
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43479
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43481
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43490
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43496
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43502
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43518
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43523
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43530
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43537
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43546
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43553
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43601
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45369
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45370
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45371
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42814
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42837
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42864
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42923
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43466
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43469
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43477
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43489
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43491
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43500
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43506
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43512
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43528
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43533
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43540
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43547
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43556
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43563
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43611
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45379
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45380
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45381
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15026
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15028
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L15029
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15035
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15037
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15040
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15048
-#    QWEN_COOKIE_HEADER                     ""                                           L15052
-#    QWEN_TOKENS                            ""                                           L15060
-#    QWEN_TOKEN                             ""                                           L15061
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15036
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15038
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L15039
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15045
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15047
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15050
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15058
+#    QWEN_COOKIE_HEADER                     ""                                           L15062
+#    QWEN_TOKENS                            ""                                           L15070
+#    QWEN_TOKEN                             ""                                           L15071
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1861
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16695
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16696
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16698
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16700
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16702
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16705
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16708
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16711
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16832
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16835
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1871
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16705
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16706
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16708
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16710
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16712
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16715
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16718
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16721
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16842
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16845
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19381
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19382
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19388
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19389
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19397
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19399
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19402
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19404
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19406
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19410
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19437
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19440
-#    DOUBAO_WEB_AID                         "497858"                                     L19442
-#    DOUBAO_WEB_REGION                      "CN"                                         L19443
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19444
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19445
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19447
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19496
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19488
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19798
-#    DOUBAO_SESSION_IDS                     ""                                           L19840
-#    DOUBAO_SESSION_ID                      ""                                           L19844
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20355
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20364
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20546
-#    DOUBAO_SID_TT                          ""                                           L20549
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19391
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19392
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19398
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19399
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19407
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19409
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19412
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19414
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19416
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19420
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19447
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19450
+#    DOUBAO_WEB_AID                         "497858"                                     L19452
+#    DOUBAO_WEB_REGION                      "CN"                                         L19453
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19454
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19455
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19457
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19506
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19498
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19808
+#    DOUBAO_SESSION_IDS                     ""                                           L19850
+#    DOUBAO_SESSION_ID                      ""                                           L19854
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20365
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20374
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20556
+#    DOUBAO_SID_TT                          ""                                           L20559
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24942
-#    SHAREPOINT_HOME_URL                    ""                                           L24943
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24944
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24945
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24972
-#    M365_BRIDGE_PORT                       "5003"                                       L24973
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24974
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24975
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24977
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24980
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L24983
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L24991
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L24993
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25013
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25020
-#    M365_CONV_MAP_MAX                      "1024"                                       L25189
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25836
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25854
+#    M365_ENTRY_URL                         ""                                           L24952
+#    SHAREPOINT_HOME_URL                    ""                                           L24953
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24954
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24955
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24982
+#    M365_BRIDGE_PORT                       "5003"                                       L24983
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24984
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L24985
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24987
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24990
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L24993
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25001
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L25003
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25023
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25030
+#    M365_CONV_MAP_MAX                      "1024"                                       L25199
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25846
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25864
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38142
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38352
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38414
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38436
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38443
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38538
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38540
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38544
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39737
-#    MI_USER                                ""                                           L39463
-#    MI_PASS                                ""                                           L39489
-#    XIAOAI_HARDWARE                        "LX06"                                       L39491
-#    MI_DID                                 ""                                           L39493
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39496
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39500
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39503
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39506
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39512
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39523
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39528
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39509
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39519
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39539
-#    XIAOAI_VOICE                           "zh"                                         L39541
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39543
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39546
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39549
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39552
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39556
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39560
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39565
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39570
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39575
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39580
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39585
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39593
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39598
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39603
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39608
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39613
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39618
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39623
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39626
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39630
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39634
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39638
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39643
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39648
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39652
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39655
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39658
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39661
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39664
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39667
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39670
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39673
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39680
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39686
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39690
+#    XIAOAI_ENABLED                         "0"                                          L38152
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38362
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38424
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38446
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38453
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38548
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38550
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38554
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39747
+#    MI_USER                                ""                                           L39473
+#    MI_PASS                                ""                                           L39499
+#    XIAOAI_HARDWARE                        "LX06"                                       L39501
+#    MI_DID                                 ""                                           L39503
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39506
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39510
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39513
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39516
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39522
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39533
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39538
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39519
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39529
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39549
+#    XIAOAI_VOICE                           "zh"                                         L39551
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39553
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39556
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39559
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39562
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39566
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39570
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39575
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39580
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39585
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39590
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39595
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39603
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39608
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39613
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39618
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39623
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39628
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39633
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39636
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39640
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39644
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39648
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39653
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39658
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39662
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39665
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39668
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39671
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39674
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39677
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39680
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39683
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39690
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39696
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39700
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48131
-#    VE_OPENCODE_API_KEYS                   ""                                           L49056
-#    VE_OPENCODE_FREE                       "1"                                          L49094
-#    VE_OPENCODE_GO                         "0"                                          L49099
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L65233
-#    VE_GEMINI_API_KEYS                     ""                                           L65237
-#    VE_GEMINI_BACKEND                      "auto"                                       L65256
-#    VE_GEMINI_PROJECT_ID                   ""                                           L65263
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54831
-#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1520
-#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1521
-#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1522
-#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1523
-#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1524
-#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1525
-#    VE_GEMINI_APP_BINARY                   ""                                           L1545
-#    VE_GEMINI_AGY_BINARY                   ""                                           L1560
-#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1578
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48141
+#    VE_OPENCODE_API_KEYS                   ""                                           L49066
+#    VE_OPENCODE_FREE                       "1"                                          L49104
+#    VE_OPENCODE_GO                         "0"                                          L49109
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L66004
+#    VE_GEMINI_API_KEYS                     ""                                           L66008
+#    VE_GEMINI_BACKEND                      "auto"                                       L66027
+#    VE_GEMINI_PROJECT_ID                   ""                                           L66034
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L54854
+#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1530
+#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1531
+#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1532
+#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1533
+#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1534
+#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1535
+#    VE_GEMINI_APP_BINARY                   ""                                           L1555
+#    VE_GEMINI_AGY_BINARY                   ""                                           L1570
+#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1588
 #
-# 合计 212 个唯一环境变量。
+#
+#  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L66725
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L66729
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L66734
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L66721
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L66711
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L66699
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L66707
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L66703
+# 合计 220 个唯一环境变量。
 # ============================================================================
 
 
@@ -53371,6 +53381,192 @@ def _dsh_is_tool_error(text: str) -> bool:
     return False
 
 
+def _robin_project_tool_result_dict(item: dict[str, Any]) -> dict[str, Any]:
+    """Project one reconciled tool output into the per-tool result dictionary.
+
+    Source-neutral: the ERT adapter encodes the returned dict as a `FunctionResponse`
+    frame, and the Relay adapter carries the very same dict as MCP `content` text, so
+    field names, truncation and error semantics can never drift between channels.
+    """
+    orig_name = str(
+        item.get("_orig_call_name") or item.get("name") or "execute_mcp"
+    ).strip()
+    for prefix in ("client:", "dsh:", "veh:", "client/", "dsh/", "veh/"):
+        if orig_name.startswith(prefix):
+            orig_name = orig_name[len(prefix) :].strip()
+            break
+    raw_out = item.get("output")
+    out_str = _robin_truncate_tool_output(_dsh_stringify_tool_output(raw_out))
+    is_err = _dsh_is_tool_error(out_str)
+    spliced_notice = str(item.get("_spliced_user_notice") or "").strip()
+    notice_suffix = (
+        f"\n\n--- [Harness Notice] ---\n{spliced_notice}" if spliced_notice else ""
+    )
+    raw_orig_args = item.get("_orig_args")
+    orig_args: dict[str, Any] = raw_orig_args if isinstance(raw_orig_args, dict) else {}
+    mcp_server = str(item.get("_mcp_server") or "").strip()
+    mcp_tool = str(item.get("_mcp_tool") or "").strip()
+
+    if orig_name == "execute_mcp" or mcp_tool:
+        mcp_out_str = (
+            _robin_truncate_command_output(out_str)
+            if mcp_tool in ("bash", "run_command", "command_status")
+            else out_str
+        )
+        if notice_suffix:
+            mcp_out_str = f"{mcp_out_str}{notice_suffix}"
+        struct_dict: dict[str, Any] = {
+            "server": mcp_server or GEMINI_ROBIN_MCP_SERVER_NAME,
+            "tool": mcp_tool or str(item.get("name") or ""),
+            "output": mcp_out_str,
+        }
+        if is_err:
+            struct_dict["error"] = mcp_out_str
+    elif orig_name == "list_mcp":
+        if isinstance(raw_out, dict):
+            struct_dict = dict(raw_out)
+        else:
+            struct_dict = {"servers": []}
+    else:
+        struct_dict = {}
+        if isinstance(raw_out, dict):
+            struct_dict.update(raw_out)
+        elif orig_name == "view_file":
+            if is_err:
+                struct_dict["status"] = "error"
+                struct_dict["error"] = (
+                    f"{out_str}{notice_suffix}" if notice_suffix else out_str
+                )
+                struct_dict["content"] = ""
+            else:
+                struct_dict["status"] = "success"
+                struct_dict["content"] = (
+                    f"{out_str}{notice_suffix}" if notice_suffix else out_str
+                )
+        elif orig_name == "list_dir":
+            dir_path = str(
+                orig_args.get("DirectoryPath") or orig_args.get("path") or "."
+            )
+            lines = [ln for ln in out_str.splitlines() if ln.strip()][:50]
+            struct_dict = {
+                "path": dir_path,
+                "count": str(len(lines)),
+                "entries": lines,
+                "status": "error" if is_err else "success",
+            }
+            if is_err:
+                struct_dict["error"] = out_str
+        elif orig_name == "find_by_name":
+            search_dir = str(
+                orig_args.get("SearchDirectory")
+                or orig_args.get("DirectoryPath")
+                or orig_args.get("path")
+                or "."
+            )
+            pat_q = str(
+                orig_args.get("Pattern")
+                or orig_args.get("FilePattern")
+                or orig_args.get("pattern")
+                or "*"
+            )
+            lines = [ln for ln in out_str.splitlines() if ln.strip()][:50]
+            struct_dict = {
+                "path": search_dir,
+                "query": pat_q,
+                "count": str(len(lines)),
+                "matches": lines,
+                "status": "error" if is_err else "success",
+            }
+            if is_err:
+                struct_dict["error"] = out_str
+        elif orig_name == "grep_search":
+            search_path = str(
+                orig_args.get("SearchPath") or orig_args.get("path") or "."
+            )
+            query_q = str(orig_args.get("Query") or orig_args.get("pattern") or "")
+            lines = [ln for ln in out_str.splitlines() if ln.strip()][:50]
+            struct_dict = {
+                "path": search_path,
+                "query": query_q,
+                "match_count": str(len(lines)),
+                "results": lines,
+                "status": "error" if is_err else "success",
+            }
+            if is_err:
+                struct_dict["error"] = out_str
+        elif orig_name == "write_to_file":
+            target_path = str(
+                orig_args.get("TargetFile")
+                or orig_args.get("FilePath")
+                or orig_args.get("file_path")
+                or orig_args.get("path")
+                or ""
+            )
+            content_val = str(
+                orig_args.get("Content") or orig_args.get("content") or ""
+            )
+            struct_dict["path"] = target_path
+            struct_dict["size"] = str(len(content_val.encode("utf-8")))
+            if is_err or "not found" in out_str.lower():
+                struct_dict["success"] = "false"
+                struct_dict["error"] = out_str
+            else:
+                struct_dict["success"] = "true"
+        elif orig_name in (
+            "replace_file_content",
+            "multi_replace_file_content",
+        ):
+            target_path = str(
+                orig_args.get("TargetFile")
+                or orig_args.get("FilePath")
+                or orig_args.get("file_path")
+                or orig_args.get("path")
+                or ""
+            )
+            struct_dict["path"] = target_path
+            if is_err or "not found" in out_str.lower():
+                struct_dict["success"] = "false"
+                struct_dict["total_replacements"] = "0"
+                struct_dict["error"] = out_str
+            else:
+                struct_dict["success"] = "true"
+                struct_dict["total_replacements"] = "1"
+        elif orig_name == "run_command":
+            cmd_str = str(
+                orig_args.get("CommandLine") or orig_args.get("command") or ""
+            )
+            cwd_str = str(orig_args.get("Cwd") or orig_args.get("workdir") or "")
+            exit_code_m = _dsh_extract_exit_code(out_str)
+            exit_code_str = (
+                exit_code_m if exit_code_m is not None else ("1" if is_err else "0")
+            )
+            cmd_stdout = _robin_truncate_command_output(out_str)
+            if notice_suffix:
+                cmd_stdout = f"{cmd_stdout}{notice_suffix}"
+            struct_dict = {
+                "command": cmd_str,
+                "working_directory": cwd_str,
+                "exit_code": exit_code_str,
+                "stdout": cmd_stdout,
+                "status": "done",
+            }
+            if exit_code_str != "0" or is_err:
+                struct_dict["stderr"] = cmd_stdout
+        else:
+            out_with_notice = f"{out_str}{notice_suffix}" if notice_suffix else out_str
+            struct_dict["output"] = out_with_notice
+            if is_err:
+                struct_dict["error"] = out_with_notice
+        if spliced_notice and not any(
+            isinstance(v, str) and "--- [Harness Notice] ---" in v
+            for v in struct_dict.values()
+        ):
+            struct_dict["message"] = f"--- [Harness Notice] ---\n{spliced_notice}"
+            if isinstance(struct_dict.get("error"), str):
+                struct_dict["error"] = f"{struct_dict['error']}{notice_suffix}"
+    return struct_dict
+
+
 def _robin_build_execute_remote_tools_result_frames(
     tool_outputs: Sequence[dict[str, Any]],
 ) -> list[bytes]:
@@ -53392,184 +53588,11 @@ def _robin_build_execute_remote_tools_result_frames(
             else ""
         )
         wire_id_present = bool(item.get("wire_call_id_present", True))
-        raw_out = item.get("output")
-        out_str = _robin_truncate_tool_output(_dsh_stringify_tool_output(raw_out))
-        is_err = _dsh_is_tool_error(out_str)
-        spliced_notice = str(item.get("_spliced_user_notice") or "").strip()
-        notice_suffix = (
-            f"\n\n--- [Harness Notice] ---\n{spliced_notice}" if spliced_notice else ""
-        )
-        raw_orig_args = item.get("_orig_args")
-        orig_args: dict[str, Any] = (
-            raw_orig_args if isinstance(raw_orig_args, dict) else {}
-        )
-        mcp_server = str(item.get("_mcp_server") or "").strip()
-        mcp_tool = str(item.get("_mcp_tool") or "").strip()
-
-        if orig_name == "execute_mcp" or mcp_tool:
-            mcp_out_str = (
-                _robin_truncate_command_output(out_str)
-                if mcp_tool in ("bash", "run_command", "command_status")
-                else out_str
-            )
-            if notice_suffix:
-                mcp_out_str = f"{mcp_out_str}{notice_suffix}"
-            struct_dict: dict[str, Any] = {
-                "server": mcp_server or GEMINI_ROBIN_MCP_SERVER_NAME,
-                "tool": mcp_tool or str(item.get("name") or ""),
-                "output": mcp_out_str,
-            }
-            if is_err:
-                struct_dict["error"] = mcp_out_str
-        elif orig_name == "list_mcp":
-            if isinstance(raw_out, dict):
-                struct_dict = dict(raw_out)
-            else:
-                struct_dict = {"servers": []}
-        else:
-            struct_dict = {}
-            if isinstance(raw_out, dict):
-                struct_dict.update(raw_out)
-            elif orig_name == "view_file":
-                if is_err:
-                    struct_dict["status"] = "error"
-                    struct_dict["error"] = (
-                        f"{out_str}{notice_suffix}" if notice_suffix else out_str
-                    )
-                    struct_dict["content"] = ""
-                else:
-                    struct_dict["status"] = "success"
-                    struct_dict["content"] = (
-                        f"{out_str}{notice_suffix}" if notice_suffix else out_str
-                    )
-            elif orig_name == "list_dir":
-                dir_path = str(
-                    orig_args.get("DirectoryPath") or orig_args.get("path") or "."
-                )
-                lines = [ln for ln in out_str.splitlines() if ln.strip()][:50]
-                struct_dict = {
-                    "path": dir_path,
-                    "count": str(len(lines)),
-                    "entries": lines,
-                    "status": "error" if is_err else "success",
-                }
-                if is_err:
-                    struct_dict["error"] = out_str
-            elif orig_name == "find_by_name":
-                search_dir = str(
-                    orig_args.get("SearchDirectory")
-                    or orig_args.get("DirectoryPath")
-                    or orig_args.get("path")
-                    or "."
-                )
-                pat_q = str(
-                    orig_args.get("Pattern")
-                    or orig_args.get("FilePattern")
-                    or orig_args.get("pattern")
-                    or "*"
-                )
-                lines = [ln for ln in out_str.splitlines() if ln.strip()][:50]
-                struct_dict = {
-                    "path": search_dir,
-                    "query": pat_q,
-                    "count": str(len(lines)),
-                    "matches": lines,
-                    "status": "error" if is_err else "success",
-                }
-                if is_err:
-                    struct_dict["error"] = out_str
-            elif orig_name == "grep_search":
-                search_path = str(
-                    orig_args.get("SearchPath") or orig_args.get("path") or "."
-                )
-                query_q = str(orig_args.get("Query") or orig_args.get("pattern") or "")
-                lines = [ln for ln in out_str.splitlines() if ln.strip()][:50]
-                struct_dict = {
-                    "path": search_path,
-                    "query": query_q,
-                    "match_count": str(len(lines)),
-                    "results": lines,
-                    "status": "error" if is_err else "success",
-                }
-                if is_err:
-                    struct_dict["error"] = out_str
-            elif orig_name == "write_to_file":
-                target_path = str(
-                    orig_args.get("TargetFile")
-                    or orig_args.get("FilePath")
-                    or orig_args.get("file_path")
-                    or orig_args.get("path")
-                    or ""
-                )
-                content_val = str(
-                    orig_args.get("Content") or orig_args.get("content") or ""
-                )
-                struct_dict["path"] = target_path
-                struct_dict["size"] = str(len(content_val.encode("utf-8")))
-                if is_err or "not found" in out_str.lower():
-                    struct_dict["success"] = "false"
-                    struct_dict["error"] = out_str
-                else:
-                    struct_dict["success"] = "true"
-            elif orig_name in (
-                "replace_file_content",
-                "multi_replace_file_content",
-            ):
-                target_path = str(
-                    orig_args.get("TargetFile")
-                    or orig_args.get("FilePath")
-                    or orig_args.get("file_path")
-                    or orig_args.get("path")
-                    or ""
-                )
-                struct_dict["path"] = target_path
-                if is_err or "not found" in out_str.lower():
-                    struct_dict["success"] = "false"
-                    struct_dict["total_replacements"] = "0"
-                    struct_dict["error"] = out_str
-                else:
-                    struct_dict["success"] = "true"
-                    struct_dict["total_replacements"] = "1"
-            elif orig_name == "run_command":
-                cmd_str = str(
-                    orig_args.get("CommandLine") or orig_args.get("command") or ""
-                )
-                cwd_str = str(orig_args.get("Cwd") or orig_args.get("workdir") or "")
-                exit_code_m = _dsh_extract_exit_code(out_str)
-                exit_code_str = (
-                    exit_code_m if exit_code_m is not None else ("1" if is_err else "0")
-                )
-                cmd_stdout = _robin_truncate_command_output(out_str)
-                if notice_suffix:
-                    cmd_stdout = f"{cmd_stdout}{notice_suffix}"
-                struct_dict = {
-                    "command": cmd_str,
-                    "working_directory": cwd_str,
-                    "exit_code": exit_code_str,
-                    "stdout": cmd_stdout,
-                    "status": "done",
-                }
-                if exit_code_str != "0" or is_err:
-                    struct_dict["stderr"] = cmd_stdout
-            else:
-                out_with_notice = (
-                    f"{out_str}{notice_suffix}" if notice_suffix else out_str
-                )
-                struct_dict["output"] = out_with_notice
-                if is_err:
-                    struct_dict["error"] = out_with_notice
-            if spliced_notice and not any(
-                isinstance(v, str) and "--- [Harness Notice] ---" in v
-                for v in struct_dict.values()
-            ):
-                struct_dict["message"] = f"--- [Harness Notice] ---\n{spliced_notice}"
-                if isinstance(struct_dict.get("error"), str):
-                    struct_dict["error"] = f"{struct_dict['error']}{notice_suffix}"
         frames.append(
             _robin_build_execute_remote_tools_result_frame(
                 name=orig_name,
                 call_id=wire_call_id,
-                response_dict=struct_dict,
+                response_dict=_robin_project_tool_result_dict(item),
                 call_id_present=wire_id_present,
             )
         )
@@ -56572,35 +56595,55 @@ def _dsh_title_is_provisional(title: str, query_text: str) -> bool:
     title_norm = _dsh_normalize_title_text(title)
     if not title_norm:
         return True
+    if title_norm.lower() in ("@dsh mcp server", "@veh mcp server"):
+        return True
     if title_norm.startswith('[File "') or title_norm.startswith('Image "'):
         return True
+    stripped_title_norm = re.sub(
+        r"^@(?:dsh|veh)\s+mcp\s+server\b\s*",
+        "",
+        title_norm,
+        flags=re.IGNORECASE,
+    ).strip()
+    title_variants = [title_norm]
+    if stripped_title_norm and stripped_title_norm != title_norm:
+        title_variants.append(stripped_title_norm)
     raw_query = str(query_text or "")
     stripped_query = _DSH_IMAGE_HANDLE_INLINE_RE.sub(
         "",
         _DSH_FILE_HANDLE_RE.sub("", _DSH_FILE_HANDLE_PREFIX_RE.sub("", raw_query)),
     ).strip()
-    candidates = [raw_query]
+    base_candidates = [raw_query]
     if stripped_query and stripped_query != raw_query:
-        candidates.append(stripped_query)
-    stem = re.sub(r"(?:\.{2,}|…+)\s*$", "", title_norm).strip()
-    for cand_q in candidates:
-        query_norm = _dsh_normalize_title_text(cand_q)
-        if not query_norm:
-            continue
-        if title_norm == query_norm:
-            return True
-        raw_prefix_norm = _dsh_normalize_title_text(cand_q.strip()[:100])
-        if raw_prefix_norm and title_norm == raw_prefix_norm:
-            return True
-        if len(title_norm) >= 24 and query_norm.startswith(title_norm):
-            return True
-        if (
-            stem
-            and stem != title_norm
-            and len(stem) >= 4
-            and query_norm.startswith(stem)
-        ):
-            return True
+        base_candidates.append(stripped_query)
+    candidates: list[str] = []
+    for base_q in base_candidates:
+        if base_q not in candidates:
+            candidates.append(base_q)
+        for pfx in ("@DSH MCP Server", "@VEH MCP Server"):
+            prefixed_q = f"{pfx}\n{base_q}" if base_q else pfx
+            if prefixed_q not in candidates:
+                candidates.append(prefixed_q)
+    for t_var in title_variants:
+        stem = re.sub(r"(?:\.{2,}|…+)\s*$", "", t_var).strip()
+        for cand_q in candidates:
+            query_norm = _dsh_normalize_title_text(cand_q)
+            if not query_norm:
+                continue
+            if t_var == query_norm:
+                return True
+            raw_prefix_norm = _dsh_normalize_title_text(cand_q.strip()[:100])
+            if raw_prefix_norm and t_var == raw_prefix_norm:
+                return True
+            if len(t_var) >= 24 and query_norm.startswith(t_var):
+                return True
+            if (
+                stem
+                and stem != t_var
+                and len(stem) >= 4
+                and query_norm.startswith(stem)
+            ):
+                return True
     return False
 
 
@@ -57568,7 +57611,12 @@ def _robin_normalize_dsh_tools(tools: Sequence[Any] | None) -> list[dict[str, An
                 # lands on an MCP tool declared destructive, and a headless relay cannot
                 # answer it — the turn then ends with the card marker as the answer.
                 # Destructive operations stay governed by DSH's own sandbox + approval.
-                "toolAnnotations": {"destructiveHint": False},
+                "toolAnnotations": {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "idempotentHint": True,
+                    "openWorldHint": False,
+                },
             }
         )
     return normalized
@@ -58083,6 +58131,235 @@ class _RobinToolInvocation:
     carrier_wait_duration_seconds: float = 0.0
     background_response_frame: bytes = b""
     last_response_frame: bytes = b""
+    # `ert` invocations answer on the ExecuteRemoteTools stream and own a wire call id;
+    # `relay` invocations answer on a public MCP HTTP request and own a `job_id` only.
+    source: str = "ert"
+    relay_ctx: dict[str, str] = field(default_factory=dict)
+    relay_carrier_ctx: dict[str, str] = field(default_factory=dict)
+
+
+def _robin_strip_tool_prefix(name: Any) -> str:
+    """Strip one VEH tool namespace prefix (`client:` / `dsh:` / `veh:` and slash forms)."""
+    out = str(name or "").strip()
+    for prefix in ("client:", "dsh:", "veh:", "client/", "dsh/", "veh/"):
+        if out.startswith(prefix):
+            return out[len(prefix) :].strip()
+    return out
+
+
+@dataclass
+class _RobinToolTarget:
+    """Resolved tool target: raw name plus the `execute_mcp` unpacking result."""
+
+    orig_name: str
+    target_name: str
+    target_args: dict[str, Any]
+    raw_args: dict[str, Any]
+    mcp_server: str = ""
+    mcp_tool: str = ""
+
+
+@dataclass
+class _RobinLocalToolResult:
+    """Locally closed tool outcome (permission denial, atomicity error, unknown tool)."""
+
+    name: str
+    response_dict: dict[str, Any]
+
+
+def _robin_resolve_tool_target(orig_name: Any, raw_args: Any) -> _RobinToolTarget:
+    """Normalize the wire tool name and unpack `execute_mcp` into its inner target."""
+    name = _robin_strip_tool_prefix(orig_name)
+    args = dict(raw_args) if isinstance(raw_args, dict) else {}
+    if name == "execute_mcp":
+        mcp_server, mcp_tool, unpacked = _robin_parse_mcp_execute_args(args)
+        return _RobinToolTarget(
+            orig_name=name,
+            target_name=mcp_tool or name,
+            target_args=dict(unpacked) if isinstance(unpacked, dict) else {},
+            raw_args=args,
+            mcp_server=mcp_server,
+            mcp_tool=mcp_tool,
+        )
+    return _RobinToolTarget(
+        orig_name=name, target_name=name, target_args=dict(args), raw_args=args
+    )
+
+
+def _robin_prepare_dsh_tool_call(
+    ledger: _RobinToolLedger, target: _RobinToolTarget
+) -> tuple[str, dict[str, Any]] | _RobinLocalToolResult:
+    """Apply DSH permission rules and adapt the call to DSH's schema, without dispatching."""
+    if target.orig_name == "connect_folders":
+        # Strictly align with DSH's 3 permission modes:
+        # Never expand connected_folders in `read-only` or `workspace-write` mode!
+        if ledger.dsh_sandbox_mode != "danger-full-access":
+            err_text = (
+                "Current VEH file policy is read-only; connected_folders cannot be expanded outside the workspace."
+                if ledger.dsh_sandbox_mode == "read-only"
+                else (
+                    "Current VEH file policy is workspace-write; cannot expand connected_folders outside workspace. "
+                    "If an operation outside workspace is required, invoke the VEH tool directly so VEH can apply its approval policy."
+                )
+            )
+            return _RobinLocalToolResult(
+                name=target.orig_name,
+                response_dict={
+                    "status": "DENIED",
+                    "connected_folders": list(ledger.connected_folders),
+                    "error": err_text,
+                },
+            )
+        req_paths = (
+            target.raw_args.get("Paths")
+            or target.raw_args.get("paths")
+            or target.raw_args.get("folders")
+            or []
+        )
+        if isinstance(req_paths, str):
+            req_paths = [req_paths]
+        if isinstance(req_paths, list):
+            for p in req_paths:
+                resolved = _robin_resolve_tool_path(p, ledger.workspace_root)
+                if (
+                    resolved
+                    and os.path.isdir(resolved)
+                    and resolved not in ledger.connected_folders
+                ):
+                    ledger.connected_folders.append(resolved)
+        return _RobinLocalToolResult(
+            name=target.orig_name,
+            response_dict={
+                "status": "CONNECTED",
+                "connected_folders": list(ledger.connected_folders),
+            },
+        )
+
+    if (
+        target.target_name == "multi_replace_file_content"
+        and "multi_replace_file_content" not in ledger.local_tool_names
+    ):
+        chunks = target.target_args.get("ReplacementChunks")
+        if isinstance(chunks, str):
+            try:
+                chunks = json.loads(chunks)
+            except (TypeError, ValueError):
+                chunks = []
+        if isinstance(chunks, list) and len(chunks) > 1:
+            err_msg = (
+                "multi_replace_file_content with multiple chunks cannot be executed atomically by VEH edit; "
+                "please call client:replace_file_content for each chunk sequentially or use client:execute_mcp."
+            )
+            return _RobinLocalToolResult(
+                name=target.orig_name,
+                response_dict={
+                    "path": str(target.target_args.get("TargetFile") or ""),
+                    "error": err_msg,
+                    "success": "false",
+                },
+            )
+
+    dsh_name, adapted_args = _robin_adapt_caller_tool(
+        target.target_name,
+        target.target_args,
+        ledger.local_tool_names,
+        workspace_root=ledger.workspace_root,
+        dsh_approval_policy=ledger.dsh_approval_policy,
+    )
+
+    if (
+        ledger.local_tool_names
+        and dsh_name not in ledger.local_tool_names
+        and dsh_name not in _DSH_JOB_WHITELIST_TOOLS
+    ):
+        err_msg = (
+            f"Tool '{target.target_name}' is not available in this VEH client environment. "
+            "Use one of the tools returned by list_mcp."
+        )
+        if target.orig_name == "execute_mcp":
+            err_dict: dict[str, Any] = {
+                "server": target.mcp_server or GEMINI_ROBIN_MCP_SERVER_NAME,
+                "tool": target.mcp_tool or target.target_name,
+                "output": f"Error: {err_msg}",
+                "error": err_msg,
+            }
+        else:
+            err_dict = {"status": "error", "error": err_msg, "success": "false"}
+        return _RobinLocalToolResult(name=target.orig_name, response_dict=err_dict)
+
+    return dsh_name, dict(adapted_args)
+
+
+def _robin_commit_dsh_tool_call(
+    ledger: _RobinToolLedger,
+    target: _RobinToolTarget,
+    dsh_name: str,
+    adapted_args: dict[str, Any],
+    *,
+    source: str = "ert",
+    public_id: str = "",
+    wire_call_id: str = "",
+    wire_call_id_present: bool = True,
+    relay_ctx: dict[str, str] | None = None,
+) -> _RobinToolInvocation:
+    """Create and register the invocation; does not encode any channel-specific frame."""
+    inv_id = f"inv_{uuid.uuid4().hex[:12]}"
+    if public_id:
+        pub_id = public_id
+    elif wire_call_id and wire_call_id not in ledger.by_public_id:
+        pub_id = wire_call_id
+    else:
+        pub_id = f"call_{uuid.uuid4().hex[:12]}"
+    inv = _RobinToolInvocation(
+        invocation_id=inv_id,
+        run_id=ledger.run_id,
+        wire_call_id=wire_call_id,
+        wire_call_id_present=wire_call_id_present,
+        public_tool_call_id=pub_id,
+        orig_call_name=target.orig_name,
+        dsh_tool_name=dsh_name,
+        orig_args=dict(target.raw_args),
+        adapted_args=dict(adapted_args),
+        mcp_server=target.mcp_server,
+        mcp_tool=target.mcp_tool,
+        status="DISPATCHED",
+        source=source,
+        relay_ctx=dict(relay_ctx or {}),
+    )
+    ledger.invocations[inv_id] = inv
+    ledger.by_public_id[pub_id] = inv
+    return inv
+
+
+def _robin_register_dsh_tool_call(
+    ledger: _RobinToolLedger,
+    *,
+    source: str,
+    public_id: str = "",
+    orig_name: Any = "",
+    raw_args: Any = None,
+    wire_call_id: str = "",
+    wire_call_id_present: bool = True,
+    relay_ctx: dict[str, str] | None = None,
+) -> tuple[_RobinToolInvocation | None, _RobinLocalToolResult | None]:
+    """Source-neutral DSH tool registration: normalize, gate, adapt, then record."""
+    target = _robin_resolve_tool_target(orig_name, raw_args)
+    prepared = _robin_prepare_dsh_tool_call(ledger, target)
+    if isinstance(prepared, _RobinLocalToolResult):
+        return None, prepared
+    dsh_name, adapted_args = prepared
+    inv = _robin_commit_dsh_tool_call(
+        ledger,
+        target,
+        dsh_name,
+        adapted_args,
+        source=source,
+        public_id=public_id,
+        wire_call_id=wire_call_id,
+        wire_call_id_present=wire_call_id_present,
+        relay_ctx=relay_ctx,
+    )
+    return inv, None
 
 
 GEMINI_ROBIN_LIST_MCP_MAX_FRAME_BYTES = 28672
@@ -58225,8 +58502,10 @@ class _RobinToolLedger:
         )
         return cmd_str, cwd_str
 
-    def _build_background_handoff_frame(self, inv: _RobinToolInvocation) -> bytes:
-        """Build the upstream ERT `status='background'` response frame before the server deadline."""
+    def _build_background_handoff_dict(
+        self, inv: _RobinToolInvocation
+    ) -> dict[str, Any]:
+        """Build the source-neutral `status='background'` hand-off payload."""
         if not inv.bg_command_id:
             inv.bg_command_id = str(uuid.uuid4()).upper()
         cmd_str, cwd_str = self._invocation_command_and_cwd(inv)
@@ -58235,6 +58514,11 @@ class _RobinToolLedger:
             "to check progress."
         )
         if inv.orig_call_name == "execute_mcp" or inv.mcp_tool:
+            hint = (
+                "Use command_status with this command_id "
+                if inv.source == "relay"
+                else "Use client:command_status with "
+            )
             resp_dict: dict[str, Any] = {
                 "server": inv.mcp_server or GEMINI_ROBIN_MCP_SERVER_NAME,
                 "tool": inv.mcp_tool or inv.dsh_tool_name,
@@ -58245,7 +58529,7 @@ class _RobinToolLedger:
                 "working_directory": cwd_str,
                 "output": (
                     f"Command is running in the background (command_id={inv.bg_command_id}). "
-                    f'Use client:command_status with CommandId="{inv.bg_command_id}" '
+                    f'{hint}CommandId="{inv.bg_command_id}" '
                     "to check progress and retrieve the output."
                 ),
             }
@@ -58257,26 +58541,36 @@ class _RobinToolLedger:
                 "status": "background",
                 "working_directory": cwd_str,
             }
+            if inv.source == "relay":
+                # Relay hand-offs are read as MCP result text, so spell out the poll call.
+                resp_dict["output"] = (
+                    f"Command is running in the background "
+                    f"(command_id={inv.bg_command_id}). "
+                    f'Call command_status with CommandId="{inv.bg_command_id}" '
+                    "to check progress and retrieve the output."
+                )
+        return resp_dict
+
+    def _build_background_handoff_frame(self, inv: _RobinToolInvocation) -> bytes:
+        """ERT adapter: encode the hand-off payload as a `FunctionResponse` frame."""
         return _robin_build_execute_remote_tools_result_frame(
             name=inv.orig_call_name,
             call_id=inv.wire_call_id,
-            response_dict=resp_dict,
+            response_dict=self._build_background_handoff_dict(inv),
             call_id_present=inv.wire_call_id_present,
         )
 
-    def _build_command_status_frame(
+    def _build_command_status_result_dict(
         self,
         inv: _RobinToolInvocation,
         *,
-        call_id: str,
-        call_id_present: bool,
         call_name: str = "command_status",
         mcp_tool_name: str = "",
         max_output_chars: int = 0,
         extra_message: str = "",
         done: bool = True,
-    ) -> bytes:
-        """Build the upstream ERT `FunctionResponse` frame for `command_status`."""
+    ) -> dict[str, Any]:
+        """Build the source-neutral `command_status` result payload."""
         cmd_str, _ = self._invocation_command_and_cwd(inv)
         resolved_mcp_tool = (
             mcp_tool_name
@@ -58299,12 +58593,7 @@ class _RobinToolLedger:
                 running_dict["server"] = inv.mcp_server or GEMINI_ROBIN_MCP_SERVER_NAME
                 running_dict["tool"] = resolved_mcp_tool
                 running_dict["output"] = running_msg
-            return _robin_build_execute_remote_tools_result_frame(
-                name=call_name,
-                call_id=call_id,
-                response_dict=running_dict,
-                call_id_present=call_id_present,
-            )
+            return running_dict
 
         raw_out_str = _robin_truncate_tool_output(
             _dsh_stringify_tool_output(inv.result_str)
@@ -58338,23 +58627,53 @@ class _RobinToolLedger:
             done_dict["output"] = out_str
             if is_err:
                 done_dict["error"] = out_str
+        return done_dict
+
+    def _build_command_status_frame(
+        self,
+        inv: _RobinToolInvocation,
+        *,
+        call_id: str,
+        call_id_present: bool,
+        call_name: str = "command_status",
+        mcp_tool_name: str = "",
+        max_output_chars: int = 0,
+        extra_message: str = "",
+        done: bool = True,
+    ) -> bytes:
+        """ERT adapter: encode the `command_status` payload as a `FunctionResponse` frame."""
         return _robin_build_execute_remote_tools_result_frame(
             name=call_name,
             call_id=call_id,
-            response_dict=done_dict,
+            response_dict=self._build_command_status_result_dict(
+                inv,
+                call_name=call_name,
+                mcp_tool_name=mcp_tool_name,
+                max_output_chars=max_output_chars,
+                extra_message=extra_message,
+                done=done,
+            ),
             call_id_present=call_id_present,
         )
 
+    def _source_candidates(self, source: str = "") -> list[_RobinToolInvocation]:
+        """Invocations visible to one channel; an empty `source` means every channel."""
+        src = str(source or "").strip()
+        if not src:
+            return list(self.invocations.values())
+        return [inv for inv in self.invocations.values() if inv.source == src]
+
     def find_background_invocation(
-        self, command_id: str = ""
+        self, command_id: str = "", *, source: str = ""
     ) -> _RobinToolInvocation | None:
-        """Locate the invocation associated with a background `CommandId`."""
+        """Locate the background invocation for `CommandId`, scoped to one channel."""
+        cands = self._source_candidates(source)
         norm_id = str(command_id or "").strip().upper()
         if norm_id:
-            for inv in reversed(list(self.invocations.values())):
+            for inv in reversed(cands):
                 if inv.bg_command_id and inv.bg_command_id.upper() == norm_id:
                     return inv
-            for inv in reversed(list(self.invocations.values())):
+            for inv in reversed(cands):
                 if (
                     not inv.bg_command_id
                     and inv.status in ("BACKGROUNDED", "DISPATCHED")
@@ -58362,22 +58681,22 @@ class _RobinToolLedger:
                 ):
                     return inv
             return None
-        for inv in reversed(list(self.invocations.values())):
+        for inv in reversed(cands):
             if inv.status == "BACKGROUNDED":
                 return inv
-        for inv in reversed(list(self.invocations.values())):
+        for inv in reversed(cands):
             if inv.bg_command_id and not inv.bg_done_delivered:
                 return inv
-        for inv in reversed(list(self.invocations.values())):
+        for inv in reversed(cands):
             if inv.bg_command_id:
                 return inv
-        for inv in reversed(list(self.invocations.values())):
+        for inv in reversed(cands):
             if inv.status == "DISPATCHED" and self._is_backgroundable_invocation(inv):
                 return inv
         return None
 
-    def has_active_background_or_dispatched(self) -> bool:
-        """Return True when any tool invocation is awaiting DSH execution or carrier polling."""
+    def has_active_background_or_dispatched(self, source: str = "") -> bool:
+        """Return True when an invocation of `source` still awaits DSH execution or polling."""
         return any(
             (
                 inv.status != "REPORTED"
@@ -58387,7 +58706,7 @@ class _RobinToolLedger:
                 )
             )
             or (bool(inv.bg_command_id) and not inv.bg_done_delivered)
-            for inv in self.invocations.values()
+            for inv in self._source_candidates(source)
         )
 
     def collect_async_keepalive_frames(
@@ -58396,7 +58715,7 @@ class _RobinToolLedger:
         """Emit proactive `status='background'` or `command_status` keepalive frames before server timeout."""
         now = time.monotonic() if now_monotonic is None else float(now_monotonic)
         frames: list[bytes] = []
-        for inv in self.invocations.values():
+        for inv in self._source_candidates("ert"):
             if (
                 inv.status == "DISPATCHED"
                 and self._is_backgroundable_invocation(inv)
@@ -58441,91 +58760,20 @@ class _RobinToolLedger:
     def register_ert_call(
         self, raw_call: dict[str, Any]
     ) -> tuple[_RobinToolInvocation | None, bytes | None]:
-        """Process one ERT downstream tool call according to DSH's 3-mode permission contract."""
-        orig_name = str(raw_call.get("name") or "").strip()
-        for prefix in ("client:", "dsh:", "veh:", "client/", "dsh/", "veh/"):
-            if orig_name.startswith(prefix):
-                orig_name = orig_name[len(prefix) :].strip()
-                break
+        """ERT adapter: local `list_mcp`, carrier special case, wire dedupe, then frame encoding."""
+        target = _robin_resolve_tool_target(raw_call.get("name"), raw_call.get("args"))
+        orig_name = target.orig_name
         wire_id = str(raw_call.get("id") or "")
         wire_id_present = bool(raw_call.get("id_present", True))
-        raw_args = (
-            dict(raw_call.get("args") or {})
-            if isinstance(raw_call.get("args"), dict)
-            else {}
-        )
+        raw_args = target.raw_args
+        mcp_server = target.mcp_server
+        target_name = target.target_name
+        target_args = target.target_args
 
         if orig_name == "list_mcp":
             return None, self.build_list_mcp_response_frame(
                 wire_call_id=wire_id, wire_call_id_present=wire_id_present
             )
-
-        if orig_name == "connect_folders":
-            # Strictly align with DSH's 3 permission modes:
-            # Never expand connected_folders in `read-only` or `workspace-write` mode!
-            if self.dsh_sandbox_mode != "danger-full-access":
-                err_text = (
-                    "Current VEH file policy is read-only; connected_folders cannot be expanded outside the workspace."
-                    if self.dsh_sandbox_mode == "read-only"
-                    else (
-                        "Current VEH file policy is workspace-write; cannot expand connected_folders outside workspace. "
-                        "If an operation outside workspace is required, invoke the VEH tool directly so VEH can apply its approval policy."
-                    )
-                )
-                return (
-                    None,
-                    _robin_build_execute_remote_tools_result_frame(
-                        name="connect_folders",
-                        call_id=wire_id,
-                        response_dict={
-                            "status": "DENIED",
-                            "connected_folders": list(self.connected_folders),
-                            "error": err_text,
-                        },
-                        call_id_present=wire_id_present,
-                    ),
-                )
-            req_paths = (
-                raw_args.get("Paths")
-                or raw_args.get("paths")
-                or raw_args.get("folders")
-                or []
-            )
-            if isinstance(req_paths, str):
-                req_paths = [req_paths]
-            if isinstance(req_paths, list):
-                for p in req_paths:
-                    resolved = _robin_resolve_tool_path(p, self.workspace_root)
-                    if (
-                        resolved
-                        and os.path.isdir(resolved)
-                        and resolved not in self.connected_folders
-                    ):
-                        self.connected_folders.append(resolved)
-            return (
-                None,
-                _robin_build_execute_remote_tools_result_frame(
-                    name="connect_folders",
-                    call_id=wire_id,
-                    response_dict={
-                        "status": "CONNECTED",
-                        "connected_folders": list(self.connected_folders),
-                    },
-                    call_id_present=wire_id_present,
-                ),
-            )
-
-        mcp_server = ""
-        mcp_tool = ""
-        target_name = orig_name
-        target_args = dict(raw_args)
-
-        if orig_name == "execute_mcp":
-            mcp_server, mcp_tool, unpacked_args = _robin_parse_mcp_execute_args(
-                raw_args
-            )
-            target_name = mcp_tool or orig_name
-            target_args = unpacked_args
 
         if target_name in ("command_status", "send_command_input"):
             req_cmd_id = str(
@@ -58579,7 +58827,7 @@ class _RobinToolLedger:
                         "Command is managed by the client tool harness (non-interactive); "
                         "use command_status with this command_id to await completion."
                     )
-            bg_inv = self.find_background_invocation(req_cmd_id)
+            bg_inv = self.find_background_invocation(req_cmd_id, source="ert")
             if bg_inv is None:
                 not_found_msg = (
                     f"No background command found for CommandId={req_cmd_id!r}."
@@ -58698,69 +58946,46 @@ class _RobinToolLedger:
                 return None, running_frame
             return None, None
 
-        if (
-            target_name == "multi_replace_file_content"
-            and "multi_replace_file_content" not in self.local_tool_names
-        ):
-            chunks = target_args.get("ReplacementChunks")
-            if isinstance(chunks, str):
-                try:
-                    chunks = json.loads(chunks)
-                except (TypeError, ValueError):
-                    chunks = []
-            if isinstance(chunks, list) and len(chunks) > 1:
-                err_msg = (
-                    "multi_replace_file_content with multiple chunks cannot be executed atomically by VEH edit; "
-                    "please call client:replace_file_content for each chunk sequentially or use client:execute_mcp."
-                )
-                err_frame = _robin_build_execute_remote_tools_result_frame(
-                    name=orig_name,
-                    call_id=wire_id,
-                    response_dict={
-                        "path": str(target_args.get("TargetFile") or ""),
-                        "error": err_msg,
-                        "success": "false",
-                    },
-                    call_id_present=wire_id_present,
-                )
-                return None, err_frame
-
-        dsh_name, adapted_args = _robin_adapt_caller_tool(
-            target_name,
-            target_args,
-            self.local_tool_names,
-            workspace_root=self.workspace_root,
-            dsh_approval_policy=self.dsh_approval_policy,
-        )
-
-        if (
-            self.local_tool_names
-            and dsh_name not in self.local_tool_names
-            and dsh_name not in _DSH_JOB_WHITELIST_TOOLS
-        ):
-            err_msg = (
-                f"Tool '{target_name}' is not available in this VEH client environment. "
-                "Use one of the tools returned by list_mcp."
-            )
-            if orig_name == "execute_mcp":
-                err_dict: dict[str, Any] = {
-                    "server": mcp_server or GEMINI_ROBIN_MCP_SERVER_NAME,
-                    "tool": mcp_tool or target_name,
-                    "output": f"Error: {err_msg}",
-                    "error": err_msg,
-                }
-            else:
-                err_dict = {"status": "error", "error": err_msg, "success": "false"}
+        prepared = _robin_prepare_dsh_tool_call(self, target)
+        if isinstance(prepared, _RobinLocalToolResult):
             return (
                 None,
                 _robin_build_execute_remote_tools_result_frame(
-                    name=orig_name,
+                    name=prepared.name,
                     call_id=wire_id,
-                    response_dict=err_dict,
+                    response_dict=prepared.response_dict,
                     call_id_present=wire_id_present,
                 ),
             )
+        dsh_name, adapted_args = prepared
 
+        replay = self._ert_replay_frame(wire_id, orig_name, dsh_name, adapted_args)
+        if replay is not None:
+            return replay
+
+        inv = _robin_commit_dsh_tool_call(
+            self,
+            target,
+            dsh_name,
+            adapted_args,
+            source="ert",
+            wire_call_id=wire_id,
+            wire_call_id_present=wire_id_present,
+        )
+        return inv, None
+
+    def _ert_replay_frame(
+        self,
+        wire_id: str,
+        orig_name: str,
+        dsh_name: str,
+        adapted_args: dict[str, Any],
+    ) -> tuple[None, bytes | None] | None:
+        """ERT wire-id replay cache: never dispatch the same wire call id twice.
+
+        Returns `None` when the call is new, otherwise the cached frame (or `(None, None)`
+        for a replay whose original call is still in flight).
+        """
         for existing in self.invocations.values():
             if wire_id and existing.wire_call_id == wire_id:
                 if existing.status == "REPORTED" and existing.last_response_frame:
@@ -58781,30 +59006,7 @@ class _RobinToolLedger:
                 and existing.background_response_frame
             ):
                 return None, existing.background_response_frame
-
-        inv_id = f"inv_{uuid.uuid4().hex[:12]}"
-        if wire_id and wire_id not in self.by_public_id:
-            pub_id = wire_id
-        else:
-            pub_id = f"call_{uuid.uuid4().hex[:12]}"
-
-        inv = _RobinToolInvocation(
-            invocation_id=inv_id,
-            run_id=self.run_id,
-            wire_call_id=wire_id,
-            wire_call_id_present=wire_id_present,
-            public_tool_call_id=pub_id,
-            orig_call_name=orig_name,
-            dsh_tool_name=dsh_name,
-            orig_args=raw_args,
-            adapted_args=adapted_args,
-            mcp_server=mcp_server,
-            mcp_tool=mcp_tool,
-            status="DISPATCHED",
-        )
-        self.invocations[inv_id] = inv
-        self.by_public_id[pub_id] = inv
-        return inv, None
+        return None
 
     def reconcile_dsh_tool_messages(
         self, messages: Sequence[Any]
@@ -58913,6 +59115,8 @@ def _robin_reconcile_tool_outputs(
                 merged.setdefault("_mcp_server", matched["_mcp_server"])
             if "_mcp_tool" in matched:
                 merged.setdefault("_mcp_tool", matched["_mcp_tool"])
+            if "_source" in matched:
+                merged.setdefault("_source", matched["_source"])
             if matched.get("_synth_absorb_only"):
                 merged["_synth_absorb_only"] = True
         reconciled.append(merged)
@@ -58947,6 +59151,112 @@ def _robin_merge_incremental_tool_output(prev: str, new: str) -> str:
     if prev_txt.strip() in payload:
         return new_txt
     return f"{prev_txt.rstrip()}\n{payload}"
+
+
+@dataclass
+class _RobinRelayDelivery:
+    """One Relay tool outcome waiting to be written back as an MCP HTTP result.
+
+    `carrier=True` means the payload answers a `command_status` request (its own
+    `job_id` / response context), not the original `tools/call` that started the job.
+    """
+
+    inv: _RobinToolInvocation
+    result_dict: dict[str, Any]
+    is_error: bool = False
+    carrier: bool = False
+
+
+@dataclass
+class _RobinToolOutputReconcile:
+    """Source-neutral outcome of folding one DSH `role:tool` batch.
+
+    Everything ERT-specific stays empty for a Relay-only batch, which is exactly what
+    keeps a Relay submission from mutating ERT counters, frames or progress snapshots.
+    """
+
+    status: str = "ok"  # ok / unmatched
+    frames: list[bytes] = field(default_factory=list)
+    frame_records: list[tuple[str, "_RobinToolInvocation | None", str, str, bytes]] = (
+        field(default_factory=list)
+    )
+    synth_pending_calls: list[dict[str, Any]] = field(default_factory=list)
+    synth_tool_deltas: list[dict[str, Any]] = field(default_factory=list)
+    absorbed_bg: bool = False
+    relay_deliveries: list[_RobinRelayDelivery] = field(default_factory=list)
+    pending_before: list[dict[str, Any]] = field(default_factory=list)
+    remaining_pending: list[dict[str, Any]] = field(default_factory=list)
+    ert_touched: bool = False
+    relay_touched: bool = False
+
+    @property
+    def remaining_ert(self) -> list[dict[str, Any]]:
+        """Still-pending calls owned by ERT; Relay pending never delays ERT bookkeeping."""
+        return [
+            tc
+            for tc in self.remaining_pending
+            if isinstance(tc, dict) and str(tc.get("_source") or "ert") == "ert"
+        ]
+
+
+# -----------------------------------------------------------------------------
+# Relay HTTP response waiters
+#
+# In-memory only: one entry per public MCP `tools/call` that is still waiting for its
+# DSH result. Keys are Relay `job_id`s (public tool call ids), never ERT wire ids, and
+# nothing here is written to the tool ledger, SQLite or any ERT frame queue.
+# -----------------------------------------------------------------------------
+
+_RELAY_HTTP_WAITERS: dict[str, asyncio.Future[dict[str, Any]]] = {}
+
+
+def _relay_open_waiter(key: str) -> asyncio.Future[dict[str, Any]] | None:
+    """Register one in-flight Relay HTTP answer slot; `None` when the key is empty."""
+    norm = str(key or "").strip()
+    if not norm:
+        return None
+    fut: asyncio.Future[dict[str, Any]] = asyncio.get_running_loop().create_future()
+    _RELAY_HTTP_WAITERS[norm] = fut
+    return fut
+
+
+def _relay_drop_waiter(key: str) -> None:
+    """Forget a waiter without answering it (abort, disconnect, cancelled turn)."""
+    norm = str(key or "").strip()
+    if norm:
+        _RELAY_HTTP_WAITERS.pop(norm, None)
+
+
+def _relay_settle(
+    key: str, result_dict: dict[str, Any], *, is_error: bool = False
+) -> bool:
+    """Answer one Relay HTTP request. Returns False when it was already answered.
+
+    Dropping the entry on delivery is the `answered` flag: a retried or duplicated DSH
+    submission can never produce a second MCP response for the same `job_id`.
+    """
+    norm = str(key or "").strip()
+    if not norm:
+        return False
+    fut = _RELAY_HTTP_WAITERS.pop(norm, None)
+    if fut is None or fut.done():
+        return False
+    payload = {"result": dict(result_dict or {}), "is_error": bool(is_error)}
+
+    def _deliver() -> None:
+        if not fut.done():
+            fut.set_result(payload)
+
+    try:
+        running: asyncio.AbstractEventLoop | None = asyncio.get_running_loop()
+    except RuntimeError:
+        running = None
+    loop = fut.get_loop()
+    if running is not loop:
+        loop.call_soon_threadsafe(_deliver)
+    else:
+        _deliver()
+    return True
 
 
 # =============================================================================
@@ -58984,6 +59294,9 @@ class _RobinRunState:
     base_context_tokens: int = 0
     max_prompt_tokens: int = 0
     initial_messages: list[Any] = field(default_factory=list)
+    # Set once a Relay invocation appears on this run: PQ tool announcements can no
+    # longer be attributed to ERT, so the ERT tool-deficit wakeup is disabled.
+    relay_mode: bool = False
 
     # Orthogonal state dimensions
     submission_state: str = "PREPARED"  # PREPARED / SENT / IDENTIFIED / UNKNOWN
@@ -59626,7 +59939,8 @@ def _robin_lookup_continuation(
         if isinstance(body, dict)
         else (
             {"session_id": session_id}
-            if session_id and not session_id.startswith(("boot_", "full_", "dsh_", "veh_"))
+            if session_id
+            and not session_id.startswith(("boot_", "full_", "dsh_", "veh_"))
             else {}
         )
     )
@@ -60498,10 +60812,17 @@ class _RobinRunActor:
     last_submitted_ert_frames: list[bytes] = field(default_factory=list)
     ert_flush_lock: Any = None
     created_at: float = field(default_factory=time.monotonic)
+    # Loop that owns `mux_queue` and the driver tasks; Relay ingress hops onto it.
+    loop: Any = None
 
     def __post_init__(self) -> None:
         if self.mux_queue is None:
             self.mux_queue = asyncio.Queue()
+        if self.loop is None:
+            try:
+                self.loop = asyncio.get_running_loop()
+            except RuntimeError:
+                self.loop = None
         if self.ert_flush_lock is None:
             self.ert_flush_lock = asyncio.Lock()
         if self.tools_resumed_event is None:
@@ -60604,9 +60925,8 @@ class _RobinRunActor:
             "last_frame_completed": bool(
                 getattr(self.decoder, "last_frame_completed", False)
             ),
-            "pending_tool_calls": len(
-                getattr(self.decoder, "pending_tool_calls", None) or []
-            ),
+            "pending_tool_calls": len(self.decoder._ert_pending_tool_calls()),
+            "relay_pending_tool_calls": len(self.decoder._relay_pending_tool_calls()),
         }
         self.last_pq_close_diag = diag
         _gemini_debug_log_event(
@@ -60727,22 +61047,19 @@ class _RobinRunActor:
                     )
                     break
 
-    async def submit_tool_results(
-        self,
-        messages: Sequence[Any],
-        *,
-        dsh_sandbox_mode: str = "",
-        dsh_approval_policy: str = "",
-    ) -> str:
-        """Resume a parked run with the DSH tool outputs carried by `role == "tool"` messages."""
-        self.last_submitted_ert_frames = []
-        self.awaiting_post_tool_progress = False
+    def _robin_reconcile_dsh_tool_outputs(
+        self, messages: Sequence[Any]
+    ) -> _RobinToolOutputReconcile:
+        """Neutral reconciliation core: extract outputs, self-heal, group them by channel."""
+        rec = _RobinToolOutputReconcile()
         pending = list(self.pending_tool_calls or self.decoder.pending_tool_calls or [])
+        rec.pending_before = pending
         outputs = _robin_extract_delta_tool_outputs(
             messages, pending_tool_calls=pending
         )
         if not outputs:
-            return "unmatched"
+            rec.status = "unmatched"
+            return rec
         if pending and len(outputs) < len(pending):
             _llm_log.warning(
                 "Robin tool continuation: resolved %d of %d pending tool calls",
@@ -60750,12 +61067,7 @@ class _RobinRunActor:
                 len(pending),
             )
         ledger = getattr(self.run, "tool_ledger", None)
-        frames: list[bytes] = []
-        frame_records: list[tuple[str, Any, str, str, bytes]] = []
         reconciled_ids: set[str] = set()
-        synth_pending_calls: list[dict[str, Any]] = []
-        synth_tool_deltas: list[dict[str, Any]] = []
-        absorbed_bg = False
         for out_item in outputs:
             tc_id = str(
                 out_item.get("tool_call_id") or out_item.get("id") or ""
@@ -60763,13 +61075,18 @@ class _RobinRunActor:
             if out_item.get("_synth_absorb_only"):
                 if tc_id:
                     reconciled_ids.add(tc_id)
-                absorbed_bg = True
+                rec.absorbed_bg = True
+                if str(out_item.get("_source") or "ert") == "relay":
+                    rec.relay_touched = True
+                else:
+                    rec.ert_touched = True
                 continue
             out_str = _dsh_stringify_tool_output(out_item.get("output"))
             spliced_notice = str(out_item.get("_spliced_user_notice") or "").strip()
             inv = (
                 ledger.by_public_id.get(tc_id) if ledger is not None and tc_id else None
             )
+            is_relay = inv is not None and inv.source == "relay"
             moved_job_id = ""
             if inv is not None and ledger is not None:
                 if (
@@ -60796,17 +61113,18 @@ class _RobinRunActor:
                             "offset": 1,
                             "limit": 1,
                         }
-                        read_idx = len(synth_pending_calls)
-                        synth_pending_calls.append(
+                        read_idx = len(rec.synth_pending_calls)
+                        rec.synth_pending_calls.append(
                             {
                                 "index": read_idx,
                                 "id": synth_read_id,
                                 "name": "read",
+                                "_source": inv.source,
                                 "args": read_args,
                                 "_synth_absorb_only": True,
                             }
                         )
-                        synth_tool_deltas.append(
+                        rec.synth_tool_deltas.append(
                             {
                                 "index": read_idx,
                                 "id": synth_read_id,
@@ -60823,8 +61141,8 @@ class _RobinRunActor:
                         ledger.by_public_id[synth_edit_id] = inv
                         inv.public_tool_call_id = synth_edit_id
                         edit_args = dict(inv.adapted_args)
-                        edit_idx = len(synth_pending_calls)
-                        synth_pending_calls.append(
+                        edit_idx = len(rec.synth_pending_calls)
+                        rec.synth_pending_calls.append(
                             {
                                 "index": edit_idx,
                                 "id": synth_edit_id,
@@ -60836,10 +61154,11 @@ class _RobinRunActor:
                                 "_orig_args": inv.orig_args,
                                 "_mcp_server": inv.mcp_server,
                                 "_mcp_tool": inv.mcp_tool,
+                                "_source": inv.source,
                                 "args": edit_args,
                             }
                         )
-                        synth_tool_deltas.append(
+                        rec.synth_tool_deltas.append(
                             {
                                 "index": edit_idx,
                                 "id": synth_edit_id,
@@ -60852,6 +61171,10 @@ class _RobinRunActor:
                                 },
                             }
                         )
+                        if is_relay:
+                            rec.relay_touched = True
+                        else:
+                            rec.ert_touched = True
                         continue
                 moved_job_id = _dsh_extract_moved_bg_job_id(out_str)
                 if moved_job_id:
@@ -60877,39 +61200,103 @@ class _RobinRunActor:
                         or out_str
                     )
                     if inv.carrier_call_name:
-                        running_frame = ledger._build_command_status_frame(
-                            inv,
-                            call_id=inv.carrier_call_id,
-                            call_id_present=inv.carrier_call_id_present,
-                            call_name=inv.carrier_call_name,
-                            mcp_tool_name=inv.carrier_mcp_tool,
-                            max_output_chars=inv.carrier_output_char_count,
-                            done=False,
-                        )
-                        inv.carrier_call_name = ""
-                        inv.carrier_mcp_tool = ""
-                        inv.carrier_call_id = ""
-                        inv.carrier_dispatched_monotonic = 0.0
-                        inv.carrier_wait_duration_seconds = 0.0
-                        frames.append(running_frame)
-                        frame_records.append(
-                            (tc_id, inv, prev_status, prev_result_str, running_frame)
-                        )
+                        if is_relay:
+                            running_dict = ledger._build_command_status_result_dict(
+                                inv,
+                                call_name=inv.carrier_call_name,
+                                mcp_tool_name=inv.carrier_mcp_tool,
+                                max_output_chars=inv.carrier_output_char_count,
+                                done=False,
+                            )
+                            if tc_id:
+                                _robin_record_sent_tool_tokens(
+                                    tc_id,
+                                    _robin_estimate_ert_tool_output_tokens(
+                                        json.dumps(running_dict, ensure_ascii=False),
+                                        inv.dsh_tool_name,
+                                    ),
+                                )
+                            rec.relay_deliveries.append(
+                                _RobinRelayDelivery(
+                                    inv=inv,
+                                    result_dict=running_dict,
+                                    carrier=True,
+                                )
+                            )
+                            inv.carrier_call_name = ""
+                            inv.carrier_mcp_tool = ""
+                            inv.carrier_call_id = ""
+                            inv.carrier_dispatched_monotonic = 0.0
+                            inv.carrier_wait_duration_seconds = 0.0
+                            rec.relay_touched = True
+                        else:
+                            running_frame = ledger._build_command_status_frame(
+                                inv,
+                                call_id=inv.carrier_call_id,
+                                call_id_present=inv.carrier_call_id_present,
+                                call_name=inv.carrier_call_name,
+                                mcp_tool_name=inv.carrier_mcp_tool,
+                                max_output_chars=inv.carrier_output_char_count,
+                                done=False,
+                            )
+                            inv.carrier_call_name = ""
+                            inv.carrier_mcp_tool = ""
+                            inv.carrier_call_id = ""
+                            inv.carrier_dispatched_monotonic = 0.0
+                            inv.carrier_wait_duration_seconds = 0.0
+                            rec.frames.append(running_frame)
+                            rec.frame_records.append(
+                                (
+                                    tc_id,
+                                    inv,
+                                    prev_status,
+                                    prev_result_str,
+                                    running_frame,
+                                )
+                            )
+                            rec.ert_touched = True
                     elif inv.status == "DISPATCHED":
                         inv.status = "BACKGROUNDED"
-                        bg_frame = ledger._build_background_handoff_frame(inv)
-                        inv.background_response_frame = bg_frame
-                        frames.append(bg_frame)
-                        frame_records.append(
-                            (tc_id, inv, prev_status, prev_result_str, bg_frame)
-                        )
+                        if is_relay:
+                            handoff_dict = ledger._build_background_handoff_dict(inv)
+                            if tc_id:
+                                _robin_record_sent_tool_tokens(
+                                    tc_id,
+                                    _robin_estimate_ert_tool_output_tokens(
+                                        json.dumps(handoff_dict, ensure_ascii=False),
+                                        inv.dsh_tool_name,
+                                    ),
+                                )
+                            rec.relay_deliveries.append(
+                                _RobinRelayDelivery(
+                                    inv=inv,
+                                    result_dict=handoff_dict,
+                                )
+                            )
+                            rec.relay_touched = True
+                        else:
+                            bg_frame = ledger._build_background_handoff_frame(inv)
+                            inv.background_response_frame = bg_frame
+                            rec.frames.append(bg_frame)
+                            rec.frame_records.append(
+                                (tc_id, inv, prev_status, prev_result_str, bg_frame)
+                            )
+                            rec.ert_touched = True
                     else:
-                        absorbed_bg = True
+                        rec.absorbed_bg = True
+                        if is_relay:
+                            rec.relay_touched = True
+                        else:
+                            rec.ert_touched = True
                     continue
             if inv is not None and inv.status == "BACKGROUNDED":
                 if tc_id:
                     reconciled_ids.add(tc_id)
-                absorbed_bg = True
+                rec.absorbed_bg = True
+                if is_relay:
+                    rec.relay_touched = True
+                else:
+                    rec.ert_touched = True
                 prev_status = inv.status
                 prev_result_str = inv.result_str
                 merged_out = _robin_merge_incremental_tool_output(
@@ -60924,80 +61311,222 @@ class _RobinRunActor:
                     )
                 inv.result_str = merged_out
                 if inv.carrier_call_name and ledger is not None:
-                    done_frame = ledger._build_command_status_frame(
-                        inv,
-                        call_id=inv.carrier_call_id,
-                        call_id_present=inv.carrier_call_id_present,
-                        call_name=inv.carrier_call_name,
-                        mcp_tool_name=inv.carrier_mcp_tool,
-                        max_output_chars=inv.carrier_output_char_count,
-                        done=True,
-                    )
-                    inv.last_response_frame = done_frame
-                    inv.bg_done_delivered = True
-                    inv.carrier_call_name = ""
-                    inv.carrier_mcp_tool = ""
-                    inv.carrier_call_id = ""
-                    inv.carrier_dispatched_monotonic = 0.0
-                    inv.carrier_wait_duration_seconds = 0.0
-                    frames.append(done_frame)
-                    frame_records.append(
-                        (tc_id, inv, prev_status, prev_result_str, done_frame)
-                    )
-                inv.status = "REPORTED"
-            else:
-                prev_status = inv.status if inv is not None else ""
-                prev_result_str = inv.result_str if inv is not None else ""
-                item_frames = _robin_build_execute_remote_tools_result_frames(
-                    [out_item]
-                )
-                if item_frames:
-                    if tc_id:
-                        reconciled_ids.add(tc_id)
-                        t_name_est = (
-                            inv.dsh_tool_name
-                            if inv is not None
-                            else str(out_item.get("name") or "")
+                    if is_relay:
+                        done_dict = ledger._build_command_status_result_dict(
+                            inv,
+                            call_name=inv.carrier_call_name,
+                            mcp_tool_name=inv.carrier_mcp_tool,
+                            max_output_chars=inv.carrier_output_char_count,
+                            done=True,
                         )
-                        _robin_record_sent_tool_tokens(
-                            tc_id,
-                            _robin_estimate_ert_tool_output_tokens(out_str, t_name_est),
+                        if tc_id:
+                            _robin_record_sent_tool_tokens(
+                                tc_id,
+                                _robin_estimate_ert_tool_output_tokens(
+                                    json.dumps(done_dict, ensure_ascii=False),
+                                    inv.dsh_tool_name,
+                                ),
+                            )
+                        rec.relay_deliveries.append(
+                            _RobinRelayDelivery(
+                                inv=inv,
+                                result_dict=done_dict,
+                                is_error=_dsh_is_tool_error(inv.result_str),
+                                carrier=True,
+                            )
                         )
-                    if inv is not None:
-                        inv.result_str = out_str
-                        inv.last_response_frame = item_frames[0]
-                        if inv.bg_command_id:
-                            inv.bg_done_delivered = True
+                        inv.bg_done_delivered = True
                         inv.carrier_call_name = ""
                         inv.carrier_mcp_tool = ""
                         inv.carrier_call_id = ""
                         inv.carrier_dispatched_monotonic = 0.0
                         inv.carrier_wait_duration_seconds = 0.0
-                        inv.status = "REPORTED"
-                    for f_bytes in item_frames:
-                        frames.append(f_bytes)
-                        frame_records.append(
-                            (tc_id, inv, prev_status, prev_result_str, f_bytes)
+                    else:
+                        done_frame = ledger._build_command_status_frame(
+                            inv,
+                            call_id=inv.carrier_call_id,
+                            call_id_present=inv.carrier_call_id_present,
+                            call_name=inv.carrier_call_name,
+                            mcp_tool_name=inv.carrier_mcp_tool,
+                            max_output_chars=inv.carrier_output_char_count,
+                            done=True,
                         )
-        if not frames and not synth_pending_calls and not absorbed_bg:
-            return "unmatched"
+                        inv.last_response_frame = done_frame
+                        inv.bg_done_delivered = True
+                        inv.carrier_call_name = ""
+                        inv.carrier_mcp_tool = ""
+                        inv.carrier_call_id = ""
+                        inv.carrier_dispatched_monotonic = 0.0
+                        inv.carrier_wait_duration_seconds = 0.0
+                        rec.frames.append(done_frame)
+                        rec.frame_records.append(
+                            (tc_id, inv, prev_status, prev_result_str, done_frame)
+                        )
+                inv.status = "REPORTED"
+            else:
+                prev_status = inv.status if inv is not None else ""
+                prev_result_str = inv.result_str if inv is not None else ""
+                if is_relay:
+                    assert inv is not None
+                    projected_dict = _robin_project_tool_result_dict(out_item)
+                    if tc_id:
+                        reconciled_ids.add(tc_id)
+                        _robin_record_sent_tool_tokens(
+                            tc_id,
+                            _robin_estimate_ert_tool_output_tokens(
+                                json.dumps(projected_dict, ensure_ascii=False),
+                                inv.dsh_tool_name,
+                            ),
+                        )
+                    inv.result_str = out_str
+                    if inv.bg_command_id:
+                        inv.bg_done_delivered = True
+                    inv.carrier_call_name = ""
+                    inv.carrier_mcp_tool = ""
+                    inv.carrier_call_id = ""
+                    inv.carrier_dispatched_monotonic = 0.0
+                    inv.carrier_wait_duration_seconds = 0.0
+                    inv.status = "REPORTED"
+                    rec.relay_deliveries.append(
+                        _RobinRelayDelivery(
+                            inv=inv,
+                            result_dict=projected_dict,
+                            is_error=_dsh_is_tool_error(out_str),
+                        )
+                    )
+                    rec.relay_touched = True
+                else:
+                    item_frames = _robin_build_execute_remote_tools_result_frames(
+                        [out_item]
+                    )
+                    if item_frames:
+                        if tc_id:
+                            reconciled_ids.add(tc_id)
+                            t_name_est = (
+                                inv.dsh_tool_name
+                                if inv is not None
+                                else str(out_item.get("name") or "")
+                            )
+                            _robin_record_sent_tool_tokens(
+                                tc_id,
+                                _robin_estimate_ert_tool_output_tokens(
+                                    out_str, t_name_est
+                                ),
+                            )
+                        if inv is not None:
+                            inv.result_str = out_str
+                            inv.last_response_frame = item_frames[0]
+                            if inv.bg_command_id:
+                                inv.bg_done_delivered = True
+                            inv.carrier_call_name = ""
+                            inv.carrier_mcp_tool = ""
+                            inv.carrier_call_id = ""
+                            inv.carrier_dispatched_monotonic = 0.0
+                            inv.carrier_wait_duration_seconds = 0.0
+                            inv.status = "REPORTED"
+                        for f_bytes in item_frames:
+                            rec.frames.append(f_bytes)
+                            rec.frame_records.append(
+                                (tc_id, inv, prev_status, prev_result_str, f_bytes)
+                            )
+                        rec.ert_touched = True
+        if (
+            not rec.frames
+            and not rec.synth_pending_calls
+            and not rec.absorbed_bg
+            and not rec.relay_deliveries
+        ):
+            rec.status = "unmatched"
+            return rec
         remaining_pending = [
             tc
             for tc in self.decoder.pending_tool_calls
             if str(tc.get("id") or "").strip() not in reconciled_ids
         ]
-        if synth_pending_calls:
-            remaining_pending.extend(synth_pending_calls)
+        if rec.synth_pending_calls:
+            remaining_pending.extend(rec.synth_pending_calls)
         for idx, tc in enumerate(remaining_pending):
             tc["index"] = idx
+        rec.remaining_pending = remaining_pending
         self.decoder.pending_tool_calls = remaining_pending
         self.pending_tool_calls = list(remaining_pending)
         self.decoder.finish_reason = "tool_calls" if remaining_pending else None
-        if not remaining_pending:
+        return rec
+
+    async def submit_tool_results(
+        self,
+        messages: Sequence[Any],
+        *,
+        dsh_sandbox_mode: str = "",
+        dsh_approval_policy: str = "",
+    ) -> str:
+        """Resume a parked run with the DSH tool outputs carried by `role == "tool"` messages."""
+        rec = self._robin_reconcile_dsh_tool_outputs(messages)
+        if rec.status != "ok" or rec.ert_touched:
+            self.last_submitted_ert_frames = []
+            self.awaiting_post_tool_progress = False
+        if rec.status != "ok":
+            return "unmatched"
+        remaining_pending = rec.remaining_pending
+        self.decoder.role_sent = False
+        self.decoder.emitted_reasoning_chars = 0
+        self.decoder.emitted_reasoning_text = ""
+        self.decoder.emitted_answer_chars = 0
+        self.decoder.emitted_answer_text = ""
+        if rec.ert_touched and (rec.frames or rec.absorbed_bg):
+            self.awaiting_post_tool_progress = True
+            self.last_tool_submit_monotonic = time.monotonic()
+            self.state_updates_at_tool_submit = self.run.state_tape.update_count
+            self.progress_at_tool_submit = (
+                len(self.run.state_tape.entries),
+                len(self.run.answer_projector.committed_text),
+            )
+        if dsh_sandbox_mode:
+            self.run.dsh_sandbox_mode = dsh_sandbox_mode
+            if hasattr(self.run.tool_ledger, "dsh_sandbox_mode"):
+                self.run.tool_ledger.dsh_sandbox_mode = dsh_sandbox_mode
+        if dsh_approval_policy:
+            self.run.dsh_approval_policy = dsh_approval_policy
+            if hasattr(self.run.tool_ledger, "dsh_approval_policy"):
+                self.run.tool_ledger.dsh_approval_policy = dsh_approval_policy
+        self.run.execution_state = "WAITING_TOOLS" if remaining_pending else "RUNNING"
+        self.run.attachment_state = "TOOL_HANDOFF" if remaining_pending else "STREAMING"
+        self.run.finalization_state = "OPEN"
+        self.run.thought_projector.mark_new_thought_block()
+        # Relay answers settle first: their HTTP waiters must never queue behind the ERT
+        # async tail (open stream, flush, retry, rollback).
+        if rec.relay_touched:
+            self._relay_finalize_tool_submit(rec)
+        ert_status = "ok"
+        if rec.ert_touched:
+            ert_status = await self._finalize_ert_tool_submit(rec)
+            if ert_status == "send_failed":
+                return ert_status
+        if rec.synth_tool_deltas:
+            for idx, d_item in enumerate(rec.synth_tool_deltas):
+                d_item["index"] = idx
+            synth_chunk = self.decoder._make_chunk(
+                {"tool_calls": rec.synth_tool_deltas}
+            )
+            await self.mux_queue.put(("ert_chunks", [synth_chunk]))
+        if not remaining_pending and self.tools_resumed_event is not None:
+            self.tools_resumed_event.set()
+        _GEMINI_DSH_STORE.save_run(self.run)
+        return "ok"
+
+    async def _finalize_ert_tool_submit(self, rec: _RobinToolOutputReconcile) -> str:
+        """ERT finalizer: step bookkeeping, frame delivery and `send_failed` rollback.
+
+        Only runs when the batch carried ERT output, so a Relay-only submission can never
+        reset ERT step counters, post-tool snapshots or the outbound ERT frame queue.
+        """
+        if not rec.remaining_ert:
             step_ann = int(getattr(self.decoder, "step_announced_count", 0) or 0)
             step_rec = int(getattr(self.decoder, "step_ert_received_count", 0) or 0)
-            if step_ann <= step_rec or bool(
-                getattr(self.decoder, "step_ert_wakeup_done", False)
+            if (
+                step_ann <= step_rec
+                or bool(getattr(self.decoder, "step_ert_wakeup_done", False))
+                or self.run.relay_mode
             ):
                 self.decoder.step_announced_count = 0
                 self.decoder.step_ert_received_count = 0
@@ -61012,34 +61541,10 @@ class _RobinRunActor:
                 self.decoder.step_ert_received_count = 0
                 self.decoder.step_ert_wakeup_done = False
                 self.decoder.step_unmatched_pq_tool_monotonic = time.monotonic()
-        self.decoder.role_sent = False
-        self.decoder.emitted_reasoning_chars = 0
-        self.decoder.emitted_reasoning_text = ""
-        self.decoder.emitted_answer_chars = 0
-        self.decoder.emitted_answer_text = ""
-        if frames or absorbed_bg:
-            self.awaiting_post_tool_progress = True
-            self.last_tool_submit_monotonic = time.monotonic()
-            self.state_updates_at_tool_submit = self.run.state_tape.update_count
-            self.progress_at_tool_submit = (
-                len(self.run.state_tape.entries),
-                len(self.run.answer_projector.committed_text),
-            )
+        frames = rec.frames
         if frames:
             self.last_submitted_ert_frames = list(frames)
             self.decoder.pending_ert_outbound_frames.extend(frames)
-        if dsh_sandbox_mode:
-            self.run.dsh_sandbox_mode = dsh_sandbox_mode
-            if hasattr(self.run.tool_ledger, "dsh_sandbox_mode"):
-                self.run.tool_ledger.dsh_sandbox_mode = dsh_sandbox_mode
-        if dsh_approval_policy:
-            self.run.dsh_approval_policy = dsh_approval_policy
-            if hasattr(self.run.tool_ledger, "dsh_approval_policy"):
-                self.run.tool_ledger.dsh_approval_policy = dsh_approval_policy
-        self.run.execution_state = "WAITING_TOOLS" if remaining_pending else "RUNNING"
-        self.run.attachment_state = "TOOL_HANDOFF" if remaining_pending else "STREAMING"
-        self.run.finalization_state = "OPEN"
-        self.run.thought_projector.mark_new_thought_block()
         conv_id = self.conversation_id or self.decoder.conversation_id
         if self.ert_response is None and conv_id and frames:
             await self.ensure_ert_and_presence(conv_id)
@@ -61047,21 +61552,24 @@ class _RobinRunActor:
             await self.flush_pending_ert_outbound()
         if frames:
             unsent_records = [
-                rec
-                for rec in frame_records
-                if any(q is rec[4] for q in self.decoder.pending_ert_outbound_frames)
+                rec_item
+                for rec_item in rec.frame_records
+                if any(
+                    q is rec_item[4] for q in self.decoder.pending_ert_outbound_frames
+                )
             ]
             if unsent_records:
                 await self.flush_pending_ert_outbound()
                 unsent_records = [
-                    rec
-                    for rec in frame_records
+                    rec_item
+                    for rec_item in rec.frame_records
                     if any(
-                        q is rec[4] for q in self.decoder.pending_ert_outbound_frames
+                        q is rec_item[4]
+                        for q in self.decoder.pending_ert_outbound_frames
                     )
                 ]
             if unsent_records:
-                unsent_frame_ids = {id(rec[4]) for rec in unsent_records}
+                unsent_frame_ids = {id(rec_item[4]) for rec_item in unsent_records}
                 self.decoder.pending_ert_outbound_frames = [
                     q
                     for q in self.decoder.pending_ert_outbound_frames
@@ -61078,9 +61586,9 @@ class _RobinRunActor:
                         rec_inv.result_str = prev_res
                 restored_pending = [
                     tc
-                    for tc in pending
+                    for tc in rec.pending_before
                     if str(tc.get("id") or "").strip() in unsent_tc_ids
-                ] + list(remaining_pending)
+                ] + list(rec.remaining_pending)
                 for idx, tc in enumerate(restored_pending):
                     tc["index"] = idx
                 self.decoder.pending_tool_calls = restored_pending
@@ -61094,15 +61602,237 @@ class _RobinRunActor:
                 )
                 _GEMINI_DSH_STORE.save_run(self.run)
                 return "send_failed"
-        if synth_tool_deltas:
-            for idx, d_item in enumerate(synth_tool_deltas):
-                d_item["index"] = idx
-            synth_chunk = self.decoder._make_chunk({"tool_calls": synth_tool_deltas})
-            await self.mux_queue.put(("ert_chunks", [synth_chunk]))
-        if not remaining_pending and self.tools_resumed_event is not None:
-            self.tools_resumed_event.set()
-        _GEMINI_DSH_STORE.save_run(self.run)
         return "ok"
+
+    def _relay_finalize_tool_submit(self, rec: _RobinToolOutputReconcile) -> None:
+        """Relay finalizer: write each MCP result back to its waiting HTTP request."""
+        for delivery in rec.relay_deliveries:
+            inv = delivery.inv
+            ctx = inv.relay_carrier_ctx if delivery.carrier else inv.relay_ctx
+            job_id = str((ctx or {}).get("relay_job_id") or "")
+            if delivery.carrier:
+                inv.relay_carrier_ctx = {}
+            _relay_settle(job_id, delivery.result_dict, is_error=delivery.is_error)
+
+    # ------------------------------------------------------------------
+    # Relay adapter (public MCP HTTP channel)
+    # ------------------------------------------------------------------
+
+    async def _relay_dispatch_tool_call(
+        self,
+        tool_name: str,
+        tool_args: dict[str, Any],
+        job_id: str,
+        ctx: dict[str, str],
+    ) -> tuple[_RobinToolInvocation | None, _RobinLocalToolResult | None]:
+        """Register one Relay `tools/call` and push its DSH delta into the live SSE queue.
+
+        Runs on the actor's own loop: `pending_tool_calls` and `mux_queue` belong to it.
+        Never touches ERT counters, ERT dedupe sets or `pending_ert_outbound_frames`.
+        """
+        ledger = self.run.tool_ledger
+        inv, local = _robin_register_dsh_tool_call(
+            ledger,
+            source="relay",
+            public_id=job_id,
+            orig_name=tool_name,
+            raw_args=tool_args,
+            relay_ctx=ctx,
+        )
+        if local is not None or inv is None:
+            return None, local
+        wire_id = str(ctx.get("relay_wire_call_id") or "").strip()
+        if wire_id:
+            self.decoder.relay_announced_call_ids.add(wire_id)
+            if (
+                wire_id in self.decoder.announced_client_tool_ids
+                and wire_id not in self.decoder.ert_seen_wire_call_ids
+            ):
+                self.decoder.announced_client_tool_ids.discard(wire_id)
+                self.decoder.step_announced_count = max(
+                    0, self.decoder.step_announced_count - 1
+                )
+                if (
+                    self.decoder.step_announced_count
+                    <= self.decoder.step_ert_received_count
+                ):
+                    self.decoder.step_unmatched_pq_tool_monotonic = 0.0
+        else:
+            self.run.relay_mode = True
+            self.decoder.step_unmatched_pq_tool_monotonic = 0.0
+        chunks = self.decoder._robin_ingest_dsh_tool_calls([inv])
+        self.pending_tool_calls = list(self.decoder.pending_tool_calls)
+        if chunks:
+            await self.mux_queue.put(("ert_chunks", chunks))
+        _gemini_debug_log_event(
+            self.session_id,
+            "relay_tool_dispatch",
+            {
+                "run_id": self.run.run_id,
+                "job_id": job_id,
+                "tool": inv.dsh_tool_name,
+                "source": inv.source,
+                "wire_call_id_present": bool(wire_id),
+            },
+        )
+        return inv, None
+
+    async def _relay_dispatch_command_status(
+        self, tool_args: dict[str, Any], job_id: str, ctx: dict[str, str]
+    ) -> tuple[dict[str, Any] | None, str]:
+        """Handle a Relay `command_status` carrier without creating a new invocation.
+
+        Returns `(immediate_result_dict, state)`; `state` is one of `done`, `running`,
+        `dispatched`, `carrier` or `error`. `dispatched` / `carrier` mean the answer will
+        arrive later through the wait table for this request.
+        """
+        ledger = self.run.tool_ledger
+        cmd_id = str(
+            tool_args.get("CommandId") or tool_args.get("command_id") or ""
+        ).strip()
+        raw_chars = (
+            tool_args.get("OutputCharacterCount")
+            if "OutputCharacterCount" in tool_args
+            else tool_args.get("output_character_count")
+        )
+        out_chars = 0
+        if raw_chars is not None:
+            try:
+                out_chars = max(
+                    0,
+                    min(int(raw_chars), GEMINI_ROBIN_COMMAND_OUTPUT_MAX_CHARS),
+                )
+            except (TypeError, ValueError):
+                out_chars = 0
+        raw_wait = (
+            tool_args.get("WaitDurationSeconds")
+            if "WaitDurationSeconds" in tool_args
+            else tool_args.get("wait_duration_seconds")
+        )
+        try:
+            wait_sec = float(raw_wait) if raw_wait is not None else 10.0
+        except (TypeError, ValueError):
+            wait_sec = 10.0
+        bg_inv = ledger.find_background_invocation(cmd_id, source="relay")
+        if bg_inv is None:
+            not_found = (
+                f"No background command found for CommandId={cmd_id!r}."
+                if cmd_id
+                else "No active background command found."
+            )
+            return (
+                {"command_id": cmd_id, "status": "error", "error": not_found},
+                "error",
+            )
+        if not bg_inv.bg_command_id:
+            bg_inv.bg_command_id = cmd_id or str(uuid.uuid4()).upper()
+        if out_chars > 0:
+            bg_inv.carrier_output_char_count = out_chars
+        if bg_inv.status == "REPORTED":
+            done_dict = ledger._build_command_status_result_dict(
+                bg_inv,
+                call_name="command_status",
+                mcp_tool_name="command_status",
+                max_output_chars=out_chars or bg_inv.carrier_output_char_count,
+                done=True,
+            )
+            bg_inv.bg_done_delivered = True
+            return done_dict, "done"
+        if bg_inv.relay_carrier_ctx:
+            return (
+                {
+                    "command_id": bg_inv.bg_command_id,
+                    "status": "error",
+                    "error": (
+                        "Another command_status request for this command is still in "
+                        "flight; wait for it to return before polling again."
+                    ),
+                },
+                "error",
+            )
+        bg_inv.status = "BACKGROUNDED"
+        bg_inv.relay_carrier_ctx = dict(ctx)
+        bg_inv.carrier_call_name = "command_status"
+        bg_inv.carrier_mcp_tool = "command_status"
+        bg_inv.carrier_call_id = ""
+        bg_inv.carrier_call_id_present = True
+        bg_inv.carrier_wait_duration_seconds = wait_sec
+        bg_inv.carrier_dispatched_monotonic = time.monotonic()
+        if out_chars > 0:
+            bg_inv.carrier_output_char_count = out_chars
+        if wait_sec <= 0.0 and not bg_inv.dsh_job_id:
+            running_dict = ledger._build_command_status_result_dict(
+                bg_inv,
+                call_name="command_status",
+                mcp_tool_name="command_status",
+                max_output_chars=bg_inv.carrier_output_char_count,
+                done=False,
+            )
+            bg_inv.relay_carrier_ctx = {}
+            bg_inv.carrier_call_name = ""
+            bg_inv.carrier_mcp_tool = ""
+            return running_dict, "running"
+        if bg_inv.dsh_job_id:
+            wait_ms = (
+                min(
+                    max(500, int(wait_sec * 1000.0)),
+                    GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS,
+                )
+                if wait_sec > 0.0
+                else 500
+            )
+            pub_id = f"call_jobout_{uuid.uuid4().hex[:12]}"
+            bg_inv.public_tool_call_id = pub_id
+            bg_inv.dsh_tool_name = "job_output"
+            bg_inv.adapted_args = {
+                "job_id": bg_inv.dsh_job_id,
+                "wait": bool(wait_sec > 0.0),
+                "timeout_ms": wait_ms,
+            }
+            ledger.by_public_id[pub_id] = bg_inv
+            self.run.relay_mode = True
+            chunks = self.decoder._robin_ingest_dsh_tool_calls([bg_inv])
+            self.pending_tool_calls = list(self.decoder.pending_tool_calls)
+            if chunks:
+                await self.mux_queue.put(("ert_chunks", chunks))
+            return None, "dispatched"
+        # No DSH job id yet: the payload will arrive with the original call's `role:tool`.
+        return None, "carrier"
+
+    async def _relay_try_background(
+        self, inv: _RobinToolInvocation
+    ) -> dict[str, Any] | None:
+        """Promote a still-running Relay call to a background job (same rule as ERT)."""
+        if inv.status != "DISPATCHED":
+            return None
+        if not _RobinToolLedger._is_backgroundable_invocation(inv):
+            return None
+        inv.status = "BACKGROUNDED"
+        if not inv.bg_command_id:
+            inv.bg_command_id = str(uuid.uuid4()).upper()
+        _GEMINI_DSH_STORE.save_run(self.run)
+        return self.run.tool_ledger._build_background_handoff_dict(inv)
+
+    def _relay_cancel_pending(self, reason: str = "cancelled") -> None:
+        """Cancel Relay invocations of this actor and answer their waiting HTTP requests."""
+        ledger = getattr(self.run, "tool_ledger", None)
+        if ledger is None:
+            return
+        for inv in ledger._source_candidates("relay"):
+            if inv.status not in ("DISPATCHED", "BACKGROUNDED"):
+                continue
+            inv.status = "REPORTED"
+            ctx = inv.relay_carrier_ctx or inv.relay_ctx
+            job_id = str((ctx or {}).get("relay_job_id") or "")
+            inv.relay_carrier_ctx = {}
+            _relay_settle(
+                job_id,
+                {
+                    "status": "error",
+                    "error": f"Tool call was {reason} before it produced a result.",
+                },
+                is_error=True,
+            )
 
     async def _rollover_ert_stream(self) -> bool:
         """Close the current ERT stream and immediately open a fresh ERT stream on the shared HTTP/2 connection."""
@@ -61550,8 +62280,10 @@ class _RobinRunActor:
             self.has_robin_tools
             and conv_id
             and self.ert_response is None
-            and not self.decoder.pending_tool_calls
-            and self.run.execution_state != "WAITING_TOOLS"
+            and not self.decoder._ert_pending_tool_calls()
+            and not self.run.tool_ledger.has_active_background_or_dispatched(
+                source="ert"
+            )
         ):
             await self._rollover_ert_stream()
         return True
@@ -61620,14 +62352,16 @@ class _RobinRunActor:
 
                         now_mono = time.monotonic()
                         has_unmatched_pq_tools = (
-                            self.decoder.step_announced_count
+                            not self.run.relay_mode
+                            and self.decoder.step_announced_count
                             > self.decoder.step_ert_received_count
                             and self.decoder.step_unmatched_pq_tool_monotonic > 0.0
                             and not self.decoder.step_ert_wakeup_done
                         )
+                        ert_pending_tools = self.decoder._ert_pending_tool_calls()
                         if (
                             has_unmatched_pq_tools
-                            and not self.decoder.pending_tool_calls
+                            and not ert_pending_tools
                             and not self.decoder.is_completed
                         ):
                             unmatched_since = (
@@ -61668,13 +62402,11 @@ class _RobinRunActor:
                                 wakeup_reconnect = True
                                 break
 
-                        busy_with_tools = (
-                            self.run.execution_state == "WAITING_TOOLS"
-                            or bool(self.decoder.pending_tool_calls)
-                            or (
-                                ledger is not None
-                                and ledger.has_active_background_or_dispatched()
-                            )
+                        # ERT rollover is decided by ERT-source work only: a Relay
+                        # invocation in flight must never defer the ERT window.
+                        busy_with_tools = bool(ert_pending_tools) or (
+                            ledger is not None
+                            and ledger.has_active_background_or_dispatched(source="ert")
                         )
                         needs_async_poll = (
                             busy_with_tools
@@ -61981,6 +62713,9 @@ def _robin_peek_parked_stream(session_id: str) -> _RobinRunActor | None:
 def _robin_release_parked_stream_sync(item: _RobinRunActor | None) -> None:
     if item is None:
         return
+    # A released actor can no longer answer public MCP requests for its Relay calls.
+    item._relay_cancel_pending("cancelled because the run was released")
+    _relay_clear_active_run(item.run)
     for task_attr in ("pq_pump_task", "ert_pump_task", "presence_task"):
         t = getattr(item, task_attr, None)
         if t is not None and not t.done():
@@ -62050,6 +62785,9 @@ class _RobinStreamDecoder:
         self.tool_call_count = 0
         self.announced_client_tool_ids: set[str] = set()
         self.ert_seen_wire_call_ids: set[str] = set()
+        # Relay announced wire call ids: kept apart from the ERT dedupe sets so a
+        # Relay call can never mask a real ERT tool deficit.
+        self.relay_announced_call_ids: set[str] = set()
         self.step_announced_count = 0
         self.step_ert_received_count = 0
         self.step_unmatched_pq_tool_monotonic = 0.0
@@ -62227,6 +62965,10 @@ class _RobinStreamDecoder:
                         and it.call_id
                     ):
                         cid = it.call_id
+                        if self.run.relay_mode or cid in self.relay_announced_call_ids:
+                            # Relay-announced call: belongs to the MCP HTTP channel, so it
+                            # must not move ERT counters or arm the ERT wakeup.
+                            continue
                         if cid not in self.announced_client_tool_ids:
                             self.announced_client_tool_ids.add(cid)
                             if cid not in self.ert_seen_wire_call_ids:
@@ -62376,14 +63118,11 @@ class _RobinStreamDecoder:
     def _ingest_raw_tool_calls(
         self, raw_calls: Sequence[dict[str, Any]]
     ) -> list[dict[str, Any]]:
+        """ERT adapter: register ERT calls, move ERT counters, then project DSH deltas."""
         out: list[dict[str, Any]] = []
-        dsh_tool_deltas: list[dict[str, Any]] = []
+        new_invocations: list[_RobinToolInvocation] = []
         for raw_call in raw_calls:
-            raw_name = str(raw_call.get("name") or "").strip()
-            for pfx in ("client:", "dsh:", "veh:", "client/", "dsh/", "veh/"):
-                if raw_name.startswith(pfx):
-                    raw_name = raw_name[len(pfx) :].strip()
-                    break
+            raw_name = _robin_strip_tool_prefix(raw_call.get("name"))
             wire_id = str(raw_call.get("id") or "").strip()
             inv, immediate_frame = self.run.tool_ledger.register_ert_call(raw_call)
             if raw_name != "list_mcp":
@@ -62403,6 +63142,21 @@ class _RobinStreamDecoder:
                 continue
             if inv is None:
                 continue
+            new_invocations.append(inv)
+        out.extend(self._robin_ingest_dsh_tool_calls(new_invocations))
+        return out
+
+    def _robin_ingest_dsh_tool_calls(
+        self, invocations: Sequence[_RobinToolInvocation]
+    ) -> list[dict[str, Any]]:
+        """Source-neutral ingest: append `pending_tool_calls` and emit OpenAI `tool_calls`.
+
+        Never touches ERT counters, ERT dedupe sets or ERT outbound frames; the caller's
+        adapter decides how the deltas reach DSH.
+        """
+        out: list[dict[str, Any]] = []
+        dsh_tool_deltas: list[dict[str, Any]] = []
+        for inv in invocations:
             idx = len(self.pending_tool_calls)
             self.tool_call_count += 1
             tc_entry = {
@@ -62416,6 +63170,7 @@ class _RobinStreamDecoder:
                 "_orig_args": inv.orig_args,
                 "_mcp_server": inv.mcp_server,
                 "_mcp_tool": inv.mcp_tool,
+                "_source": inv.source,
                 "args": inv.adapted_args,
             }
             self.pending_tool_calls.append(tc_entry)
@@ -62437,6 +63192,22 @@ class _RobinStreamDecoder:
             out.append(self._make_chunk({"tool_calls": dsh_tool_deltas}))
             _GEMINI_DSH_STORE.save_run(self.run)
         return out
+
+    def _ert_pending_tool_calls(self) -> list[dict[str, Any]]:
+        """Pending tool calls owned by the ERT channel (Relay pending excluded)."""
+        return [
+            tc
+            for tc in (self.pending_tool_calls or [])
+            if isinstance(tc, dict) and str(tc.get("_source") or "ert") == "ert"
+        ]
+
+    def _relay_pending_tool_calls(self) -> list[dict[str, Any]]:
+        """Pending tool calls owned by the Relay channel (ERT pending excluded)."""
+        return [
+            tc
+            for tc in (self.pending_tool_calls or [])
+            if isinstance(tc, dict) and str(tc.get("_source") or "ert") == "relay"
+        ]
 
     def estimated_completion_tokens(self) -> int:
         """Estimate the completion tokens (reasoning + answer + tool_calls) emitted in this segment."""
@@ -65850,6 +66621,1326 @@ class _GeminiOpenedStream:
     run: _RobinRunState | None = None
 
 
+# =============================================================================
+# Layer 5c: User Tool Relay
+#
+# One outbound WebSocket to the public relay carries whole HTTP requests (`http_request`)
+# and whole responses (`http_response`). OAuth, MCP routing, `job_id`s, the tool catalog
+# and every tool timeout live here on the Mac; the relay is a transport tunnel only.
+# =============================================================================
+
+VE_RELAY_PROTOCOL_VERSION = 1
+VE_RELAY_MCP_SERVER_VERSION = "1.0.0"
+VE_RELAY_MCP_PROTOCOL_VERSIONS: tuple[str, ...] = (
+    "2025-11-25",
+    "2025-06-18",
+    "2025-03-26",
+    "2024-11-05",
+)
+# Unknown-but-well-formed revisions are accepted with a warning instead of a 400: the
+# tool subset implemented here is stable across these revisions, and refusing a handshake
+# over a date string only turns every upstream revision bump into an outage.
+VE_RELAY_MCP_PROTOCOL_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+VE_RELAY_READY_TIMEOUT_SECONDS = 10.0
+VE_RELAY_RECONNECT_MAX_SECONDS = 30.0
+VE_RELAY_PING_INTERVAL_SECONDS = 20.0
+VE_RELAY_DEAD_AFTER_SECONDS = 60.0
+# DSH needs the tool catalog before `ProcessQuery` starts, and the catalog is served from
+# the tool ledger, so long polling windows must never be confused with a dead edge.
+VE_RELAY_WS_MAX_MESSAGE_BYTES = 16 * 1024 * 1024
+VE_RELAY_HOP_BY_HOP_HEADERS: frozenset[str] = frozenset(
+    {
+        "connection",
+        "keep-alive",
+        "proxy-authenticate",
+        "proxy-authorization",
+        "te",
+        "trailer",
+        "transfer-encoding",
+        "upgrade",
+        "content-length",
+    }
+)
+VE_RELAY_MCP_INSTRUCTIONS = (
+    "These tools are the DSH tools of the machine that is talking to you. Call them "
+    "directly by the names returned from tools/list; there is no list_mcp or execute_mcp "
+    "step. A long command may be handed off as a background job: poll it with "
+    "command_status on this same server, never on another channel, and keep using the "
+    "command_id from the hand-off."
+)
+
+
+def _relay_strip_hop_headers(headers: dict[str, Any] | None) -> dict[str, str]:
+    """Drop hop-by-hop headers and any header named in `Connection`."""
+    if not isinstance(headers, dict):
+        return {}
+    conn_val = ""
+    for k, v in headers.items():
+        if str(k).strip().lower() == "connection":
+            conn_val = str(v or "")
+            break
+    named = {tok.strip().lower() for tok in conn_val.split(",") if tok.strip()}
+    out: dict[str, str] = {}
+    for k, v in headers.items():
+        low = str(k).strip().lower()
+        if not low or low in VE_RELAY_HOP_BY_HOP_HEADERS or low in named:
+            continue
+        out[low] = str(v)
+    return out
+
+
+def _relay_env_truthy(name: str, default: str = "0") -> bool:
+    raw = str(os.getenv(name, default) or default).strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def _relay_enabled() -> bool:
+    """Relay is opt-in: without a URL and token there is nothing to connect to."""
+    return _relay_env_truthy("VE_USER_TOOL_RELAY_ENABLED") and bool(_relay_url())
+
+
+def _relay_url() -> str:
+    return str(os.getenv("VE_USER_TOOL_RELAY_URL", "") or "").strip()
+
+
+def _relay_transport_token() -> str:
+    return str(os.getenv("VE_USER_TOOL_RELAY_TOKEN", "") or "").strip()
+
+
+def _relay_edge_id() -> str:
+    raw = str(os.getenv("VE_USER_TOOL_RELAY_EDGE_ID", "") or "").strip()
+    if raw:
+        return raw
+    try:
+        return socket.gethostname() or "edge"
+    except OSError:
+        return "edge"
+
+
+def _relay_public_base_url() -> str:
+    return str(os.getenv("VE_RELAY_PUBLIC_BASE_URL", "") or "").strip().rstrip("/")
+
+
+def _relay_oauth_client_id() -> str:
+    return str(os.getenv("VE_RELAY_OAUTH_CLIENT_ID", "") or "").strip()
+
+
+def _relay_oauth_client_secret() -> str:
+    return str(os.getenv("VE_RELAY_OAUTH_CLIENT_SECRET", "") or "").strip()
+
+
+def _relay_oauth_db_path() -> Path:
+    raw = str(
+        os.getenv("VE_RELAY_OAUTH_DB", "~/.voice-edge/relay_oauth.sqlite3") or ""
+    ).strip()
+    return Path(raw or "~/.voice-edge/relay_oauth.sqlite3").expanduser()
+
+
+def _relay_sha256(value: str) -> str:
+    return hashlib.sha256(str(value or "").encode("utf-8")).hexdigest()
+
+
+def _relay_pkce_s256(verifier: str) -> str:
+    digest = hashlib.sha256(str(verifier or "").encode("ascii", "ignore")).digest()
+    return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+
+class _RelayOAuthStore:
+    """Single-client OAuth state: SHA-256 digests only, 0600 SQLite file on this Mac."""
+
+    def __init__(self, db_path: Path | None = None) -> None:
+        self.db_path = db_path or _relay_oauth_db_path()
+        self._lock = threading.RLock()
+        self._conn: sqlite3.Connection | None = None
+
+    def _ensure_conn(self) -> sqlite3.Connection:
+        if self._conn is not None:
+            return self._conn
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(self.db_path), check_same_thread=False, timeout=10.0)
+        conn.row_factory = sqlite3.Row
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS oauth_codes (
+                code_sha256 TEXT PRIMARY KEY,
+                client_id TEXT NOT NULL,
+                redirect_uri TEXT NOT NULL,
+                code_challenge TEXT NOT NULL,
+                created_at REAL NOT NULL,
+                used INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS oauth_tokens (
+                token_sha256 TEXT PRIMARY KEY,
+                client_id TEXT NOT NULL,
+                created_at REAL NOT NULL,
+                revoked INTEGER NOT NULL DEFAULT 0
+            );
+            """
+        )
+        conn.commit()
+        self._conn = conn
+        try:
+            os.chmod(self.db_path, 0o600)
+        except OSError:
+            pass
+        return conn
+
+    def issue_code(self, client_id: str, redirect_uri: str, code_challenge: str) -> str:
+        code = "vec_" + secrets.token_urlsafe(32)
+        with self._lock:
+            conn = self._ensure_conn()
+            conn.execute(
+                "INSERT INTO oauth_codes (code_sha256, client_id, redirect_uri, "
+                "code_challenge, created_at, used) VALUES (?, ?, ?, ?, ?, 0)",
+                (
+                    _relay_sha256(code),
+                    client_id,
+                    redirect_uri,
+                    code_challenge,
+                    time.time(),
+                ),
+            )
+            conn.commit()
+        return code
+
+    def redeem_code(
+        self, code: str, client_id: str, redirect_uri: str, code_verifier: str
+    ) -> bool:
+        """Redeem an authorization code exactly once, verifying PKCE `S256`."""
+        if not code:
+            return False
+        with self._lock:
+            conn = self._ensure_conn()
+            row = conn.execute(
+                "SELECT code_sha256, client_id, redirect_uri, code_challenge, used "
+                "FROM oauth_codes WHERE code_sha256 = ?",
+                (_relay_sha256(code),),
+            ).fetchone()
+            if row is None or int(row["used"] or 0) != 0:
+                return False
+            if str(row["client_id"]) != str(client_id or ""):
+                return False
+            if str(row["redirect_uri"]) != str(redirect_uri or ""):
+                return False
+            expected = str(row["code_challenge"] or "")
+            if expected and _relay_pkce_s256(code_verifier) != expected:
+                return False
+            conn.execute(
+                "UPDATE oauth_codes SET used = 1 WHERE code_sha256 = ?",
+                (row["code_sha256"],),
+            )
+            conn.commit()
+        return True
+
+    def issue_token(self, client_id: str) -> str:
+        token = "vet_" + secrets.token_urlsafe(32)
+        with self._lock:
+            conn = self._ensure_conn()
+            conn.execute(
+                "INSERT INTO oauth_tokens (token_sha256, client_id, created_at, revoked) "
+                "VALUES (?, ?, ?, 0)",
+                (_relay_sha256(token), client_id, time.time()),
+            )
+            conn.commit()
+        return token
+
+    def is_token_valid(self, token: str) -> bool:
+        if not token:
+            return False
+        with self._lock:
+            conn = self._ensure_conn()
+            row = conn.execute(
+                "SELECT revoked FROM oauth_tokens WHERE token_sha256 = ?",
+                (_relay_sha256(token),),
+            ).fetchone()
+        return bool(row is not None and int(row["revoked"] or 0) == 0)
+
+    def revoke_all(self) -> None:
+        with self._lock:
+            conn = self._ensure_conn()
+            conn.execute("UPDATE oauth_tokens SET revoked = 1")
+            conn.commit()
+
+
+_RELAY_OAUTH_STORE: _RelayOAuthStore | None = None
+
+
+def _relay_oauth_store() -> _RelayOAuthStore:
+    """Lazily build the store so `VE_RELAY_OAUTH_DB` is honoured at first use."""
+    global _RELAY_OAUTH_STORE
+    if _RELAY_OAUTH_STORE is None:
+        _RELAY_OAUTH_STORE = _RelayOAuthStore()
+    return _RELAY_OAUTH_STORE
+
+
+def _relay_http_response(
+    status: int,
+    payload: dict[str, Any] | bytes | str,
+    *,
+    content_type: str = "application/json",
+    extra_headers: dict[str, str] | None = None,
+) -> tuple[int, dict[str, str], bytes]:
+    """Build one complete public HTTP response; the relay copies it verbatim."""
+    if isinstance(payload, bytes):
+        body = payload
+    elif isinstance(payload, str):
+        body = payload.encode("utf-8")
+    else:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    headers = {
+        "content-type": content_type,
+        "cache-control": "no-store",
+        **(extra_headers or {}),
+    }
+    return status, headers, body
+
+
+def _relay_jsonrpc_error(
+    rpc_id: Any, code: int, message: str, *, status: int = 200
+) -> tuple[int, dict[str, str], bytes]:
+    body = {
+        "jsonrpc": "2.0",
+        "id": rpc_id,
+        "error": {"code": int(code), "message": str(message)},
+    }
+    return _relay_http_response(status, body)
+
+
+def _relay_jsonrpc_result(
+    rpc_id: Any, result: dict[str, Any]
+) -> tuple[int, dict[str, str], bytes]:
+    return _relay_http_response(200, {"jsonrpc": "2.0", "id": rpc_id, "result": result})
+
+
+def _relay_parse_media_types(raw: str) -> list[str]:
+    """Split an HTTP media type list, dropping parameters and weights."""
+    out: list[str] = []
+    for part in str(raw or "").split(","):
+        main = part.split(";")[0].strip().lower()
+        if main:
+            out.append(main)
+    return out
+
+
+def _relay_header(headers: dict[str, str], name: str) -> str:
+    low = name.lower()
+    for key, value in (headers or {}).items():
+        if str(key).lower() == low:
+            return str(value)
+    return ""
+
+
+def _relay_bearer_token(headers: dict[str, str]) -> str:
+    raw = _relay_header(headers, "authorization").strip()
+    if raw.lower().startswith("bearer "):
+        return raw[7:].strip()
+    return ""
+
+
+def _relay_unauthorized() -> tuple[int, dict[str, str], bytes]:
+    base = _relay_public_base_url()
+    challenge = (
+        f'Bearer resource_metadata="{base}/.well-known/oauth-protected-resource"'
+        if base
+        else "Bearer"
+    )
+    return _relay_http_response(
+        401,
+        {"error": "invalid_token", "error_description": "access token required"},
+        extra_headers={"www-authenticate": challenge},
+    )
+
+
+def _relay_oauth_metadata_headers() -> dict[str, str]:
+    return {"access-control-allow-origin": "*"}
+
+
+def _relay_protected_resource_document() -> dict[str, Any]:
+    base = _relay_public_base_url()
+    return {
+        "resource": f"{base}/mcp" if base else "/mcp",
+        "authorization_servers": [base] if base else [],
+        "bearer_methods_supported": ["header"],
+        "resource_name": "VEH MCP Server",
+    }
+
+
+def _relay_authorization_server_document() -> dict[str, Any]:
+    base = _relay_public_base_url()
+    return {
+        "issuer": base,
+        "authorization_endpoint": f"{base}/oauth/authorize",
+        "token_endpoint": f"{base}/oauth/token",
+        "response_types_supported": ["code"],
+        "grant_types_supported": ["authorization_code"],
+        "code_challenge_methods_supported": ["S256"],
+        "token_endpoint_auth_methods_supported": [
+            "client_secret_post",
+            "client_secret_basic",
+        ],
+    }
+
+
+def _relay_authorize(raw_query: str) -> tuple[int, dict[str, str], bytes]:
+    """Single-client authorization-code endpoint with mandatory PKCE `S256`."""
+    params = urllib.parse.parse_qs(str(raw_query or ""), keep_blank_values=True)
+
+    def _one(name: str) -> str:
+        values = params.get(name) or []
+        return str(values[0]).strip() if values else ""
+
+    client_id = _one("client_id")
+    redirect_uri = _one("redirect_uri")
+    state = _one("state")
+    code_challenge = _one("code_challenge")
+    method = _one("code_challenge_method") or "S256"
+    response_type = _one("response_type")
+    expected_client = _relay_oauth_client_id()
+    if not expected_client or client_id != expected_client:
+        return _relay_jsonrpc_error(None, -32600, "unknown client_id", status=400)
+    if response_type != "code":
+        return _relay_jsonrpc_error(
+            None, -32600, "unsupported response_type", status=400
+        )
+    if not redirect_uri:
+        return _relay_jsonrpc_error(None, -32600, "redirect_uri required", status=400)
+    if not code_challenge:
+        return _relay_jsonrpc_error(None, -32600, "code_challenge required", status=400)
+    if method.upper() != "S256":
+        return _relay_jsonrpc_error(
+            None, -32600, "code_challenge_method must be S256", status=400
+        )
+    code = _relay_oauth_store().issue_code(client_id, redirect_uri, code_challenge)
+    query = {"code": code}
+    if state:
+        query["state"] = state
+    separator = "&" if urllib.parse.urlsplit(redirect_uri).query else "?"
+    location = f"{redirect_uri}{separator}{urllib.parse.urlencode(query)}"
+    return (
+        302,
+        {
+            "location": location,
+            "cache-control": "no-store",
+        },
+        b"",
+    )
+
+
+def _relay_token_request(
+    headers: dict[str, str], body: bytes
+) -> tuple[int, dict[str, str], bytes]:
+    """Exchange one authorization code for a long-lived access token."""
+    form = urllib.parse.parse_qs(
+        body.decode("utf-8", "replace") if body else "", keep_blank_values=True
+    )
+
+    def _one(name: str) -> str:
+        values = form.get(name) or []
+        return str(values[0]).strip() if values else ""
+
+    client_id = _one("client_id")
+    client_secret = _one("client_secret")
+    basic = _relay_header(headers, "authorization").strip()
+    if basic.lower().startswith("basic ") and not (client_id and client_secret):
+        try:
+            decoded = base64.b64decode(basic[6:].strip()).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            decoded = ""
+        if ":" in decoded:
+            parts = decoded.split(":", 1)
+            client_id = client_id or parts[0]
+            client_secret = client_secret or parts[1]
+    expected_client = _relay_oauth_client_id()
+    expected_secret = _relay_oauth_client_secret()
+    if not expected_client or not expected_secret:
+        return _relay_jsonrpc_error(
+            None, -32600, "OAuth client is not configured on the edge", status=500
+        )
+    if client_id != expected_client or not hmac.compare_digest(
+        client_secret, expected_secret
+    ):
+        return _relay_http_response(401, {"error": "invalid_client"}, extra_headers={})
+    grant_type = _one("grant_type")
+    if grant_type != "authorization_code":
+        return _relay_http_response(400, {"error": "unsupported_grant_type"})
+    code = _one("code")
+    redirect_uri = _one("redirect_uri")
+    verifier = _one("code_verifier")
+    if not _relay_oauth_store().redeem_code(code, client_id, redirect_uri, verifier):
+        return _relay_http_response(400, {"error": "invalid_grant"})
+    token = _relay_oauth_store().issue_token(client_id)
+    return _relay_http_response(200, {"access_token": token, "token_type": "Bearer"})
+
+
+def _relay_active_run() -> _RobinRunState | None:
+    run_id = _RELAY_ACTIVE_RUN_ID
+    if not run_id:
+        return None
+    run = _ROBIN_ACTIVE_RUNS.get(run_id)
+    if run is None:
+        return None
+    if run.execution_state == "TERMINAL":
+        return None
+    if not run.dsh_tools:
+        return None
+    return run
+
+
+def _relay_active_actor() -> _RobinRunActor | None:
+    actor = _RELAY_ACTIVE_ACTOR
+    run = _relay_active_run()
+    if actor is None or run is None or actor.run is not run:
+        return None
+    return actor
+
+
+def _relay_bind_active_run(
+    run: _RobinRunState, actor: _RobinRunActor | None = None
+) -> None:
+    """Remember the turn that currently owns the MCP tool catalog."""
+    global _RELAY_ACTIVE_RUN_ID, _RELAY_ACTIVE_ACTOR
+    _RELAY_ACTIVE_RUN_ID = run.run_id
+    if (
+        actor is not None
+        or _RELAY_ACTIVE_ACTOR is None
+        or _RELAY_ACTIVE_ACTOR.run is not run
+    ):
+        _RELAY_ACTIVE_ACTOR = actor
+
+
+def _relay_clear_active_run(run: _RobinRunState | None = None) -> None:
+    global _RELAY_ACTIVE_RUN_ID, _RELAY_ACTIVE_ACTOR
+    if run is not None and run.run_id != _RELAY_ACTIVE_RUN_ID:
+        return
+    _RELAY_ACTIVE_RUN_ID = ""
+    _RELAY_ACTIVE_ACTOR = None
+
+
+def _relay_mcp_tool_catalog(ledger: _RobinToolLedger) -> list[dict[str, Any]]:
+    """Project the current DSH tool table into a standard MCP tool list."""
+    raw_schemas: dict[str, dict[str, Any]] = {}
+    for item in ledger.dsh_tools:
+        if not isinstance(item, dict):
+            continue
+        fn = item.get("function") if item.get("type") == "function" else item
+        if not isinstance(fn, dict):
+            continue
+        name = str(fn.get("name") or "").strip()
+        if not name or name in raw_schemas:
+            continue
+        schema = fn.get("parameters") or fn.get("inputSchema")
+        raw_schemas[name] = schema if isinstance(schema, dict) else {}
+    tools: list[dict[str, Any]] = []
+    for item in ledger.normalized_mcp_tools:
+        name = str(item.get("name") or "").strip()
+        if not name:
+            continue
+        schema = raw_schemas.get(name) or {}
+        if not schema:
+            schema = {"type": "object", "properties": {}}
+        entry: dict[str, Any] = {
+            "name": name,
+            "description": str(item.get("description") or ""),
+            "inputSchema": schema,
+        }
+        annotations = item.get("toolAnnotations")
+        if isinstance(annotations, dict) and annotations:
+            entry["annotations"] = dict(annotations)
+        tools.append(entry)
+    if any(tool["name"] in ("bash", "run_command") for tool in tools):
+        tools.append(
+            {
+                "name": "command_status",
+                "description": (
+                    "Poll a backgrounded command started by this MCP server and return "
+                    "its incremental output. Use the command_id from the hand-off."
+                ),
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "CommandId": {"type": "string"},
+                        "WaitDurationSeconds": {"type": "number"},
+                        "OutputCharacterCount": {"type": "integer"},
+                    },
+                    "required": ["CommandId"],
+                },
+                "annotations": {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "idempotentHint": True,
+                    "openWorldHint": False,
+                },
+            }
+        )
+    return tools
+
+
+def _relay_schema_type_ok(value: Any, expected: str) -> bool:
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if expected == "array":
+        return isinstance(value, (list, tuple))
+    if expected == "object":
+        return isinstance(value, dict)
+    if expected == "null":
+        return value is None
+    return True
+
+
+def _relay_validate_tool_args(schema: dict[str, Any], args: dict[str, Any]) -> str:
+    """Minimal JSON Schema check: required keys and top-level primitive types."""
+    if not isinstance(schema, dict):
+        return ""
+    required = schema.get("required")
+    if isinstance(required, (list, tuple)):
+        for name in required:
+            if str(name) not in args:
+                return f"missing required argument: {name}"
+    props = schema.get("properties")
+    if isinstance(props, dict):
+        for name, value in args.items():
+            spec = props.get(name)
+            if not isinstance(spec, dict):
+                continue
+            expected = spec.get("type")
+            if isinstance(expected, str) and not _relay_schema_type_ok(value, expected):
+                return f"argument {name} must be of type {expected}"
+    return ""
+
+
+def _relay_mcp_tool_result(
+    result_dict: dict[str, Any], *, is_error: bool = False
+) -> dict[str, Any]:
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": json.dumps(result_dict, ensure_ascii=False),
+            }
+        ],
+        "isError": bool(is_error),
+    }
+
+
+async def _relay_wait_with_abort(
+    fut: asyncio.Future[dict[str, Any]],
+    abort_evt: asyncio.Event | None,
+    max_wait: float | None,
+) -> tuple[str, dict[str, Any] | None]:
+    """Wait for a Relay answer, an `http_abort`, or the hand-off deadline."""
+    abort_task: asyncio.Task[bool] | None = None
+    waiters: set[Any] = {fut}
+    if abort_evt is not None:
+        abort_task = asyncio.create_task(abort_evt.wait())
+        waiters.add(abort_task)
+    try:
+        done, _ = await asyncio.wait(
+            waiters, timeout=max_wait, return_when=asyncio.FIRST_COMPLETED
+        )
+    finally:
+        if abort_task is not None and not abort_task.done():
+            abort_task.cancel()
+    if fut in done and fut.done():
+        return "result", fut.result()
+    if abort_task is not None and abort_task in done:
+        return "abort", None
+    return "timeout", None
+
+
+async def _relay_call_on_actor(actor: _RobinRunActor, coro: Any) -> Any:
+    """Run one coroutine on the actor's loop, whatever loop the relay client uses."""
+    loop = getattr(actor, "loop", None)
+    try:
+        current = asyncio.get_running_loop()
+    except RuntimeError:
+        current = None
+    if loop is None or loop is current:
+        return await coro
+    future = asyncio.run_coroutine_threadsafe(coro, loop)
+    return await asyncio.wrap_future(future)
+
+
+async def _relay_mcp_tools_call(
+    tool_name: str,
+    tool_args: dict[str, Any],
+    rpc_id: Any,
+    *,
+    http_id: str,
+    connection_id: str,
+    abort_evt: asyncio.Event | None,
+) -> tuple[int, dict[str, str], bytes]:
+    """Serve one MCP `tools/call`: register the DSH call, then answer its HTTP request."""
+    run = _relay_active_run()
+    actor = _relay_active_actor()
+    if run is None or actor is None:
+        return _relay_jsonrpc_result(
+            rpc_id,
+            _relay_mcp_tool_result(
+                {
+                    "status": "error",
+                    "error": "no active turn: the client tool catalog is only available "
+                    "while a user turn with tools is running.",
+                },
+                is_error=True,
+            ),
+        )
+    ledger = run.tool_ledger
+    if tool_name == "list_mcp" or (
+        tool_name not in ledger.local_tool_names and tool_name != "command_status"
+    ):
+        return _relay_jsonrpc_error(rpc_id, -32602, f"unknown tool: {tool_name}")
+    schema = {}
+    for item in _relay_mcp_tool_catalog(ledger):
+        if item.get("name") == tool_name:
+            candidate = item.get("inputSchema")
+            schema = candidate if isinstance(candidate, dict) else {}
+            break
+    schema_error = _relay_validate_tool_args(schema, tool_args)
+    if schema_error:
+        return _relay_jsonrpc_error(rpc_id, -32602, schema_error)
+    job_id = f"call_{uuid.uuid4().hex[:12]}"
+    ctx = {
+        "relay_job_id": job_id,
+        "relay_http_id": str(http_id or ""),
+        "relay_connection_id": str(connection_id or ""),
+        "relay_rpc_id": str(rpc_id) if rpc_id is not None else "",
+        "relay_wire_call_id": str(tool_args.pop("_ve_wire_call_id", "") or ""),
+    }
+    fut = _relay_open_waiter(job_id)
+    if fut is None:
+        return _relay_jsonrpc_error(rpc_id, -32603, "relay waiter registration failed")
+    if tool_name == "command_status":
+        immediate, state = await _relay_call_on_actor(
+            actor, actor._relay_dispatch_command_status(tool_args, job_id, ctx)
+        )
+        if state in ("done", "running", "error"):
+            _relay_drop_waiter(job_id)
+            return _relay_jsonrpc_result(
+                rpc_id,
+                _relay_mcp_tool_result(immediate or {}, is_error=(state == "error")),
+            )
+        payload_state, payload = await _relay_wait_with_abort(fut, abort_evt, None)
+        if payload_state != "result" or payload is None:
+            _relay_drop_waiter(job_id)
+            return _relay_jsonrpc_result(
+                rpc_id,
+                _relay_mcp_tool_result(
+                    {"status": "cancelled", "error": "command_status request aborted"},
+                    is_error=True,
+                ),
+            )
+        return _relay_jsonrpc_result(
+            rpc_id,
+            _relay_mcp_tool_result(
+                payload.get("result") or {}, is_error=bool(payload.get("is_error"))
+            ),
+        )
+    inv, local = await _relay_call_on_actor(
+        actor, actor._relay_dispatch_tool_call(tool_name, tool_args, job_id, ctx)
+    )
+    if local is not None:
+        _relay_drop_waiter(job_id)
+        is_error = bool(
+            local.response_dict.get("error")
+            or local.response_dict.get("status") == "error"
+            or local.response_dict.get("success") == "false"
+        )
+        return _relay_jsonrpc_result(
+            rpc_id, _relay_mcp_tool_result(local.response_dict, is_error=is_error)
+        )
+    if inv is None:
+        _relay_drop_waiter(job_id)
+        return _relay_jsonrpc_error(rpc_id, -32603, "tool dispatch failed")
+    handoff_timeout: float | None = None
+    if GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS > 0:
+        elapsed = time.monotonic() - inv.dispatched_monotonic
+        handoff_timeout = max(0.0, GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS - elapsed)
+    state, payload = await _relay_wait_with_abort(fut, abort_evt, handoff_timeout)
+    if state == "result" and payload is not None:
+        return _relay_jsonrpc_result(
+            rpc_id,
+            _relay_mcp_tool_result(
+                payload.get("result") or {}, is_error=bool(payload.get("is_error"))
+            ),
+        )
+    if state == "abort":
+        # Best-effort: the public client vanished. DSH keeps running; the answer is dropped.
+        _relay_drop_waiter(job_id)
+        return _relay_jsonrpc_result(
+            rpc_id,
+            _relay_mcp_tool_result(
+                {"status": "cancelled", "error": "http request aborted"}, is_error=True
+            ),
+        )
+    handoff = await _relay_call_on_actor(actor, actor._relay_try_background(inv))
+    if fut.done():
+        payload = fut.result()
+        return _relay_jsonrpc_result(
+            rpc_id,
+            _relay_mcp_tool_result(
+                payload.get("result") or {}, is_error=bool(payload.get("is_error"))
+            ),
+        )
+    if handoff is not None:
+        _relay_drop_waiter(job_id)
+        return _relay_jsonrpc_result(
+            rpc_id, _relay_mcp_tool_result(handoff, is_error=False)
+        )
+    # Not backgroundable: this request owns the call until DSH answers.
+    state, payload = await _relay_wait_with_abort(fut, abort_evt, None)
+    if state != "result" or payload is None:
+        _relay_drop_waiter(job_id)
+        return _relay_jsonrpc_result(
+            rpc_id,
+            _relay_mcp_tool_result(
+                {"status": "cancelled", "error": "http request aborted"}, is_error=True
+            ),
+        )
+    return _relay_jsonrpc_result(
+        rpc_id,
+        _relay_mcp_tool_result(
+            payload.get("result") or {}, is_error=bool(payload.get("is_error"))
+        ),
+    )
+
+
+def _relay_mcp_reject_log(reason: str, **detail: Any) -> None:
+    """Log why an MCP request was refused: the relay is blind, so the edge must speak."""
+    _llm_log.warning("VEH relay /mcp rejected: %s | %s", reason, detail)
+
+
+async def _relay_mcp_post(
+    headers: dict[str, str],
+    body: bytes,
+    *,
+    http_id: str,
+    connection_id: str,
+    abort_evt: asyncio.Event | None,
+) -> tuple[int, dict[str, str], bytes]:
+    """Handle one Streamable HTTP MCP POST (JSON in, JSON out, POST only)."""
+    requested_version = _relay_header(headers, "mcp-protocol-version")
+    content_types = _relay_parse_media_types(_relay_header(headers, "content-type"))
+    if not content_types or content_types[0] not in (
+        "application/json",
+        "application/json-rpc",
+    ):
+        _relay_mcp_reject_log(
+            "unsupported content-type",
+            content_type=_relay_header(headers, "content-type"),
+            body_len=len(body),
+        )
+        return _relay_jsonrpc_error(
+            None, -32700, "Content-Type must be application/json", status=415
+        )
+    accepts = _relay_parse_media_types(_relay_header(headers, "accept"))
+    if "application/json" not in accepts or "text/event-stream" not in accepts:
+        _relay_mcp_reject_log(
+            "unsupported accept",
+            accept=_relay_header(headers, "accept"),
+            body_len=len(body),
+        )
+        return _relay_jsonrpc_error(
+            None,
+            -32600,
+            "Accept must allow application/json and text/event-stream",
+            status=406,
+        )
+    if not _relay_oauth_store().is_token_valid(_relay_bearer_token(headers)):
+        _llm_log.info(
+            "VEH relay /mcp needs a valid access token (body_len=%d)", len(body)
+        )
+        return _relay_unauthorized()
+    try:
+        payload = json.loads(body.decode("utf-8")) if body else None
+    except (UnicodeDecodeError, ValueError):
+        _relay_mcp_reject_log(
+            "body is not valid JSON",
+            body_len=len(body),
+            body_preview=body[:200].decode("utf-8", "replace"),
+            protocol_version=requested_version,
+        )
+        return _relay_jsonrpc_error(None, -32700, "Parse error", status=400)
+    if not isinstance(payload, dict):
+        return _relay_jsonrpc_error(
+            None, -32600, "Invalid Request: a single JSON-RPC object is required"
+        )
+    rpc_id = payload.get("id")
+    method = str(payload.get("method") or "")
+    is_notification = "id" not in payload or rpc_id is None
+    if (
+        method != "initialize"
+        and rpc_id is not None
+        and requested_version
+        and requested_version not in VE_RELAY_MCP_PROTOCOL_VERSIONS
+    ):
+        if not VE_RELAY_MCP_PROTOCOL_DATE_RE.match(requested_version):
+            _relay_mcp_reject_log(
+                "malformed protocol version header",
+                protocol_version=requested_version,
+                method=method,
+                supported=list(VE_RELAY_MCP_PROTOCOL_VERSIONS),
+            )
+            return _relay_jsonrpc_error(
+                rpc_id,
+                -32600,
+                f"malformed MCP protocol version: {requested_version}",
+                status=400,
+            )
+        _relay_mcp_reject_log(
+            "unknown protocol version header accepted",
+            protocol_version=requested_version,
+            method=method,
+            supported=list(VE_RELAY_MCP_PROTOCOL_VERSIONS),
+        )
+    if method == "initialize":
+        params = payload.get("params")
+        client_version = ""
+        if isinstance(params, dict):
+            client_version = str(params.get("protocolVersion") or "")
+        negotiated = (
+            client_version
+            if client_version in VE_RELAY_MCP_PROTOCOL_VERSIONS
+            else VE_RELAY_MCP_PROTOCOL_VERSIONS[0]
+        )
+        if is_notification:
+            return 202, {}, b""
+        return _relay_jsonrpc_result(
+            rpc_id,
+            {
+                "protocolVersion": negotiated,
+                "capabilities": {"tools": {}},
+                "serverInfo": {
+                    "name": "VEH MCP Server",
+                    "version": VE_RELAY_MCP_SERVER_VERSION,
+                },
+                "instructions": VE_RELAY_MCP_INSTRUCTIONS,
+            },
+        )
+    if method in (
+        "notifications/initialized",
+        "notifications/cancelled",
+        "notifications/roots/list_changed",
+    ) or (is_notification and method):
+        return 202, {}, b""
+    if method == "ping":
+        return _relay_jsonrpc_result(rpc_id, {})
+    if method == "tools/list":
+        run = _relay_active_run()
+        tools = _relay_mcp_tool_catalog(run.tool_ledger) if run is not None else []
+        return _relay_jsonrpc_result(rpc_id, {"tools": tools})
+    if method == "tools/call":
+        params = payload.get("params")
+        if not isinstance(params, dict):
+            return _relay_jsonrpc_error(rpc_id, -32602, "params must be an object")
+        tool_name = str(params.get("name") or "").strip()
+        raw_args = params.get("arguments")
+        tool_args: dict[str, Any] = dict(raw_args) if isinstance(raw_args, dict) else {}
+        if not tool_name:
+            return _relay_jsonrpc_error(rpc_id, -32602, "tool name is required")
+        return await _relay_mcp_tools_call(
+            tool_name,
+            tool_args,
+            rpc_id,
+            http_id=http_id,
+            connection_id=connection_id,
+            abort_evt=abort_evt,
+        )
+    return _relay_jsonrpc_error(rpc_id, -32601, f"method not found: {method}")
+
+
+async def _relay_http_handle(
+    request: dict[str, Any], abort_evt: asyncio.Event | None = None
+) -> tuple[int, dict[str, str], bytes]:
+    """Route one tunnelled public HTTP request and return its complete response."""
+    path = str(request.get("path") or "/")
+    method = str(request.get("method") or "GET").upper()
+    query = str(request.get("query") or "")
+    raw_headers = request.get("headers")
+    headers: dict[str, str] = _relay_strip_hop_headers(
+        raw_headers if isinstance(raw_headers, dict) else None
+    )
+    body = b""
+    raw_body = request.get("body_b64")
+    if isinstance(raw_body, str) and raw_body:
+        try:
+            body = base64.b64decode(raw_body)
+        except (ValueError, TypeError):
+            body = b""
+    if path == "/.well-known/oauth-protected-resource":
+        status, resp_headers, resp_body = _relay_http_response(
+            200,
+            _relay_protected_resource_document(),
+            extra_headers=_relay_oauth_metadata_headers(),
+        )
+    elif path == "/.well-known/oauth-authorization-server":
+        status, resp_headers, resp_body = _relay_http_response(
+            200,
+            _relay_authorization_server_document(),
+            extra_headers=_relay_oauth_metadata_headers(),
+        )
+    elif path == "/oauth/authorize":
+        if method != "GET":
+            status, resp_headers, resp_body = _relay_http_response(
+                405, {"error": "method_not_allowed"}, extra_headers={"allow": "GET"}
+            )
+        else:
+            status, resp_headers, resp_body = _relay_authorize(query)
+    elif path == "/oauth/token":
+        if method != "POST":
+            status, resp_headers, resp_body = _relay_http_response(
+                405, {"error": "method_not_allowed"}, extra_headers={"allow": "POST"}
+            )
+        else:
+            status, resp_headers, resp_body = _relay_token_request(headers, body)
+    elif path == "/mcp":
+        if method != "POST":
+            status, resp_headers, resp_body = _relay_http_response(
+                405,
+                {"error": "method_not_allowed", "error_description": "POST only"},
+                extra_headers={"allow": "POST"},
+            )
+        else:
+            status, resp_headers, resp_body = await _relay_mcp_post(
+                headers,
+                body,
+                http_id=str(request.get("http_id") or ""),
+                connection_id=str(request.get("connection_id") or ""),
+                abort_evt=abort_evt,
+            )
+    else:
+        status, resp_headers, resp_body = _relay_http_response(
+            404, {"error": "not_found", "path": path}
+        )
+    return status, _relay_strip_hop_headers(resp_headers), resp_body
+
+
+class _VoiceEdgeRelayClient:
+    """Outbound WSS tunnel to the relay, running on its own daemon loop thread."""
+
+    def __init__(self) -> None:
+        self._thread: threading.Thread | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._lock = threading.Lock()
+        self._ready = threading.Event()
+        self._stop = threading.Event()
+        self._auth_failed = False
+        self._ws: Any = None
+        self._last_seen = 0.0
+        self._aborts: dict[str, asyncio.Event] = {}
+        self._tasks: set[asyncio.Task[Any]] = set()
+
+    # -- lifecycle ---------------------------------------------------------
+    def start(self) -> None:
+        with self._lock:
+            if self._thread is not None and self._thread.is_alive():
+                return
+            if not _relay_enabled():
+                return
+            self._stop.clear()
+            self._thread = threading.Thread(
+                target=self._thread_main, daemon=True, name="veh-relay-client"
+            )
+            self._thread.start()
+
+    def _thread_main(self) -> None:
+        loop = asyncio.new_event_loop()
+        self._loop = loop
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(self._run_forever())
+        finally:
+            try:
+                loop.run_until_complete(loop.shutdown_asyncgens())
+            except Exception:
+                pass
+            loop.close()
+            self._loop = None
+            self._ready.clear()
+
+    def stop(self) -> None:
+        self._stop.set()
+        loop = self._loop
+        if loop is not None:
+            try:
+                loop.call_soon_threadsafe(lambda: None)
+            except RuntimeError:
+                pass
+
+    def is_ready(self) -> bool:
+        return self._ready.is_set()
+
+    def wait_ready(self, timeout: float = VE_RELAY_READY_TIMEOUT_SECONDS) -> bool:
+        return self._ready.wait(timeout=max(0.0, float(timeout)))
+
+    @property
+    def auth_failed(self) -> bool:
+        return self._auth_failed
+
+    # -- connection --------------------------------------------------------
+    async def _run_forever(self) -> None:
+        backoff = 1.0
+        url = _relay_url()
+        if not url or not _relay_transport_token():
+            _llm_log.error(
+                "VEH relay is enabled but VE_USER_TOOL_RELAY_URL / "
+                "VE_USER_TOOL_RELAY_TOKEN is missing; relay disabled"
+            )
+            return
+        while not self._stop.is_set():
+            if self._auth_failed:
+                break
+            try:
+                await self._session_once(url)
+                backoff = 1.0
+            except _RelayAuthFailed:
+                self._auth_failed = True
+                _llm_log.error(
+                    "VEH relay rejected the transport token (401/403); "
+                    "stopping reconnect until the next process start"
+                )
+                break
+            except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
+                _llm_log.warning("VEH relay connection failed: %s", exc)
+            finally:
+                self._ready.clear()
+                self._ws = None
+                for evt in list(self._aborts.values()):
+                    evt.set()
+            if self._stop.is_set():
+                break
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2.0, VE_RELAY_RECONNECT_MAX_SECONDS)
+
+    async def _keepalive_loop(self, ws: Any) -> None:
+        """Ping every 20s and close the socket only after 60s of total silence."""
+        try:
+            while not self._stop.is_set() and self._ws is ws and not ws.closed:
+                await asyncio.sleep(VE_RELAY_PING_INTERVAL_SECONDS)
+                if self._ws is not ws or ws.closed:
+                    break
+                if time.monotonic() - self._last_seen > VE_RELAY_DEAD_AFTER_SECONDS:
+                    _llm_log.warning(
+                        "VEH relay tunnel silent for %.0fs; closing connection",
+                        VE_RELAY_DEAD_AFTER_SECONDS,
+                    )
+                    await ws.close()
+                    break
+                try:
+                    await ws.ping(b"ve")
+                except (ConnectionError, OSError):
+                    await ws.close()
+                    break
+        except asyncio.CancelledError:
+            pass
+
+    async def _session_once(self, url: str) -> None:
+        token = _relay_transport_token()
+        timeout = aiohttp.ClientTimeout(total=None, sock_connect=15)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            try:
+                ws = await session.ws_connect(
+                    url,
+                    headers={"Authorization": f"Bearer {token}"},
+                    max_msg_size=VE_RELAY_WS_MAX_MESSAGE_BYTES,
+                    heartbeat=None,
+                    autoping=False,
+                )
+            except aiohttp.WSServerHandshakeError as exc:
+                if exc.status in (401, 403):
+                    raise _RelayAuthFailed(str(exc.status)) from exc
+                raise
+            self._ws = ws
+            self._last_seen = time.monotonic()
+            try:
+                await ws.send_json(
+                    {
+                        "type": "hello",
+                        "edge_id": _relay_edge_id(),
+                        "protocol": VE_RELAY_PROTOCOL_VERSION,
+                    }
+                )
+            except (ConnectionError, OSError) as exc:
+                raise aiohttp.ClientError(str(exc)) from exc
+            self._ready.set()
+            _llm_log.info("VEH relay tunnel established (edge_id=%s)", _relay_edge_id())
+            self._ensure_catalog_ready()
+            ping_task = asyncio.create_task(self._keepalive_loop(ws))
+            try:
+                async for msg in ws:
+                    self._last_seen = time.monotonic()
+                    if msg.type == aiohttp.WSMsgType.TEXT:
+                        self._dispatch_frame(str(msg.data), ws)
+                    elif msg.type == aiohttp.WSMsgType.PING:
+                        try:
+                            await ws.pong(msg.data)
+                        except (ConnectionError, OSError):
+                            break
+                    elif msg.type == aiohttp.WSMsgType.PONG:
+                        continue
+                    elif msg.type in (
+                        aiohttp.WSMsgType.CLOSED,
+                        aiohttp.WSMsgType.CLOSING,
+                        aiohttp.WSMsgType.ERROR,
+                    ):
+                        break
+            finally:
+                ping_task.cancel()
+                try:
+                    await ping_task
+                except asyncio.CancelledError:
+                    pass
+            _llm_log.warning("VEH relay tunnel closed")
+
+    def _ensure_catalog_ready(self) -> None:
+        """The catalog lives in the run's ledger; nothing to push, only to keep warm."""
+
+    def _dispatch_frame(self, raw: str, origin_ws: Any = None) -> None:
+        try:
+            frame = json.loads(raw)
+        except ValueError:
+            _llm_log.warning("VEH relay sent a non-JSON frame")
+            return
+        if not isinstance(frame, dict):
+            return
+        kind = str(frame.get("type") or "")
+        if kind == "http_request":
+            task = asyncio.create_task(
+                self._serve_http_request(frame, origin_ws=origin_ws or self._ws)
+            )
+            # Keep a strong reference: a bare `create_task` result can be collected
+            # while the request is still waiting for its DSH result.
+            self._tasks.add(task)
+            task.add_done_callback(self._tasks.discard)
+        elif kind == "http_abort":
+            http_id = str(frame.get("http_id") or "")
+            evt = self._aborts.get(http_id)
+            if evt is not None:
+                evt.set()
+        else:
+            _llm_log.debug("ignoring relay frame type %r", kind)
+
+    async def _serve_http_request(
+        self, request: dict[str, Any], *, origin_ws: Any = None
+    ) -> None:
+        http_id = str(request.get("http_id") or "")
+        abort_evt = asyncio.Event()
+        if http_id:
+            self._aborts[http_id] = abort_evt
+        started = time.monotonic()
+        try:
+            status, headers, body = await _relay_http_handle(request, abort_evt)
+        except Exception as exc:
+            _llm_log.error("VEH relay HTTP handler crashed: %s", exc, exc_info=True)
+            status, headers, body = _relay_http_response(
+                500, {"error": "edge_internal_error"}
+            )
+        finally:
+            if http_id:
+                self._aborts.pop(http_id, None)
+        active_run = _relay_active_run()
+        log_sid = (
+            (active_run.client_session_id or active_run.session_key)
+            if active_run is not None
+            else ""
+        ) or "relay"
+        ws = self._ws
+        if (
+            abort_evt.is_set()
+            or ws is None
+            or (origin_ws is not None and ws is not origin_ws)
+            or getattr(ws, "closed", False)
+        ):
+            _gemini_debug_log_event(
+                log_sid,
+                "relay_http_aborted",
+                {
+                    "http_id": http_id,
+                    "path": str(request.get("path") or ""),
+                    "ms": round((time.monotonic() - started) * 1000.0, 1),
+                },
+            )
+            return
+        try:
+            await ws.send_json(
+                {
+                    "type": "http_response",
+                    "connection_id": str(request.get("connection_id") or ""),
+                    "http_id": http_id,
+                    "status": int(status),
+                    "headers": headers,
+                    "body_b64": base64.b64encode(body).decode("ascii") if body else "",
+                }
+            )
+        except (ConnectionError, OSError) as exc:
+            _llm_log.info("VEH relay response write failed: %s", exc)
+        _gemini_debug_log_event(
+            log_sid,
+            "relay_http",
+            {
+                "http_id": http_id,
+                "path": str(request.get("path") or ""),
+                "method": str(request.get("method") or ""),
+                "status": int(status),
+                "ms": round((time.monotonic() - started) * 1000.0, 1),
+            },
+        )
+
+
+class _RelayAuthFailed(RuntimeError):
+    """The relay refused the transport token; reconnect would only loop."""
+
+
+_RELAY_CLIENT = _VoiceEdgeRelayClient()
+_RELAY_ACTIVE_RUN_ID = ""
+_RELAY_ACTIVE_ACTOR: _RobinRunActor | None = None
+
+
+def _relay_client() -> _VoiceEdgeRelayClient:
+    return _RELAY_CLIENT
+
+
+_RELAY_VEH_INJECTED_KEYS: set[str] = set()
+_RELAY_VEH_INJECT_LOCK = threading.Lock()
+
+
+def _relay_should_inject_veh(boot_key: str) -> bool:
+    """Return True exactly once per session owner, so the pointer is injected one time."""
+    key = str(boot_key or "").strip()
+    if not key:
+        return False
+    with _RELAY_VEH_INJECT_LOCK:
+        if key in _RELAY_VEH_INJECTED_KEYS:
+            return False
+        _RELAY_VEH_INJECTED_KEYS.add(key)
+    return True
+
+
+def _relay_reset_veh_injection_for_tests() -> None:
+    with _RELAY_VEH_INJECT_LOCK:
+        _RELAY_VEH_INJECTED_KEYS.clear()
+
+
+def _relay_start_client() -> None:
+    if _relay_enabled():
+        _RELAY_CLIENT.start()
+
+
+def _relay_wait_ready(timeout: float = VE_RELAY_READY_TIMEOUT_SECONDS) -> bool:
+    """Block until the tunnel is ready; `False` means the turn must not start."""
+    if not _relay_enabled():
+        return False
+    if _RELAY_CLIENT.auth_failed:
+        return False
+    _RELAY_CLIENT.start()
+    return _RELAY_CLIENT.wait_ready(timeout)
+
+
 class GeminiHTTPClient:
     """Async relay for Gemini RobinService (gRPC over HTTP/2), CCPA, AICode, and GenAI."""
 
@@ -66160,6 +68251,8 @@ class GeminiHTTPClient:
             if isinstance(robin_attachments, list) and robin_attachments
             else "Hello"
         )
+        if base_payload.get("_ve_relay_inject_veh_mention"):
+            query_text = f"@VEH MCP Server\n{query_text}"
         robin_tools = base_payload.get("_ve_robin_tools")
         has_robin_tools = isinstance(robin_tools, list) and bool(robin_tools)
         connected_folders = base_payload.get("_ve_robin_connected_folders") or [
@@ -67071,6 +69164,8 @@ class GeminiHTTPClient:
                     ]
 
         if actor is not None:
+            if has_robin_tools and actor.run.dsh_tools and not is_auxiliary_req:
+                _relay_bind_active_run(actor.run, actor)
             mid_turn_compacted = _dsh_messages_has_compaction_checkpoint(
                 messages
             ) and bool(actor.boot_key and boot_key and actor.boot_key != boot_key)
@@ -67370,11 +69465,101 @@ class GeminiHTTPClient:
                     ),
                 )
 
-            opened, err_resp = await self._open_stream(spec, base_payload)
-            if err_resp is not None or opened is None:
-                return None, err_resp
+            if _relay_enabled() and has_robin_tools and not is_auxiliary_req:
+                # Only a new main user turn that carries tools depends on the relay: the
+                # model reaches DSH tools through the public MCP endpoint, so a missing
+                # tunnel would burn a turn that can never call a tool.
+                ready = await asyncio.to_thread(
+                    _relay_wait_ready, VE_RELAY_READY_TIMEOUT_SECONDS
+                )
+                if not ready:
+                    _llm_log.warning(
+                        "VEH relay is not ready; refusing to start ProcessQuery "
+                        "(session=%s)",
+                        session_id,
+                    )
+                    return (
+                        None,
+                        JSONResponse(
+                            {
+                                "error": {
+                                    "message": "relay unavailable",
+                                    "type": "gemini_upstream_error",
+                                    "code": "relay_unavailable",
+                                }
+                            },
+                            status_code=503,
+                        ),
+                    )
+                if _relay_should_inject_veh(boot_key):
+                    base_payload = dict(base_payload)
+                    base_payload["_ve_relay_inject_veh_mention"] = True
 
-        assert opened is not None
+            pre_run: _RobinRunState | None = None
+            if has_robin_tools and not is_auxiliary_req:
+                # Prepare `run.tool_ledger` and publish the MCP tool catalog before
+                # `ProcessQuery` opens so `tools/list` is ready immediately.
+                pre_run = _RobinRunState(
+                    run_id=f"run_{uuid.uuid4().hex[:12]}",
+                    session_key=session_key,
+                    client_session_id=session_id,
+                    principal_id=active_principal,
+                    boot_key=boot_key,
+                    full_key=full_key,
+                    parent_conv_id=str(base_payload.get("_ve_robin_conv_id") or ""),
+                    parent_req_id=str(
+                        base_payload.get("_ve_robin_parent_req_id") or ""
+                    ),
+                    parent_resp_id=str(
+                        base_payload.get("_ve_robin_parent_resp_id") or ""
+                    ),
+                    connected_folders=list(
+                        base_payload.get("_ve_robin_connected_folders") or [os.getcwd()]
+                    ),
+                    dsh_sandbox_mode=dsh_sandbox_mode,
+                    dsh_approval_policy=dsh_approval_policy,
+                    dsh_tools=(
+                        list(robin_tools) if isinstance(robin_tools, list) else []
+                    ),
+                    prompt_context=prompt_context,
+                    query_text=str(base_payload.get("_ve_query_text") or ""),
+                    conv_base_msg_idx=int(
+                        base_payload.get("_ve_conv_base_msg_idx") or 0
+                    ),
+                    synced_turn_count=int(
+                        base_payload.get("_ve_synced_turn_count") or 0
+                    ),
+                    base_context_tokens=int(
+                        base_payload.get("_ve_base_context_tokens") or 0
+                    ),
+                    initial_messages=list(messages),
+                    submission_state="PREPARED",
+                    execution_state="SUBMITTING",
+                    attachment_state="STREAMING",
+                    identity_ready_event=asyncio.Event(),
+                )
+                _ROBIN_ACTIVE_RUNS[pre_run.run_id] = pre_run
+                if pre_run.dsh_tools:
+                    _relay_bind_active_run(pre_run, None)
+
+            opened_cand, err_resp = await self._open_stream(spec, base_payload)
+            if err_resp is not None or opened_cand is None:
+                if pre_run is not None:
+                    _ROBIN_ACTIVE_RUNS.pop(pre_run.run_id, None)
+                    _relay_clear_active_run(pre_run)
+                return None, err_resp
+            opened = opened_cand
+            if pre_run is not None:
+                if opened.backend == GEMINI_BACKEND_ROBIN and opened.run is None:
+                    pre_run.principal_id = opened.credential_id or active_principal
+                    pre_run.submission_state = "SENT"
+                    pre_run.execution_state = "RUNNING"
+                    opened.run = pre_run
+                    _GEMINI_DSH_STORE.save_run(pre_run)
+                else:
+                    _ROBIN_ACTIVE_RUNS.pop(pre_run.run_id, None)
+                    _relay_clear_active_run(pre_run)
+
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
         created_ts = int(time.time())
 
@@ -67419,8 +69604,9 @@ class GeminiHTTPClient:
             return _sse_gen(), None
 
         # RobinService native gRPC stream backed by decoupled `_RobinRunActor`
-        run = opened.run
-        if run is None:
+        if opened.run is not None:
+            run = opened.run
+        else:
             run = _RobinRunState(
                 run_id=f"run_{uuid.uuid4().hex[:12]}",
                 session_key=session_key,
@@ -67545,6 +69731,10 @@ class GeminiHTTPClient:
                 actor.credential = self.credentials[0]
             if actor.token_refresher is None:
                 actor.token_refresher = self.ensure_access_token
+
+        if has_robin_tools and run.dsh_tools and not is_auxiliary_req:
+            # The MCP catalog is served from this run's ledger, so publish the owner now.
+            _relay_bind_active_run(run, actor)
 
         async def _robin_gen() -> AsyncGenerator[bytes, None]:
             assert actor is not None
@@ -68217,6 +70407,7 @@ class GeminiHTTPClient:
 
                 if run.attachment_state != "TOOL_HANDOFF":
                     _ROBIN_ACTIVE_RUNS.pop(run.run_id, None)
+                    _relay_clear_active_run(run)
                     for task_attr in (
                         "pq_pump_task",
                         "ert_pump_task",
@@ -85271,6 +87462,881 @@ def test_robin_background_output_accumulates_across_polls():
         cast(Any, _GEMINI_DSH_STORE).save_run = orig_save
 
 
+def _relay_test_actor(
+    run: _RobinRunState,
+    decoder: _RobinStreamDecoder,
+    ert_response: Any = None,
+) -> _RobinRunActor:
+    """Build a real actor over a real decoder/ledger pair (no stubs for channel logic)."""
+
+    class _FakeSession:
+        closed = False
+
+        async def close(self) -> None:
+            return None
+
+    return _RobinRunActor(
+        session_id=run.client_session_id,
+        session_key=run.session_key,
+        boot_key=run.boot_key or run.session_key,
+        full_key=run.full_key,
+        http_session=cast(Any, _FakeSession()),
+        response=None,
+        iterator=None,
+        decoder=decoder,
+        run=run,
+        ert_response=ert_response,
+    )
+
+
+def _relay_test_http_request(
+    path: str,
+    *,
+    query: str = "",
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    body: bytes = b"",
+) -> dict[str, Any]:
+    return {
+        "type": "http_request",
+        "connection_id": "ws_selftest_0001",
+        "http_id": "h_selftest_0001",
+        "method": method,
+        "path": path,
+        "query": query,
+        "headers": dict(headers or {}),
+        "body_b64": base64.b64encode(body).decode("ascii") if body else "",
+    }
+
+
+def test_relay_channel_isolation_and_relay_only_submit():
+    """A Relay `tools/call` must not move ERT state, and a Relay-only submit must not reset it."""
+    _RELAY_HTTP_WAITERS.clear()
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "bash",
+                "description": "Run a shell command.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"command": {"type": "string"}},
+                    "required": ["command"],
+                },
+            },
+        }
+    ]
+    run = _RobinRunState(
+        run_id="run_relay_iso",
+        session_key="boot_relay_iso",
+        client_session_id="boot_relay_iso",
+        principal_id="p_relay",
+        boot_key="boot_relay_iso",
+        dsh_tools=tools,
+        connected_folders=[_SELFTEST_WORKSPACE],
+    )
+    ledger = run.tool_ledger
+    decoder = _RobinStreamDecoder(
+        "chatcmpl-relay-iso", 0, "gemini:gemini-4-argon", run=run
+    )
+    decoder.conversation_id = "c_relay_iso"
+    actor = _relay_test_actor(run, decoder)
+
+    job_id = "call_relay_iso_0001"
+    inv, local = _robin_register_dsh_tool_call(
+        ledger,
+        source="relay",
+        public_id=job_id,
+        orig_name="client:bash",
+        raw_args={"CommandLine": "relay-tick", "Cwd": _SELFTEST_WORKSPACE},
+        relay_ctx={"relay_job_id": job_id, "relay_http_id": "h_selftest_0001"},
+    )
+    assert local is None
+    assert inv is not None
+    assert inv.source == "relay"
+    assert inv.wire_call_id == ""
+    assert inv.public_tool_call_id == job_id
+    assert inv.dsh_tool_name == "bash"
+
+    chunks = decoder._robin_ingest_dsh_tool_calls([inv])
+    assert len(chunks) == 1
+    delta = chunks[0]["choices"][0]["delta"]["tool_calls"][0]
+    assert delta["id"] == job_id
+    assert decoder.pending_tool_calls[0]["_source"] == "relay"
+
+    # Relay ingress never touches ERT bookkeeping.
+    assert decoder.step_ert_received_count == 0
+    assert decoder.step_announced_count == 0
+    assert decoder.announced_client_tool_ids == set()
+    assert decoder.ert_seen_wire_call_ids == set()
+    assert decoder.pending_ert_outbound_frames == []
+
+    orig_save = _GEMINI_DSH_STORE.save_run
+    cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+    try:
+
+        async def _scenario() -> None:
+            decoder.step_announced_count = 2
+            decoder.step_ert_received_count = 1
+            decoder.step_unmatched_pq_tool_monotonic = 123.0
+            actor.awaiting_post_tool_progress = True
+            actor.last_submitted_ert_frames = [b"prior-ert-frame"]
+            calls = {"ensure": 0, "flush": 0}
+
+            async def _ensure(conv_id: str) -> None:
+                calls["ensure"] += 1
+
+            async def _flush() -> None:
+                calls["flush"] += 1
+
+            actor.ensure_ert_and_presence = cast(Any, _ensure)
+            actor.flush_pending_ert_outbound = cast(Any, _flush)
+            fut = _relay_open_waiter(job_id)
+            assert fut is not None
+            status = await actor.submit_tool_results(
+                [
+                    {
+                        "role": "tool",
+                        "tool_call_id": job_id,
+                        "name": "bash",
+                        "content": "relay-done\n",
+                    }
+                ]
+            )
+            assert status == "ok", status
+            assert fut.done(), "Relay HTTP answer was not settled"
+            payload = fut.result()
+            assert payload["is_error"] is False
+            assert "relay-done" in str(payload["result"].get("output") or "")
+            assert calls == {"ensure": 0, "flush": 0}
+
+        asyncio.run(_scenario())
+    finally:
+        cast(Any, _GEMINI_DSH_STORE).save_run = orig_save
+
+    # ERT progress is exactly where the test left it: a Relay-only submit resets nothing.
+    assert decoder.step_announced_count == 2
+    assert decoder.step_ert_received_count == 1
+    assert decoder.step_unmatched_pq_tool_monotonic == 123.0
+    assert actor.last_submitted_ert_frames == [b"prior-ert-frame"]
+    assert decoder.pending_ert_outbound_frames == []
+    assert actor.awaiting_post_tool_progress is True
+    assert inv.status == "REPORTED"
+    projected_tok = _robin_estimate_ert_tool_output_tokens(
+        json.dumps(
+            _robin_project_tool_result_dict(
+                {
+                    "name": "bash",
+                    "_orig_call_name": "bash",
+                    "_orig_args": inv.orig_args,
+                    "output": "relay-done\n",
+                }
+            ),
+            ensure_ascii=False,
+        ),
+        "bash",
+    )
+    assert _ROBIN_SENT_TOOL_TOKENS.get(job_id) == projected_tok
+    _RELAY_HTTP_WAITERS.clear()
+
+
+def test_relay_mixed_batch_keeps_ert_and_relay_answers_separate():
+    """A mixed batch settles the Relay HTTP answer while ERT keeps its own frame and counters."""
+    _RELAY_HTTP_WAITERS.clear()
+
+    class _CaptureERT:
+        def __init__(self) -> None:
+            self.sent: list[bytes] = []
+            self.keep_open = True
+
+        async def send_grpc_frames(
+            self, frames: list[bytes], end_stream: bool = False
+        ) -> None:
+            _ = end_stream
+            self.sent.extend(frames)
+
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "bash",
+                "description": "Run a shell command.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"command": {"type": "string"}},
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "read",
+                "description": "Read a file.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"file_path": {"type": "string"}},
+                },
+            },
+        },
+    ]
+    run = _RobinRunState(
+        run_id="run_relay_mixed",
+        session_key="boot_relay_mixed",
+        client_session_id="boot_relay_mixed",
+        principal_id="p_relay",
+        boot_key="boot_relay_mixed",
+        dsh_tools=tools,
+        connected_folders=[_SELFTEST_WORKSPACE],
+    )
+    ledger = run.tool_ledger
+    ert = _CaptureERT()
+    decoder = _RobinStreamDecoder(
+        "chatcmpl-relay-mixed", 0, "gemini:gemini-4-argon", run=run
+    )
+    decoder.conversation_id = "c_relay_mixed"
+    actor = _relay_test_actor(run, decoder, ert)
+
+    ert_chunks = decoder._ingest_raw_tool_calls(
+        [
+            {
+                "name": "client:read",
+                "id": "call_ert_mixed_1",
+                "id_present": True,
+                "args": {"AbsolutePath": f"{_SELFTEST_WORKSPACE}/note.txt"},
+            }
+        ]
+    )
+    assert ert_chunks
+    ert_inv = ledger.by_public_id[
+        ert_chunks[0]["choices"][0]["delta"]["tool_calls"][0]["id"]
+    ]
+    assert ert_inv.source == "ert"
+    assert decoder.step_ert_received_count == 1
+
+    relay_job = "call_relay_mixed_0001"
+    relay_inv, relay_local = _robin_register_dsh_tool_call(
+        ledger,
+        source="relay",
+        public_id=relay_job,
+        orig_name="client:bash",
+        raw_args={"CommandLine": "mixed-tick", "Cwd": _SELFTEST_WORKSPACE},
+        relay_ctx={"relay_job_id": relay_job, "relay_http_id": "h_selftest_0002"},
+    )
+    assert relay_local is None and relay_inv is not None
+    decoder._robin_ingest_dsh_tool_calls([relay_inv])
+
+    orig_save = _GEMINI_DSH_STORE.save_run
+    cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+    try:
+
+        async def _scenario() -> None:
+            fut = _relay_open_waiter(relay_job)
+            assert fut is not None
+            status = await actor.submit_tool_results(
+                [
+                    {
+                        "role": "tool",
+                        "tool_call_id": ert_inv.public_tool_call_id,
+                        "name": "read",
+                        "content": "line-1\nline-2\n",
+                    },
+                    {
+                        "role": "tool",
+                        "tool_call_id": relay_job,
+                        "name": "bash",
+                        "content": "mixed-done\n",
+                    },
+                ]
+            )
+            assert status == "ok", status
+            assert fut.done(), "Relay HTTP answer did not settle in a mixed batch"
+            assert "mixed-done" in str(fut.result()["result"].get("output") or "")
+
+        asyncio.run(_scenario())
+    finally:
+        cast(Any, _GEMINI_DSH_STORE).save_run = orig_save
+
+    # Exactly one ERT frame (for the ERT call) reached the ERT stream.
+    assert len(ert.sent) == 1
+    assert len(actor.last_submitted_ert_frames) == 1
+    # ERT step counters reset on ERT-scoped emptiness even though Relay also answered.
+    assert decoder.step_announced_count == 0
+    assert decoder.step_ert_received_count == 0
+    # The Relay job id never enters ERT dedupe state.
+    assert relay_job not in decoder.ert_seen_wire_call_ids
+    assert relay_job not in decoder.announced_client_tool_ids
+    assert relay_inv.status == "REPORTED"
+    _RELAY_HTTP_WAITERS.clear()
+
+
+def test_relay_carrier_never_binds_ert_invocation():
+    """`command_status` carriers are channel-scoped: neither side may adopt the other's job."""
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "bash",
+                "description": "Run a shell command.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"command": {"type": "string"}},
+                },
+            },
+        }
+    ]
+    run = _RobinRunState(
+        run_id="run_relay_carrier",
+        session_key="boot_relay_carrier",
+        client_session_id="boot_relay_carrier",
+        principal_id="p_relay",
+        boot_key="boot_relay_carrier",
+        dsh_tools=tools,
+        connected_folders=[_SELFTEST_WORKSPACE],
+    )
+    ledger = run.tool_ledger
+    ert_inv, _ = ledger.register_ert_call(
+        {
+            "name": "client:run_command",
+            "id": "call_ert_carrier_1",
+            "id_present": True,
+            "args": {"CommandLine": "ert-tick", "Cwd": _SELFTEST_WORKSPACE},
+        }
+    )
+    assert ert_inv is not None
+    ert_inv.bg_command_id = "ERT-CMD-0001"
+    ert_inv.status = "BACKGROUNDED"
+    relay_inv, _ = _robin_register_dsh_tool_call(
+        ledger,
+        source="relay",
+        public_id="call_relay_carrier_0001",
+        orig_name="client:run_command",
+        raw_args={"CommandLine": "relay-tick", "Cwd": _SELFTEST_WORKSPACE},
+    )
+    assert relay_inv is not None
+    relay_inv.bg_command_id = "RELAY-CMD-0001"
+    relay_inv.status = "BACKGROUNDED"
+
+    assert ledger.find_background_invocation("ERT-CMD-0001", source="relay") is None
+    assert ledger.find_background_invocation("RELAY-CMD-0001", source="ert") is None
+    assert ledger.find_background_invocation("ERT-CMD-0001", source="ert") is ert_inv
+    assert (
+        ledger.find_background_invocation("RELAY-CMD-0001", source="relay") is relay_inv
+    )
+    # ERT keepalive/rollover bookkeeping only sees ERT-source work.
+    assert ledger.has_active_background_or_dispatched(source="ert") is True
+    relay_inv.status = "REPORTED"
+    relay_inv.bg_done_delivered = True
+    assert ledger.has_active_background_or_dispatched(source="relay") is False
+    # The ERT invocation of the same ledger is still owed its result.
+    assert ledger.has_active_background_or_dispatched(source="ert") is True
+
+
+def test_relay_oauth_mcp_endpoints():
+    """OAuth + MCP are served by the edge itself; the relay only carries bytes."""
+    _RELAY_HTTP_WAITERS.clear()
+    _relay_clear_active_run()
+    tmp_dir = Path(tempfile.mkdtemp(prefix="ve_relay_oauth_"))
+    env_keys = (
+        "VE_RELAY_OAUTH_DB",
+        "VE_RELAY_OAUTH_CLIENT_ID",
+        "VE_RELAY_OAUTH_CLIENT_SECRET",
+        "VE_RELAY_PUBLIC_BASE_URL",
+    )
+    saved = {key: os.environ.get(key) for key in env_keys}
+    global _RELAY_OAUTH_STORE
+    saved_store = _RELAY_OAUTH_STORE
+    os.environ["VE_RELAY_OAUTH_DB"] = str(tmp_dir / "relay_oauth.sqlite3")
+    os.environ["VE_RELAY_OAUTH_CLIENT_ID"] = "veh-selftest-client"
+    os.environ["VE_RELAY_OAUTH_CLIENT_SECRET"] = "veh-selftest-secret"
+    os.environ["VE_RELAY_PUBLIC_BASE_URL"] = "https://relay.example.test"
+    _RELAY_OAUTH_STORE = None
+    verifier = "selftest-pkce-verifier-0000000000000000000000000"
+    challenge = _relay_pkce_s256(verifier)
+    redirect_uri = "https://client.example.test/callback"
+
+    def _call(req: dict[str, Any]) -> tuple[int, dict[str, str], bytes]:
+        return asyncio.run(_relay_http_handle(req))
+
+    try:
+        status, _headers, body = _call(
+            _relay_test_http_request("/.well-known/oauth-protected-resource")
+        )
+        assert status == 200
+        doc = json.loads(body)
+        assert doc["resource"] == "https://relay.example.test/mcp"
+        assert doc["authorization_servers"] == ["https://relay.example.test"]
+
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/oauth/authorize",
+                query=urllib.parse.urlencode(
+                    {
+                        "response_type": "code",
+                        "client_id": "wrong-client",
+                        "redirect_uri": redirect_uri,
+                        "code_challenge": challenge,
+                        "code_challenge_method": "S256",
+                    }
+                ),
+            )
+        )
+        assert status == 400
+
+        authorize_query = urllib.parse.urlencode(
+            {
+                "response_type": "code",
+                "client_id": "veh-selftest-client",
+                "redirect_uri": redirect_uri,
+                "state": "state-selftest",
+                "code_challenge": challenge,
+                "code_challenge_method": "S256",
+            }
+        )
+        status, headers, _body = _call(
+            _relay_test_http_request("/oauth/authorize", query=authorize_query)
+        )
+        assert status == 302
+        location = headers["location"]
+        assert location.startswith(redirect_uri + "?")
+        parsed_redirect = urllib.parse.parse_qs(urllib.parse.urlsplit(location).query)
+        code = parsed_redirect["code"][0]
+        assert parsed_redirect["state"] == ["state-selftest"]
+
+        def _token_body(
+            code_value: str,
+            verifier_value: str,
+            secret: str = "veh-selftest-secret",
+        ) -> bytes:
+            form = {
+                "grant_type": "authorization_code",
+                "code": code_value,
+                "redirect_uri": redirect_uri,
+                "client_id": "veh-selftest-client",
+                "code_verifier": verifier_value,
+            }
+            if secret:
+                form["client_secret"] = secret
+            return urllib.parse.urlencode(form).encode("utf-8")
+
+        # A wrong client secret must never mint a token.
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/oauth/token",
+                method="POST",
+                headers={"content-type": "application/x-www-form-urlencoded"},
+                body=_token_body(code, verifier, secret="wrong-secret"),
+            )
+        )
+        assert status == 401
+
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/oauth/token",
+                method="POST",
+                headers={"content-type": "application/x-www-form-urlencoded"},
+                body=_token_body(code, "wrong-verifier"),
+            )
+        )
+        assert status == 400 and json.loads(_body)["error"] == "invalid_grant"
+
+        status, _headers, body = _call(
+            _relay_test_http_request(
+                "/oauth/token",
+                method="POST",
+                headers={"content-type": "application/x-www-form-urlencoded"},
+                body=_token_body(code, verifier),
+            )
+        )
+        assert status == 200
+        token_doc = json.loads(body)
+        access_token = token_doc["access_token"]
+        assert token_doc["token_type"] == "Bearer"
+        assert "expires_in" not in token_doc
+
+        # A code is single use.
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/oauth/token",
+                method="POST",
+                headers={"content-type": "application/x-www-form-urlencoded"},
+                body=_token_body(code, verifier),
+            )
+        )
+        assert status == 400
+
+        mcp_headers = {
+            "content-type": "application/json; charset=utf-8",
+            "accept": "application/json, text/event-stream",
+            "authorization": f"Bearer {access_token}",
+        }
+        init_body = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": VE_RELAY_MCP_PROTOCOL_VERSIONS[1],
+                    "capabilities": {},
+                    "clientInfo": {"name": "selftest", "version": "0"},
+                },
+            }
+        ).encode("utf-8")
+        status, _headers, body = _call(
+            _relay_test_http_request(
+                "/mcp", method="POST", headers=mcp_headers, body=init_body
+            )
+        )
+        assert status == 200
+        init_doc = json.loads(body)["result"]
+        assert init_doc["protocolVersion"] == VE_RELAY_MCP_PROTOCOL_VERSIONS[1]
+        assert init_doc["serverInfo"]["name"] == "VEH MCP Server"
+        assert init_doc["serverInfo"]["version"]
+        assert init_doc["capabilities"] == {"tools": {}}
+
+        # No active run -> empty catalog.
+        list_body = json.dumps(
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
+        ).encode("utf-8")
+        status, _headers, body = _call(
+            _relay_test_http_request(
+                "/mcp", method="POST", headers=mcp_headers, body=list_body
+            )
+        )
+        assert status == 200 and json.loads(body)["result"]["tools"] == []
+
+        # Notification carries no id -> 202 with an empty body.
+        note_body = json.dumps(
+            {"jsonrpc": "2.0", "method": "notifications/initialized"}
+        ).encode("utf-8")
+        status, _headers, body = _call(
+            _relay_test_http_request(
+                "/mcp", method="POST", headers=mcp_headers, body=note_body
+            )
+        )
+        assert status == 202 and body == b""
+
+        # `initialize` must never be rejected over the session version header: Google sends
+        # `MCP-Protocol-Version` on the handshake itself, and a date we do not list yet is
+        # not a reason to refuse it (that turned a revision bump into an outage).
+        init_version_headers = dict(mcp_headers)
+        init_version_headers["mcp-protocol-version"] = "2025-11-25"
+        status, _headers, body = _call(
+            _relay_test_http_request(
+                "/mcp", method="POST", headers=init_version_headers, body=init_body
+            )
+        )
+        assert status == 200, body
+        assert json.loads(body)["result"]["serverInfo"]["name"] == "VEH MCP Server"
+
+        # An unknown but well-formed revision on a follow-up request is accepted too.
+        unknown_version_headers = dict(mcp_headers)
+        unknown_version_headers["mcp-protocol-version"] = "2030-01-01"
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/mcp", method="POST", headers=unknown_version_headers, body=list_body
+            )
+        )
+        assert status == 200
+
+        # Only a malformed version value is a hard 400.
+        bad_version_headers = dict(mcp_headers)
+        bad_version_headers["mcp-protocol-version"] = "vNext"
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/mcp",
+                method="POST",
+                headers=bad_version_headers,
+                body=list_body,
+            )
+        )
+        assert status == 400
+
+        # Media type gating.
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/mcp",
+                method="POST",
+                headers={**mcp_headers, "content-type": "text/plain"},
+                body=list_body,
+            )
+        )
+        assert status == 415
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/mcp",
+                method="POST",
+                headers={**mcp_headers, "accept": "application/json"},
+                body=list_body,
+            )
+        )
+        assert status == 406
+
+        # GET /mcp is not implemented.
+        status, headers, _body = _call(
+            _relay_test_http_request("/mcp", method="GET", headers=mcp_headers)
+        )
+        assert status == 405 and headers["allow"] == "POST"
+
+        # Missing / revoked token.
+        status, headers, _body = _call(
+            _relay_test_http_request(
+                "/mcp",
+                method="POST",
+                headers={
+                    "content-type": "application/json",
+                    "accept": "application/json, text/event-stream",
+                },
+                body=list_body,
+            )
+        )
+        assert status == 401
+        assert "resource_metadata=" in headers["www-authenticate"]
+
+        _relay_oauth_store().revoke_all()
+        status, _headers, _body = _call(
+            _relay_test_http_request(
+                "/mcp", method="POST", headers=mcp_headers, body=list_body
+            )
+        )
+        assert status == 401
+
+        status, _headers, _body = _call(_relay_test_http_request("/unknown/path"))
+        assert status == 404
+
+        db_mode = (tmp_dir / "relay_oauth.sqlite3").stat().st_mode & 0o777
+        assert db_mode == 0o600, oct(db_mode)
+    finally:
+        _RELAY_OAUTH_STORE = saved_store
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        _relay_clear_active_run()
+
+
+def test_relay_catalog_handoff_and_veh_injection():
+    """The MCP catalog carries real `inputSchema`s and the hand-off points at this server."""
+    _RELAY_HTTP_WAITERS.clear()
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "bash",
+                "description": "Run a shell command.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {"type": "string"},
+                        "description": {"type": "string"},
+                    },
+                    "required": ["command"],
+                },
+            },
+        }
+    ]
+    run = _RobinRunState(
+        run_id="run_relay_catalog",
+        session_key="boot_relay_catalog",
+        client_session_id="boot_relay_catalog",
+        principal_id="p_relay",
+        boot_key="boot_relay_catalog",
+        dsh_tools=tools,
+        connected_folders=[_SELFTEST_WORKSPACE],
+    )
+    ledger = run.tool_ledger
+    decoder = _RobinStreamDecoder(
+        "chatcmpl-relay-catalog", 0, "gemini:gemini-4-argon", run=run
+    )
+    actor = _relay_test_actor(run, decoder)
+    catalog = _relay_mcp_tool_catalog(ledger)
+    names = [item["name"] for item in catalog]
+    assert "bash" in names and "command_status" in names
+    bash_entry = next(item for item in catalog if item["name"] == "bash")
+    assert bash_entry["inputSchema"]["type"] == "object"
+    assert "command" in bash_entry["inputSchema"]["properties"]
+    assert bash_entry["inputSchema"]["required"] == ["command"]
+    assert bash_entry.get("annotations", {}).get("destructiveHint") is False
+    command_status_entry = next(
+        item for item in catalog if item["name"] == "command_status"
+    )
+    assert command_status_entry["inputSchema"]["required"] == ["CommandId"]
+
+    # Schema gate: missing required argument and a wrong primitive type are invalid params.
+    assert _relay_validate_tool_args(bash_entry["inputSchema"], {})
+    assert _relay_validate_tool_args(bash_entry["inputSchema"], {"command": 42})
+    assert _relay_validate_tool_args(bash_entry["inputSchema"], {"command": "ok"}) == ""
+
+    relay_inv, _ = _robin_register_dsh_tool_call(
+        ledger,
+        source="relay",
+        public_id="call_relay_catalog_0001",
+        orig_name="client:run_command",
+        raw_args={"CommandLine": "catalog-tick", "Cwd": _SELFTEST_WORKSPACE},
+    )
+    assert relay_inv is not None
+    relay_handoff = ledger._build_background_handoff_dict(relay_inv)
+    assert relay_handoff["status"] == "background"
+    assert relay_handoff["command_id"] == relay_inv.bg_command_id
+    assert "command_status" in relay_handoff["output"]
+    assert "client:command_status" not in relay_handoff["output"]
+
+    ert_inv, _ = ledger.register_ert_call(
+        {
+            "name": "client:execute_mcp",
+            "id": "call_ert_catalog_1",
+            "id_present": True,
+            "args": {
+                "ServerName": "veh",
+                "ToolName": "run_command",
+                "Arguments": {"CommandLine": "catalog-tick"},
+            },
+        }
+    )
+    assert ert_inv is not None
+    ert_handoff = ledger._build_background_handoff_dict(ert_inv)
+    assert "client:command_status" in ert_handoff["output"]
+    assert "Call command_status" not in ert_handoff["output"]
+
+    # Catalog is served only while a tool-bearing run owns the channel, even before actor creation.
+    _ROBIN_ACTIVE_RUNS[run.run_id] = run
+    _relay_bind_active_run(run, None)
+    try:
+        assert _relay_active_run() is run
+        assert _relay_active_actor() is None
+        _relay_bind_active_run(run, actor)
+        assert _relay_active_actor() is actor
+        _relay_reset_veh_injection_for_tests()
+        assert _relay_should_inject_veh("boot_relay_catalog") is True
+        assert _relay_should_inject_veh("boot_relay_catalog") is False
+        assert _relay_should_inject_veh("") is False
+        # Provisional title detection must ignore `@VEH MCP Server` echoes when `query_text` is raw.
+        assert (
+            _dsh_title_is_provisional(
+                "@VEH MCP Server 你能用哪些工具?", "你能用哪些工具?"
+            )
+            is True
+        )
+        assert (
+            _dsh_title_is_provisional(
+                "@VEH MCP Server\n你能用哪些工具?", "你能用哪些工具?"
+            )
+            is True
+        )
+        assert (
+            _dsh_title_is_provisional("VEH MCP 服务器功能评估", "你能用哪些工具?")
+            is False
+        )
+
+        # With a live `abort_evt` (as `_serve_http_request` always creates), settling `fut`
+        # must return immediately (`FIRST_COMPLETED`) rather than waiting until `max_wait`
+        # or deadlocking when `max_wait=None`.
+        async def _verify_wait_with_abort_first_completed() -> None:
+            wait_job = "call_relay_wait_first_0001"
+            fut1 = _relay_open_waiter(wait_job)
+            assert fut1 is not None
+            live_abort = asyncio.Event()
+            t0 = time.monotonic()
+            asyncio.get_running_loop().call_later(
+                0.02, _relay_settle, wait_job, {"output": "fast-ok"}
+            )
+            st1, pay1 = await _relay_wait_with_abort(fut1, live_abort, 5.0)
+            elapsed = time.monotonic() - t0
+            assert st1 == "result" and pay1 is not None
+            assert pay1["result"]["output"] == "fast-ok"
+            assert elapsed < 0.5, f"_relay_wait_with_abort waited {elapsed:.2f}s"
+
+            wait_job2 = "call_relay_wait_first_0002"
+            fut2 = _relay_open_waiter(wait_job2)
+            assert fut2 is not None
+            asyncio.get_running_loop().call_later(
+                0.02, _relay_settle, wait_job2, {"output": "unbounded-ok"}
+            )
+            st2, pay2 = await asyncio.wait_for(
+                _relay_wait_with_abort(fut2, live_abort, None), timeout=0.5
+            )
+            assert st2 == "result" and pay2 is not None
+            assert pay2["result"]["output"] == "unbounded-ok"
+
+            # Hop-by-hop headers (including those named by `Connection`) are stripped.
+            stripped = _relay_strip_hop_headers(
+                {
+                    "Connection": "X-Hop-Custom, keep-alive",
+                    "X-Hop-Custom": "drop-me",
+                    "Keep-Alive": "timeout=5",
+                    "Transfer-Encoding": "chunked",
+                    "Content-Length": "99",
+                    "X-End-To-End": "keep-me",
+                }
+            )
+            assert stripped == {"x-end-to-end": "keep-me"}, stripped
+
+            # `list_mcp` is rejected on Relay with JSON-RPC Invalid params (-32602).
+            st_lmcp, _, body_lmcp = await _relay_mcp_tools_call(
+                "list_mcp",
+                {},
+                77,
+                http_id="h_selftest_lmcp",
+                connection_id="ws_selftest_0001",
+                abort_evt=live_abort,
+            )
+            assert st_lmcp == 200
+            assert json.loads(body_lmcp)["error"]["code"] == -32602
+
+            # PQ announcement split: known wire id stays in `relay_announced_call_ids`
+            # without enabling `relay_mode`, while unknown wire id enables `relay_mode`.
+            run.relay_mode = False
+            decoder.relay_announced_call_ids.clear()
+            decoder.announced_client_tool_ids.add("wire_known_001")
+            decoder.step_announced_count = 1
+            decoder.step_unmatched_pq_tool_monotonic = 99.0
+            inv_w, loc_w = await actor._relay_dispatch_tool_call(
+                "bash",
+                {"command": "echo wire"},
+                "call_relay_wire_0001",
+                {
+                    "relay_job_id": "call_relay_wire_0001",
+                    "relay_wire_call_id": "wire_known_001",
+                },
+            )
+            assert inv_w is not None and loc_w is None
+            assert "wire_known_001" in decoder.relay_announced_call_ids
+            assert "wire_known_001" not in decoder.announced_client_tool_ids
+            assert decoder.step_announced_count == 0
+            assert decoder.step_unmatched_pq_tool_monotonic == 0.0
+            assert run.relay_mode is False
+
+            # Backgrounded Relay completion without an active carrier still reconciles as `ok`.
+            inv_w.status = "BACKGROUNDED"
+            inv_w.bg_command_id = "BG-WIRE-0001"
+            orig_save_fn = _GEMINI_DSH_STORE.save_run
+            cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+            try:
+                bg_st = await actor.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": "call_relay_wire_0001",
+                            "name": "bash",
+                            "content": "bg-finished-early\n",
+                        }
+                    ]
+                )
+                assert bg_st == "ok", bg_st
+                assert inv_w.status == "REPORTED"
+            finally:
+                cast(Any, _GEMINI_DSH_STORE).save_run = orig_save_fn
+
+        asyncio.run(_verify_wait_with_abort_first_completed())
+    finally:
+        _ROBIN_ACTIVE_RUNS.pop(run.run_id, None)
+        _relay_clear_active_run(run)
+        _relay_reset_veh_injection_for_tests()
+    assert _relay_active_run() is None
+    _RELAY_HTTP_WAITERS.clear()
+
+
 def test_robin_long_running_tool_background_and_command_status():
     """Long-running DSH tool calls must transition to background and fulfill `command_status`."""
     tools = [
@@ -91479,6 +94545,11 @@ def run_self_tests():
         test_robin_tool_handoff_never_emits_empty_tool_use,
         test_robin_mid_turn_continuation_never_forks_a_new_pq,
         test_robin_background_output_accumulates_across_polls,
+        test_relay_channel_isolation_and_relay_only_submit,
+        test_relay_mixed_batch_keeps_ert_and_relay_answers_separate,
+        test_relay_carrier_never_binds_ert_invocation,
+        test_relay_oauth_mcp_endpoints,
+        test_relay_catalog_handoff_and_veh_injection,
         test_robin_long_running_tool_background_and_command_status,
         test_robin_remy_goals_titles_map_recent_task_conversations,
         test_robin_boot_key_matches_between_title_and_chat_requests,
@@ -92009,6 +95080,12 @@ def main():
 
     # Optional Xiaomi bridge; disabled unless XIAOAI_ENABLED=1.
     start_xiaoai_bridge()
+
+    # Optional user-tool relay tunnel; disabled unless VE_USER_TOOL_RELAY_ENABLED=1.
+    try:
+        _relay_start_client()
+    except Exception as e:
+        _http_log.warning(f"VEH relay client failed to start: {e}")
 
     # Optional local wake-word voice chat; disabled unless VE_VOICE_CHAT_ENABLED=1.
     start_voice_chat_subsystem()
