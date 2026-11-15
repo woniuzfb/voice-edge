@@ -48,7 +48,7 @@
   ```bash
   uv run main --self-test
   ```
-- **基线要求**：当前基线为 **138/138 passed**。不得出现任何 `❌ Self-test failed`。
+- **基线要求**：不得出现任何 `❌ Self-test failed`。
 
 ---
 
@@ -65,6 +65,7 @@
 - **核心禁令**：AI Agent **绝对禁止**在没有得到用户明确许可的情况下执行任何改变 Git 暂存区（Index）或提交历史的命令：
   1. **严禁擅自 Unstage**：绝对禁止执行 `git restore --staged`、`git reset`、`git rm --cached` 等任何将用户已暂存（staged）文件取消暂存的操作！用户已暂存的内容由用户全权掌控，Agent 绝无权利触碰、撤销或改变其暂存状态。
   2. **严禁擅自 Stage / Commit**：绝对禁止未经用户明确许可自动执行 `git add`、`git stage` 或 `git commit`。
+  3. **授权 Commit 时 Message 必须详尽**：如果用户明确授权执行 `git commit`，Commit Message 必须写得详细完整（包含清晰的标题行与分条正文，详述本次提交的背景根因、各模块具体修复/改动点以及验证结果），严禁只写笼统的一句话标题。
 - **工作区规范**：Agent 自身的代码修改在完成验证（通过自测与 Ruff）后，保留在工作区中向用户汇报，等待用户指令。**严禁以「遵守未提交规则」为借口去擅自 unstage 用户已暂存的文件，严禁以任何理由改变任何文件的现有 Git 状态**。
 
 ---

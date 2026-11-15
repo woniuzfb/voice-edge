@@ -112,7 +112,8 @@ Supported browser-backed model families include:
 
 Firefox synchronizes local browser authentication state through the Native Messaging bridge and the local WebSocket relay (`ws://127.0.0.1:5003/ws`). Authentication values are treated as secrets and must not be logged, uploaded, or committed.
 
-## Microsoft 365 Copilot and SharePoint
+<details>
+<summary><b>Microsoft 365 Copilot and SharePoint</b></summary>
 
 Configure the Microsoft 365 entry page and optional SharePoint upload and download location:
 
@@ -146,7 +147,10 @@ export VOICE_EDGE_BROWSER_STATE_PATH="$HOME/.voice-edge/browser-provider-state.j
 
 When a supported client uploads files for a Microsoft 365 model, Voice Edge can upload them to the configured SharePoint folder and send them to Microsoft 365 Copilot as file attachments.
 
-## Xiaomi XiaoAI Configuration
+</details>
+
+<details>
+<summary><b>Xiaomi XiaoAI Configuration</b></summary>
 
 Enable the Xiaomi bridge and provide account and device settings:
 
@@ -276,7 +280,10 @@ export XIAOAI_LOCAL_DEVICES = '[
 ]'
 ```
 
-## Local Voice Chat
+</details>
+
+<details>
+<summary><b>Local Voice Chat</b></summary>
 
 ```bash
 export VE_VOICE_CHAT_ENABLED=1
@@ -334,7 +341,10 @@ VE_VOICE_CHAT_WAKE_CONFIG = (
 )
 ```
 
-## VSCode Configuration
+</details>
+
+<details>
+<summary><b>VSCode Configuration</b></summary>
 
 ```yaml
 experimental:
@@ -445,7 +455,10 @@ models:
       - autocomplete
 ```
 
-## Keyboard Shortcuts
+</details>
+
+<details>
+<summary><b>Keyboard Shortcuts</b></summary>
 
 | Shortcut             | Action                          |
 | -------------------- | ------------------------------- |
@@ -456,7 +469,10 @@ models:
 | Double Esc           | Cancel active playback          |
 | Double Right CMD     | Start or pause voice chat       |
 
-## Browser Authentication Security
+</details>
+
+<details>
+<summary><b>Browser Authentication Security</b></summary>
 
 - Firefox-synchronized cookies are equivalent to login credentials.
 - Never print, upload, or commit cookie snapshots or bearer tokens.
@@ -464,6 +480,8 @@ models:
 - The local authentication-sync socket uses user-only permissions.
 - Generated Native Host files are stored under `~/.voice-edge`.
 - Firefox-synchronized credentials take precedence over environment-provided browser credentials for the current process.
+
+</details>
 
 ## Google AI Studio and Gemini App Relays
 

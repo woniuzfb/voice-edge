@@ -112,7 +112,8 @@ uv run main --http
 
 Firefox 通过 Native Messaging 桥接与本地 WebSocket 通道（`ws://127.0.0.1:5003/ws`）同步本地浏览器认证状态与 RPC 调用。认证内容属于敏感凭据，不得写入日志、上传或提交到代码仓库。
 
-## Microsoft 365 Copilot 与 SharePoint
+<details>
+<summary><b>Microsoft 365 Copilot 与 SharePoint</b></summary>
 
 配置 Microsoft 365 入口页面和可选的 SharePoint 上传和下载位置：
 
@@ -146,7 +147,10 @@ export VOICE_EDGE_BROWSER_STATE_PATH="$HOME/.voice-edge/browser-provider-state.j
 
 当支持的客户端向 Microsoft 365 模型上传文件时，Voice Edge 可以先将文件上传到配置的 SharePoint 目录，再将其作为文件附件发送给 Microsoft 365 Copilot。
 
-## 小米小爱同学配置
+</details>
+
+<details>
+<summary><b>小米小爱同学配置</b></summary>
 
 启用小米桥接并设置账号及设备参数：
 
@@ -277,7 +281,10 @@ export XIAOAI_LOCAL_DEVICES = '[
 ]'
 ```
 
-## 本机语音助手
+</details>
+
+<details>
+<summary><b>本机语音助手</b></summary>
 
 ```bash
 export VE_VOICE_CHAT_ENABLED=1
@@ -328,7 +335,10 @@ VE_VOICE_CHAT_WAKE_CONFIG = (
 )
 ```
 
-## VSCode Configuration
+</details>
+
+<details>
+<summary><b>VSCode Configuration</b></summary>
 
 ```yaml
 experimental:
@@ -439,7 +449,10 @@ models:
       - autocomplete
 ```
 
-## 键盘快捷键
+</details>
+
+<details>
+<summary><b>键盘快捷键</b></summary>
 
 | 快捷键             | 操作                 |
 | ------------------ | -------------------- |
@@ -450,7 +463,10 @@ models:
 | 双击 Esc           | 取消当前播放         |
 | 双击右 CMD         | 开始或暂停 聊天      |
 
-## 浏览器认证安全
+</details>
+
+<details>
+<summary><b>浏览器认证安全</b></summary>
 
 - Firefox 同步的 Cookie 等同于登录凭据。
 - 不要打印、上传或提交 Cookie 快照及 Bearer Token。
@@ -458,6 +474,8 @@ models:
 - 本地认证同步 Socket 使用仅限当前用户的权限。
 - 生成的 Native Host 文件存放在 `~/.voice-edge`。
 - 对于当前进程，Firefox 同步的凭据优先于环境变量提供的浏览器凭据。
+
+</details>
 
 ## Google AI Studio 与 Gemini App 中继
 
