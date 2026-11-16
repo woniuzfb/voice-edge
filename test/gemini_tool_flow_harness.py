@@ -392,7 +392,7 @@ async def main():
     plain_base = ve._gemini_base_payload(
         spec, plain_body, plain_messages, credential_id=credentials[0].credential_id
     )
-    _, plain_boot_key, _ = ve._robin_conversation_keys(
+    _, plain_boot_key, _ = ve._dsh_conversation_keys(
         credentials[0].credential_id, plain_messages, body=plain_body
     )
 
@@ -454,10 +454,10 @@ async def main():
         f"   [p6] plain turn finished at {time.monotonic() - plain_started:.1f}s, "
         f"title request took {time.monotonic() - title_started:.1f}s"
     )
-    prompt_norm = ve._robin_normalize_title_text(title_prompt)
+    prompt_norm = ve._dsh_normalize_title_text(title_prompt)
     assert plain_answer.strip(), "P6: the bound turn produced no answer"
     assert resolved_title, "P6: title request returned an empty title"
-    assert ve._robin_normalize_title_text(resolved_title) != prompt_norm, (
+    assert ve._dsh_normalize_title_text(resolved_title) != prompt_norm, (
         f"P6: title request returned the prompt echo {resolved_title!r}"
     )
     print(
@@ -472,7 +472,64 @@ async def main():
     print("\nRESULT: PASS")
 
 
+async def inspect_live_debug_state(limit: int = 40) -> int:
+    """Query the live `voice_edge` HTTP gateway (`/v1/internal/debug/recent`) and inspect `/tmp/ve_gemini_debug_latest` without side effects."""
+    symlink_path = ve._GEMINI_DEBUG_LATEST_SYMLINK
+    resolved_dir = ve._gemini_peek_debug_dir()
+    snapshot: dict[str, object] = {}
+    live_url = f"http://127.0.0.1:{ve.HTTP_PORT}/v1/internal/debug/recent?limit={limit}"
+    try:
+        timeout = ve.aiohttp.ClientTimeout(total=3.0)
+        async with ve.aiohttp.ClientSession(timeout=timeout) as http_sess:
+            async with http_sess.get(live_url) as live_resp:
+                if live_resp.status == 200:
+                    snapshot = await live_resp.json()
+                    snapshot["source"] = "live_http_gateway"
+                else:
+                    snapshot = {
+                        "source": "disk_fallback_http_status",
+                        "live_http_status": live_resp.status,
+                        "debug_dir": str(resolved_dir) if resolved_dir else "",
+                        "debug_latest_symlink": str(symlink_path),
+                    }
+    except Exception as exc:
+        snapshot = {
+            "source": "disk_fallback_offline",
+            "live_http_error": str(exc),
+            "debug_dir": str(resolved_dir) if resolved_dir else "",
+            "debug_latest_symlink": str(symlink_path),
+        }
+
+    if resolved_dir and resolved_dir.is_dir():
+        snapshot["resolved_latest_dir"] = str(resolved_dir)
+        latest_idx_file = resolved_dir / "latest_sessions.json"
+        if latest_idx_file.is_file() and "latest_sessions" not in snapshot:
+            try:
+                snapshot["latest_sessions"] = json.loads(
+                    latest_idx_file.read_text(encoding="utf-8", errors="replace")
+                )
+            except Exception:
+                pass
+        session_files = sorted(
+            (p.name for p in resolved_dir.glob("session_*.jsonl")),
+            reverse=True,
+        )
+        snapshot["session_log_files"] = session_files[:20]
+        ais_bridge_log = resolved_dir / "ais_extension_bridge.jsonl"
+        if ais_bridge_log.is_file():
+            lines = ais_bridge_log.read_text(
+                encoding="utf-8", errors="replace"
+            ).splitlines()
+            snapshot["disk_ais_bridge_frames"] = [
+                json.loads(ln) for ln in lines[-limit:] if ln.strip()
+            ]
+    print(json.dumps(snapshot, ensure_ascii=False, indent=2))
+    return 0
+
+
 if __name__ == "__main__":
+    if "--inspect-debug" in sys.argv:
+        raise SystemExit(asyncio.run(inspect_live_debug_state()))
     try:
         asyncio.run(main())
     except AssertionError as exc:
