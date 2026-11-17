@@ -521,7 +521,9 @@ async def inspect_live_debug_state(limit: int = 40) -> int:
                 encoding="utf-8", errors="replace"
             ).splitlines()
             snapshot["disk_ais_bridge_frames"] = [
-                json.loads(ln) for ln in lines[-limit:] if ln.strip()
+                ve._redact_ais_frame_for_api(json.loads(ln))
+                for ln in lines[-limit:]
+                if ln.strip()
             ]
     print(json.dumps(snapshot, ensure_ascii=False, indent=2))
     return 0
