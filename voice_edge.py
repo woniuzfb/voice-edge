@@ -362,11 +362,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49079
 #    VE_OPENCODE_FREE                       "1"                                          L49117
 #    VE_OPENCODE_GO                         "0"                                          L49122
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70278
-#    VE_GEMINI_API_KEYS                     ""                                           L70282
-#    VE_GEMINI_BACKEND                      "auto"                                       L70301
-#    VE_GEMINI_PROJECT_ID                   ""                                           L70308
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55113
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70762
+#    VE_GEMINI_API_KEYS                     ""                                           L70766
+#    VE_GEMINI_BACKEND                      "auto"                                       L70785
+#    VE_GEMINI_PROJECT_ID                   ""                                           L70792
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55324
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1533
@@ -379,15 +379,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71328
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71332
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71336
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71358
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71324
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71314
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71302
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71310
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L71306
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71812
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71816
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71820
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71842
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71808
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71798
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71786
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71794
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L71790
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -53043,6 +53043,95 @@ def _robin_build_device_context_frame(
     return _pb_bytes_field(1008, _pb_bytes_field(2, _pb_bytes_field(2, inner_ext)))
 
 
+def _robin_infer_attachment_file_type(
+    mime_type: str,
+    file_name: str = "",
+) -> int:
+    """Resolve `Assistant_Lamda_FileType` enum value for `UserQuery.f3.f1.f2`."""
+    mime_low = str(mime_type or "").strip().lower()
+    ext = Path(str(file_name or "")).suffix.lower()
+    if mime_low.startswith("image/") or ext in (
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".gif",
+        ".bmp",
+        ".heic",
+        ".heif",
+        ".svg",
+    ):
+        return 1  # FILE_TYPE_IMAGE
+    if mime_low.startswith("video/") or ext in (
+        ".mp4",
+        ".mov",
+        ".webm",
+        ".avi",
+        ".mkv",
+    ):
+        return 2  # FILE_TYPE_VIDEO
+    if mime_low.startswith("audio/") or ext in (
+        ".wav",
+        ".mp3",
+        ".ogg",
+        ".m4a",
+        ".flac",
+        ".aac",
+    ):
+        return 4  # FILE_TYPE_AUDIO
+    if mime_low == "application/json" or ext == ".json":
+        return 5  # FILE_TYPE_JSON
+    if mime_low in (
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+    ) or ext in (".csv", ".xls", ".xlsx"):
+        return 7  # FILE_TYPE_EXCEL
+    if mime_low == "application/zip" or ext == ".zip":
+        return 9  # FILE_TYPE_ZIP
+    if mime_low in (
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ) or ext in (".doc", ".docx"):
+        return 10  # FILE_TYPE_WORD
+    if mime_low == "application/pdf" or ext == ".pdf":
+        return 11  # FILE_TYPE_PDF
+    if mime_low in (
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ) or ext in (".ppt", ".pptx"):
+        return 12  # FILE_TYPE_POWERPOINT
+    if ext == ".odt":
+        return 14  # FILE_TYPE_ODT
+    if ext == ".hwp":
+        return 15  # FILE_TYPE_HWP
+    if ext in (
+        ".py",
+        ".js",
+        ".ts",
+        ".tsx",
+        ".jsx",
+        ".rs",
+        ".go",
+        ".java",
+        ".c",
+        ".cc",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".swift",
+        ".kt",
+        ".rb",
+        ".php",
+        ".sh",
+        ".sql",
+    ):
+        return 16  # FILE_TYPE_CODE
+    if mime_low.startswith("text/") or ext in (".txt", ".md", ".rtf", ".html", ".xml"):
+        return 3  # FILE_TYPE_TEXT
+    return 11  # FILE_TYPE_PDF default
+
+
 @dataclass(frozen=True)
 class _RobinAttachmentSpec:
     """Attachment descriptor for Robin file upload, ProcessFile preprocessing, and UserQuery.f3 encoding."""
@@ -53053,7 +53142,7 @@ class _RobinAttachmentSpec:
     sha256: str = ""
     blob_id: str = ""
     cache_key: str = ""
-    file_type: int = 11
+    file_type: int = 0
     storage_type: int = 1
 
 
@@ -53071,7 +53160,7 @@ def _robin_build_file_attachment_pb(
     Wire layout:
       - field 1: FileAttachment
         - field 1: blob_id (bard-storage path)
-        - field 2: file_type (omitted in ProcessFileRequest, 11 in UserQuery.f3)
+        - field 2: file_type (omitted in ProcessFileRequest; Assistant_Lamda_FileType in UserQuery.f3, e.g. 1=IMAGE, 11=PDF)
         - field 3: mime_type
         - field 4: storage_type (1)
         - field 5: cache_key (returned by ProcessFileResponse.f3.f1)
@@ -53149,14 +53238,19 @@ def _robin_encode_query_attachment(
         blob_id = att.blob_id.strip()
         mime_type = att.mime_type.strip()
         file_name = att.file_name.strip()
-        file_type = int(att.file_type or 11)
+        file_type = int(
+            att.file_type or _robin_infer_attachment_file_type(mime_type, file_name)
+        )
         cache_key = att.cache_key.strip()
         storage_type = int(att.storage_type or 1)
     elif isinstance(att, dict):
         blob_id = str(att.get("blob_id") or "").strip()
         mime_type = str(att.get("mime_type") or "application/pdf").strip()
         file_name = str(att.get("file_name") or att.get("filename") or "").strip()
-        file_type = int(att.get("file_type") or 11)
+        file_type = int(
+            att.get("file_type")
+            or _robin_infer_attachment_file_type(mime_type, file_name)
+        )
         cache_key = str(att.get("cache_key") or "").strip()
         storage_type = int(att.get("storage_type") or 1)
     else:
@@ -54169,8 +54263,13 @@ def _robin_parse_display_state(state_wrapper_raw: bytes) -> _RobinParsedDisplayS
             elif sfno == 9 and swtype == 2 and isinstance(sval, (bytes, bytearray)):
                 raw_s9 = bytes(sval)
                 s9_str = raw_s9.decode("utf-8", errors="replace").strip()
-                if s9_str and not any(
-                    ord(ch) < 32 and ch not in "\r\n\t" for ch in s9_str
+                if (
+                    s9_str
+                    and len(s9_str) <= 200
+                    and "\n" not in s9_str
+                    and "\r" not in s9_str
+                    and not s9_str.startswith("```")
+                    and not any(ord(ch) < 32 and ch not in "\t" for ch in s9_str)
                 ):
                     result.title_s9 = s9_str
             elif sfno == 1 and swtype == 2 and isinstance(sval, (bytes, bytearray)):
@@ -54445,8 +54544,16 @@ class _RobinThoughtProjector:
         self.rows: list[_RobinThoughtRow] = []
         self.revision: int = 0
         self.delivered_char_offset: int = 0
+        self._delivered_row_count: int = 0
         self._projected_seq_count: int = 0
         self._block_start_row_indices: set[int] = {0}
+
+    def current_block_has_delivered_rows(self) -> bool:
+        """Return True if at least one row in the current thought block has already been consumed."""
+        block_start = (
+            max(self._block_start_row_indices) if self._block_start_row_indices else 0
+        )
+        return self._delivered_row_count > block_start
 
     def on_stream_rollover(self) -> None:
         """Flush any unprojected `StateTape` entries before a `resumeTurn` rollover."""
@@ -54523,6 +54630,7 @@ class _RobinThoughtProjector:
             return ""
         delta = full[self.delivered_char_offset :]
         self.delivered_char_offset = len(full)
+        self._delivered_row_count = len(self.rows)
         return delta
 
 
@@ -54558,26 +54666,74 @@ def _robin_find_next_card_marker(text: str, start: int = 0) -> tuple[int, str]:
     return best_idx, best_prefix
 
 
+_ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES: tuple[str, ...] = (
+    "https://www.google.com/search?q=",
+    "http://www.google.com/search?q=",
+)
+_ROBIN_UNWRAPPED_URL_DELIMS = " \t\r\n)>]\"'`<"
+
+
+def _robin_unwrap_google_search_redirect_text(text: str) -> str:
+    """Strip `https://www.google.com/search?q=` wrappers around file/path URLs and restore `%23` line anchors."""
+    if not text or (
+        "https://www.google.com/search?q=" not in text
+        and "http://www.google.com/search?q=" not in text
+    ):
+        return text
+    out: list[str] = []
+    cursor = 0
+    n = len(text)
+    while cursor < n:
+        best_idx = -1
+        best_pfx = ""
+        for pfx in _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES:
+            idx = text.find(pfx, cursor)
+            if idx >= 0 and (best_idx < 0 or idx < best_idx):
+                best_idx = idx
+                best_pfx = pfx
+        if best_idx < 0:
+            out.append(text[cursor:])
+            break
+        out.append(text[cursor:best_idx])
+        target_start = best_idx + len(best_pfx)
+        target_end = target_start
+        while target_end < n and text[target_end] not in _ROBIN_UNWRAPPED_URL_DELIMS:
+            target_end += 1
+        if target_end == target_start:
+            out.append(best_pfx)
+            cursor = target_start
+            continue
+        target_span = (
+            text[target_start:target_end].replace("%23", "#").replace("%20", " ")
+        )
+        out.append(target_span)
+        cursor = target_end
+    return "".join(out)
+
+
 def _robin_strip_action_card_markers(text: str) -> tuple[str, bool]:
-    """Strip every `action_card_content` / `lmdx_content` marker from a *complete* text.
+    """Strip every `action_card_content` / `lmdx_content` marker and unwrap Google search redirects from a *complete* text.
 
     Returns `(clean_text, seen)`. Only use this on whole answers (terminal snapshots);
     incremental deltas go through `_RobinActionCardFilter` so a marker split across two
     chunks cannot leak its prefix.
     """
-    if not any(m in text for m in GEMINI_ROBIN_ACTION_CARD_MARKERS):
-        return text, False
+    unwrapped = _robin_unwrap_google_search_redirect_text(text)
+    if not any(m in unwrapped for m in GEMINI_ROBIN_ACTION_CARD_MARKERS):
+        return unwrapped, False
     out: list[str] = []
     seen = False
     cursor = 0
     while True:
-        hit, matched_prefix = _robin_find_next_card_marker(text, cursor)
+        hit, matched_prefix = _robin_find_next_card_marker(unwrapped, cursor)
         if hit < 0:
-            out.append(text[cursor:])
+            out.append(unwrapped[cursor:])
             break
-        out.append(text[cursor:hit])
+        out.append(unwrapped[cursor:hit])
         cursor = hit + len(matched_prefix)
-        while cursor < len(text) and (text[cursor].isalnum() or text[cursor] in "-_"):
+        while cursor < len(unwrapped) and (
+            unwrapped[cursor].isalnum() or unwrapped[cursor] in "-_"
+        ):
             cursor += 1
         seen = True
     return "".join(out), seen
@@ -54597,7 +54753,7 @@ def _robin_clean_action_card_text(text: str) -> str:
 
 
 class _RobinActionCardFilter:
-    """Strip `action_card_content` and `lmdx_content` markers from streamed answer deltas.
+    """Strip `action_card_content` and `lmdx_content` markers and `https://www.google.com/search?q=` from streamed answer deltas.
 
     Deltas arrive in arbitrary slices, so a marker can straddle two chunks: a trailing
     slice that could still grow into a marker is held back until the next delta resolves
@@ -54607,7 +54763,58 @@ class _RobinActionCardFilter:
     def __init__(self) -> None:
         self._pending = ""
         self._in_card_id = False
+        self._in_unwrapped_url = False
         self.seen = False
+
+    def _filter_unwrapped_url_chunk(self, chunk: str, *, is_flush: bool = False) -> str:
+        if not chunk:
+            return ""
+        out: list[str] = []
+        i = 0
+        n = len(chunk)
+        while i < n:
+            if not self._in_unwrapped_url:
+                hit = -1
+                hit_pfx = ""
+                for pfx in _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES:
+                    idx = chunk.find(pfx, i)
+                    if idx >= 0 and (hit < 0 or idx < hit):
+                        hit = idx
+                        hit_pfx = pfx
+                if hit < 0:
+                    out.append(chunk[i:])
+                    break
+                out.append(chunk[i:hit])
+                after_pfx = hit + len(hit_pfx)
+                if after_pfx == n:
+                    if is_flush:
+                        out.append(hit_pfx)
+                    else:
+                        self._pending = hit_pfx + self._pending
+                    break
+                if chunk[after_pfx] in _ROBIN_UNWRAPPED_URL_DELIMS:
+                    out.append(hit_pfx)
+                    i = after_pfx
+                    continue
+                i = after_pfx
+                self._in_unwrapped_url = True
+            else:
+                end_i = i
+                while end_i < n and chunk[end_i] not in _ROBIN_UNWRAPPED_URL_DELIMS:
+                    end_i += 1
+                span = chunk[i:end_i]
+                if not is_flush and end_i == n:
+                    if span.endswith("%"):
+                        self._pending = "%" + self._pending
+                        span = span[:-1]
+                    elif span.endswith("%2"):
+                        self._pending = "%2" + self._pending
+                        span = span[:-2]
+                out.append(span.replace("%23", "#").replace("%20", " "))
+                i = end_i
+                if i < n:
+                    self._in_unwrapped_url = False
+        return "".join(out)
 
     def feed(self, delta: str) -> str:
         if not delta:
@@ -54635,31 +54842,35 @@ class _RobinActionCardFilter:
                 self._in_card_id = True
                 break
         tail = buf[cursor:]
-        max_prefix_len = max(len(m) for m in GEMINI_ROBIN_ACTION_CARD_MARKERS)
+        all_prefixes = (
+            *GEMINI_ROBIN_ACTION_CARD_MARKERS,
+            *_ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES,
+        )
+        max_prefix_len = max(len(m) for m in all_prefixes)
         hold = 0
         for size in range(min(len(tail), max_prefix_len - 1), 0, -1):
             suffix = tail[-size:]
-            if any(
-                m.startswith(suffix) and len(m) > size
-                for m in GEMINI_ROBIN_ACTION_CARD_MARKERS
-            ):
+            if any(m.startswith(suffix) and len(m) > size for m in all_prefixes):
                 hold = size
                 break
         if hold:
             self._pending = tail[-hold:]
             tail = tail[:-hold]
         out.append(tail)
-        return "".join(out)
+        return self._filter_unwrapped_url_chunk("".join(out), is_flush=False)
 
     def flush(self) -> str:
         if not self._pending:
+            self._in_unwrapped_url = False
             return ""
         rem = self._pending
         self._pending = ""
         clean, seen = _robin_strip_action_card_markers(rem)
         if seen:
             self.seen = True
-        return clean
+        res = self._filter_unwrapped_url_chunk(clean, is_flush=True)
+        self._in_unwrapped_url = False
+        return res
 
 
 class _RobinAnswerProjector:
@@ -58326,11 +58537,11 @@ def _robin_flatten_messages_to_query(
 
 
 def _robin_strip_resolvable_dsh_file_handles(text: str) -> str:
-    """Strip DSH `[File "..." (... bytes, sha256:...): verbatim read-only copy saved at "..."]` handles whose local file is attached natively."""
-    if not text or "[File " not in text:
+    """Strip DSH `[File "..." (... bytes, sha256:...): ...]` and `Image "..." (sha256:...); ... before editing.` handles whose attachment is sent natively via `UserQuery.f3`."""
+    if not text or ("[File " not in text and 'Image "' not in text):
         return text
 
-    def _replace(match: re.Match[str]) -> str:
+    def _replace_file(match: re.Match[str]) -> str:
         saved_path_str = (match.group(4) or "").strip()
         if not saved_path_str:
             return match.group(0)
@@ -58344,13 +58555,14 @@ def _robin_strip_resolvable_dsh_file_handles(text: str) -> str:
             pass
         return match.group(0)
 
-    cleaned = _DSH_FILE_HANDLE_RE.sub(_replace, text)
+    cleaned = _DSH_FILE_HANDLE_RE.sub(_replace_file, text)
+    cleaned = _DSH_IMAGE_HANDLE_INLINE_RE.sub("", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
     return cleaned
 
 
 def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
-    """Extract file/media attachments from one `role == "user"` message (including DSH `[File ...]` handles and OpenAI multimodal blocks)."""
+    """Extract file/media attachments from one `role == "user"` message (including DSH `[File ...]`, `Image "..."` handles, and OpenAI multimodal blocks)."""
     if (
         not isinstance(msg, dict)
         or str(msg.get("role") or "").strip().lower() != "user"
@@ -58358,18 +58570,35 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
         return []
     out: list[_RobinAttachmentSpec] = []
     seen_keys: set[tuple[str, str]] = set()
+    seen_sha256: set[str] = set()
+    pending_img_handles: list[tuple[str, str, str]] = []
 
     def _add_spec(spec: _RobinAttachmentSpec) -> None:
+        resolved_type = int(
+            spec.file_type
+            or _robin_infer_attachment_file_type(spec.mime_type, spec.file_name)
+        )
+        if resolved_type != spec.file_type:
+            spec = replace(spec, file_type=resolved_type)
         dedup_key = (spec.sha256 or spec.blob_id, spec.file_name)
         if (spec.raw_bytes or spec.blob_id) and dedup_key not in seen_keys:
+            if spec.sha256 and spec.sha256 in seen_sha256:
+                return
             seen_keys.add(dedup_key)
+            if spec.sha256:
+                seen_sha256.add(spec.sha256)
             out.append(spec)
 
     def _scan_dsh_handles_in_text(raw_t: str) -> None:
-        if not raw_t or "[File " not in raw_t:
+        if not raw_t or ("[File " not in raw_t and 'Image "' not in raw_t):
             return
         clean_t, _ = _dsh_split_user_text_and_context(raw_t)
         target_t = clean_t or raw_t
+        for m_img in _DSH_IMAGE_HANDLE_INLINE_RE.finditer(target_t):
+            img_name = (m_img.group(1) or "").strip()
+            img_sha = (m_img.group(2) or "").strip().lower()
+            img_path = (m_img.group(3) or "").strip()
+            pending_img_handles.append((img_name, img_sha, img_path))
         for m in _DSH_FILE_HANDLE_RE.finditer(target_t):
             file_name = (m.group(1) or "").strip()
             saved_path_str = (m.group(4) or "").strip()
@@ -58396,27 +58625,82 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                     mime_type=mime,
                     raw_bytes=raw_bytes,
                     sha256=digest,
-                    file_type=11,
+                    file_type=_robin_infer_attachment_file_type(mime, resolved_name),
                 )
             )
+
+    def _flush_unconsumed_img_handles() -> None:
+        for img_name, _img_sha, img_path in pending_img_handles:
+            if not img_path:
+                continue
+            try:
+                p = Path(img_path)
+                if not p.is_file():
+                    continue
+                size = p.stat().st_size
+                if size <= 0 or size > GEMINI_ROBIN_UPLOAD_MAX_BYTES:
+                    continue
+                raw_bytes = p.read_bytes()
+            except OSError:
+                continue
+            digest = hashlib.sha256(raw_bytes).hexdigest()
+            if digest in seen_sha256:
+                continue
+            resolved_name = img_name or p.name or "image.webp"
+            mime = _gemini_guess_file_mime(resolved_name, "image/webp")
+            if raw_bytes[:4] == b"RIFF" and raw_bytes[8:12] == b"WEBP":
+                mime = "image/webp"
+            elif raw_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+                mime = "image/png"
+            elif raw_bytes.startswith(b"\xff\xd8\xff"):
+                mime = "image/jpeg"
+            elif raw_bytes.startswith((b"GIF87a", b"GIF89a")):
+                mime = "image/gif"
+            _add_spec(
+                _RobinAttachmentSpec(
+                    file_name=resolved_name,
+                    mime_type=mime,
+                    raw_bytes=raw_bytes,
+                    sha256=digest,
+                    file_type=1,
+                )
+            )
+        pending_img_handles.clear()
+
+    def _consume_matching_img_handle_name(digest: str) -> str:
+        for idx_h, (h_name, h_sha, _h_path) in enumerate(pending_img_handles):
+            if h_sha and digest and h_sha == digest.lower():
+                pending_img_handles.pop(idx_h)
+                return h_name
+        if pending_img_handles:
+            h_name, _, _ = pending_img_handles.pop(0)
+            return h_name
+        return ""
 
     content = msg.get("content")
     if isinstance(content, str):
         _scan_dsh_handles_in_text(content)
+        _flush_unconsumed_img_handles()
         return out
     if not isinstance(content, list):
         return out
 
+    # Pre-scan all text blocks so `Image "<name>" (sha256:...)` handles can supply original filenames regardless of block ordering.
     for block in content:
         if isinstance(block, str):
             _scan_dsh_handles_in_text(block)
-            continue
+        elif isinstance(block, dict):
+            btype_pre = str(block.get("type") or "text").strip().lower()
+            if btype_pre in ("text", "input_text"):
+                txt_pre = str(block.get("text") or block.get("content") or "")
+                _scan_dsh_handles_in_text(txt_pre)
+
+    for block in content:
         if not isinstance(block, dict):
             continue
         btype = str(block.get("type") or "text").strip().lower()
         if btype in ("text", "input_text"):
-            txt = str(block.get("text") or block.get("content") or "")
-            _scan_dsh_handles_in_text(txt)
+            continue
         elif btype in ("image_url", "input_image"):
             img_val = block.get("image_url")
             url_str = (
@@ -58432,6 +58716,8 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                 except Exception:
                     raw_bytes = b""
                 if 0 < len(raw_bytes) <= GEMINI_ROBIN_UPLOAD_MAX_BYTES:
+                    digest = hashlib.sha256(raw_bytes).hexdigest()
+                    handle_fname = _consume_matching_img_handle_name(digest)
                     ext = ".png"
                     if "jpeg" in mime or "jpg" in mime:
                         ext = ".jpg"
@@ -58445,6 +58731,7 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                         or (
                             img_val.get("filename") if isinstance(img_val, dict) else ""
                         )
+                        or handle_fname
                         or f"image{ext}"
                     ).strip()
                     _add_spec(
@@ -58452,8 +58739,8 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                             file_name=fname,
                             mime_type=mime,
                             raw_bytes=raw_bytes,
-                            sha256=hashlib.sha256(raw_bytes).hexdigest(),
-                            file_type=11,
+                            sha256=digest,
+                            file_type=1,
                         )
                     )
             elif url_str.startswith(("file://", "/")):
@@ -58469,14 +58756,17 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                         and 0 < p.stat().st_size <= GEMINI_ROBIN_UPLOAD_MAX_BYTES
                     ):
                         raw_bytes = p.read_bytes()
-                        mime = _gemini_guess_file_mime(p.name, "image/png")
+                        digest = hashlib.sha256(raw_bytes).hexdigest()
+                        handle_fname = _consume_matching_img_handle_name(digest)
+                        resolved_name = handle_fname or p.name
+                        mime = _gemini_guess_file_mime(resolved_name, "image/png")
                         _add_spec(
                             _RobinAttachmentSpec(
-                                file_name=p.name,
+                                file_name=resolved_name,
                                 mime_type=mime,
                                 raw_bytes=raw_bytes,
-                                sha256=hashlib.sha256(raw_bytes).hexdigest(),
-                                file_type=11,
+                                sha256=digest,
+                                file_type=1,
                             )
                         )
                 except OSError:
@@ -58501,7 +58791,7 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                             mime_type=mime,
                             raw_bytes=raw_bytes,
                             sha256=hashlib.sha256(raw_bytes).hexdigest(),
-                            file_type=11,
+                            file_type=4,
                         )
                     )
         elif btype in ("file", "input_file"):
@@ -58523,13 +58813,17 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                     fobj.get("mime_type")
                     or _gemini_guess_file_mime(fname, "application/pdf")
                 ).strip()
+                resolved_name = fname or "attachment.pdf"
                 _add_spec(
                     _RobinAttachmentSpec(
-                        file_name=fname or "attachment.pdf",
+                        file_name=resolved_name,
                         mime_type=mime,
                         blob_id=blob_id,
                         cache_key=cache_key,
-                        file_type=int(fobj.get("file_type") or 11),
+                        file_type=int(
+                            fobj.get("file_type")
+                            or _robin_infer_attachment_file_type(mime, resolved_name)
+                        ),
                     )
                 )
             elif fdata:
@@ -58556,7 +58850,12 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                             mime_type=mime,
                             raw_bytes=raw_bytes,
                             sha256=hashlib.sha256(raw_bytes).hexdigest(),
-                            file_type=int(fobj.get("file_type") or 11),
+                            file_type=int(
+                                fobj.get("file_type")
+                                or _robin_infer_attachment_file_type(
+                                    mime, resolved_name
+                                )
+                            ),
                         )
                     )
             elif fpath:
@@ -58580,11 +58879,17 @@ def _robin_extract_message_attachments(msg: Any) -> list[_RobinAttachmentSpec]:
                                 mime_type=mime,
                                 raw_bytes=raw_bytes,
                                 sha256=hashlib.sha256(raw_bytes).hexdigest(),
-                                file_type=int(fobj.get("file_type") or 11),
+                                file_type=int(
+                                    fobj.get("file_type")
+                                    or _robin_infer_attachment_file_type(
+                                        mime, resolved_name
+                                    )
+                                ),
                             )
                         )
                 except OSError:
                     pass
+    _flush_unconsumed_img_handles()
     return out
 
 
@@ -61060,6 +61365,14 @@ def _robin_row_to_session_state(
     binding = str(row.get("binding_state") or "provisional")
     if binding == "committed" and not resp_id:
         binding = "provisional"
+    raw_row_title = str(row.get("title") or "").strip()
+    if (
+        len(raw_row_title) > 200
+        or "\n" in raw_row_title
+        or "\r" in raw_row_title
+        or raw_row_title.startswith("```")
+    ):
+        raw_row_title = ""
     return _RobinSessionState(
         session_key=sk,
         client_session_id=str(row.get("client_session_id") or default_client_sid or sk),
@@ -61070,7 +61383,7 @@ def _robin_row_to_session_state(
         parent_request_id=str(row.get("parent_req_id") or ""),
         parent_response_id=resp_id,
         binding_state=binding,
-        title=str(row.get("title") or ""),
+        title=raw_row_title,
         dsh_sandbox_mode=str(row.get("dsh_sandbox_mode") or "workspace-write"),
         dsh_approval_policy=str(row.get("dsh_approval_policy") or "ask"),
         connected_folders=folders if isinstance(folders, list) else [],
@@ -62386,7 +62699,10 @@ def _robin_lookup_continuation(
                     eff_synced_hash = parent_state.synced_turns_hash
                 fork_ctx_tokens = (
                     parent_state.context_tokens
-                    if eff_synced_cnt == parent_state.synced_turn_count
+                    if (
+                        eff_synced_cnt == parent_state.synced_turn_count
+                        and eff_synced_hash == parent_state.synced_turns_hash
+                    )
                     else 0
                 )
                 fork_state = _RobinSessionState(
@@ -62447,6 +62763,46 @@ def _robin_lookup_continuation(
                 if "::fork::" not in matched.session_key:
                     matched.session_key = full_key
                     matched.client_session_id = client_sid
+            if (
+                "::fork::call_ve_fork_" in matched.session_key
+                and matched.conversation_id
+                and matched.conv_base_msg_idx > 0
+            ):
+                same_conv_bases = [
+                    c.conv_base_msg_idx
+                    for c in candidates
+                    if c.conversation_id == matched.conversation_id
+                    and 0 <= c.conv_base_msg_idx < matched.conv_base_msg_idx
+                ]
+                if same_conv_bases:
+                    matched.conv_base_msg_idx = min(same_conv_bases)
+                    matched.context_tokens = 0
+                    _GEMINI_DSH_STORE.upsert_session(
+                        session_key=matched.session_key,
+                        client_session_id=matched.client_session_id,
+                        principal_id=matched.principal_id,
+                        boot_key=matched.boot_key,
+                        full_key=matched.full_key,
+                        conversation_id=matched.conversation_id,
+                        parent_req_id=matched.parent_request_id,
+                        parent_resp_id=matched.parent_response_id,
+                        title=matched.title,
+                        dsh_sandbox_mode=matched.dsh_sandbox_mode,
+                        dsh_approval_policy=matched.dsh_approval_policy,
+                        connected_folders=matched.connected_folders,
+                        active_run_id=matched.active_run_id,
+                        owner_epoch=matched.owner_epoch,
+                        binding_state=matched.binding_state,
+                        synced_turn_count=matched.synced_turn_count,
+                        synced_turns_hash=matched.synced_turns_hash,
+                        interrupted_req_id=matched.interrupted_req_id,
+                        interrupted_resp_id=matched.interrupted_resp_id,
+                        interrupted_turn_count=matched.interrupted_turn_count,
+                        interrupted_turns_hash=matched.interrupted_turns_hash,
+                        conv_base_msg_idx=matched.conv_base_msg_idx,
+                        context_tokens=matched.context_tokens,
+                        compacted=matched.compacted,
+                    )
             _robin_bind_session_in_cache(matched)
             return matched
 
@@ -62535,6 +62891,53 @@ def _robin_lookup_continuation(
                 return chosen_int, trailing_idx, True
             _promote_interrupted_turn(chosen_int)
             return _finalize_matched_branch(chosen_int), trailing_idx, False
+
+        # 2c. Same explicit fork branch recovery (`session_key == explicit_fork_key` and `synced_turn_count == prior_cnt`):
+        #     When `explicit_fork_key` (`::fork::call_ve_fork_*`) already resolved its fork choice and is
+        #     continuing the exact same branch at the same turn count, recover it directly even if
+        #     `synced_turns_hash` drifted across a script update/restart (e.g., canonicalization or
+        #     `search?q=` redirect-stripping rules changed on historical assistant text), before Step 4
+        #     prefix matching can fall back to the compacted root session (`compacted=True`).
+        if explicit_fork_key and prior_cnt > 0:
+            same_fork_cand = next(
+                (
+                    c
+                    for c in candidates
+                    if c.session_key == explicit_fork_key
+                    and c.conversation_id
+                    and c.synced_turn_count == prior_cnt
+                ),
+                None,
+            )
+            if same_fork_cand is not None:
+                same_fork_cand.synced_turns_hash = prior_hash
+                _GEMINI_DSH_STORE.upsert_session(
+                    session_key=same_fork_cand.session_key,
+                    client_session_id=same_fork_cand.client_session_id,
+                    principal_id=same_fork_cand.principal_id,
+                    boot_key=same_fork_cand.boot_key,
+                    full_key=same_fork_cand.full_key,
+                    conversation_id=same_fork_cand.conversation_id,
+                    parent_req_id=same_fork_cand.parent_request_id,
+                    parent_resp_id=same_fork_cand.parent_response_id,
+                    title=same_fork_cand.title,
+                    dsh_sandbox_mode=same_fork_cand.dsh_sandbox_mode,
+                    dsh_approval_policy=same_fork_cand.dsh_approval_policy,
+                    connected_folders=same_fork_cand.connected_folders,
+                    active_run_id=same_fork_cand.active_run_id,
+                    owner_epoch=same_fork_cand.owner_epoch,
+                    binding_state=same_fork_cand.binding_state,
+                    synced_turn_count=same_fork_cand.synced_turn_count,
+                    synced_turns_hash=same_fork_cand.synced_turns_hash,
+                    interrupted_req_id=same_fork_cand.interrupted_req_id,
+                    interrupted_resp_id=same_fork_cand.interrupted_resp_id,
+                    interrupted_turn_count=same_fork_cand.interrupted_turn_count,
+                    interrupted_turns_hash=same_fork_cand.interrupted_turns_hash,
+                    conv_base_msg_idx=same_fork_cand.conv_base_msg_idx,
+                    context_tokens=same_fork_cand.context_tokens,
+                    compacted=same_fork_cand.compacted,
+                )
+                return _finalize_matched_branch(same_fork_cand), trailing_idx, False
 
         # 3. Legacy fallback when no branch in the lineage has `synced_turn_count > 0` yet
         if all(c.synced_turn_count <= 0 for c in candidates):
@@ -66790,10 +67193,12 @@ class _RobinStreamDecoder:
         self.fallback_attribution = ""
 
     def _resolve_server_model_banner(self) -> str:
-        """Return the standalone server model attribution text from `f30` (never guessed from `model_id`)."""
-        return str(self.run.attribution or self.fallback_attribution or "").strip()
+        """Return the standalone authoritative server model attribution text from `f30` (never guessed from `model_id`)."""
+        return str(self.run.attribution or "").strip()
 
-    def _maybe_emit_model_attribution_chunk(self) -> list[dict[str, Any]]:
+    def _maybe_emit_model_attribution_chunk(
+        self, *, leading_newline: bool = False
+    ) -> list[dict[str, Any]]:
         """Emit a separate initial `reasoning_content` chunk showing the server-returned model attribution."""
         if self.model_attribution_emitted:
             return []
@@ -66801,7 +67206,8 @@ class _RobinStreamDecoder:
         if not banner:
             return []
         self.model_attribution_emitted = True
-        return [self._make_chunk({"reasoning_content": f"{banner}\n\n"})]
+        prefix = "\n\n" if leading_newline else ""
+        return [self._make_chunk({"reasoning_content": f"{prefix}{banner}\n\n"})]
 
     def _make_chunk(
         self,
@@ -66878,11 +67284,13 @@ class _RobinStreamDecoder:
         if parsed["attribution"]:
             self.run.attribution = str(parsed["attribution"]).strip()
         elif (
-            parsed.get("fallback_attribution")
+            (parsed.get("fallback_attribution") or self.fallback_attribution)
             and not self.run.attribution
             and parsed["is_completed"]
         ):
-            self.run.attribution = parsed["fallback_attribution"]
+            self.run.attribution = str(
+                parsed.get("fallback_attribution") or self.fallback_attribution
+            ).strip()
         if parsed.get("completion_status"):
             self.completion_status = int(parsed["completion_status"])
 
@@ -66976,10 +67384,11 @@ class _RobinStreamDecoder:
                 self.run.state_tape.append_live(synth_l, response_id=self.response_id)
 
         # 3. Project thought delta from ThoughtProjector (preceded by standalone server model chunk).
-        # Hold status-only pre-candidate live states while `self.run.attribution` is not yet received
-        # and the frame only carries pre-candidate `fallback_attribution` (`response_id == ""` and no
-        # `response_bard_mode_id` / `resolved_mode_category`), so the authoritative candidate frame's
-        # `model_attribution_name` (`f30`) is emitted first across any UI locale.
+        # Hold only a single initial pre-candidate text thought row when no tool items, tool calls,
+        # or rollovers have occurred yet, so if `rc_...` arrives on the very next frame its `f30`
+        # attribution banner is emitted first; as soon as a 2nd thought row, a tool status item,
+        # a stream rollover (`eod=True`), or an ERT/Relay tool call arrives, stream thoughts in real time.
+        projected_rows = self.run.thought_projector.project()
         awaiting_real_server_attribution = (
             not self.model_attribution_emitted
             and not self.run.attribution
@@ -66990,21 +67399,35 @@ class _RobinStreamDecoder:
             and not parsed["eod"]
             and not parsed["inline_tool_calls"]
             and not parsed["legacy_thoughts"]
+            and self.tool_call_count == 0
+            and not self.pending_tool_calls
+            and self.step_announced_count == 0
+            and len(projected_rows) <= 1
+            and not any(r.kind == "tool" for r in projected_rows)
         )
+        had_block_rows = self.run.thought_projector.current_block_has_delivered_rows()
         thought_delta = (
             ""
             if awaiting_real_server_attribution
             else self.run.thought_projector.consume_delta()
         )
         if thought_delta:
-            out.extend(self._maybe_emit_model_attribution_chunk())
-            self.emitted_reasoning_chars += len(thought_delta)
-            self.emitted_reasoning_text += thought_delta
-            out.append(self._make_chunk({"reasoning_content": thought_delta}))
+            attr_chunks = self._maybe_emit_model_attribution_chunk(
+                leading_newline=had_block_rows
+            )
+            if attr_chunks and had_block_rows:
+                thought_delta = thought_delta.lstrip(" \n")
+            out.extend(attr_chunks)
+            if thought_delta:
+                self.emitted_reasoning_chars += len(thought_delta)
+                self.emitted_reasoning_text += thought_delta
+                out.append(self._make_chunk({"reasoning_content": thought_delta}))
         elif (
             parsed["answer_text"] or self.run.attribution
         ) and not self.model_attribution_emitted:
-            out.extend(self._maybe_emit_model_attribution_chunk())
+            out.extend(
+                self._maybe_emit_model_attribution_chunk(leading_newline=had_block_rows)
+            )
 
         # 4. Project answer delta from AnswerProjector
         if parsed["answer_text"]:
@@ -67152,16 +67575,27 @@ class _RobinStreamDecoder:
         """
         out: list[dict[str, Any]] = []
         if invocations:
+            had_block_rows = (
+                self.run.thought_projector.current_block_has_delivered_rows()
+            )
             pending_thought = self.run.thought_projector.consume_delta()
             if pending_thought:
-                out.extend(self._maybe_emit_model_attribution_chunk())
-                self.emitted_reasoning_chars += len(pending_thought)
-                self.emitted_reasoning_text += pending_thought
-                out.append(self._make_chunk({"reasoning_content": pending_thought}))
-            elif (
-                self.run.attribution or self.fallback_attribution
-            ) and not self.model_attribution_emitted:
-                out.extend(self._maybe_emit_model_attribution_chunk())
+                attr_chunks = self._maybe_emit_model_attribution_chunk(
+                    leading_newline=had_block_rows
+                )
+                if attr_chunks and had_block_rows:
+                    pending_thought = pending_thought.lstrip(" \n")
+                out.extend(attr_chunks)
+                if pending_thought:
+                    self.emitted_reasoning_chars += len(pending_thought)
+                    self.emitted_reasoning_text += pending_thought
+                    out.append(self._make_chunk({"reasoning_content": pending_thought}))
+            elif self.run.attribution and not self.model_attribution_emitted:
+                out.extend(
+                    self._maybe_emit_model_attribution_chunk(
+                        leading_newline=had_block_rows
+                    )
+                )
         dsh_tool_deltas: list[dict[str, Any]] = []
         for inv in invocations:
             idx = len(self.pending_tool_calls)
@@ -67749,6 +68183,10 @@ class _RobinMuxResponse(_RobinHTTP2Response):
         self._schedule_release(reset=reset and not self._state.ended)
 
 
+_ROBIN_HTTP2_READER_TASKS: set[asyncio.Task[Any]] = set()
+_ROBIN_HTTP2_MUX_LOCKS: dict[int, asyncio.Lock] = {}
+
+
 class _RobinHTTP2Mux:
     """Shared TLS/HTTP-2 connection multiplexing ProcessQuery and ExecuteRemoteTools."""
 
@@ -67767,9 +68205,31 @@ class _RobinHTTP2Mux:
         self.pool_key = pool_key
         self.streams: dict[int, _RobinHTTP2StreamState] = {}
         self.closed = False
+        self._loop = asyncio.get_running_loop()
         self._lock = asyncio.Lock()
         self._window_event = asyncio.Event()
         self._reader_task = asyncio.create_task(self._read_loop())
+        _ROBIN_HTTP2_READER_TASKS.add(self._reader_task)
+        self._reader_task.add_done_callback(_ROBIN_HTTP2_READER_TASKS.discard)
+
+    def close_nowait(self) -> None:
+        """Mark the mux closed, close the underlying transport, and cancel `_reader_task` cleanly."""
+        self.closed = True
+        if self.pool_key and _ROBIN_HTTP2_MUXES.get(self.pool_key) is self:
+            _ROBIN_HTTP2_MUXES.pop(self.pool_key, None)
+        try:
+            self.writer.close()
+        except OSError:
+            pass
+        if not self._reader_task.done():
+            try:
+                cur_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                cur_loop = None
+            if cur_loop is self._loop:
+                self._reader_task.cancel()
+            elif not self._loop.is_closed():
+                self._loop.call_soon_threadsafe(self._reader_task.cancel)
 
     async def _read_loop(self) -> None:
         try:
@@ -68057,6 +68517,7 @@ class _RobinHTTP2Mux:
         return bytes(out)
 
     async def release_stream(self, stream_id: int, *, reset: bool) -> None:
+        should_close_displaced = False
         async with self._lock:
             state = self.streams.pop(stream_id, None)
             if state is None:
@@ -68072,11 +68533,20 @@ class _RobinHTTP2Mux:
                 try:
                     self.conn.reset_stream(stream_id)
                 except H2Error:
-                    return
-                try:
-                    await self._flush_locked()
-                except OSError:
                     pass
+                else:
+                    try:
+                        await self._flush_locked()
+                    except OSError:
+                        pass
+            if (
+                not self.streams
+                and self.pool_key is not None
+                and _ROBIN_HTTP2_MUXES.get(self.pool_key) is not self
+            ):
+                should_close_displaced = True
+        if should_close_displaced:
+            self.close_nowait()
 
 
 _ROBIN_HTTP2_MUXES: dict[tuple[str, str], _RobinHTTP2Mux] = {}
@@ -68084,30 +68554,44 @@ _ROBIN_HTTP2_MUXES: dict[tuple[str, str], _RobinHTTP2Mux] = {}
 
 async def _robin_get_http2_mux(host: str, headers: dict[str, str]) -> _RobinHTTP2Mux:
     key = (host, headers.get("Authorization") or "")
-    existing = _ROBIN_HTTP2_MUXES.get(key)
-    if existing is not None and not existing.closed:
-        return existing
-    context = ssl.create_default_context()
-    context.set_alpn_protocols(["h2"])
-    reader, writer = await asyncio.wait_for(
-        asyncio.open_connection(host, 443, ssl=context, server_hostname=host),
-        GEMINI_CONNECT_TIMEOUT_SECONDS,
-    )
-    ssl_object = writer.get_extra_info("ssl_object")
-    if ssl_object is None or ssl_object.selected_alpn_protocol() != "h2":
-        writer.close()
-        raise GeminiStreamError(
-            "RobinService requires HTTP/2 but ALPN negotiated something else"
+    cur_loop = asyncio.get_running_loop()
+    loop_id = id(cur_loop)
+    mux_lock = _ROBIN_HTTP2_MUX_LOCKS.get(loop_id)
+    if mux_lock is None:
+        mux_lock = asyncio.Lock()
+        _ROBIN_HTTP2_MUX_LOCKS[loop_id] = mux_lock
+    async with mux_lock:
+        existing = _ROBIN_HTTP2_MUXES.get(key)
+        if existing is not None:
+            if (
+                not existing.closed
+                and existing._loop is cur_loop
+                and not existing._reader_task.done()
+            ):
+                return existing
+            if not existing.streams or existing._loop is not cur_loop:
+                existing.close_nowait()
+        context = ssl.create_default_context()
+        context.set_alpn_protocols(["h2"])
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, 443, ssl=context, server_hostname=host),
+            GEMINI_CONNECT_TIMEOUT_SECONDS,
         )
-    conn = h2.connection.H2Connection()
-    conn.initiate_connection()
-    outbound = conn.data_to_send()
-    if outbound:
-        writer.write(outbound)
-        await writer.drain()
-    mux = _RobinHTTP2Mux(host, reader, writer, conn, pool_key=key)
-    _ROBIN_HTTP2_MUXES[key] = mux
-    return mux
+        ssl_object = writer.get_extra_info("ssl_object")
+        if ssl_object is None or ssl_object.selected_alpn_protocol() != "h2":
+            writer.close()
+            raise GeminiStreamError(
+                "RobinService requires HTTP/2 but ALPN negotiated something else"
+            )
+        conn = h2.connection.H2Connection()
+        conn.initiate_connection()
+        outbound = conn.data_to_send()
+        if outbound:
+            writer.write(outbound)
+            await writer.drain()
+        mux = _RobinHTTP2Mux(host, reader, writer, conn, pool_key=key)
+        _ROBIN_HTTP2_MUXES[key] = mux
+        return mux
 
 
 async def _robin_post_http2_grpc(
@@ -73482,8 +73966,10 @@ class GeminiHTTPClient:
                     status_code=last_status if last_status >= 400 else 502,
                 ),
             )
-        except Exception as exc:
+        except BaseException as exc:
             await session.close()
+            if not isinstance(exc, Exception):
+                raise
             return (
                 None,
                 JSONResponse(
@@ -93145,6 +93631,134 @@ def test_gemini_model_spec_and_envelopes():
             f"expected exact server attribution {dynamic_server_attr!r}, got {rc_deltas!r}"
         )
 
+    # Verify mid-turn rollover (`eod: true` with `is_completed: false`) + early ERT tool call
+    # arriving BEFORE the first `rc_...` candidate frame never leaks status-frame `"Used Legacy model"`:
+    rollover_status_frame = _pb_bytes_field(
+        1003,
+        _pb_bytes_field(
+            1,
+            _pb_bytes_field(
+                2,
+                _pb_bytes_field(1, "c_roll_01") + _pb_bytes_field(2, "r_roll_01"),
+            )
+            + _pb_bytes_field(30, b"Used Legacy model"),
+        )
+        + _pb_varint_field(2, 1),
+    )
+    ert_early_tool_frame = _pb_bytes_field(
+        2,
+        _pb_bytes_field(
+            1,
+            _pb_bytes_field(1, b"client:view_file")
+            + _pb_bytes_field(2, b"call_early_ert_01")
+            + _pb_bytes_field(
+                3,
+                _pb_encode_struct({"AbsolutePath": f"{_SELFTEST_WORKSPACE}/test.py"}),
+            ),
+        )
+        + _pb_bytes_field(5, b"c_roll_01"),
+    )
+    post_rollover_rc_frame = _pb_bytes_field(
+        1003,
+        _pb_bytes_field(
+            1,
+            _pb_bytes_field(
+                1,
+                _pb_bytes_field(1, "rc_roll_01")
+                + _pb_bytes_field(
+                    2,
+                    _pb_bytes_field(
+                        1,
+                        "See [test.py](https://www.google.com/search?q=file:///w/workspace/test.py%23L10-L20).",
+                    ),
+                )
+                + _pb_varint_field(19, 2),
+            )
+            + _pb_bytes_field(
+                2,
+                _pb_bytes_field(1, "c_roll_01") + _pb_bytes_field(2, "r_roll_01"),
+            )
+            + _pb_bytes_field(
+                6,
+                _pb_bytes_field(
+                    13,
+                    _pb_bytes_field(4, "Post-rollover thought.\n\n\n")
+                    + _pb_bytes_field(
+                        9, ("```user\n" + ("long prompt " * 30)).encode("utf-8")
+                    ),
+                ),
+            )
+            + _pb_bytes_field(25, "95a4c0abcba24364")
+            + _pb_bytes_field(30, b"Used 4 Argon model")
+            + _pb_varint_field(41, 8),
+        )
+        + _pb_varint_field(2, 1),
+    )
+    dec_roll = _RobinStreamDecoder(
+        "chatcmpl-roll-01",
+        1700000000,
+        "gemini:app/gemini-4-carbon-medium",
+        dsh_tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "read",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"file_path": {"type": "string"}},
+                    },
+                },
+            }
+        ],
+    )
+    assert dec_roll.feed_bytes(_robin_pack_grpc_frames([rollover_status_frame])) == []
+    ert_early_chunks = dec_roll.feed_ert_bytes(
+        _robin_pack_grpc_frames([ert_early_tool_frame])
+    )
+    assert all(
+        not c["choices"][0]["delta"].get("reasoning_content") for c in ert_early_chunks
+    ), (
+        f"Early ERT tool call must not emit 'Used Legacy model' banner, got {ert_early_chunks}"
+    )
+    rc_after_roll_chunks = dec_roll.feed_bytes(
+        _robin_pack_grpc_frames([post_rollover_rc_frame])
+    )
+    assert dec_roll.conversation_title == "", (
+        f"Oversized L.13.9 title_s9 must be filtered out, got {dec_roll.conversation_title!r}"
+    )
+    rc_after_roll_reasoning = [
+        c["choices"][0]["delta"].get("reasoning_content")
+        for c in rc_after_roll_chunks
+        if c["choices"][0]["delta"].get("reasoning_content")
+    ]
+    assert rc_after_roll_reasoning == [
+        "Used 4 Argon model\n\n",
+        "Post-rollover thought.",
+    ]
+    rc_after_roll_content = "".join(
+        c["choices"][0]["delta"].get("content") or "" for c in rc_after_roll_chunks
+    )
+    assert (
+        rc_after_roll_content == "See [test.py](file:///w/workspace/test.py#L10-L20)."
+    ), (
+        f"Expected Google search redirect stripped and %23 restored, got {rc_after_roll_content!r}"
+    )
+    # Also verify 1-char streaming fragmentation across `_RobinActionCardFilter` for `https://www.google.com/search?q=file:///...%23L1`
+    frag_filter = _RobinActionCardFilter()
+    raw_redir_md = (
+        "查看 [voice_edge.py](https://www.google.com/search?q=file:///w/workspace/voice_edge.py%23L54684-L54971) "
+        "与 [doc.md](http://www.google.com/search?q=file:///w/workspace/doc.md%23section) 完成。"
+    )
+    frag_out: list[str] = []
+    for ch_c in raw_redir_md:
+        frag_out.append(frag_filter.feed(ch_c))
+    frag_out.append(frag_filter.flush())
+    assert "".join(frag_out) == (
+        "查看 [voice_edge.py](file:///w/workspace/voice_edge.py#L54684-L54971) "
+        "与 [doc.md](file:///w/workspace/doc.md#section) 完成。"
+    )
+    assert not frag_filter.seen
+
     # Verify exception: the first row of any thought block (initial or after tool handoff)
     # never gets a leading newline regardless of whether it is `text` or `tool`.
     tape_blocks = _RobinStateTape()
@@ -98732,8 +99346,15 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
                 assert hdrs.get("X-Tenant-Id") == GEMINI_ROBIN_UPLOAD_TENANT_ID
                 assert hdrs.get("Push-Id") == GEMINI_ROBIN_UPLOAD_PUSH_ID
                 assert hdrs.get("X-Client-Pctx") == GEMINI_ROBIN_UPLOAD_CLIENT_PCTX
-                assert hdrs.get("X-Goog-Upload-Content-Type") == "application/pdf"
-                assert hdrs.get("X-Goog-Upload-Content-Length") == str(len(pdf_bytes))
+                assert hdrs.get("X-Goog-Upload-Content-Type") in (
+                    "application/pdf",
+                    "image/webp",
+                    "image/png",
+                )
+                assert hdrs.get("X-Goog-Upload-Content-Length") in (
+                    str(len(pdf_bytes)),
+                    str(len(img_bytes)),
+                )
                 assert bytes(data or b"") == b""
                 up_events.append(
                     f"UploadStart:{hdrs.get('X-Goog-Upload-Content-Type')}:{hdrs.get('X-Goog-Upload-Content-Length')}"
@@ -98860,12 +99481,31 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
             assert hdrs.get("X-Goog-Upload-Protocol") == "resumable"
             assert hdrs.get("X-Goog-Upload-Offset") == "0"
             assert hdrs.get("X-Goog-Upload-Command") == "upload, finalize"
-            assert hdrs.get("X-Goog-Upload-Content-Length") == str(len(pdf_bytes))
+            assert hdrs.get("X-Goog-Upload-Content-Length") in (
+                str(len(pdf_bytes)),
+                str(len(img_bytes)),
+            )
             assert hdrs.get("Upload-Draft-Interop-Version") == "6"
             assert hdrs.get("Upload-Complete") == "?1"
-            assert bytes(data or b"") == pdf_bytes
+            assert bytes(data or b"") in (pdf_bytes, img_bytes)
             up_events.append(f"UploadFinalize:{len(bytes(data or b''))}")
             return _FileTestMockResp(200, expected_blob_id.encode("utf-8"))
+
+        img_bytes = b"RIFF\x24\x00\x00\x00WEBPVP8 \x18\x00\x00\x00\x30\x01\x00\x9d\x01\x2a\x01\x00\x01\x00\x00"
+        img_sha = hashlib.sha256(img_bytes).hexdigest()
+        img_norm_path = Path(tmp_robin_dir) / img_sha
+        img_norm_path.write_bytes(img_bytes)
+        dsh_img_handle = (
+            f'Image "sample_schedule.png" (sha256:{img_sha}); request preview 800x600px. '
+            f'Normalized copy (read-only; may be resized or re-encoded): "{img_norm_path}" '
+            "(800x600px, image/webp). Source dimensions, format, and byte size may differ. "
+            "Copy to a writable path ending in .webp before editing."
+        )
+        img_human_q = "测试上传图片, 看到图片了吗?"
+        assert (
+            _robin_strip_resolvable_dsh_file_handles(f"{dsh_img_handle}\n{img_human_q}")
+            == img_human_q
+        )
 
         orig_post_f = aiohttp.ClientSession.post
         orig_put_f = aiohttp.ClientSession.put
@@ -98959,6 +99599,55 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
             assert len(pq_captured_attachments) == 1
             assert pq_captured_attachments[0]["blob_id"] == expected_blob_id
             assert pq_captured_attachments[0]["cache_key"] == expected_cache_key
+
+            # Multimodal image turn with VEH `Image "<name>" (sha256:...)` text handle + `image_url` data URI:
+            # strips the `Image "..."` metadata text from `UserQuery.f1` & `[1007].1`, preserves original filename `"sample_schedule.png"`,
+            # and encodes `UserQuery.f3.f1.f2 = 1` (`FILE_TYPE_IMAGE`).
+            up_events.clear()
+            pq_captured_queries.clear()
+            pq_captured_attachments.clear()
+            img_b64 = base64.b64encode(img_bytes).decode("ascii")
+            resp_img_t1 = asyncio.run(
+                _direct_gemini_chat_response(
+                    {"model": "gemini:app/gemini-4-argon-high"},
+                    [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": f"{dsh_img_handle}\n{img_human_q}",
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/webp;base64,{img_b64}"
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                    stream_mode=False,
+                )
+            )
+            assert resp_img_t1.status_code == 200
+            assert up_events == [
+                f"UploadStart:image/webp:{len(img_bytes)}",
+                f"UploadFinalize:{len(img_bytes)}",
+                f"ProcessFile:{expected_blob_id}:image/webp:sample_schedule.png",
+                f"ProcessQuery:{img_human_q}:atts=1",
+            ]
+            assert pq_captured_queries == [(img_human_q, img_human_q)]
+            assert pq_captured_attachments == [
+                {
+                    "blob_id": expected_blob_id,
+                    "file_type": 1,
+                    "mime_type": "image/webp",
+                    "storage_type": 1,
+                    "cache_key": expected_cache_key,
+                    "file_name": "sample_schedule.png",
+                }
+            ]
         finally:
             cast(Any, aiohttp.ClientSession).post = orig_post_f
             cast(Any, aiohttp.ClientSession).put = orig_put_f
@@ -102406,12 +103095,34 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     assert base_fork_pre.get("_ve_robin_parent_req_id") == "r_pre_comp"
     assert base_fork_pre.get("_ve_robin_parent_resp_id") == "rc_pre_comp"
     assert base_fork_pre.get("_ve_query_text") == "从压缩前的历史分叉继续"
+    assert int(base_fork_pre.get("_ve_conv_base_msg_idx") or 0) == 0
+    assert (
+        int(base_fork_pre.get("_ve_base_context_tokens") or 0)
+        == pre_comp_state.context_tokens
+    )
+    fork_pre_p_tok, _ = _robin_estimate_session_usage(
+        fork_pre_comp_cont_msgs,
+        str(base_fork_pre.get("_ve_robin_prompt_context") or ""),
+        str(base_fork_pre.get("_ve_query_text") or ""),
+        has_remote_parent=True,
+        is_tool_continuation=False,
+        conv_base_msg_idx=int(base_fork_pre.get("_ve_conv_base_msg_idx") or 0),
+        synced_turn_count=int(base_fork_pre.get("_ve_synced_turn_count") or 0),
+        base_context_tokens=int(base_fork_pre.get("_ve_base_context_tokens") or 0),
+    )
+    assert fork_pre_p_tok < 300, (
+        f"Expected fork continuing old session to recalculate context tokens (< 300), got {fork_pre_p_tok}"
+    )
 
     # Simulate completing a turn on `fork_pre_comp_cont_msgs` (bound to `::fork::call_ve_fork_precont01`),
     # and verify that forking AGAIN from `pre_comp_msgs` STILL finds the root pre-compaction state `(c_wire_conv, r_pre_comp, rc_pre_comp)`!
+    fork_pre_comp_settled_msgs = [
+        *fork_pre_comp_cont_msgs,
+        {"role": "assistant", "content": "压缩前分叉的第三轮回答"},
+    ]
     _robin_store_continuation(
         str(base_fork_pre["_ve_session_id"]),
-        fork_pre_comp_cont_msgs,
+        fork_pre_comp_settled_msgs,
         "c_wire_conv",
         "r_wire_3",
         "rc_wire_3",
@@ -102419,6 +103130,37 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         binding_state="committed",
         committed_answer="压缩前分叉的第三轮回答",
     )
+    # Regression: continuing a subsequent turn on an already-resolved `::fork::call_ve_fork_*` branch
+    # after a script update/restart where `synced_turns_hash` drifted (e.g., canonicalization or
+    # `search?q=` redirect-stripping rules changed on historical assistant text) must recover the
+    # same `explicit_fork_key` branch directly by `(session_key == explicit_fork_key, synced_turn_count == prior_cnt)`
+    # instead of falling through to `compacted_cand` and popping up `ask_user_question` again!
+    fork_pre_sk = str(base_fork_pre["_ve_session_key"])
+    with _ROBIN_SESSION_STATE_LOCK:
+        st_fork_pre = _ROBIN_SESSION_STATE_CACHE.get(fork_pre_sk)
+        assert st_fork_pre is not None
+        st_fork_pre.synced_turns_hash = "00000000deadbeef"
+    fork_pre_comp_next_turn_msgs = [
+        *fork_pre_comp_settled_msgs,
+        {
+            "role": "user",
+            "content": "在同一分叉会话继续下一轮对话，不应再弹 ask_user_question",
+        },
+    ]
+    base_fork_pre_next = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True, "tools": ask_user_tool_decl},
+        fork_pre_comp_next_turn_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert not base_fork_pre_next.get("_ve_fork_prompt_needed"), (
+        "Continuing an existing resolved fork branch with same turn count must NOT trigger ask_user_question!"
+    )
+    assert base_fork_pre_next.get("_ve_robin_conv_id") == "c_wire_conv"
+    assert base_fork_pre_next.get("_ve_robin_parent_req_id") == "r_wire_3"
+    assert base_fork_pre_next.get("_ve_robin_parent_resp_id") == "rc_wire_3"
+    assert base_fork_pre_next.get("_ve_session_key") == fork_pre_sk
+
     fork_pre_comp_again_msgs = [
         *pre_comp_msgs,
         {"role": "user", "content": "再次从倒数第二轮分叉测试"},
