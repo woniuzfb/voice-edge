@@ -362,11 +362,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49077
 #    VE_OPENCODE_FREE                       "1"                                          L49115
 #    VE_OPENCODE_GO                         "0"                                          L49120
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L69251
-#    VE_GEMINI_API_KEYS                     ""                                           L69255
-#    VE_GEMINI_BACKEND                      "auto"                                       L69274
-#    VE_GEMINI_PROJECT_ID                   ""                                           L69281
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55067
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L69905
+#    VE_GEMINI_API_KEYS                     ""                                           L69909
+#    VE_GEMINI_BACKEND                      "auto"                                       L69928
+#    VE_GEMINI_PROJECT_ID                   ""                                           L69935
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55079
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1533
@@ -379,15 +379,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L70287
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L70291
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L70295
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L70317
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L70283
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L70273
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L70261
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L70269
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L70265
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L70953
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L70957
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L70961
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L70983
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L70949
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L70939
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L70927
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L70935
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L70931
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -55037,10 +55037,22 @@ def _robin_parse_conversation_turns(raw: bytes) -> list[dict[str, Any]]:
                         ):
                             inner_b = bytes(mtval)
                             if any(
-                                k in (2, 7, 19) for k, _, _ in _pb_iter_fields(inner_b)
+                                k in (1, 2, 7, 19)
+                                for k, _, _ in _pb_iter_fields(inner_b)
                             ):
                                 saw_nested_model_turn = True
                                 _extract_model_response_fields(inner_b, turn_info)
+                        elif (
+                            mtfno == 4
+                            and mtwtype == 2
+                            and isinstance(mtval, (bytes, bytearray))
+                            and not turn_info["response_id"]
+                        ):
+                            cand_rid4 = (
+                                bytes(mtval).decode("utf-8", errors="replace").strip()
+                            )
+                            if cand_rid4 and not any(ord(c) < 32 for c in cand_rid4):
+                                turn_info["response_id"] = cand_rid4
                         elif (
                             mtfno == 5
                             and mtwtype == 2
@@ -55111,6 +55123,10 @@ class _GeminiDshStore:
                 owner_epoch INTEGER NOT NULL DEFAULT 1,
                 synced_turn_count INTEGER NOT NULL DEFAULT 0,
                 synced_turns_hash TEXT NOT NULL DEFAULT '',
+                interrupted_req_id TEXT NOT NULL DEFAULT '',
+                interrupted_resp_id TEXT NOT NULL DEFAULT '',
+                interrupted_turn_count INTEGER NOT NULL DEFAULT 0,
+                interrupted_turns_hash TEXT NOT NULL DEFAULT '',
                 conv_base_msg_idx INTEGER NOT NULL DEFAULT 0,
                 context_tokens INTEGER NOT NULL DEFAULT 0,
                 compacted INTEGER NOT NULL DEFAULT 0,
@@ -55199,6 +55215,10 @@ class _GeminiDshStore:
             "ALTER TABLE sessions ADD COLUMN dsh_approval_policy TEXT NOT NULL DEFAULT 'ask'",
             "ALTER TABLE sessions ADD COLUMN synced_turn_count INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE sessions ADD COLUMN synced_turns_hash TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE sessions ADD COLUMN interrupted_req_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE sessions ADD COLUMN interrupted_resp_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE sessions ADD COLUMN interrupted_turn_count INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE sessions ADD COLUMN interrupted_turns_hash TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE sessions ADD COLUMN conv_base_msg_idx INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE sessions ADD COLUMN context_tokens INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE sessions ADD COLUMN compacted INTEGER NOT NULL DEFAULT 0",
@@ -55374,6 +55394,10 @@ class _GeminiDshStore:
         owner_epoch: int = 1,
         synced_turn_count: int = 0,
         synced_turns_hash: str = "",
+        interrupted_req_id: str = "",
+        interrupted_resp_id: str = "",
+        interrupted_turn_count: int = 0,
+        interrupted_turns_hash: str = "",
         conv_base_msg_idx: int = 0,
         context_tokens: int = 0,
         compacted: bool = False,
@@ -55415,8 +55439,10 @@ class _GeminiDshStore:
                     boot_key, full_key, conversation_id, parent_req_id, parent_resp_id,
                     binding_state, title, dsh_sandbox_mode, dsh_approval_policy,
                     connected_folders_json, active_run_id, owner_epoch,
-                    synced_turn_count, synced_turns_hash, conv_base_msg_idx, context_tokens, compacted, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    synced_turn_count, synced_turns_hash,
+                    interrupted_req_id, interrupted_resp_id, interrupted_turn_count, interrupted_turns_hash,
+                    conv_base_msg_idx, context_tokens, compacted, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_key) DO UPDATE SET
                     client_session_id = excluded.client_session_id,
                     principal_id = excluded.principal_id,
@@ -55434,6 +55460,10 @@ class _GeminiDshStore:
                     owner_epoch = excluded.owner_epoch,
                     synced_turn_count = CASE WHEN excluded.synced_turn_count > 0 THEN excluded.synced_turn_count ELSE sessions.synced_turn_count END,
                     synced_turns_hash = CASE WHEN excluded.synced_turns_hash != '' THEN excluded.synced_turns_hash ELSE sessions.synced_turns_hash END,
+                    interrupted_req_id = excluded.interrupted_req_id,
+                    interrupted_resp_id = excluded.interrupted_resp_id,
+                    interrupted_turn_count = excluded.interrupted_turn_count,
+                    interrupted_turns_hash = excluded.interrupted_turns_hash,
                     conv_base_msg_idx = CASE WHEN sessions.conversation_id != '' AND excluded.conversation_id = sessions.conversation_id AND sessions.conv_base_msg_idx > 0 AND excluded.conv_base_msg_idx > sessions.conv_base_msg_idx THEN sessions.conv_base_msg_idx WHEN excluded.conv_base_msg_idx >= 0 THEN excluded.conv_base_msg_idx ELSE sessions.conv_base_msg_idx END,
                     context_tokens = CASE WHEN sessions.conversation_id != '' AND excluded.conversation_id = sessions.conversation_id AND excluded.context_tokens > sessions.context_tokens THEN excluded.context_tokens WHEN (sessions.conversation_id = '' OR excluded.conversation_id != sessions.conversation_id) AND excluded.context_tokens > 0 THEN excluded.context_tokens ELSE sessions.context_tokens END,
                     compacted = CASE WHEN excluded.compacted > 0 THEN 1 ELSE sessions.compacted END,
@@ -55457,6 +55487,10 @@ class _GeminiDshStore:
                     owner_epoch,
                     int(synced_turn_count),
                     str(synced_turns_hash or ""),
+                    str(interrupted_req_id or ""),
+                    str(interrupted_resp_id or ""),
+                    int(interrupted_turn_count or 0),
+                    str(interrupted_turns_hash or ""),
                     int(conv_base_msg_idx),
                     int(context_tokens),
                     1 if compacted else 0,
@@ -56504,6 +56538,7 @@ def _dsh_extract_first_turn_identity(
     last_turn1_assistant_had_tool_calls = False
     pending_compaction_summary = ""
     turn1_boundary_passed = False
+    turn1_saw_crashed_or_aborted_tool = False
 
     for msg in messages:
         if not isinstance(msg, dict):
@@ -56514,6 +56549,11 @@ def _dsh_extract_first_turn_identity(
                 continue
             if seen_first_user:
                 seen_turn1_assistant = True
+                t_out_s = _dsh_stringify_tool_output(msg.get("content"))
+                if _dsh_is_crashed_tool_output(t_out_s) or _dsh_is_aborted_tool_output(
+                    t_out_s
+                ):
+                    turn1_saw_crashed_or_aborted_tool = True
             continue
         if role == "assistant" and _dsh_is_ve_fork_assistant_msg(msg):
             continue
@@ -56568,7 +56608,7 @@ def _dsh_extract_first_turn_identity(
             elif first_assistant_parts and not last_turn1_assistant_had_tool_calls:
                 turn1_completed = True
                 break
-            elif turn1_boundary_passed:
+            elif turn1_boundary_passed or turn1_saw_crashed_or_aborted_tool:
                 break
         elif role == "assistant":
             if _dsh_is_empty_assistant_stub(msg):
@@ -57602,15 +57642,34 @@ def _robin_extract_aligned_user_query(
     if not user_only:
         return "Hello"
 
+    is_compaction_req = (
+        bool(transcript.is_compaction_req)
+        if (transcript is not None and hasattr(transcript, "is_compaction_req"))
+        else _is_gemini_compaction_summary_request(messages)
+    )
     is_first_compaction, comp_blk, _, post_comp_u0 = _dsh_parse_compaction_user_text(
         user_only[0]
     )
     _, first_a_norm = _dsh_extract_first_turn_identity(messages)
     turn1_completed = bool(first_a_norm)
-    if (not has_assistant and len(user_only) == 1) or (
-        not is_first_compaction
-        and (
-            not has_assistant or (last_assistant_has_tool_calls and not turn1_completed)
+    assistant_turn_count = sum(
+        1 for r_turn, _ in user_assistant_turns if r_turn == "assistant"
+    )
+    if not is_compaction_req and (
+        (not has_assistant and len(user_only) == 1)
+        or (
+            not is_first_compaction
+            and (
+                not has_assistant
+                or (
+                    last_assistant_has_tool_calls
+                    and not turn1_completed
+                    and assistant_turn_count <= 1
+                    and len(user_only) <= 2
+                    and not trailing_user_has_runtime_ctx
+                    and not trailing_has_crashed_or_aborted_tool
+                )
+            )
         )
     ):
         if (
@@ -60657,6 +60716,10 @@ class _RobinSessionState:
     prefix_hash: str = ""
     synced_turn_count: int = 0
     synced_turns_hash: str = ""
+    interrupted_req_id: str = ""
+    interrupted_resp_id: str = ""
+    interrupted_turn_count: int = 0
+    interrupted_turns_hash: str = ""
     conv_base_msg_idx: int = 0
     context_tokens: int = 0
     compacted: bool = False
@@ -60831,6 +60894,10 @@ def _robin_row_to_session_state(
         owner_epoch=int(row.get("owner_epoch") or 1),
         synced_turn_count=int(row.get("synced_turn_count") or 0),
         synced_turns_hash=str(row.get("synced_turns_hash") or ""),
+        interrupted_req_id=str(row.get("interrupted_req_id") or ""),
+        interrupted_resp_id=str(row.get("interrupted_resp_id") or ""),
+        interrupted_turn_count=int(row.get("interrupted_turn_count") or 0),
+        interrupted_turns_hash=str(row.get("interrupted_turns_hash") or ""),
         conv_base_msg_idx=int(row.get("conv_base_msg_idx") or 0),
         context_tokens=int(row.get("context_tokens") or 0),
         compacted=bool(row.get("compacted")),
@@ -61996,6 +62063,65 @@ def _robin_lookup_continuation(
             messages=messages,
         )
 
+        def _cand_matches_interrupted_turn(c: _RobinSessionState) -> bool:
+            if not (
+                c.conversation_id
+                and c.interrupted_req_id
+                and c.interrupted_resp_id
+                and c.interrupted_turn_count > 0
+                and c.interrupted_turns_hash
+                and prior_cnt > 0
+            ):
+                return False
+            if (
+                prior_cnt == c.interrupted_turn_count
+                and prior_hash == c.interrupted_turns_hash
+            ):
+                return True
+            if (
+                prior_cnt == c.interrupted_turn_count + 1
+                and prior_turns[-1][0] == "assistant"
+                and _robin_compute_turns_hash(prior_turns[: c.interrupted_turn_count])
+                == c.interrupted_turns_hash
+            ):
+                return True
+            return False
+
+        def _promote_interrupted_turn(c: _RobinSessionState) -> _RobinSessionState:
+            c.parent_request_id = c.interrupted_req_id
+            c.parent_response_id = c.interrupted_resp_id
+            c.binding_state = "committed"
+            c.synced_turn_count = prior_cnt
+            c.synced_turns_hash = prior_hash
+            c.interrupted_req_id = ""
+            c.interrupted_resp_id = ""
+            c.interrupted_turn_count = 0
+            c.interrupted_turns_hash = ""
+            c.updated_at = time.time()
+            _GEMINI_DSH_STORE.upsert_session(
+                session_key=c.session_key,
+                client_session_id=c.client_session_id,
+                principal_id=c.principal_id,
+                boot_key=c.boot_key,
+                full_key=c.full_key,
+                conversation_id=c.conversation_id,
+                parent_req_id=c.parent_request_id,
+                parent_resp_id=c.parent_response_id,
+                title=c.title,
+                dsh_sandbox_mode=c.dsh_sandbox_mode,
+                dsh_approval_policy=c.dsh_approval_policy,
+                connected_folders=c.connected_folders,
+                active_run_id=c.active_run_id,
+                owner_epoch=c.owner_epoch,
+                binding_state=c.binding_state,
+                synced_turn_count=c.synced_turn_count,
+                synced_turns_hash=c.synced_turns_hash,
+                conv_base_msg_idx=c.conv_base_msg_idx,
+                context_tokens=c.context_tokens,
+                compacted=c.compacted,
+            )
+            return c
+
         if fork_id and is_immediate_fork_answer:
             # The user just answered `ask_user_question` for a fork!
             if fork_choice == "new":
@@ -62040,8 +62166,13 @@ def _robin_lookup_continuation(
                         c
                         for c in candidates
                         if c.conversation_id
-                        and c.synced_turn_count == prior_cnt
-                        and c.synced_turns_hash == prior_hash
+                        and (
+                            (
+                                c.synced_turn_count == prior_cnt
+                                and c.synced_turns_hash == prior_hash
+                            )
+                            or _cand_matches_interrupted_turn(c)
+                        )
                     ),
                     None,
                 )
@@ -62058,6 +62189,8 @@ def _robin_lookup_continuation(
                     ),
                 )
             if parent_state is not None and parent_state.conversation_id:
+                if _cand_matches_interrupted_turn(parent_state):
+                    _promote_interrupted_turn(parent_state)
                 if (
                     0 < prior_cnt <= parent_state.synced_turn_count
                     or parent_state.synced_turn_count <= 0
@@ -62178,11 +62311,46 @@ def _robin_lookup_continuation(
                     (c for c in exact_matches if not c.compacted),
                     exact_matches[0],
                 )
+            if chosen_exact.interrupted_req_id:
+                chosen_exact.interrupted_req_id = ""
+                chosen_exact.interrupted_resp_id = ""
+                chosen_exact.interrupted_turn_count = 0
+                chosen_exact.interrupted_turns_hash = ""
             if chosen_exact.compacted and (
                 not explicit_fork_key or chosen_exact.session_key != explicit_fork_key
             ):
                 return chosen_exact, trailing_idx, True
             return _finalize_matched_branch(chosen_exact), trailing_idx, False
+
+        # 2b. Interrupted turn continuation match (`interrupted_req_id` / `interrupted_resp_id`):
+        #     When Turn K was interrupted/aborted after obtaining `(c_, r_K, rc_K)` on the remote server
+        #     and `prior_turns` of Turn K+1 retains Turn K, promote `(r_K, rc_K)` as the parent cursor
+        #     so Turn K+1 chains directly after Turn K instead of overwriting Turn K's slot.
+        interrupted_matches = [
+            c for c in candidates if _cand_matches_interrupted_turn(c)
+        ]
+        if interrupted_matches:
+            chosen_int: _RobinSessionState | None = None
+            if explicit_fork_key:
+                chosen_int = next(
+                    (
+                        c
+                        for c in interrupted_matches
+                        if c.session_key == explicit_fork_key
+                    ),
+                    None,
+                )
+            if chosen_int is None:
+                chosen_int = next(
+                    (c for c in interrupted_matches if not c.compacted),
+                    interrupted_matches[0],
+                )
+            if chosen_int.compacted and (
+                not explicit_fork_key or chosen_int.session_key != explicit_fork_key
+            ):
+                return chosen_int, trailing_idx, True
+            _promote_interrupted_turn(chosen_int)
+            return _finalize_matched_branch(chosen_int), trailing_idx, False
 
         # 3. Legacy fallback when no branch in the lineage has `synced_turn_count > 0` yet
         if all(c.synced_turn_count <= 0 for c in candidates):
@@ -62295,6 +62463,10 @@ def _robin_store_continuation(
     expected_request_ids: Sequence[str] | None = None,
     expected_owner_epochs: Sequence[int] | None = None,
     expected_owner_pairs: Sequence[tuple[str, int]] | None = None,
+    interrupted_req_id: str = "",
+    interrupted_resp_id: str = "",
+    interrupted_turn_count: int = 0,
+    interrupted_turns_hash: str = "",
 ) -> _RobinSessionState | None:
     """Persist `(c_, r_, rc_)` parent and `(boot_key, full_key)` as `provisional` or `committed`."""
     _ = pin_checkpoint
@@ -62403,8 +62575,28 @@ def _robin_store_continuation(
                     (
                         c
                         for c in candidates
-                        if c.synced_turn_count == prior_cnt
-                        and c.synced_turns_hash == prior_hash
+                        if (
+                            c.synced_turn_count == prior_cnt
+                            and c.synced_turns_hash == prior_hash
+                        )
+                        or (
+                            c.interrupted_turn_count > 0
+                            and c.interrupted_turns_hash
+                            and (
+                                (
+                                    prior_cnt == c.interrupted_turn_count
+                                    and prior_hash == c.interrupted_turns_hash
+                                )
+                                or (
+                                    prior_cnt == c.interrupted_turn_count + 1
+                                    and prior_turns[-1][0] == "assistant"
+                                    and _robin_compute_turns_hash(
+                                        prior_turns[: c.interrupted_turn_count]
+                                    )
+                                    == c.interrupted_turns_hash
+                                )
+                            )
+                        )
                     ),
                     None,
                 )
@@ -62564,8 +62756,20 @@ def _robin_store_continuation(
             and existing is not None
         ):
             # Never overwrite an already-committed complete parent from a prior turn (§10.2),
-            # but advance `owner_epoch` so CAS tracking records this newer provisional attempt.
+            # but advance `owner_epoch` and record the in-flight `(request_id, response_id)` on
+            # `interrupted_*` so if this turn is interrupted/stopped after creating a remote turn,
+            # the next turn can chain directly onto it instead of overwriting this turn's slot.
             existing.owner_epoch += 1
+            if request_id and request_id != existing.parent_request_id:
+                prev_int_req = existing.interrupted_req_id
+                existing.interrupted_req_id = request_id
+                if response_id:
+                    existing.interrupted_resp_id = response_id
+                elif prev_int_req != request_id:
+                    existing.interrupted_resp_id = ""
+                if through_cnt > 0:
+                    existing.interrupted_turn_count = through_cnt
+                    existing.interrupted_turns_hash = through_hash
             existing.updated_at = time.time()
             _robin_bind_session_in_cache(existing)
             _GEMINI_DSH_STORE.upsert_session(
@@ -62586,6 +62790,10 @@ def _robin_store_continuation(
                 binding_state=existing.binding_state,
                 synced_turn_count=existing.synced_turn_count,
                 synced_turns_hash=existing.synced_turns_hash,
+                interrupted_req_id=existing.interrupted_req_id,
+                interrupted_resp_id=existing.interrupted_resp_id,
+                interrupted_turn_count=existing.interrupted_turn_count,
+                interrupted_turns_hash=existing.interrupted_turns_hash,
                 conv_base_msg_idx=existing.conv_base_msg_idx,
                 context_tokens=existing.context_tokens,
                 compacted=existing.compacted,
@@ -62710,6 +62918,26 @@ def _robin_store_continuation(
             if (existing is not None and "::fork::" not in primary_key)
             else False
         )
+        if interrupted_req_id and interrupted_resp_id:
+            resolved_int_req = str(interrupted_req_id).strip()
+            resolved_int_resp = str(interrupted_resp_id).strip()
+            resolved_int_cnt = int(interrupted_turn_count or 0)
+            resolved_int_hash = str(interrupted_turns_hash or "")
+        elif (
+            norm_binding == "provisional"
+            and request_id
+            and resolved_resp_id
+            and through_cnt > 0
+        ):
+            resolved_int_req = str(request_id).strip()
+            resolved_int_resp = str(resolved_resp_id).strip()
+            resolved_int_cnt = through_cnt
+            resolved_int_hash = through_hash
+        else:
+            resolved_int_req = ""
+            resolved_int_resp = ""
+            resolved_int_cnt = 0
+            resolved_int_hash = ""
         if existing is not None:
             existing.session_key = primary_key
             existing.client_session_id = client_sid
@@ -62731,6 +62959,10 @@ def _robin_store_continuation(
             existing.prefix_hash = _robin_messages_prefix_hash(messages, len(messages))
             existing.synced_turn_count = resolved_synced_count
             existing.synced_turns_hash = resolved_synced_hash
+            existing.interrupted_req_id = resolved_int_req
+            existing.interrupted_resp_id = resolved_int_resp
+            existing.interrupted_turn_count = resolved_int_cnt
+            existing.interrupted_turns_hash = resolved_int_hash
             existing.conv_base_msg_idx = resolved_base_idx
             existing.context_tokens = resolved_context_tokens
             existing.compacted = preserved_compacted
@@ -62757,6 +62989,10 @@ def _robin_store_continuation(
                 prefix_hash=_robin_messages_prefix_hash(messages, len(messages)),
                 synced_turn_count=resolved_synced_count,
                 synced_turns_hash=resolved_synced_hash,
+                interrupted_req_id=resolved_int_req,
+                interrupted_resp_id=resolved_int_resp,
+                interrupted_turn_count=resolved_int_cnt,
+                interrupted_turns_hash=resolved_int_hash,
                 conv_base_msg_idx=resolved_base_idx,
                 context_tokens=resolved_context_tokens,
                 compacted=preserved_compacted,
@@ -62785,6 +63021,10 @@ def _robin_store_continuation(
             binding_state=eff_binding,
             synced_turn_count=resolved_synced_count,
             synced_turns_hash=resolved_synced_hash,
+            interrupted_req_id=resolved_int_req,
+            interrupted_resp_id=resolved_int_resp,
+            interrupted_turn_count=resolved_int_cnt,
+            interrupted_turns_hash=resolved_int_hash,
             conv_base_msg_idx=resolved_base_idx,
             context_tokens=resolved_context_tokens,
             compacted=preserved_compacted,
@@ -62943,6 +63183,42 @@ async def _robin_cleanup_anext_future(fut: asyncio.Future[Any] | None) -> None:
             _ = fut.exception()
         except (BaseException, asyncio.CancelledError):
             pass
+
+
+def _robin_is_transient_pq_stream_error(err_text: str) -> bool:
+    """Return True when `err_text` is a transient upstream ProcessQuery RPC or transport failure eligible for `resumeTurn` rollover."""
+    err_low = str(err_text or "").lower()
+    if not err_low:
+        return False
+    if (
+        "no longer in progress" in err_low
+        or "requested turn to resume" in err_low
+        or "quota" in err_low
+        or "exhausted" in err_low
+        or "downgraded by server" in err_low
+        or "unauthenticated" in err_low
+        or "permission_denied" in err_low
+        or "invalid_argument" in err_low
+    ):
+        return False
+    return any(
+        kw in err_low
+        for kw in (
+            "dependency rpc failed",
+            "createinteractionbidistream",
+            "interactionservice",
+            "deadline_exceeded",
+            "stalled waiting for channel",
+            "rpcstreamexception",
+            "rpcclientflowexception",
+            "robinservice stream timed out",
+            "robinservice http/2",
+            "robinservice grpc error (grpc-status=14)",
+            "robinservice grpc error (grpc-status=4)",
+            "robinservice grpc error (grpc-status=13)",
+            "unavailable",
+        )
+    )
 
 
 @dataclass
@@ -64279,7 +64555,7 @@ class _RobinRunActor:
                         next_pq_task = None
                         try:
                             raw_bytes = pq_task.result()
-                        except GeminiStreamError as pq_exc:
+                        except (GeminiStreamError, H2Error, OSError) as pq_exc:
                             err_low = str(pq_exc).lower()
                             if (
                                 "no longer in progress" in err_low
@@ -64297,6 +64573,34 @@ class _RobinRunActor:
                                     },
                                 )
                                 break
+                            if (
+                                use_rollover_watchdog
+                                and not self.decoder.is_completed
+                                and self.run.execution_state != "TERMINAL"
+                                and self.run.cancellation_state == "NONE"
+                                and (
+                                    self.decoder.conversation_id
+                                    or self.run.conversation_id
+                                )
+                                and (self.decoder.request_id or self.run.request_id)
+                                and (
+                                    isinstance(pq_exc, (H2Error, OSError))
+                                    or _robin_is_transient_pq_stream_error(str(pq_exc))
+                                )
+                            ):
+                                _gemini_debug_log_event(
+                                    self.session_id,
+                                    "pq_transient_stream_error",
+                                    {
+                                        "run_id": self.run.run_id,
+                                        "conversation_id": self.decoder.conversation_id
+                                        or self.run.conversation_id,
+                                        "request_id": self.decoder.request_id
+                                        or self.run.request_id,
+                                        "error": str(pq_exc),
+                                    },
+                                )
+                                raise StopAsyncIteration from pq_exc
                             raise
                         if raw_bytes:
                             if not (self.run.conversation_id and self.run.request_id):
@@ -64526,12 +64830,36 @@ class _RobinRunActor:
                                     },
                                 )
                             )
-                        await asyncio.sleep(0.5)
-                        if (
-                            self.run.execution_state != "TERMINAL"
-                            and self.run.cancellation_state == "NONE"
-                            and await self._rollover_pq_stream()
-                        ):
+                        rolled_ok = False
+                        for roll_attempt in range(3):
+                            await asyncio.sleep(0.5 * (2**roll_attempt))
+                            if (
+                                self.run.execution_state == "TERMINAL"
+                                or self.run.cancellation_state != "NONE"
+                                or self.resume_turn_already_finished
+                                or self.decoder.is_completed
+                            ):
+                                break
+                            if await self._rollover_pq_stream():
+                                rolled_ok = True
+                                break
+                            if self.resume_turn_already_finished:
+                                break
+                            await self._ensure_fresh_access_token()
+                            rec_after_fail = await _robin_reconcile_via_list_turns(
+                                self.http_session,
+                                self.access_token,
+                                self.decoder.conversation_id,
+                                self.decoder.request_id,
+                                self.decoder,
+                                device_id=self.device_id,
+                                server_token=self.server_token,
+                            )
+                            if rec_after_fail:
+                                await self.mux_queue.put(("ert_chunks", rec_after_fail))
+                            if self.decoder.is_completed:
+                                break
+                        if rolled_ok:
                             next_rollover_deadline = (
                                 self.pq_opened_monotonic + GEMINI_PQ_ROLLOVER_SECONDS
                             )
@@ -64631,6 +64959,20 @@ class _RobinRunActor:
                     mux=shared_mux,
                 )
         if new_resp.status >= 400:
+            err_detail = urllib.parse.unquote(
+                str(new_resp.headers.get("grpc-message") or "")
+            )
+            if not err_detail and getattr(new_resp, "_pending", None):
+                try:
+                    err_detail = b"".join(new_resp._pending).decode("utf-8", "replace")
+                except Exception:
+                    err_detail = ""
+            err_detail_low = err_detail.lower()
+            if (
+                "no longer in progress" in err_detail_low
+                or "requested turn to resume" in err_detail_low
+            ):
+                self.resume_turn_already_finished = True
             new_resp.release()
             return False
         try:
@@ -65306,6 +65648,11 @@ def _robin_resolve_parked_actor_for_turn(
     if not cand_actors:
         return None, "", lookup_actor_keys
 
+    aborted_turn_anchors = (
+        list(transcript.prior_turns)
+        if (transcript.tail_human_user_texts or transcript.tail_human_attachments)
+        else list(transcript.turns_through_user)
+    )
     if transcript.tail_has_aborted_tool:
         # Strict fail-closed ownership verification: only evict and abort a parked actor
         # when `transcript.tail_aborted_tool_ids` is non-empty AND the candidate actor's
@@ -65357,7 +65704,10 @@ def _robin_resolve_parked_actor_for_turn(
                 },
             )
             _robin_release_parked_stream_sync(
-                evicted, abort_remote=True, restore_parent_continuation=True
+                evicted,
+                abort_remote=True,
+                restore_parent_continuation=True,
+                interrupted_turn_anchors=aborted_turn_anchors,
             )
         return None, "", lookup_actor_keys
 
@@ -65424,7 +65774,10 @@ def _robin_resolve_parked_actor_for_turn(
     if not step_open:
         if pop_matched:
             _robin_release_parked_stream_sync(
-                actor, abort_remote=True, restore_parent_continuation=True
+                actor,
+                abort_remote=True,
+                restore_parent_continuation=True,
+                interrupted_turn_anchors=aborted_turn_anchors,
             )
         return None, "", lookup_actor_keys
 
@@ -65477,8 +65830,10 @@ def _robin_rollback_uncommitted_run_continuation(
     credential_id: str = "",
     messages: Sequence[Any] = (),
     req_id_hint: str = "",
+    resp_id_hint: str = "",
     conv_id_hint: str = "",
     owner_epoch_hint: int = 0,
+    interrupted_turn_anchors: Sequence[tuple[str, str]] | None = None,
 ) -> None:
     """CAS-rollback any uncommitted `provisional` continuation owned by `(run, req_id, owner_epoch)`."""
     eff_msgs = list(messages or (run.initial_messages if run is not None else ()))
@@ -65488,12 +65843,23 @@ def _robin_rollback_uncommitted_run_continuation(
     eff_req_id = str(
         req_id_hint or (run.request_id if run is not None else "") or ""
     ).strip()
+    eff_resp_id = str(
+        resp_id_hint or (run.response_id if run is not None else "") or ""
+    ).strip()
     eff_conv_id = str(
         conv_id_hint or (run.conversation_id if run is not None else "") or ""
     ).strip()
     eff_epoch = int(
         owner_epoch_hint or (run.provisional_owner_epoch if run is not None else 0) or 0
     )
+    if interrupted_turn_anchors:
+        turns_through_u = list(interrupted_turn_anchors)
+    elif eff_msgs:
+        _, _, turns_through_u = _robin_extract_turn_anchors(eff_msgs)
+    else:
+        turns_through_u = []
+    int_cnt = len(turns_through_u)
+    int_hash = _robin_compute_turns_hash(turns_through_u) if turns_through_u else ""
     cand_keys: list[str] = []
     for raw_k in (
         session_id,
@@ -65590,6 +65956,37 @@ def _robin_rollback_uncommitted_run_continuation(
                             return
                         if eff_epoch > 0 and r_ep > 0 and r_ep != eff_epoch:
                             return
+            if not eff_resp_id and eff_req_id:
+                for cached_s in matched_cached:
+                    if (
+                        cached_s.interrupted_req_id == eff_req_id
+                        and cached_s.interrupted_resp_id
+                    ):
+                        eff_resp_id = cached_s.interrupted_resp_id
+                        break
+                    if (
+                        cached_s.parent_request_id == eff_req_id
+                        and cached_s.parent_response_id
+                    ):
+                        eff_resp_id = cached_s.parent_response_id
+                        break
+            if int_cnt <= 0 and eff_req_id:
+                for cached_s in matched_cached:
+                    if (
+                        cached_s.interrupted_req_id == eff_req_id
+                        and cached_s.interrupted_turn_count > 0
+                        and cached_s.interrupted_turns_hash
+                    ):
+                        int_cnt = cached_s.interrupted_turn_count
+                        int_hash = cached_s.interrupted_turns_hash
+                        break
+            has_int_cursor = bool(
+                eff_req_id
+                and eff_resp_id
+                and eff_req_id != run.parent_req_id
+                and int_cnt > 0
+                and int_hash
+            )
             if eff_msgs:
                 t_idx = _robin_trailing_user_start_index(eff_msgs)
                 prior_msgs = eff_msgs[:t_idx] if t_idx > 0 else eff_msgs
@@ -65611,17 +66008,158 @@ def _robin_rollback_uncommitted_run_continuation(
                     context_tokens=run.base_context_tokens,
                     expected_request_ids=allowed_reqs,
                     expected_owner_epochs=allowed_epochs,
+                    interrupted_req_id=eff_req_id if has_int_cursor else "",
+                    interrupted_resp_id=eff_resp_id if has_int_cursor else "",
+                    interrupted_turn_count=int_cnt if has_int_cursor else 0,
+                    interrupted_turns_hash=int_hash if has_int_cursor else "",
                 )
             for sk_cand in cand_keys:
                 cached_s = _ROBIN_SESSION_STATE_CACHE.get(sk_cand)
-                if cached_s is not None and _cas_owns_provisional(cached_s):
+                if cached_s is not None and (
+                    _cas_owns_provisional(cached_s)
+                    or cached_s.parent_request_id == run.parent_req_id
+                ):
                     cached_s.conversation_id = run.parent_conv_id
                     cached_s.parent_request_id = run.parent_req_id
                     cached_s.parent_response_id = run.parent_resp_id
                     cached_s.binding_state = "committed"
+                    if has_int_cursor:
+                        cached_s.interrupted_req_id = eff_req_id
+                        cached_s.interrupted_resp_id = eff_resp_id
+                        cached_s.interrupted_turn_count = int_cnt
+                        cached_s.interrupted_turns_hash = int_hash
         return
 
     with _ROBIN_SESSION_STATE_LOCK:
+        if not eff_resp_id and eff_req_id:
+            for sk_cand in cand_keys:
+                cached_s = _ROBIN_SESSION_STATE_CACHE.get(sk_cand)
+                if cached_s is None:
+                    continue
+                if (
+                    cached_s.parent_request_id == eff_req_id
+                    and cached_s.parent_response_id
+                    and (
+                        eff_epoch <= 0
+                        or cached_s.owner_epoch <= 0
+                        or cached_s.owner_epoch == eff_epoch
+                    )
+                ):
+                    eff_resp_id = cached_s.parent_response_id
+                    break
+        if eff_conv_id and eff_req_id and eff_resp_id and int_cnt > 0 and int_hash:
+            # Turn 1 already created a complete `(c_1, r_1, rc_1)` turn on the Robin server
+            # before being interrupted/aborted: preserve `(c_1, r_1, rc_1)` so Turn 2 can
+            # chain directly onto Turn 1 instead of losing Turn 1's context.
+            for sk_cand in cand_keys:
+                cached_s = _ROBIN_SESSION_STATE_CACHE.get(sk_cand)
+                if cached_s is not None and eff_epoch > 0 and cached_s.owner_epoch > 0:
+                    if cached_s.owner_epoch != eff_epoch:
+                        return
+                row_chk1 = _GEMINI_DSH_STORE.find_session(
+                    session_key=sk_cand, principal_id=eff_cred
+                )
+                if row_chk1 is not None:
+                    r_ep1 = int(row_chk1.get("owner_epoch") or 0)
+                    if eff_epoch > 0 and r_ep1 > 0 and r_ep1 != eff_epoch:
+                        return
+            prim_sk = (
+                session_key
+                or boot_key
+                or session_id
+                or (
+                    (run.session_key or run.boot_key or run.client_session_id)
+                    if run is not None
+                    else ""
+                )
+            )
+            if eff_msgs:
+                allowed_reqs1 = [eff_req_id]
+                allowed_epochs1 = [eff_epoch] if eff_epoch > 0 else None
+                _robin_store_continuation(
+                    prim_sk,
+                    eff_msgs,
+                    eff_conv_id,
+                    eff_req_id,
+                    eff_resp_id,
+                    credential_id=eff_cred,
+                    connected_folders=(
+                        run.tool_ledger.connected_folders if run is not None else None
+                    ),
+                    binding_state="committed",
+                    conv_base_msg_idx=run.conv_base_msg_idx if run is not None else 0,
+                    context_tokens=run.base_context_tokens if run is not None else 0,
+                    expected_request_ids=(
+                        allowed_reqs1 if allowed_epochs1 is not None else None
+                    ),
+                    expected_owner_epochs=allowed_epochs1,
+                    interrupted_req_id=eff_req_id,
+                    interrupted_resp_id=eff_resp_id,
+                    interrupted_turn_count=int_cnt,
+                    interrupted_turns_hash=int_hash,
+                )
+                return
+            if prim_sk:
+                t1_state = _ROBIN_SESSION_STATE_CACHE.get(prim_sk)
+                if t1_state is None:
+                    t1_state = _RobinSessionState(
+                        session_key=prim_sk,
+                        client_session_id=session_id or prim_sk,
+                        principal_id=eff_cred,
+                        boot_key=boot_key
+                        or (prim_sk if prim_sk.startswith("boot_") else ""),
+                        full_key=full_key,
+                        conversation_id=eff_conv_id,
+                        parent_request_id=eff_req_id,
+                        parent_response_id=eff_resp_id,
+                        binding_state="committed",
+                        synced_turn_count=int_cnt,
+                        synced_turns_hash=int_hash,
+                        interrupted_req_id=eff_req_id,
+                        interrupted_resp_id=eff_resp_id,
+                        interrupted_turn_count=int_cnt,
+                        interrupted_turns_hash=int_hash,
+                    )
+                else:
+                    t1_state.conversation_id = eff_conv_id
+                    t1_state.parent_request_id = eff_req_id
+                    t1_state.parent_response_id = eff_resp_id
+                    t1_state.binding_state = "committed"
+                    t1_state.synced_turn_count = int_cnt
+                    t1_state.synced_turns_hash = int_hash
+                    t1_state.interrupted_req_id = eff_req_id
+                    t1_state.interrupted_resp_id = eff_resp_id
+                    t1_state.interrupted_turn_count = int_cnt
+                    t1_state.interrupted_turns_hash = int_hash
+                    t1_state.updated_at = time.time()
+                _robin_bind_session_in_cache(t1_state)
+                _GEMINI_DSH_STORE.upsert_session(
+                    session_key=t1_state.session_key,
+                    client_session_id=t1_state.client_session_id,
+                    principal_id=t1_state.principal_id,
+                    boot_key=t1_state.boot_key,
+                    full_key=t1_state.full_key,
+                    conversation_id=t1_state.conversation_id,
+                    parent_req_id=t1_state.parent_request_id,
+                    parent_resp_id=t1_state.parent_response_id,
+                    title=t1_state.title,
+                    dsh_sandbox_mode=t1_state.dsh_sandbox_mode,
+                    dsh_approval_policy=t1_state.dsh_approval_policy,
+                    connected_folders=t1_state.connected_folders,
+                    active_run_id=t1_state.active_run_id,
+                    owner_epoch=t1_state.owner_epoch,
+                    binding_state=t1_state.binding_state,
+                    synced_turn_count=t1_state.synced_turn_count,
+                    synced_turns_hash=t1_state.synced_turns_hash,
+                    interrupted_req_id=t1_state.interrupted_req_id,
+                    interrupted_resp_id=t1_state.interrupted_resp_id,
+                    interrupted_turn_count=t1_state.interrupted_turn_count,
+                    interrupted_turns_hash=t1_state.interrupted_turns_hash,
+                    conv_base_msg_idx=t1_state.conv_base_msg_idx,
+                    context_tokens=t1_state.context_tokens,
+                    compacted=t1_state.compacted,
+                )
+                return
         for cache_k, cached_s in list(_ROBIN_SESSION_STATE_CACHE.items()):
             if cached_s is None:
                 continue
@@ -65676,6 +66214,7 @@ def _robin_release_parked_stream_sync(
     *,
     abort_remote: bool = False,
     restore_parent_continuation: bool = False,
+    interrupted_turn_anchors: Sequence[tuple[str, str]] | None = None,
 ) -> None:
     if item is None:
         return
@@ -65696,6 +66235,7 @@ def _robin_release_parked_stream_sync(
         or item.run.parent_conv_id
     )
     req_id_abort = item.run.request_id or item.decoder.request_id or item.request_id
+    resp_id_abort = item.run.response_id or item.decoder.response_id or item.response_id
     if restore_parent_continuation:
         _robin_rollback_uncommitted_run_continuation(
             item.run,
@@ -65706,8 +66246,10 @@ def _robin_release_parked_stream_sync(
             credential_id=item.credential_id,
             messages=item.run.initial_messages,
             req_id_hint=req_id_abort,
+            resp_id_hint=resp_id_abort,
             conv_id_hint=conv_id_abort,
             owner_epoch_hint=item.run.provisional_owner_epoch,
+            interrupted_turn_anchors=interrupted_turn_anchors,
         )
     should_abort_remote = bool(
         abort_remote
@@ -65841,6 +66383,27 @@ def _robin_rollback_attempt_continuation(
             or attempt.actor.request_id
             or ""
         ).strip()
+        att_resp = str(
+            attempt.run.response_id
+            or attempt.decoder.response_id
+            or attempt.actor.response_id
+            or ""
+        ).strip()
+        eff_att_msgs = list(
+            messages if messages is not None else (attempt.messages or ())
+        )
+        _, _, att_through_u = (
+            _robin_extract_turn_anchors(eff_att_msgs) if eff_att_msgs else ([], [], [])
+        )
+        att_int_cnt = len(att_through_u)
+        att_int_hash = _robin_compute_turns_hash(att_through_u) if att_through_u else ""
+        has_att_int_cursor = bool(
+            att_req
+            and att_resp
+            and att_req != snap_req
+            and att_int_cnt > 0
+            and att_int_hash
+        )
         allowed_reqs: list[str] = []
         for r_cand in (snap_req, att_req):
             if r_cand and r_cand not in allowed_reqs:
@@ -65865,9 +66428,28 @@ def _robin_rollback_attempt_continuation(
             expected_request_ids=allowed_reqs,
             expected_owner_epochs=allowed_epochs,
             expected_owner_pairs=allowed_pairs if allowed_pairs else None,
+            interrupted_req_id=att_req if has_att_int_cursor else "",
+            interrupted_resp_id=att_resp if has_att_int_cursor else "",
+            interrupted_turn_count=att_int_cnt if has_att_int_cursor else 0,
+            interrupted_turns_hash=att_int_hash if has_att_int_cursor else "",
         )
         return restored is not None
-    if attempt.provisional_stored and not attempt.normal_completion_or_handoff:
+    if not attempt.normal_completion_or_handoff and (
+        attempt.provisional_stored
+        or bool(
+            (
+                attempt.provisional_req_id
+                or attempt.run.request_id
+                or attempt.decoder.request_id
+                or attempt.actor.request_id
+            )
+            and (
+                attempt.run.response_id
+                or attempt.decoder.response_id
+                or attempt.actor.response_id
+            )
+        )
+    ):
         attempt.provisional_stored = False
         _robin_rollback_uncommitted_run_continuation(
             attempt.run,
@@ -65881,6 +66463,11 @@ def _robin_rollback_attempt_continuation(
                 attempt.provisional_req_id
                 or attempt.decoder.request_id
                 or attempt.actor.request_id
+            ),
+            resp_id_hint=(
+                attempt.run.response_id
+                or attempt.decoder.response_id
+                or attempt.actor.response_id
             ),
             conv_id_hint=(
                 attempt.provisional_conv_id
@@ -68263,6 +68850,73 @@ async def _robin_reconcile_via_list_turns(
         return []
 
 
+async def _robin_resolve_response_id_via_list_turns(
+    session: aiohttp.ClientSession | None,
+    access_token: str,
+    conversation_id: str,
+    request_id: str,
+    *,
+    device_id: str = "",
+    server_token: str = "",
+) -> str:
+    """Resolve `response_id` (`rc_...`) via `ListConversationTurns` when a turn is aborted before `rc_` arrived on the PQ stream."""
+    if not (access_token and conversation_id and request_id):
+        return ""
+    account_mode_id = _robin_account_bard_mode_id(access_token)
+    req_pb = _robin_build_list_turns_frame(
+        conversation_id=conversation_id,
+        device_id=device_id,
+        bard_mode_id=account_mode_id,
+    )
+    payload = _robin_pack_grpc_frames([req_pb])
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/grpc",
+        "TE": "trailers",
+        "grpc-accept-encoding": "identity,deflate,gzip",
+        "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
+        "x-ios-bundle-identifier": "com.google.GeminiMacOS",
+        "accept-language": "zh_CN",
+    }
+    if server_token:
+        headers["X-Server-Token"] = server_token
+    try:
+        raw = b""
+        if session is not None:
+            if _robin_session_post_is_custom(session):
+                resp = await session.post(
+                    GEMINI_ROBIN_LIST_TURNS_URL, data=payload, headers=headers
+                )
+                try:
+                    raw = await resp.read() if hasattr(resp, "read") else b""
+                finally:
+                    if hasattr(resp, "release"):
+                        resp.release()
+            else:
+                resp = await _robin_post_http2_grpc(
+                    GEMINI_ROBIN_LIST_TURNS_URL,
+                    headers,
+                    payload,
+                    end_stream=True,
+                )
+                try:
+                    raw = await resp.read()
+                finally:
+                    resp.release()
+        if not raw:
+            return ""
+        turns = _robin_parse_conversation_turns(raw)
+        matched = next(
+            (t for t in turns if str(t.get("request_id") or "") == request_id),
+            None,
+        )
+        if matched is not None and matched.get("response_id"):
+            return str(matched["response_id"]).strip()
+    except Exception as exc:
+        _llm_log.debug("ListConversationTurns response_id lookup failed: %s", exc)
+    return ""
+
+
 async def _robin_open_execute_remote_tools_stream(
     session: aiohttp.ClientSession,
     access_token: str,
@@ -69833,7 +70487,19 @@ def _gemini_base_payload(
     base["_ve_dsh_sandbox_mode"] = dsh_policy["sandbox_mode"]
     base["_ve_dsh_approval_policy"] = dsh_policy["approval_policy"]
 
-    prompt_ctx = transcript.prompt_context
+    if is_compaction_req:
+        comp_sys_parts: list[str] = []
+        for m_sys in messages:
+            if (
+                isinstance(m_sys, dict)
+                and str(m_sys.get("role") or "").strip().lower() == "system"
+            ):
+                s_txt = _dsh_extract_message_plain_text(m_sys).strip()
+                if s_txt and _dsh_is_compaction_engine_prompt(s_txt):
+                    comp_sys_parts.append(s_txt)
+        prompt_ctx = "\n\n".join(comp_sys_parts)
+    else:
+        prompt_ctx = transcript.prompt_context
     base["_ve_robin_prompt_context"] = prompt_ctx
     if prompt_ctx:
         base["systemInstruction"] = {
@@ -72695,11 +73361,29 @@ class GeminiHTTPClient:
             base_payload.pop("_ve_robin_parent_resp_id", None)
             base_payload.pop("_ve_robin_attachments", None)
             base_payload.pop("_ve_robin_uploaded_attachments", None)
+            comp_sys_parts_cs: list[str] = []
+            for m_sys_cs in messages:
+                if (
+                    isinstance(m_sys_cs, dict)
+                    and str(m_sys_cs.get("role") or "").strip().lower() == "system"
+                ):
+                    s_txt_cs = _dsh_extract_message_plain_text(m_sys_cs).strip()
+                    if s_txt_cs and _dsh_is_compaction_engine_prompt(s_txt_cs):
+                        comp_sys_parts_cs.append(s_txt_cs)
+            comp_prompt_ctx = "\n\n".join(comp_sys_parts_cs)
+            base_payload["_ve_robin_prompt_context"] = comp_prompt_ctx
+            if comp_prompt_ctx:
+                base_payload["systemInstruction"] = {
+                    "parts": [{"text": comp_prompt_ctx}],
+                }
+            else:
+                base_payload.pop("systemInstruction", None)
             if had_conv or not base_payload.get("_ve_query_text"):
                 base_payload["_ve_query_text"] = _robin_extract_aligned_user_query(
                     messages,
                     has_remote_parent=False,
                     synced_turn_count=0,
+                    transcript=transcript,
                 )
             robin_tools = None
             has_robin_tools = False
@@ -73972,6 +74656,63 @@ class GeminiHTTPClient:
                     r_txt = str(delta.get("reasoning_content") or "")
                     return "> ⏳ " in r_txt
 
+                def _is_attribution_banner_chunk(
+                    chunk_obj: dict[str, Any],
+                ) -> bool:
+                    choices = chunk_obj.get("choices") or []
+                    if not choices or not isinstance(choices[0], dict):
+                        return False
+                    delta = choices[0].get("delta") or {}
+                    r_txt = str(delta.get("reasoning_content") or "")
+                    return bool(r_txt and _GEMINI_ATTRIBUTION_BANNER_RE.match(r_txt))
+
+                def _order_attribution_before_reminders(
+                    pre_chunks: list[dict[str, Any]],
+                    cur_chunks: list[dict[str, Any]],
+                    *,
+                    ensure_for_reminder: bool = False,
+                    _att: _RobinAttemptContext = attempt,
+                ) -> list[dict[str, Any]]:
+                    has_reminder = ensure_for_reminder or any(
+                        _is_progress_reminder_chunk(c) for c in pre_chunks
+                    )
+                    combined = [*pre_chunks, *cur_chunks]
+                    if (
+                        has_reminder
+                        and not is_auxiliary_req
+                        and not _att.flush_cached_actor_only
+                    ):
+                        if not _att.decoder.model_attribution_emitted:
+                            attr_chunks = (
+                                _att.decoder._maybe_emit_model_attribution_chunk()
+                            )
+                            if attr_chunks:
+                                return [*attr_chunks, *combined]
+                        for idx_c, c_obj in enumerate(combined):
+                            if _is_attribution_banner_chunk(c_obj):
+                                if idx_c > 0:
+                                    attr_moved = combined.pop(idx_c)
+                                    first_choices = combined[0].get("choices") or []
+                                    attr_choices = attr_moved.get("choices") or []
+                                    if (
+                                        first_choices
+                                        and attr_choices
+                                        and isinstance(first_choices[0], dict)
+                                        and isinstance(attr_choices[0], dict)
+                                    ):
+                                        f_delta = first_choices[0].get("delta")
+                                        a_delta = attr_choices[0].get("delta")
+                                        if (
+                                            isinstance(f_delta, dict)
+                                            and isinstance(a_delta, dict)
+                                            and "role" in f_delta
+                                            and "role" not in a_delta
+                                        ):
+                                            a_delta["role"] = f_delta.pop("role")
+                                    combined.insert(0, attr_moved)
+                                break
+                    return combined
+
                 def _buffer_pre_id_reminder(
                     reminder_chunk: dict[str, Any],
                     _att: _RobinAttemptContext = attempt,
@@ -74047,6 +74788,16 @@ class GeminiHTTPClient:
                                     _fail_pre_identity_timeout(now_mono)
                                     break
                                 if (
+                                    is_auxiliary_req
+                                    and not flush_cached_actor_only
+                                    and not decoder.is_completed
+                                    and (now_mono - last_sse_yield_monotonic)
+                                    >= idle_reminder_interval
+                                ):
+                                    last_sse_yield_monotonic = now_mono
+                                    yield b": keepalive\n\n"
+                                    continue
+                                if (
                                     not is_auxiliary_req
                                     and not flush_cached_actor_only
                                     and not decoder.is_completed
@@ -74076,17 +74827,18 @@ class GeminiHTTPClient:
                                         yield f"data: {json.dumps(sep_to_emit, ensure_ascii=False)}\n\n".encode(
                                             "utf-8"
                                         )
-                                    if attempt.pending_pre_id_chunks:
-                                        flushed_pre = [*attempt.pending_pre_id_chunks]
-                                        attempt.pending_pre_id_chunks.clear()
-                                        for pre_c in flushed_pre:
-                                            _record_delivered(pre_c)
-                                            yield f"data: {json.dumps(pre_c, ensure_ascii=False)}\n\n".encode(
-                                                "utf-8"
-                                            )
-                                    yield f"data: {json.dumps(reminder_chunk, ensure_ascii=False)}\n\n".encode(
-                                        "utf-8"
+                                    to_emit_rem = _order_attribution_before_reminders(
+                                        attempt.pending_pre_id_chunks,
+                                        [reminder_chunk],
+                                        ensure_for_reminder=True,
                                     )
+                                    attempt.pending_pre_id_chunks.clear()
+                                    for rem_c in to_emit_rem:
+                                        if not _is_progress_reminder_chunk(rem_c):
+                                            _record_delivered(rem_c)
+                                        yield f"data: {json.dumps(rem_c, ensure_ascii=False)}\n\n".encode(
+                                            "utf-8"
+                                        )
                                 continue
                         if attempt.client_disconnected or attempt.upstream_failed:
                             break
@@ -74110,6 +74862,17 @@ class GeminiHTTPClient:
                             try:
                                 chunks = decoder.feed_bytes(item)
                             except GeminiStreamError as pq_decode_exc:
+                                if (
+                                    _attempt_has_remote_id()
+                                    and isinstance(
+                                        actor.response,
+                                        (_RobinHTTP2Response, _RobinMuxResponse),
+                                    )
+                                    and _robin_is_transient_pq_stream_error(
+                                        str(pq_decode_exc)
+                                    )
+                                ):
+                                    continue
                                 attempt.upstream_failed = True
                                 attempt.upstream_error_msg = (
                                     str(pq_decode_exc) or "Gemini stream error"
@@ -74167,10 +74930,14 @@ class GeminiHTTPClient:
                                         break
                                     continue
                             if attempt.pending_pre_id_chunks:
-                                chunks = [*attempt.pending_pre_id_chunks, *chunks]
+                                chunks = _order_attribution_before_reminders(
+                                    attempt.pending_pre_id_chunks,
+                                    chunks,
+                                )
                                 attempt.pending_pre_id_chunks.clear()
                             for chunk_dict in chunks:
-                                _record_delivered(chunk_dict)
+                                if not _is_progress_reminder_chunk(chunk_dict):
+                                    _record_delivered(chunk_dict)
                                 last_sse_yield_monotonic = time.monotonic()
                                 last_visible_progress_monotonic = (
                                     last_sse_yield_monotonic
@@ -74210,17 +74977,20 @@ class GeminiHTTPClient:
                                         yield f"data: {json.dumps(sep_to_emit, ensure_ascii=False)}\n\n".encode(
                                             "utf-8"
                                         )
-                                    if attempt.pending_pre_id_chunks:
-                                        flushed_pre = [*attempt.pending_pre_id_chunks]
-                                        attempt.pending_pre_id_chunks.clear()
-                                        for pre_c in flushed_pre:
-                                            _record_delivered(pre_c)
-                                            yield f"data: {json.dumps(pre_c, ensure_ascii=False)}\n\n".encode(
-                                                "utf-8"
-                                            )
-                                    yield f"data: {json.dumps(reminder_chunk, ensure_ascii=False)}\n\n".encode(
-                                        "utf-8"
+                                    to_emit_notice = (
+                                        _order_attribution_before_reminders(
+                                            attempt.pending_pre_id_chunks,
+                                            [reminder_chunk],
+                                            ensure_for_reminder=True,
+                                        )
                                     )
+                                    attempt.pending_pre_id_chunks.clear()
+                                    for rem_c in to_emit_notice:
+                                        if not _is_progress_reminder_chunk(rem_c):
+                                            _record_delivered(rem_c)
+                                        yield f"data: {json.dumps(rem_c, ensure_ascii=False)}\n\n".encode(
+                                            "utf-8"
+                                        )
                         elif kind == "ert_chunks":
                             prepared_ert = _prepare_ert_chunk_list(item)
                             if attempt.leading_sep_chunk is not None:
@@ -74239,13 +75009,14 @@ class GeminiHTTPClient:
                                     prepared_ert = []
                             if attempt.leading_sep_chunk is None:
                                 if attempt.pending_pre_id_chunks:
-                                    prepared_ert = [
-                                        *attempt.pending_pre_id_chunks,
-                                        *prepared_ert,
-                                    ]
+                                    prepared_ert = _order_attribution_before_reminders(
+                                        attempt.pending_pre_id_chunks,
+                                        prepared_ert,
+                                    )
                                     attempt.pending_pre_id_chunks.clear()
                                 for chunk_dict in prepared_ert:
-                                    _record_delivered(chunk_dict)
+                                    if not _is_progress_reminder_chunk(chunk_dict):
+                                        _record_delivered(chunk_dict)
                                     last_sse_yield_monotonic = time.monotonic()
                                     last_visible_progress_monotonic = (
                                         last_sse_yield_monotonic
@@ -74323,13 +75094,18 @@ class GeminiHTTPClient:
                                                 nxt_ert_list = []
                                         if attempt.leading_sep_chunk is None:
                                             if attempt.pending_pre_id_chunks:
-                                                nxt_ert_list = [
-                                                    *attempt.pending_pre_id_chunks,
-                                                    *nxt_ert_list,
-                                                ]
+                                                nxt_ert_list = (
+                                                    _order_attribution_before_reminders(
+                                                        attempt.pending_pre_id_chunks,
+                                                        nxt_ert_list,
+                                                    )
+                                                )
                                                 attempt.pending_pre_id_chunks.clear()
                                             for chunk_dict in nxt_ert_list:
-                                                _record_delivered(chunk_dict)
+                                                if not _is_progress_reminder_chunk(
+                                                    chunk_dict
+                                                ):
+                                                    _record_delivered(chunk_dict)
                                                 last_sse_yield_monotonic = (
                                                     time.monotonic()
                                                 )
@@ -74362,6 +75138,20 @@ class GeminiHTTPClient:
                                         try:
                                             nxt_chunks = decoder.feed_bytes(nxt_item)
                                         except GeminiStreamError as pq_decode_exc2:
+                                            if (
+                                                _attempt_has_remote_id()
+                                                and isinstance(
+                                                    actor.response,
+                                                    (
+                                                        _RobinHTTP2Response,
+                                                        _RobinMuxResponse,
+                                                    ),
+                                                )
+                                                and _robin_is_transient_pq_stream_error(
+                                                    str(pq_decode_exc2)
+                                                )
+                                            ):
+                                                continue
                                             attempt.upstream_failed = True
                                             attempt.upstream_error_msg = (
                                                 str(pq_decode_exc2)
@@ -74416,13 +75206,18 @@ class GeminiHTTPClient:
                                                 nxt_chunks = []
                                         if attempt.leading_sep_chunk is None:
                                             if attempt.pending_pre_id_chunks:
-                                                nxt_chunks = [
-                                                    *attempt.pending_pre_id_chunks,
-                                                    *nxt_chunks,
-                                                ]
+                                                nxt_chunks = (
+                                                    _order_attribution_before_reminders(
+                                                        attempt.pending_pre_id_chunks,
+                                                        nxt_chunks,
+                                                    )
+                                                )
                                                 attempt.pending_pre_id_chunks.clear()
                                             for chunk_dict in nxt_chunks:
-                                                _record_delivered(chunk_dict)
+                                                if not _is_progress_reminder_chunk(
+                                                    chunk_dict
+                                                ):
+                                                    _record_delivered(chunk_dict)
                                                 last_sse_yield_monotonic = (
                                                     time.monotonic()
                                                 )
@@ -74467,19 +75262,22 @@ class GeminiHTTPClient:
                                                     yield f"data: {json.dumps(sep_to_emit, ensure_ascii=False)}\n\n".encode(
                                                         "utf-8"
                                                     )
-                                                if attempt.pending_pre_id_chunks:
-                                                    flushed_pre = [
-                                                        *attempt.pending_pre_id_chunks
-                                                    ]
-                                                    attempt.pending_pre_id_chunks.clear()
-                                                    for pre_c in flushed_pre:
-                                                        _record_delivered(pre_c)
-                                                        yield f"data: {json.dumps(pre_c, ensure_ascii=False)}\n\n".encode(
-                                                            "utf-8"
-                                                        )
-                                                yield f"data: {json.dumps(reminder_chunk, ensure_ascii=False)}\n\n".encode(
-                                                    "utf-8"
+                                                to_emit_coal_notice = (
+                                                    _order_attribution_before_reminders(
+                                                        attempt.pending_pre_id_chunks,
+                                                        [reminder_chunk],
+                                                        ensure_for_reminder=True,
+                                                    )
                                                 )
+                                                attempt.pending_pre_id_chunks.clear()
+                                                for rem_c in to_emit_coal_notice:
+                                                    if not _is_progress_reminder_chunk(
+                                                        rem_c
+                                                    ):
+                                                        _record_delivered(rem_c)
+                                                    yield f"data: {json.dumps(rem_c, ensure_ascii=False)}\n\n".encode(
+                                                        "utf-8"
+                                                    )
                                     else:
                                         mux_q.put_nowait((nxt_kind, nxt_item))
                                         break
@@ -75597,16 +76395,6 @@ class GeminiHTTPClient:
                         )
                         _relay_clear_active_run(attempt.pending_next_pre_run)
                         attempt.pending_next_pre_run = None
-                    _robin_rollback_attempt_continuation(
-                        attempt,
-                        session_id=session_id,
-                        session_key=session_key,
-                        boot_key=boot_key,
-                        full_key=full_key,
-                        credential_id=actor.credential_id,
-                        messages=messages,
-                        mid_turn_compacted=mid_turn_compacted,
-                    )
                     # Per-attempt Exact User Cancellation Rule:
                     # Each `_RobinAttemptContext` owns its `(run, decoder, actor)` lifecycle.
                     # Whenever an attempt terminates before normal completion or tool handoff
@@ -75665,7 +76453,36 @@ class GeminiHTTPClient:
                                     server_token=actor.server_token,
                                     run=run,
                                 )
+                                if not (
+                                    run.response_id
+                                    or decoder.response_id
+                                    or actor.response_id
+                                ):
+                                    resolved_rc = (
+                                        await _robin_resolve_response_id_via_list_turns(
+                                            actor.http_session,
+                                            actor.access_token,
+                                            abort_conv_id,
+                                            abort_req_id,
+                                            device_id=actor.device_id,
+                                            server_token=actor.server_token,
+                                        )
+                                    )
+                                    if resolved_rc:
+                                        run.response_id = resolved_rc
+                                        decoder.response_id = resolved_rc
+                                        actor.response_id = resolved_rc
                             _GEMINI_DSH_STORE.save_run(run)
+                    _robin_rollback_attempt_continuation(
+                        attempt,
+                        session_id=session_id,
+                        session_key=session_key,
+                        boot_key=boot_key,
+                        full_key=full_key,
+                        credential_id=actor.credential_id,
+                        messages=messages,
+                        mid_turn_compacted=mid_turn_compacted,
+                    )
 
                     if not attempt.actor_closed and not (
                         attempt.normal_completion_or_handoff
@@ -76024,10 +76841,14 @@ def _ais_update_dynamic_models(raw_list_models: Any) -> int:
 
 
 _GEMINI_ATTRIBUTION_BANNER_RE = re.compile(
-    r"^\s*使用了\s+[^\n]+\s*模型\s*\n+", re.UNICODE
+    r"^\s*(?:>\s*⏳[^\n]*\n+\s*)*使用了\s+[^\n]+\s*模型\s*\n+(?:\s*>\s*⏳[^\n]*\n+)*",
+    re.UNICODE,
 )
 _GEMINI_ANY_ATTRIBUTION_BANNER_RE = re.compile(
     r"(?:^|\n)\s*使用了\s+[^\n]+\s*模型\s*\n+", re.UNICODE
+)
+_GEMINI_PROGRESS_REMINDER_RE = re.compile(
+    r"(?:^|\n+)\s*>\s*⏳[^\n]*(?:\n+|$)", re.UNICODE
 )
 # Structural separator emitted between a flushed cached turn and a chained follow-up turn.
 # Includes U+2063 (INVISIBLE SEPARATOR) immediately before the Markdown horizontal rule so
@@ -78348,9 +79169,12 @@ def _ais_build_contents_and_system(
             pending_compaction_summary = ""
 
             model_parts: list[list[Any]] = []
-            reasoning_txt = _GEMINI_ATTRIBUTION_BANNER_RE.sub(
-                "", str(msg.get("reasoning_content") or "")
-            )
+            reasoning_txt = _GEMINI_PROGRESS_REMINDER_RE.sub(
+                "\n\n",
+                _GEMINI_ATTRIBUTION_BANNER_RE.sub(
+                    "", str(msg.get("reasoning_content") or "")
+                ),
+            ).strip()
             turn_sig = (
                 _AIS_THOUGHT_SIG_STORE.lookup_turn_text(plain_a) if plain_a else ""
             )
@@ -80127,8 +80951,11 @@ def _ais_rebuild_history_turns_from_messages(
                 continue
             pending_compaction_summary = ""
 
-            r_txt = _GEMINI_ATTRIBUTION_BANNER_RE.sub(
-                "", str(msg.get("reasoning_content") or "")
+            r_txt = _GEMINI_PROGRESS_REMINDER_RE.sub(
+                "\n\n",
+                _GEMINI_ATTRIBUTION_BANNER_RE.sub(
+                    "", str(msg.get("reasoning_content") or "")
+                ),
             ).strip()
             a_txt = plain_a
             if not a_txt and isinstance(tcalls, list) and tcalls:
@@ -100283,6 +101110,161 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     assert "继续排查中断问题并修改代码" in comp_q
     assert "You are now acting as a compaction engine" in comp_q
 
+    # 5b. Mid-turn compaction when Turn 1 ended with an interrupted tool call (`turn1_completed=False`)
+    #     plus coding-agent `system` prompt stripping and keepalive/banner ordering regression check:
+    t1_interrupted_comp_msgs = [
+        {
+            "role": "system",
+            "content": "You are an AI coding agent.\n<workspace_instructions>\nAGENTS.md rules...\n</workspace_instructions>",
+        },
+        {
+            "role": "user",
+            "content": "第一轮审查长请求：定位 5 个并发与流控制问题",
+        },
+        {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "使用了 gemini-3-pro 模型\n\nChecking files.",
+            "tool_calls": [
+                {
+                    "id": "call_t1_int_01",
+                    "type": "function",
+                    "function": {
+                        "name": "read",
+                        "arguments": '{"file_path":"voice_edge.py"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_t1_int_01",
+            "name": "read",
+            "content": "[error] tool execution failed: stream idle timeout after 300000ms",
+        },
+        {
+            "role": "user",
+            "content": (
+                "<system-reminder>\nThe following information describes your current session:\n"
+                'The approval policy changed from "read-only" to '
+                '"danger-full-access" (changed by the user).\n</system-reminder>\n\n'
+                "第二轮：继续修复两个仓库的问题"
+            ),
+        },
+        {
+            "role": "assistant",
+            "content": "已完成第一阶段定位。",
+        },
+        {
+            "role": "user",
+            "content": "第三轮：继续执行修改并检查日志",
+        },
+        {
+            "role": "assistant",
+            "content": "",
+            "reasoning_content": "使用了 gemini-3-pro 模型\n\nRunning grep.",
+            "tool_calls": [
+                {
+                    "id": "call_t3_mid_02",
+                    "type": "function",
+                    "function": {
+                        "name": "grep",
+                        "arguments": '{"pattern":"compaction"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_t3_mid_02",
+            "name": "grep",
+            "content": "Found 4 matches in voice_edge.py",
+        },
+        {
+            "role": "user",
+            "content": (
+                "You are performing context compaction for an ongoing coding-agent session. "
+                "Produce the structured checkpoint inside <compacted-summary>...</compacted-summary>."
+            ),
+        },
+    ]
+    _, first_a_t1_int = _dsh_extract_first_turn_identity(t1_interrupted_comp_msgs)
+    assert first_a_t1_int == ""
+    base_t1_int_comp = _gemini_base_payload(
+        spec,
+        {
+            "model": spec.public_id,
+            "stream": True,
+            "tools": [{"type": "function", "function": {"name": "read"}}],
+        },
+        t1_interrupted_comp_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_t1_int_comp.get("_ve_robin_conv_id", "") == ""
+    assert base_t1_int_comp.get("_ve_robin_tools") is None
+    assert "workspace_instructions" not in str(
+        base_t1_int_comp.get("_ve_robin_prompt_context") or ""
+    )
+    comp_q_t1_int = str(base_t1_int_comp.get("_ve_query_text") or "")
+    assert "User: 第一轮审查长请求：定位 5 个并发与流控制问题" in comp_q_t1_int
+    assert "User: 第二轮：继续修复两个仓库的问题" in comp_q_t1_int
+    assert "Assistant: 已完成第一阶段定位。" in comp_q_t1_int
+    assert "User: 第三轮：继续执行修改并检查日志" in comp_q_t1_int
+    assert "You are performing context compaction" in comp_q_t1_int
+
+    # Verify `_GEMINI_ATTRIBUTION_BANNER_RE` + `_GEMINI_PROGRESS_REMINDER_RE` strip both banner and `> ⏳` reminders:
+    sample_rc_with_reminder = (
+        "\n\n> ⏳ 远端深度思考或重放状态中（已完成 1 次流续接，已等待约 34s；脚本保持连接不主动中断，如需停止可随时点击停止按钮）…\n\n"
+        "使用了 gemini-3-pro (Thinking: High) 模型\n\n"
+        "\n\n> ⏳ 远端模型仍在处理中（已等待 45s，期间暂无新增状态输出；如需中止可随时点击停止按钮）…\n\n"
+        "First real thought block."
+    )
+    cleaned_rc = _GEMINI_PROGRESS_REMINDER_RE.sub(
+        "\n\n",
+        _GEMINI_ATTRIBUTION_BANNER_RE.sub("", sample_rc_with_reminder),
+    ).strip()
+    assert cleaned_rc == "First real thought block.", (
+        f"Unexpected cleaned_rc: {cleaned_rc!r}"
+    )
+
+    # Verify transient upstream `BardStatusException: Dependency RPC failed ... DEADLINE_EXCEEDED`
+    # is classified as resumable (`_robin_is_transient_pq_stream_error == True`), while quota /
+    # already-finished errors remain non-transient (`False`), and verify Turn-1 interrupted boundary
+    # detection works even when `time-context` / `<system-reminder>` is absent on Turn 2:
+    sample_dep_rpc_err = (
+        "com.google.assistant.boq.bard.application.utils.BardStatusException: Dependency RPC failed "
+        "Caused by: com.google.net.rpc3.util.RpcFutureStream$RpcStreamException: "
+        "<eye3 title='/InteractionService.CreateInteractionBidiStream, DEADLINE_EXCEEDED'/> "
+        "generic::DEADLINE_EXCEEDED: stalled waiting for channel to become reachable: "
+        "/bns/pw/borg/pw/bns/geminiapp-go-actor-host/prod-geminiapp.geminiapp-go-actor-host/54"
+    )
+    assert _robin_is_transient_pq_stream_error(sample_dep_rpc_err) is True
+    assert (
+        _robin_is_transient_pq_stream_error(
+            "com.google.assistant.boq.bard.application.utils.BardStatusException: Remy quota exhausted"
+        )
+        is False
+    )
+    assert (
+        _robin_is_transient_pq_stream_error(
+            "Requested turn to resume (r_wire_99) is no longer in progress."
+        )
+        is False
+    )
+    t1_int_no_time_ctx_msgs = [
+        *t1_interrupted_comp_msgs[:3],
+        {
+            "role": "tool",
+            "tool_call_id": "call_t1_int_01",
+            "name": "read",
+            "content": "The tool call was interrupted after it was recorded; it may or may not have completed.",
+        },
+        {"role": "user", "content": "第二轮：关闭 time-context 后的直接用户提问"},
+        {"role": "assistant", "content": "第二轮回答。"},
+    ]
+    _, first_a_no_tctx = _dsh_extract_first_turn_identity(t1_int_no_time_ctx_msgs)
+    assert first_a_no_tctx == ""
+
     generated_summary = "Compacted summary of turns 1-2 for session continuity test."
     post_comp_turn_msgs = [
         {
@@ -102777,6 +103759,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         == TurnRequestKind.NEW_CONVERSATION_TURN
     )
     assert base_aborted_new_turn.get("_ve_query_text") == inf_t2_prompt
+    assert base_aborted_new_turn.get("_ve_robin_conv_id") == "c_inf_chain_01"
+    assert base_aborted_new_turn.get("_ve_robin_parent_req_id") == "r_stop_tool_2"
+    assert base_aborted_new_turn.get("_ve_robin_parent_resp_id") == "rc_stop_tool_2"
     assert _robin_peek_parked_stream(inf_boot_key) is None
     assert stop_tool_next_actor.pending_tool_calls == []
     assert stop_tool_next_ert.sent_frames == []
@@ -104622,6 +105607,490 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             )
     finally:
         globals()["GEMINI_FIRST_EVENT_TIMEOUT_SECONDS"] = orig_first_ev_timeout
+
+    # (8) Interrupted/aborted turn continuation alignment:
+    #     8a. `_robin_parse_conversation_turns` extracts `response_id` from both `f1.f4.f1.f1`
+    #         (when aborted early with only `f1` and `f19=1`) and `f1.f4.f4` (when `f1.f4.f5`
+    #         history states are present without `f1.f4.f1`):
+    early_abort_t4 = _pb_bytes_field(
+        1, _pb_bytes_field(1, "rc_selftest_early_01") + _pb_varint_field(19, 1)
+    ) + _pb_bytes_field(4, "rc_selftest_early_01")
+    early_abort_turn = _pb_bytes_field(
+        1,
+        _pb_bytes_field(1, "c_selftest_ab_01") + _pb_bytes_field(2, "r_selftest_ab_01"),
+    ) + _pb_bytes_field(4, early_abort_t4)
+    hist_only_t4 = (
+        _pb_bytes_field(4, "rc_selftest_hist_02")
+        + _pb_bytes_field(5, _pb_varint_field(1, 1))
+        + _pb_varint_field(10, 1)
+        + _pb_varint_field(11, 1)
+    )
+    hist_only_turn = _pb_bytes_field(
+        1,
+        _pb_bytes_field(1, "c_selftest_ab_01") + _pb_bytes_field(2, "r_selftest_ab_02"),
+    ) + _pb_bytes_field(4, hist_only_t4)
+    parsed_ab_turns = _robin_parse_conversation_turns(
+        _robin_pack_grpc_frames(
+            [_pb_bytes_field(1, early_abort_turn) + _pb_bytes_field(1, hist_only_turn)]
+        )
+    )
+    assert len(parsed_ab_turns) == 2
+    assert parsed_ab_turns[0]["request_id"] == "r_selftest_ab_01"
+    assert parsed_ab_turns[0]["response_id"] == "rc_selftest_early_01"
+    assert parsed_ab_turns[1]["request_id"] == "r_selftest_ab_02"
+    assert parsed_ab_turns[1]["response_id"] == "rc_selftest_hist_02"
+
+    #     8b. Turn 1 manual stop during `ProcessQuery` before `response_id` arrives on the stream:
+    #         `finally:` sends `AbortGeneration`, resolves `rc_...` via `ListConversationTurns`,
+    #         preserves `(c_, r_1, rc_1)`, and Turn 2 chains directly onto `(c_, r_1, rc_1)`:
+    ab_t1_u = "测试首轮中途手动停止后继续第二轮"
+    ab_t2_u = "测试第二轮接续首轮上下文"
+    ab_t1_msgs: list[dict[str, Any]] = [
+        {"role": "user", "content": session_desc_reminder},
+        {"role": "user", "content": time_ctx_t1_s1},
+        {"role": "user", "content": ab_t1_u},
+    ]
+    base_ab_t1 = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        ab_t1_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    ab_t1_no_rc_inner = _pb_bytes_field(
+        2,
+        _pb_bytes_field(1, "c_selftest_stop_01")
+        + _pb_bytes_field(2, "r_selftest_stop_01"),
+    ) + _pb_bytes_field(
+        1,
+        _pb_bytes_field(1, "")
+        + _pb_bytes_field(2, _pb_bytes_field(1, "首轮部分流式回答"))
+        + _pb_varint_field(19, 1),
+    )
+    ab_t1_no_rc_frame = _robin_pack_grpc_frames(
+        [_pb_bytes_field(1003, _pb_bytes_field(1, ab_t1_no_rc_inner))]
+    )
+
+    class _FirstFrameThenHangIter:
+        def __init__(self, first_frame: bytes) -> None:
+            self._emitted = False
+            self._first_frame = first_frame
+
+        def __aiter__(self) -> "_FirstFrameThenHangIter":
+            return self
+
+        async def __anext__(self) -> bytes:
+            if not self._emitted:
+                self._emitted = True
+                return self._first_frame
+            await asyncio.sleep(3600)
+            raise StopAsyncIteration
+
+    ab_t1_sess = _FakeSession()
+
+    async def _fake_open_ab_t1(
+        _spec: GeminiModelSpec, _payload: dict[str, Any]
+    ) -> tuple[_GeminiOpenedStream | None, Response | None]:
+        return (
+            _GeminiOpenedStream(
+                session=cast(Any, ab_t1_sess),
+                response=_ClosableChainedResp(),
+                backend=GEMINI_BACKEND_ROBIN,
+                prefetched_chunks=[],
+                iterator=cast(Any, _FirstFrameThenHangIter(ab_t1_no_rc_frame)),
+                credential_id=fake_cred_a.credential_id,
+                access_token="tok_cred_a",
+                device_id="dev_inf_01",
+            ),
+            None,
+        )
+
+    cast(Any, client)._open_stream = _fake_open_ab_t1
+    ab_t1_abort_calls: list[tuple[str, str]] = []
+    ab_t1_list_turns_calls: list[tuple[str, str]] = []
+
+    async def _spy_ab_t1_abort(
+        _session: Any,
+        _access_token: str,
+        conversation_id: str,
+        request_id: str,
+        *,
+        device_id: str = "",
+        server_token: str = "",
+        run: _RobinRunState | None = None,
+    ) -> bool:
+        ab_t1_abort_calls.append((str(conversation_id), str(request_id)))
+        if run is not None:
+            run.cancellation_state = "CONFIRMED"
+        return True
+
+    async def _spy_resolve_rc_list_turns(
+        _session: Any,
+        _access_token: str,
+        conversation_id: str,
+        request_id: str,
+        *,
+        device_id: str = "",
+        server_token: str = "",
+    ) -> str:
+        ab_t1_list_turns_calls.append((str(conversation_id), str(request_id)))
+        return "rc_selftest_stop_01"
+
+    orig_resolve_rc_fn = globals()["_robin_resolve_response_id_via_list_turns"]
+    globals()["_robin_send_abort_generation"] = _spy_ab_t1_abort
+    globals()["_robin_resolve_response_id_via_list_turns"] = _spy_resolve_rc_list_turns
+    try:
+
+        async def _run_ab_t1_stop() -> None:
+            gen_ab1, err_ab1 = await client.chat_stream(
+                spec, dict(base_ab_t1), ab_t1_msgs
+            )
+            assert err_ab1 is None and gen_ab1 is not None
+            async for raw_b in gen_ab1:
+                if "首轮部分流式回答" in raw_b.decode("utf-8", errors="replace"):
+                    break
+            await gen_ab1.aclose()
+
+        asyncio.run(_run_ab_t1_stop())
+    finally:
+        globals()["_robin_send_abort_generation"] = orig_send_abort_gen
+        globals()["_robin_resolve_response_id_via_list_turns"] = orig_resolve_rc_fn
+
+    assert ab_t1_abort_calls == [("c_selftest_stop_01", "r_selftest_stop_01")]
+    assert ab_t1_list_turns_calls == [("c_selftest_stop_01", "r_selftest_stop_01")]
+    assert ab_t1_sess.closed is True
+    ab_t2_msgs: list[dict[str, Any]] = [
+        *ab_t1_msgs,
+        {"role": "assistant", "content": "首轮部分流式回答"},
+        {
+            "role": "user",
+            "content": "Time sampled while preparing turn 2, step 1: 2026-01-01T00:01:00.000Z.",
+        },
+        {"role": "user", "content": ab_t2_u},
+    ]
+    base_ab_t2 = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        ab_t2_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_ab_t2.get("_ve_robin_conv_id") == "c_selftest_stop_01"
+    assert base_ab_t2.get("_ve_robin_parent_req_id") == "r_selftest_stop_01"
+    assert base_ab_t2.get("_ve_robin_parent_resp_id") == "rc_selftest_stop_01"
+    assert base_ab_t2.get("_ve_query_text") == ab_t2_u
+
+    #     8c. Two-step manual stop during Turn 1 tool execution (`SHORT_CIRCUIT_ABORTED_TOOL_STOP`
+    #         followed by a separate Turn 2 request) preserves `(c_, r_1, rc_1)` and chains Turn 2:
+    ab_tool_t1_u = "测试首轮工具执行中途点击停止后单独发送第二轮"
+    ab_tool_t1_bk = _dsh_boot_key(fake_cred_a.credential_id, ab_tool_t1_u)
+    ab_tool_t1_init: list[dict[str, Any]] = [
+        {"role": "user", "content": session_desc_reminder},
+        {"role": "user", "content": time_ctx_t1_s1},
+        {"role": "user", "content": ab_tool_t1_u},
+    ]
+    _robin_store_continuation(
+        ab_tool_t1_bk,
+        ab_tool_t1_init,
+        "c_selftest_ab_tool_01",
+        "r_selftest_ab_tool_01",
+        "rc_selftest_ab_tool_01",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="provisional",
+    )
+    ab_tool_run = _RobinRunState(
+        run_id="run_ab_tool_01",
+        session_key=ab_tool_t1_bk,
+        client_session_id=ab_tool_t1_bk,
+        principal_id=fake_cred_a.credential_id,
+        boot_key=ab_tool_t1_bk,
+        full_key="",
+        conversation_id="c_selftest_ab_tool_01",
+        request_id="r_selftest_ab_tool_01",
+        response_id="rc_selftest_ab_tool_01",
+        query_text=ab_tool_t1_u,
+        initial_messages=list(ab_tool_t1_init),
+        execution_state="WAITING_TOOLS",
+        attachment_state="TOOL_HANDOFF",
+    )
+    ab_tool_dec = _RobinStreamDecoder(
+        "chatcmpl-abtool01", int(time.time()), spec.public_id, run=ab_tool_run
+    )
+    ab_tool_dec.conversation_id = "c_selftest_ab_tool_01"
+    ab_tool_dec.request_id = "r_selftest_ab_tool_01"
+    ab_tool_dec.response_id = "rc_selftest_ab_tool_01"
+    ab_tool_dec.pending_tool_calls = [dict(inf_pending_list[0])]
+    ab_tool_actor = _RobinRunActor(
+        session_id=ab_tool_t1_bk,
+        session_key=ab_tool_t1_bk,
+        boot_key=ab_tool_t1_bk,
+        full_key="",
+        http_session=cast(Any, _FakeSession()),
+        response=_DummyResp(),
+        iterator=cast(Any, iter(())),
+        decoder=ab_tool_dec,
+        run=ab_tool_run,
+        conversation_id="c_selftest_ab_tool_01",
+        request_id="r_selftest_ab_tool_01",
+        response_id="rc_selftest_ab_tool_01",
+        credential_id=fake_cred_a.credential_id,
+        access_token="tok_cred_a",
+        device_id="dev_inf_01",
+        pending_tool_calls=list(ab_tool_dec.pending_tool_calls),
+    )
+    _ROBIN_ACTIVE_RUNS[ab_tool_run.run_id] = ab_tool_run
+    _robin_park_stream(ab_tool_t1_bk, ab_tool_actor, is_auxiliary=False)
+    ab_tool_stop_msgs: list[dict[str, Any]] = [
+        *ab_tool_t1_init,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_inf_tc_01",
+                    "type": "function",
+                    "function": {"name": "bash", "arguments": '{"command":"ls"}'},
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_inf_tc_01",
+            "name": "bash",
+            "content": "Error: tool call aborted",
+        },
+    ]
+    base_ab_tool_stop = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        ab_tool_stop_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert (
+        base_ab_tool_stop.get("_ve_request_kind")
+        == TurnRequestKind.SHORT_CIRCUIT_ABORTED_TOOL_STOP
+    )
+    ab_tool_t2_msgs: list[dict[str, Any]] = [
+        *ab_tool_stop_msgs,
+        {
+            "role": "user",
+            "content": "Time sampled while preparing turn 2, step 1: 2026-01-01T00:01:00.000Z.",
+        },
+        {"role": "user", "content": ab_t2_u},
+    ]
+    base_ab_tool_t2 = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        ab_tool_t2_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert (
+        base_ab_tool_t2.get("_ve_request_kind") == TurnRequestKind.NEW_CONVERSATION_TURN
+    )
+    assert base_ab_tool_t2.get("_ve_robin_conv_id") == "c_selftest_ab_tool_01"
+    assert base_ab_tool_t2.get("_ve_robin_parent_req_id") == "r_selftest_ab_tool_01"
+    assert base_ab_tool_t2.get("_ve_robin_parent_resp_id") == "rc_selftest_ab_tool_01"
+    assert base_ab_tool_t2.get("_ve_query_text") == ab_t2_u
+
+    #     8d. Multi-turn interruption chain (`Turn A completed -> Turn B interrupted -> Turn C interrupted -> Turn D`):
+    #         Verifies that Turn C chains onto `(c_, r_B, rc_B)` (never overwriting Turn B's slot under `r_A`)
+    #         and Turn D chains onto `(c_, r_C, rc_C)` (never overwriting `r_A` or `r_B`), while rewinding
+    #         `messages` to discard an interrupted turn still chains onto the prior committed turn:
+    chain_int_u_a = "多轮中断测试：第一轮正常完成"
+    chain_int_a_a = "第一轮已完成回答"
+    chain_int_u_b = "多轮中断测试：第二轮执行工具后发生中断"
+    chain_int_u_c = "多轮中断测试：第三轮继续后再次发生中断"
+    chain_int_u_d = "多轮中断测试：第四轮最终恢复并继续"
+    chain_int_bk = _dsh_boot_key(fake_cred_a.credential_id, chain_int_u_a)
+    msgs_turn_a_done: list[dict[str, Any]] = [
+        {"role": "user", "content": session_desc_reminder},
+        {"role": "user", "content": time_ctx_t1_s1},
+        {"role": "user", "content": chain_int_u_a},
+        {"role": "assistant", "content": chain_int_a_a},
+    ]
+    st_chain_a = _robin_store_continuation(
+        chain_int_bk,
+        msgs_turn_a_done[:3],
+        "c_selftest_chain_int_01",
+        "r_selftest_turn_A",
+        "rc_selftest_turn_A",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="committed",
+        committed_answer=chain_int_a_a,
+    )
+    assert st_chain_a is not None and st_chain_a.synced_turn_count == 2
+    msgs_turn_b_start: list[dict[str, Any]] = [
+        *msgs_turn_a_done,
+        {
+            "role": "user",
+            "content": "Time sampled while preparing turn 2, step 1: 2026-01-01T00:02:00.000Z.",
+        },
+        {"role": "user", "content": chain_int_u_b},
+    ]
+    base_turn_b = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        msgs_turn_b_start,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_turn_b.get("_ve_robin_parent_req_id") == "r_selftest_turn_A"
+    # Turn B starts, stores provisional `(r_selftest_turn_B, rc_selftest_turn_B)`, and then rolls back on interruption:
+    st_chain_b_prov = _robin_store_continuation(
+        chain_int_bk,
+        msgs_turn_b_start,
+        "c_selftest_chain_int_01",
+        "r_selftest_turn_B",
+        "rc_selftest_turn_B",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="provisional",
+        parent_conv_id="c_selftest_chain_int_01",
+    )
+    assert st_chain_b_prov is not None
+    assert st_chain_b_prov.parent_request_id == "r_selftest_turn_A"
+    assert st_chain_b_prov.interrupted_req_id == "r_selftest_turn_B"
+    assert st_chain_b_prov.interrupted_resp_id == "rc_selftest_turn_B"
+    run_chain_b = _RobinRunState(
+        run_id="run_chain_int_B",
+        session_key=st_chain_a.session_key,
+        client_session_id=st_chain_a.client_session_id,
+        principal_id=fake_cred_a.credential_id,
+        boot_key=chain_int_bk,
+        full_key=st_chain_a.full_key,
+        conversation_id="c_selftest_chain_int_01",
+        request_id="r_selftest_turn_B",
+        response_id="rc_selftest_turn_B",
+        parent_conv_id="c_selftest_chain_int_01",
+        parent_req_id="r_selftest_turn_A",
+        parent_resp_id="rc_selftest_turn_A",
+        initial_messages=list(msgs_turn_b_start),
+        provisional_owner_epoch=st_chain_b_prov.owner_epoch,
+    )
+    _robin_rollback_uncommitted_run_continuation(
+        run_chain_b,
+        session_id=st_chain_a.session_key,
+        session_key=st_chain_a.session_key,
+        boot_key=chain_int_bk,
+        full_key=st_chain_a.full_key,
+        credential_id=fake_cred_a.credential_id,
+        messages=msgs_turn_b_start,
+        req_id_hint="r_selftest_turn_B",
+        resp_id_hint="rc_selftest_turn_B",
+        conv_id_hint="c_selftest_chain_int_01",
+        owner_epoch_hint=st_chain_b_prov.owner_epoch,
+    )
+    # Turn C arrives with Turn B's tool calls/outputs still in `messages` -> MUST chain onto `r_selftest_turn_B`!
+    msgs_turn_c_start: list[dict[str, Any]] = [
+        *msgs_turn_b_start,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_chain_b_01",
+                    "type": "function",
+                    "function": {"name": "bash", "arguments": '{"command":"pwd"}'},
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_chain_b_01",
+            "name": "bash",
+            "content": "/w/workspace\n[exit code: 0]",
+        },
+        {
+            "role": "user",
+            "content": "Time sampled while preparing turn 3, step 1: 2026-01-01T00:03:00.000Z.",
+        },
+        {"role": "user", "content": chain_int_u_c},
+    ]
+    base_turn_c = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        msgs_turn_c_start,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_turn_c.get("_ve_robin_conv_id") == "c_selftest_chain_int_01"
+    assert base_turn_c.get("_ve_robin_parent_req_id") == "r_selftest_turn_B"
+    assert base_turn_c.get("_ve_robin_parent_resp_id") == "rc_selftest_turn_B"
+    assert base_turn_c.get("_ve_query_text") == chain_int_u_c
+    # Now Turn C (`r_selftest_turn_C, rc_selftest_turn_C`) ALSO gets interrupted after running tools:
+    st_chain_c_prov = _robin_store_continuation(
+        chain_int_bk,
+        msgs_turn_c_start,
+        "c_selftest_chain_int_01",
+        "r_selftest_turn_C",
+        "rc_selftest_turn_C",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="provisional",
+        parent_conv_id="c_selftest_chain_int_01",
+    )
+    assert st_chain_c_prov is not None
+    assert st_chain_c_prov.parent_request_id == "r_selftest_turn_B"
+    assert st_chain_c_prov.interrupted_req_id == "r_selftest_turn_C"
+    run_chain_c = _RobinRunState(
+        run_id="run_chain_int_C",
+        session_key=st_chain_a.session_key,
+        client_session_id=st_chain_a.client_session_id,
+        principal_id=fake_cred_a.credential_id,
+        boot_key=chain_int_bk,
+        full_key=st_chain_a.full_key,
+        conversation_id="c_selftest_chain_int_01",
+        request_id="r_selftest_turn_C",
+        response_id="rc_selftest_turn_C",
+        parent_conv_id="c_selftest_chain_int_01",
+        parent_req_id="r_selftest_turn_B",
+        parent_resp_id="rc_selftest_turn_B",
+        initial_messages=list(msgs_turn_c_start),
+        provisional_owner_epoch=st_chain_c_prov.owner_epoch,
+    )
+    _robin_rollback_uncommitted_run_continuation(
+        run_chain_c,
+        session_id=st_chain_a.session_key,
+        session_key=st_chain_a.session_key,
+        boot_key=chain_int_bk,
+        full_key=st_chain_a.full_key,
+        credential_id=fake_cred_a.credential_id,
+        messages=msgs_turn_c_start,
+        req_id_hint="r_selftest_turn_C",
+        resp_id_hint="rc_selftest_turn_C",
+        conv_id_hint="c_selftest_chain_int_01",
+        owner_epoch_hint=st_chain_c_prov.owner_epoch,
+    )
+    # Turn D arrives after Turn C was interrupted by a harness crash -> MUST chain onto `r_selftest_turn_C`!
+    msgs_turn_d_start: list[dict[str, Any]] = [
+        *msgs_turn_c_start,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_chain_c_01",
+                    "type": "function",
+                    "function": {"name": "bash", "arguments": '{"command":"ls"}'},
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_chain_c_01",
+            "name": "bash",
+            "content": "The tool call was interrupted after it was recorded.",
+        },
+        {
+            "role": "user",
+            "content": "Time sampled while preparing turn 4, step 1: 2026-01-01T00:04:00.000Z.",
+        },
+        {"role": "user", "content": chain_int_u_d},
+    ]
+    base_turn_d = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        msgs_turn_d_start,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_turn_d.get("_ve_robin_conv_id") == "c_selftest_chain_int_01"
+    assert base_turn_d.get("_ve_robin_parent_req_id") == "r_selftest_turn_C"
+    assert base_turn_d.get("_ve_robin_parent_resp_id") == "rc_selftest_turn_C"
+    assert base_turn_d.get("_ve_query_text") == chain_int_u_d
 
 
 async def _selftest_consume_sse_chunks(
