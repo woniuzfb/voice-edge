@@ -362,11 +362,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49079
 #    VE_OPENCODE_FREE                       "1"                                          L49117
 #    VE_OPENCODE_GO                         "0"                                          L49122
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70248
-#    VE_GEMINI_API_KEYS                     ""                                           L70252
-#    VE_GEMINI_BACKEND                      "auto"                                       L70271
-#    VE_GEMINI_PROJECT_ID                   ""                                           L70278
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55106
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70278
+#    VE_GEMINI_API_KEYS                     ""                                           L70282
+#    VE_GEMINI_BACKEND                      "auto"                                       L70301
+#    VE_GEMINI_PROJECT_ID                   ""                                           L70308
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55113
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1533
@@ -379,15 +379,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71296
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71300
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71304
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71326
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71292
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71282
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71270
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71278
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L71274
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71328
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71332
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71336
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71358
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71324
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71314
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71302
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71310
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L71306
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -54794,9 +54794,16 @@ def _robin_parse_process_query_response(frame_bytes: bytes) -> dict[str, Any]:
                                         .decode("utf-8", errors="replace")
                                         .strip()
                                     )
-                                    if cand_t and not any(
-                                        ord(ch) < 32 and ch not in "\r\n\t"
-                                        for ch in cand_t
+                                    if (
+                                        cand_t
+                                        and len(cand_t) <= 200
+                                        and "\n" not in cand_t
+                                        and "\r" not in cand_t
+                                        and not cand_t.startswith("```")
+                                        and not any(
+                                            ord(ch) < 32 and ch not in "\t"
+                                            for ch in cand_t
+                                        )
                                     ):
                                         out["conversation_title"] = cand_t
                         elif (
@@ -57582,8 +57589,16 @@ def _dsh_normalize_title_text(text: str) -> str:
 
 def _dsh_title_is_provisional(title: str, query_text: str) -> bool:
     """Return True when `title` is only the provisional echo (full or server-truncated prefix) of the user query."""
-    title_norm = _dsh_normalize_title_text(title)
+    raw_title_s = str(title or "").strip()
+    title_norm = _dsh_normalize_title_text(raw_title_s)
     if not title_norm:
+        return True
+    if (
+        len(title_norm) > 200
+        or "\n" in raw_title_s
+        or "\r" in raw_title_s
+        or title_norm.startswith("```")
+    ):
         return True
     if title_norm.lower() in ("@dsh mcp server", "@veh mcp server"):
         return True
@@ -58593,6 +58608,12 @@ def _robin_extract_turn_attachments(
             continue
         r = str(m.get("role") or "").strip().lower()
         if r in ("system", "developer"):
+            continue
+        if r == "tool" and _dsh_extract_ve_fork_choice_from_tool_msg(m)[0]:
+            continue
+        if r == "assistant" and (
+            _dsh_is_ve_fork_assistant_msg(m) or _dsh_is_empty_assistant_stub(m)
+        ):
             continue
         if r in ("assistant", "tool", "function"):
             last_non_user_idx = idx
@@ -60827,12 +60848,19 @@ class _RobinRunState:
 
         Returns True only when a *final* title was published.
         """
-        clean = _dsh_normalize_title_text(title)
+        raw_t = str(title or "").strip()
+        clean = _dsh_normalize_title_text(raw_t)
         if not clean:
             return False
-        self.conversation_title = clean
-        if _dsh_title_is_provisional(clean, self.query_text):
+        if _dsh_title_is_provisional(raw_t, self.query_text):
             return False
+        if self.initial_messages:
+            first_u, _ = _dsh_extract_first_turn_identity(
+                self.initial_messages, strip_compaction=True
+            )
+            if first_u and _dsh_title_is_provisional(raw_t, first_u):
+                return False
+        self.conversation_title = clean
         session = _robin_find_session_by_boot_key(
             self.boot_key, principal_id=self.principal_id
         )
@@ -66832,8 +66860,10 @@ class _RobinStreamDecoder:
             self.response_id = parsed["response_id"]
             self.run.response_id = parsed["response_id"]
         if parsed.get("conversation_title"):
-            self.conversation_title = parsed["conversation_title"]
-            self.run.publish_conversation_title(parsed["conversation_title"])
+            if self.run.publish_conversation_title(parsed["conversation_title"]):
+                self.conversation_title = self.run.conversation_title
+            elif self.run.conversation_title:
+                self.conversation_title = self.run.conversation_title
         if (
             self.conversation_id
             and self.request_id
@@ -70464,6 +70494,8 @@ def _robin_extract_delta_tool_outputs(
                 continue
             break
         if role == "tool":
+            if _dsh_extract_ve_fork_choice_from_tool_msg(msg)[0]:
+                continue
             trailing.append(
                 {
                     "tool_call_id": str(
@@ -98484,6 +98516,39 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
     )
     assert run_title_ref.publish_conversation_title(trunc_100_title) is False
     assert pre_sess.title == ""
+    assert run_title_ref.conversation_title == ""
+    # Multiline or oversized (>200 chars) Turn 1 prompt echoed in `1003.1.f4.f1` on a Turn 2+
+    # continuation must be rejected both by `_robin_parse_process_query_response` and by
+    # `publish_conversation_title` (even when `run.query_text` is Turn 2's short query).
+    oversized_f4_prompt = "```user\n" + ("核对两件事并修复构建报错 " * 30)
+    oversized_f4_frame = _pb_bytes_field(
+        1003,
+        _pb_bytes_field(
+            1,
+            _pb_bytes_field(
+                2,
+                _pb_bytes_field(1, "c_title_ref") + _pb_bytes_field(2, "r_title_turn2"),
+            )
+            + _pb_bytes_field(4, _pb_bytes_field(1, oversized_f4_prompt)),
+        ),
+    )
+    parsed_oversized_f4 = _robin_parse_process_query_response(oversized_f4_frame)
+    assert parsed_oversized_f4["conversation_title"] == ""
+    run_turn2_title_ref = _RobinRunState(
+        run_id="run_title_ref_turn2",
+        session_key=pre_sess.session_key,
+        client_session_id=pre_sess.client_session_id,
+        principal_id="p_title_ref",
+        boot_key=pre_sess.boot_key,
+        query_text="测试第二轮短追问",
+        initial_messages=[
+            *long_msgs,
+            {"role": "assistant", "content": "第一轮回答"},
+            {"role": "user", "content": "测试第二轮短追问"},
+        ],
+    )
+    assert run_turn2_title_ref.publish_conversation_title(oversized_f4_prompt) is False
+    assert run_turn2_title_ref.conversation_title == ""
     assert (
         run_title_ref.publish_conversation_title("Voice-Edge 会话中断故障排查") is True
     )
@@ -98503,6 +98568,80 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
         )
         human_q = "测试发文件, 你能看到文件内容吗?"
         dsh_file_user_msg = f"{dsh_handle_prefix}{human_q}"
+
+        # Regression: when a user turn carrying an image/file attachment triggers a synthetic fork
+        # choice prompt (`SYNTHETIC_FORK_PROMPT` + `SYNTHETIC_FORK_REPLY` at the tail of `messages`),
+        # `_robin_extract_turn_attachments` must skip the synthetic fork assistant/tool messages and
+        # still extract the attachment for both `has_remote_parent=True` (continue old session) and
+        # `has_remote_parent=False` (start new forked session).
+        fork_call_id_att = f"{_VE_FORK_CALL_ID_PREFIX}att001"
+        fork_att_msgs = [
+            {"role": "user", "content": "第一轮历史提问"},
+            {"role": "assistant", "content": "第一轮历史回答"},
+            {"role": "user", "content": dsh_file_user_msg},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": fork_call_id_att,
+                        "type": "function",
+                        "function": {
+                            "name": "ask_user_question",
+                            "arguments": json.dumps(
+                                {
+                                    "questions": [
+                                        {
+                                            "id": _VE_FORK_QUESTION_ID,
+                                            "question": "检测到会话分叉",
+                                            "options": [
+                                                {"label": "继续原远端会话"},
+                                                {"label": "新建独立远端会话"},
+                                            ],
+                                        }
+                                    ]
+                                },
+                                ensure_ascii=False,
+                            ),
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": fork_call_id_att,
+                "name": "ask_user_question",
+                "content": json.dumps(
+                    {
+                        "answers": [
+                            {"id": _VE_FORK_QUESTION_ID, "selected": ["继续原远端会话"]}
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+            },
+        ]
+        trail_idx_fork_att = _robin_trailing_user_start_index(fork_att_msgs)
+        assert trail_idx_fork_att == 2
+        atts_continue_old = _robin_extract_turn_attachments(
+            fork_att_msgs,
+            has_remote_parent=True,
+            trailing_user_start_idx=trail_idx_fork_att,
+            conv_base_msg_idx=0,
+        )
+        assert (
+            len(atts_continue_old) == 1
+            and atts_continue_old[0].file_name == "sample_doc.pdf"
+        )
+        atts_new_fork = _robin_extract_turn_attachments(
+            fork_att_msgs,
+            has_remote_parent=False,
+            trailing_user_start_idx=trail_idx_fork_att,
+            conv_base_msg_idx=trail_idx_fork_att,
+        )
+        assert (
+            len(atts_new_fork) == 1 and atts_new_fork[0].file_name == "sample_doc.pdf"
+        )
 
         # Boot key & provisional title alignment between chat request (with `[File ...]`) and DSH title request (stripped)
         _, boot_with_file, _ = _dsh_conversation_keys(
