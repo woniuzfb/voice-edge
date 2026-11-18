@@ -33,6 +33,7 @@ import inspect
 import json
 import logging
 import math
+import mimetypes
 import mmap
 import os
 import platform
@@ -56,6 +57,7 @@ import time
 import unicodedata
 import urllib.parse
 import uuid
+import weakref
 import zlib
 from builtins import BaseExceptionGroup
 from collections import OrderedDict, deque
@@ -148,246 +150,246 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2696
-#    VE_VLM_KV_BITS                         3.5                                          L512
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L517
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L522
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L523
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2275
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2280
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2283
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2287
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2296
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2304
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2363
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2814
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42940
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43589
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43601
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19539
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19536
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19502
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19517
-#    AUTH_SYNC_ENABLED                      "1"                                          L19490
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19491
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2710
+#    VE_VLM_KV_BITS                         3.5                                          L514
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L519
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L524
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L525
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2289
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2294
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2297
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2301
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2310
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2318
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2377
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2828
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42954
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43603
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43615
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19553
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19550
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19516
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19531
+#    AUTH_SYNC_ENABLED                      "1"                                          L19504
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19505
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L401
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L402
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L403
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L404
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L405
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L409
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L413
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L414
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L415
-#    VE_GEMINI_LOG_DEBUG                        "0"                                      L416
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L417
-#    VE_HUD_LOG_DEBUG                           "0"                                      L418
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L419
-#    VE_KWS_LOG_DEBUG                           "0"                                      L420
-#    VE_LLM_LOG_DEBUG                           "0"                                      L421
-#    VE_M365_LOG_DEBUG                          "0"                                      L422
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L423
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L427
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L431
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L432
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L433
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L434
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L435
-#    VE_TTS_LOG_DEBUG                           "0"                                      L436
-#    VE_VLM_LOG_DEBUG                           "0"                                      L437
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L438
+#    VE_APP_LOG_DEBUG                           "0"                                      L403
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L404
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L405
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L406
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L407
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L411
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L415
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L416
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L417
+#    VE_GEMINI_LOG_DEBUG                        "0"                                      L418
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L419
+#    VE_HUD_LOG_DEBUG                           "0"                                      L420
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L421
+#    VE_KWS_LOG_DEBUG                           "0"                                      L422
+#    VE_LLM_LOG_DEBUG                           "0"                                      L423
+#    VE_M365_LOG_DEBUG                          "0"                                      L424
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L425
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L429
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L433
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L434
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L435
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L436
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L437
+#    VE_TTS_LOG_DEBUG                           "0"                                      L438
+#    VE_VLM_LOG_DEBUG                           "0"                                      L439
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L440
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42826
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42849
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42876
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42935
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43478
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43481
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43489
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43501
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43503
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43512
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43518
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43524
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43540
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43545
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43552
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43559
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43568
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43575
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43623
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45392
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45393
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45394
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42840
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42863
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42890
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42949
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43492
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43495
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43503
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43515
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43517
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43526
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43532
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43538
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43554
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43559
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43566
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43573
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43582
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43589
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43637
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45406
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45407
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45408
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15045
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15047
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L15048
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15054
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15056
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15059
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15067
-#    QWEN_COOKIE_HEADER                     ""                                           L15071
-#    QWEN_TOKENS                            ""                                           L15079
-#    QWEN_TOKEN                             ""                                           L15080
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15059
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15061
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L15062
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15068
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15070
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15073
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15081
+#    QWEN_COOKIE_HEADER                     ""                                           L15085
+#    QWEN_TOKENS                            ""                                           L15093
+#    QWEN_TOKEN                             ""                                           L15094
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1876
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16714
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16715
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16717
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16719
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16721
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16724
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16727
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16730
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16851
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16854
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1890
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16728
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16729
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16731
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16733
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16735
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16738
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16741
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16744
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16865
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16868
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19400
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19401
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19407
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19408
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19416
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19418
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19421
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19423
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19425
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19429
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19456
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19459
-#    DOUBAO_WEB_AID                         "497858"                                     L19461
-#    DOUBAO_WEB_REGION                      "CN"                                         L19462
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19463
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19464
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19466
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19515
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19507
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19817
-#    DOUBAO_SESSION_IDS                     ""                                           L19859
-#    DOUBAO_SESSION_ID                      ""                                           L19863
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20374
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20383
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20565
-#    DOUBAO_SID_TT                          ""                                           L20568
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19414
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19415
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19421
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19422
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19430
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19432
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19435
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19437
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19439
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19443
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19470
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19473
+#    DOUBAO_WEB_AID                         "497858"                                     L19475
+#    DOUBAO_WEB_REGION                      "CN"                                         L19476
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19477
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19478
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19480
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19529
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19521
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19831
+#    DOUBAO_SESSION_IDS                     ""                                           L19873
+#    DOUBAO_SESSION_ID                      ""                                           L19877
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20388
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20397
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20579
+#    DOUBAO_SID_TT                          ""                                           L20582
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24961
-#    SHAREPOINT_HOME_URL                    ""                                           L24962
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24963
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24964
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L24991
-#    M365_BRIDGE_PORT                       "5003"                                       L24992
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L24993
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L24994
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L24996
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L24999
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L25002
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25010
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L25012
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25032
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25039
-#    M365_CONV_MAP_MAX                      "1024"                                       L25208
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25857
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25875
+#    M365_ENTRY_URL                         ""                                           L24975
+#    SHAREPOINT_HOME_URL                    ""                                           L24976
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24977
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24978
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L25005
+#    M365_BRIDGE_PORT                       "5003"                                       L25006
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L25007
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L25008
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L25010
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L25013
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L25016
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25024
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L25026
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25046
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25053
+#    M365_CONV_MAP_MAX                      "1024"                                       L25222
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25871
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25889
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38164
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38374
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38436
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38458
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38465
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38560
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38562
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38566
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39759
-#    MI_USER                                ""                                           L39485
-#    MI_PASS                                ""                                           L39511
-#    XIAOAI_HARDWARE                        "LX06"                                       L39513
-#    MI_DID                                 ""                                           L39515
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39518
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39522
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39525
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39528
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39534
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39545
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39550
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39531
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39541
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39561
-#    XIAOAI_VOICE                           "zh"                                         L39563
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39565
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39568
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39571
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39574
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39578
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39582
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39587
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39592
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39597
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39602
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39607
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39615
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39620
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39625
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39630
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39635
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39640
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39645
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39648
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39652
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39656
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39660
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39665
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39670
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39674
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39677
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39680
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39683
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39686
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39689
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39692
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39695
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39702
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39708
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39712
+#    XIAOAI_ENABLED                         "0"                                          L38178
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38388
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38450
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38472
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38479
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38574
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38576
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38580
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39773
+#    MI_USER                                ""                                           L39499
+#    MI_PASS                                ""                                           L39525
+#    XIAOAI_HARDWARE                        "LX06"                                       L39527
+#    MI_DID                                 ""                                           L39529
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39532
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39536
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39539
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39542
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39548
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39559
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39564
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39545
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39555
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39575
+#    XIAOAI_VOICE                           "zh"                                         L39577
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39579
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39582
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39585
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39588
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39592
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39596
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39601
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39606
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39611
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39616
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39621
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39629
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39634
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39639
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39644
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39649
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39654
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39659
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39662
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39666
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39670
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39674
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39679
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39684
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39688
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39691
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39694
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39697
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39700
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39703
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39706
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39709
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39716
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39722
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39726
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48154
-#    VE_OPENCODE_API_KEYS                   ""                                           L49079
-#    VE_OPENCODE_FREE                       "1"                                          L49117
-#    VE_OPENCODE_GO                         "0"                                          L49122
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70762
-#    VE_GEMINI_API_KEYS                     ""                                           L70766
-#    VE_GEMINI_BACKEND                      "auto"                                       L70785
-#    VE_GEMINI_PROJECT_ID                   ""                                           L70792
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55324
-#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
-#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
-#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1533
-#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1534
-#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1535
-#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1536
-#    VE_GEMINI_APP_BINARY                   ""                                           L1556
-#    VE_GEMINI_AGY_BINARY                   ""                                           L1571
-#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1589
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48168
+#    VE_OPENCODE_API_KEYS                   ""                                           L49106
+#    VE_OPENCODE_FREE                       "1"                                          L49144
+#    VE_OPENCODE_GO                         "0"                                          L49149
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70915
+#    VE_GEMINI_API_KEYS                     ""                                           L70919
+#    VE_GEMINI_BACKEND                      "auto"                                       L70938
+#    VE_GEMINI_PROJECT_ID                   ""                                           L70945
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55425
+#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
+#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
+#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1535
+#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1536
+#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1537
+#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1538
+#    VE_GEMINI_APP_BINARY                   ""                                           L1558
+#    VE_GEMINI_AGY_BINARY                   ""                                           L1573
+#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1591
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71812
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71816
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71820
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71842
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71808
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71798
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71786
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71794
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L71790
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71965
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71969
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71973
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71995
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71961
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71951
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71939
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71947
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L71943
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -1704,6 +1706,10 @@ GEMINI_APP_EXPOSED_MODELS: tuple[str, ...] = (
     "gemini-4-hydrogen-high",
     "gemini-4-hydrogen-medium",
     "gemini-4-hydrogen-low",
+    "gemini-4-neon",
+    "gemini-4-neon-high",
+    "gemini-4-neon-medium",
+    "gemini-4-neon-low",
     "gemini-3.1-pro",
     "gemini-3.1-pro-high",
     "gemini-3.1-pro-medium",
@@ -1738,6 +1744,14 @@ GEMINI_AISTUDIO_EXPOSED_MODELS: tuple[str, ...] = (
     "gemini-4-hydrogen-build-high",
     "gemini-4-hydrogen-build-medium",
     "gemini-4-hydrogen-build-low",
+    "gemini-4-neon",
+    "gemini-4-neon-high",
+    "gemini-4-neon-medium",
+    "gemini-4-neon-low",
+    "gemini-4-neon-build",
+    "gemini-4-neon-build-high",
+    "gemini-4-neon-build-medium",
+    "gemini-4-neon-build-low",
 )
 GEMINI_EXPOSED_MODELS: tuple[str, ...] = (
     *(f"{GEMINI_APP_ENDPOINT}/{slug}" for slug in GEMINI_APP_EXPOSED_MODELS),
@@ -48537,43 +48551,56 @@ class OpenRouterHTTPClient:
                 else self.config.total_timeout,
             )
             session = aiohttp.ClientSession(timeout=timeout)
+            response: aiohttp.ClientResponse | None = None
             try:
-                response = await session.post(
-                    self.config.base_url.rstrip("/") + path,
-                    json=payload,
-                    headers=self.headers(state, stream=stream),
-                )
-            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-                await session.close()
-                await self.keys.release(state, success=False)
-                last_error = str(exc) or exc.__class__.__name__
-                continue
-            if response.status == 429:
-                raw = await response.read()
-                last_error = raw.decode(errors="replace")
-                last_upstream_status = 429
-                last_upstream_body = raw
-                response.release()
-                await session.close()
-                await self.keys.penalize(state)
-                await self.keys.release(state, success=False)
-                if self.config.global_rate_delay:
-                    await asyncio.sleep(self.config.global_rate_delay)
-                continue
-            if response.status >= 400:
-                raw = await response.read()
-                status = response.status
-                last_upstream_status = status
-                last_upstream_body = raw
-                response.release()
-                await session.close()
-                await self.keys.release(state, success=False)
-                if status in self.RETRYABLE and attempt + 1 < attempts:
-                    last_error = raw.decode(errors="replace")
-                    await asyncio.sleep(self.config.retry_base_seconds * (2**attempt))
+                try:
+                    response = await session.post(
+                        self.config.base_url.rstrip("/") + path,
+                        json=payload,
+                        headers=self.headers(state, stream=stream),
+                    )
+                except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                    await _close_aiohttp_session_shielded(session)
+                    await self.keys.release(state, success=False)
+                    last_error = str(exc) or exc.__class__.__name__
                     continue
-                return None, None, None, _openrouter_error_response(status, raw)
-            return session, response, state, None
+                if response.status == 429:
+                    raw = await response.read()
+                    last_error = raw.decode(errors="replace")
+                    last_upstream_status = 429
+                    last_upstream_body = raw
+                    response.release()
+                    await _close_aiohttp_session_shielded(session)
+                    await self.keys.penalize(state)
+                    await self.keys.release(state, success=False)
+                    if self.config.global_rate_delay:
+                        await asyncio.sleep(self.config.global_rate_delay)
+                    continue
+                if response.status >= 400:
+                    raw = await response.read()
+                    status = response.status
+                    last_upstream_status = status
+                    last_upstream_body = raw
+                    response.release()
+                    await _close_aiohttp_session_shielded(session)
+                    await self.keys.release(state, success=False)
+                    if status in self.RETRYABLE and attempt + 1 < attempts:
+                        last_error = raw.decode(errors="replace")
+                        await asyncio.sleep(
+                            self.config.retry_base_seconds * (2**attempt)
+                        )
+                        continue
+                    return None, None, None, _openrouter_error_response(status, raw)
+                return session, response, state, None
+            except BaseException:
+                if response is not None:
+                    try:
+                        response.release()
+                    except Exception:
+                        pass
+                await _close_aiohttp_session_shielded(session)
+                await self.keys.release(state, success=False)
+                raise
         # Loop exhausted (every key retried/cooling) or no key was available.
         # Prefer surfacing OpenRouter's OWN last error (real status + body) so the
         # client sees why — annotated with the cooldown hint when the pool is in
@@ -49770,79 +49797,92 @@ class OpenCodeHTTPClient:
                 spec
             )
             session = aiohttp.ClientSession(timeout=timeout)
+            response: aiohttp.ClientResponse | None = None
             try:
-                response = await session.post(
-                    url,
-                    json=payload,
-                    headers=self.headers(
-                        state,
-                        spec=spec,
-                        stream=stream,
-                        session_id=session_id,
-                    ),
-                )
-            except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
-                await session.close()
-                await self.keys.release(state, success=False)
-                last_error = str(exc) or exc.__class__.__name__
-                _http_log.warning(
-                    "OpenCode %s transport error on %s (key %s): %s",
-                    spec.public_id,
-                    url,
-                    _opencode_mask(state.secret),
-                    last_error,
-                )
-                continue
-            if response.status == 429:
-                raw = await response.read()
-                last_error = raw.decode(errors="replace")
-                last_upstream_status = 429
-                last_upstream_body = raw
-                retry_after = _opencode_retry_after_seconds(
-                    response.headers.get("Retry-After")
-                )
-                _http_log.warning(
-                    "OpenCode %s rate limited (key %s, retry-after %.0fs): %s",
-                    spec.public_id,
-                    _opencode_mask(state.secret),
-                    retry_after,
-                    _opencode_error_summary(raw, 429),
-                )
-                response.release()
-                await session.close()
-                await self.keys.penalize(state, retry_after)
-                await self.keys.release(state, success=False)
-                if self.config.global_rate_delay:
-                    await asyncio.sleep(self.config.global_rate_delay)
-                continue
-            if response.status >= 400:
-                raw = await response.read()
-                status = response.status
-                last_upstream_status = status
-                last_upstream_body = raw
-                retrying = status in self.RETRYABLE and attempt + 1 < attempts
-                _http_log.warning(
-                    "OpenCode %s upstream HTTP %s on %s (%s): %s",
-                    spec.public_id,
-                    status,
-                    url,
-                    "retrying" if retrying else "returning to client",
-                    _opencode_error_summary(raw, status),
-                )
-                response.release()
-                await session.close()
-                await self.keys.release(state, success=False)
-                if retrying:
-                    last_error = raw.decode(errors="replace")
-                    await asyncio.sleep(self.config.retry_base_seconds * (2**attempt))
+                try:
+                    response = await session.post(
+                        url,
+                        json=payload,
+                        headers=self.headers(
+                            state,
+                            spec=spec,
+                            stream=stream,
+                            session_id=session_id,
+                        ),
+                    )
+                except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
+                    await _close_aiohttp_session_shielded(session)
+                    await self.keys.release(state, success=False)
+                    last_error = str(exc) or exc.__class__.__name__
+                    _http_log.warning(
+                        "OpenCode %s transport error on %s (key %s): %s",
+                        spec.public_id,
+                        url,
+                        _opencode_mask(state.secret),
+                        last_error,
+                    )
                     continue
-                return None, None, None, _opencode_error_response(status, raw)
-            _http_log.debug(
-                "OpenCode %s accepted by upstream HTTP %s",
-                spec.public_id,
-                response.status,
-            )
-            return session, response, state, None
+                if response.status == 429:
+                    raw = await response.read()
+                    last_error = raw.decode(errors="replace")
+                    last_upstream_status = 429
+                    last_upstream_body = raw
+                    retry_after = _opencode_retry_after_seconds(
+                        response.headers.get("Retry-After")
+                    )
+                    _http_log.warning(
+                        "OpenCode %s rate limited (key %s, retry-after %.0fs): %s",
+                        spec.public_id,
+                        _opencode_mask(state.secret),
+                        retry_after,
+                        _opencode_error_summary(raw, 429),
+                    )
+                    response.release()
+                    await _close_aiohttp_session_shielded(session)
+                    await self.keys.penalize(state, retry_after)
+                    await self.keys.release(state, success=False)
+                    if self.config.global_rate_delay:
+                        await asyncio.sleep(self.config.global_rate_delay)
+                    continue
+                if response.status >= 400:
+                    raw = await response.read()
+                    status = response.status
+                    last_upstream_status = status
+                    last_upstream_body = raw
+                    retrying = status in self.RETRYABLE and attempt + 1 < attempts
+                    _http_log.warning(
+                        "OpenCode %s upstream HTTP %s on %s (%s): %s",
+                        spec.public_id,
+                        status,
+                        url,
+                        "retrying" if retrying else "returning to client",
+                        _opencode_error_summary(raw, status),
+                    )
+                    response.release()
+                    await _close_aiohttp_session_shielded(session)
+                    await self.keys.release(state, success=False)
+                    if retrying:
+                        last_error = raw.decode(errors="replace")
+                        await asyncio.sleep(
+                            self.config.retry_base_seconds * (2**attempt)
+                        )
+                        continue
+                    return None, None, None, _opencode_error_response(status, raw)
+                _http_log.debug(
+                    "OpenCode %s accepted by upstream HTTP %s",
+                    spec.public_id,
+                    response.status,
+                )
+                return session, response, state, None
+            except BaseException:
+                if response is not None:
+                    try:
+                        response.release()
+                    except Exception:
+                        pass
+                await _close_aiohttp_session_shielded(session)
+                await self.keys.release(state, success=False)
+                raise
         if last_upstream_status is not None:
             _http_log.warning(
                 "OpenCode %s gave up after %d attempt(s); last upstream HTTP %s: %s",
@@ -51444,10 +51484,61 @@ def _opencode_converter(
     raise OpenCodeStreamError(f"Unsupported OpenCode upstream protocol: {protocol}")
 
 
+async def _close_aiohttp_session_shielded(session: Any) -> None:
+    """Close an aiohttp.ClientSession safely even inside a cancelled anyio/asyncio scope."""
+    if session is None or getattr(session, "closed", False):
+        return
+    try:
+        import anyio
+
+        with anyio.CancelScope(shield=True):
+            await session.close()
+        return
+    except ImportError:
+        pass
+    except BaseException:
+        if getattr(session, "closed", False):
+            return
+    try:
+        await asyncio.shield(session.close())
+    except BaseException:
+        pass
+
+
+async def _aclose_async_gen_shielded(agen: Any) -> None:
+    """Close an async generator safely even inside a cancelled anyio/asyncio scope."""
+    if agen is None or not hasattr(agen, "aclose"):
+        return
+    try:
+        import anyio
+
+        with anyio.CancelScope(shield=True):
+            await agen.aclose()
+        return
+    except ImportError:
+        pass
+    except BaseException:
+        return
+    try:
+        await asyncio.shield(agen.aclose())
+    except BaseException:
+        pass
+
+
+class _ClosingStreamingResponse(StreamingResponse):
+    """StreamingResponse that deterministically closes its async iterator on disconnect/cancel."""
+
+    async def stream_response(self, send: Any) -> None:
+        try:
+            await super().stream_response(send)
+        finally:
+            await _aclose_async_gen_shielded(self.body_iterator)
+
+
 def _opencode_sse_response(
     stream: AsyncGenerator[str, None] | AsyncGenerator[bytes, None],
 ) -> StreamingResponse:
-    return StreamingResponse(
+    return _ClosingStreamingResponse(
         stream,
         media_type="text/event-stream",
         headers={
@@ -51924,7 +52015,7 @@ def _robin_resolve_model_category_and_variant(model_slug: str) -> tuple[int, str
         return GEMINI_ROBIN_MODE_CATEGORY_FLASH_LITE, ""
     if "hydrogen" in low or "flash" in low:
         return GEMINI_ROBIN_MODE_CATEGORY_FLASH, ""
-    if "pro" in low:
+    if "pro" in low or "neon" in low:
         return GEMINI_ROBIN_MODE_CATEGORY_PRO, ""
     if "carbon" in low:
         return GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK, ""
@@ -54667,17 +54758,23 @@ def _robin_find_next_card_marker(text: str, start: int = 0) -> tuple[int, str]:
 
 
 _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES: tuple[str, ...] = (
+    "https://www.google.com/search?q=file:///",
+    "http://www.google.com/search?q=file:///",
     "https://www.google.com/search?q=",
     "http://www.google.com/search?q=",
 )
 _ROBIN_UNWRAPPED_URL_DELIMS = " \t\r\n)>]\"'`<"
 
 
+def _robin_redirect_prefix_replacement(prefix: str) -> str:
+    """Return the replacement string for a matched redirect prefix."""
+    return "/" if prefix.endswith("file:///") else ""
+
+
 def _robin_unwrap_google_search_redirect_text(text: str) -> str:
-    """Strip `https://www.google.com/search?q=` wrappers around file/path URLs and restore `%23` line anchors."""
-    if not text or (
-        "https://www.google.com/search?q=" not in text
-        and "http://www.google.com/search?q=" not in text
+    """Strip `https://www.google.com/search?q=` redirect wrappers (converting wrapped `file:///` to `/`) and restore `%23` line anchors."""
+    if not text or not any(
+        pfx in text for pfx in _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES
     ):
         return text
     out: list[str] = []
@@ -54706,6 +54803,7 @@ def _robin_unwrap_google_search_redirect_text(text: str) -> str:
         target_span = (
             text[target_start:target_end].replace("%23", "#").replace("%20", " ")
         )
+        out.append(_robin_redirect_prefix_replacement(best_pfx))
         out.append(target_span)
         cursor = target_end
     return "".join(out)
@@ -54796,6 +54894,9 @@ class _RobinActionCardFilter:
                     out.append(hit_pfx)
                     i = after_pfx
                     continue
+                repl = _robin_redirect_prefix_replacement(hit_pfx)
+                if repl:
+                    out.append(repl)
                 i = after_pfx
                 self._in_unwrapped_url = True
             else:
@@ -66862,10 +66963,7 @@ def _robin_release_parked_stream_sync(
             except Exception:
                 pass
             finally:
-                try:
-                    await _actor.http_session.close()
-                except Exception:
-                    pass
+                await _close_aiohttp_session_shielded(_actor.http_session)
 
         try:
             loop = asyncio.get_running_loop()
@@ -66874,6 +66972,54 @@ def _robin_release_parked_stream_sync(
             close_task.add_done_callback(_ROBIN_BG_TASKS.discard)
         except RuntimeError:
             _ROBIN_DEFERRED_ABORT_CALLBACKS.append(_abort_and_close)
+
+
+async def _robin_shutdown_close_all_async() -> None:
+    """Close all parked Robin actors, deferred aborts, background tasks, and HTTP/2 muxes on server shutdown."""
+    parked_actors: list[_RobinRunActor] = []
+    seen_ids: set[int] = set()
+    with _ROBIN_PARKED_STREAMS_LOCK:
+        for actor in list(_ROBIN_PARKED_STREAMS.values()):
+            if actor is not None and id(actor) not in seen_ids:
+                seen_ids.add(id(actor))
+                parked_actors.append(actor)
+        _ROBIN_PARKED_STREAMS.clear()
+    for actor in parked_actors:
+        try:
+            actor._relay_cancel_pending("cancelled because the server is shutting down")
+        except Exception:
+            pass
+        _relay_clear_active_run(actor.run)
+        _ROBIN_ACTIVE_RUNS.pop(actor.run.run_id, None)
+        for task_attr in ("pq_pump_task", "ert_pump_task", "presence_task"):
+            t = getattr(actor, task_attr, None)
+            if t is not None and not t.done():
+                t.cancel()
+        for resp_attr in ("ert_response", "response"):
+            r = getattr(actor, resp_attr, None)
+            if r is not None:
+                try:
+                    r.keep_open = False
+                    r.release()
+                except Exception:
+                    pass
+        await _close_aiohttp_session_shielded(actor.http_session)
+    await _robin_flush_deferred_aborts()
+    pending_bg = [t for t in list(_ROBIN_BG_TASKS) if not t.done()]
+    if pending_bg:
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*pending_bg, return_exceptions=True),
+                timeout=2.0,
+            )
+        except BaseException:
+            pass
+    for mux in list(_ROBIN_HTTP2_MUXES.values()):
+        try:
+            mux.close_nowait()
+        except Exception:
+            pass
+    _ROBIN_HTTP2_MUXES.clear()
 
 
 @dataclass
@@ -68184,7 +68330,9 @@ class _RobinMuxResponse(_RobinHTTP2Response):
 
 
 _ROBIN_HTTP2_READER_TASKS: set[asyncio.Task[Any]] = set()
-_ROBIN_HTTP2_MUX_LOCKS: dict[int, asyncio.Lock] = {}
+_ROBIN_HTTP2_MUX_LOCKS: weakref.WeakKeyDictionary[
+    asyncio.AbstractEventLoop, asyncio.Lock
+] = weakref.WeakKeyDictionary()
 
 
 class _RobinHTTP2Mux:
@@ -68555,11 +68703,10 @@ _ROBIN_HTTP2_MUXES: dict[tuple[str, str], _RobinHTTP2Mux] = {}
 async def _robin_get_http2_mux(host: str, headers: dict[str, str]) -> _RobinHTTP2Mux:
     key = (host, headers.get("Authorization") or "")
     cur_loop = asyncio.get_running_loop()
-    loop_id = id(cur_loop)
-    mux_lock = _ROBIN_HTTP2_MUX_LOCKS.get(loop_id)
+    mux_lock = _ROBIN_HTTP2_MUX_LOCKS.get(cur_loop)
     if mux_lock is None:
         mux_lock = asyncio.Lock()
-        _ROBIN_HTTP2_MUX_LOCKS[loop_id] = mux_lock
+        _ROBIN_HTTP2_MUX_LOCKS[cur_loop] = mux_lock
     async with mux_lock:
         existing = _ROBIN_HTTP2_MUXES.get(key)
         if existing is not None:
@@ -70082,10 +70229,12 @@ class GeminiModelSpec:
                 "gemini-4-argon",
                 "gemini-4-carbon",
                 "gemini-4-hydrogen",
+                "gemini-4-neon",
             } or stripped_dash_base.lower() in {
                 "gemini-4-argon",
                 "gemini-4-carbon",
                 "gemini-4-hydrogen",
+                "gemini-4-neon",
             }:
                 upstream_id = stripped_dash_base.lower()
                 if thinking_level is None and thinking_budget is None:
@@ -70105,6 +70254,10 @@ class GeminiModelSpec:
                     thinking_level = "HIGH"
             elif lower_slug == "gemini-4-hydrogen":
                 upstream_id = "gemini-4-hydrogen-high"
+                if thinking_level is None:
+                    thinking_level = "HIGH"
+            elif lower_slug == "gemini-4-neon":
+                upstream_id = "gemini-4-neon-high"
                 if thinking_level is None:
                     thinking_level = "HIGH"
             else:
@@ -73953,7 +74106,7 @@ class GeminiHTTPClient:
                     None,
                 )
 
-            await session.close()
+            await _close_aiohttp_session_shielded(session)
             return (
                 None,
                 JSONResponse(
@@ -73967,7 +74120,7 @@ class GeminiHTTPClient:
                 ),
             )
         except BaseException as exc:
-            await session.close()
+            await _close_aiohttp_session_shielded(session)
             if not isinstance(exc, Exception):
                 raise
             return (
@@ -75069,7 +75222,7 @@ class GeminiHTTPClient:
                         opened.response.release()
                     except Exception:
                         pass
-                    await opened.session.close()
+                    await _close_aiohttp_session_shielded(opened.session)
 
             return _sse_gen(), None
 
@@ -75270,14 +75423,6 @@ class GeminiHTTPClient:
                 session_id = attempt.session_id
                 flush_cached_actor_only = attempt.flush_cached_actor_only
                 mux_q = actor.mux_queue
-                if flush_cached_actor_only and (
-                    actor.pq_pump_task is None or actor.pq_pump_task.done()
-                ):
-                    mux_q.put_nowait(("pq_eof", None))
-                else:
-                    actor.start_pq_driver()
-                if decoder.conversation_id and not flush_cached_actor_only:
-                    await actor.ensure_ert_and_presence(decoder.conversation_id)
 
                 attempt_started_monotonic = time.monotonic()
                 last_sse_yield_monotonic = attempt_started_monotonic
@@ -75616,6 +75761,14 @@ class GeminiHTTPClient:
                     _GEMINI_DSH_STORE.save_run(_run)
 
                 try:
+                    if flush_cached_actor_only and (
+                        actor.pq_pump_task is None or actor.pq_pump_task.done()
+                    ):
+                        mux_q.put_nowait(("pq_eof", None))
+                    else:
+                        actor.start_pq_driver()
+                    if decoder.conversation_id and not flush_cached_actor_only:
+                        await actor.ensure_ert_and_presence(decoder.conversation_id)
                     while True:
                         kind: str = ""
                         item: Any = None
@@ -76742,7 +76895,9 @@ class GeminiHTTPClient:
                                     actor.response.release()
                                 except Exception:
                                     pass
-                                await actor.http_session.close()
+                                await _close_aiohttp_session_shielded(
+                                    actor.http_session
+                                )
                                 attempt.actor_closed = True
 
                                 next_payload = dict(base_payload)
@@ -77261,77 +77416,77 @@ class GeminiHTTPClient:
                         yield b"data: [DONE]\n\n"
                     break
                 finally:
-                    if attempt.pending_next_pre_run is not None:
-                        _ROBIN_ACTIVE_RUNS.pop(
-                            attempt.pending_next_pre_run.run_id, None
-                        )
-                        _relay_clear_active_run(attempt.pending_next_pre_run)
-                        attempt.pending_next_pre_run = None
-                    # Per-attempt Exact User Cancellation Rule:
-                    # Each `_RobinAttemptContext` owns its `(run, decoder, actor)` lifecycle.
-                    # Whenever an attempt terminates before normal completion or tool handoff
-                    # (including when the client disconnects immediately on the Turn 2 separator
-                    # chunk), we ensure remote `(conversation_id, request_id)` is resolved and
-                    # send `AbortGeneration(conversation_id, request_id)` for this attempt.
-                    if (
-                        not attempt.normal_completion_or_handoff
-                        and not decoder.is_completed
-                    ):
-                        if (
-                            run.pending_chained_followup_texts
-                            or run.pending_chained_followup_attachments
-                        ):
-                            _gemini_debug_log_event(
-                                session_id,
-                                "deferred_chained_followup_cancelled",
-                                {
-                                    "run_id": run.run_id,
-                                    "conversation_id": run.conversation_id,
-                                    "reason": "stream_aborted_before_completion",
-                                },
+                    try:
+                        if attempt.pending_next_pre_run is not None:
+                            _ROBIN_ACTIVE_RUNS.pop(
+                                attempt.pending_next_pre_run.run_id, None
                             )
-                        run.pending_chained_followup_texts.clear()
-                        run.pending_chained_followup_attachments.clear()
-                        run.pending_chained_pre_user_messages.clear()
-                        run.pending_chained_prompt_context = ""
-                        actor._relay_cancel_pending(
-                            "cancelled because the client disconnected"
-                        )
-                        _robin_evict_specific_parked_actor(
-                            actor, session_id, session_key, boot_key, full_key
-                        )
+                            _relay_clear_active_run(attempt.pending_next_pre_run)
+                            attempt.pending_next_pre_run = None
+                        # Per-attempt Exact User Cancellation Rule:
+                        # Each `_RobinAttemptContext` owns its `(run, decoder, actor)` lifecycle.
+                        # Whenever an attempt terminates before normal completion or tool handoff
+                        # (including when the client disconnects immediately on the Turn 2 separator
+                        # chunk), we ensure remote `(conversation_id, request_id)` is resolved and
+                        # send `AbortGeneration(conversation_id, request_id)` for this attempt.
                         if (
-                            not attempt.upstream_failed
-                            and not attempt.pre_identity_timed_out
-                            and run.execution_state != "TERMINAL"
+                            not attempt.normal_completion_or_handoff
+                            and not decoder.is_completed
                         ):
-                            (
-                                abort_conv_id,
-                                abort_req_id,
-                            ) = await _robin_ensure_attempt_remote_identity(
-                                attempt, wait_seconds=1.5
+                            if (
+                                run.pending_chained_followup_texts
+                                or run.pending_chained_followup_attachments
+                            ):
+                                _gemini_debug_log_event(
+                                    session_id,
+                                    "deferred_chained_followup_cancelled",
+                                    {
+                                        "run_id": run.run_id,
+                                        "conversation_id": run.conversation_id,
+                                        "reason": "stream_aborted_before_completion",
+                                    },
+                                )
+                            run.pending_chained_followup_texts.clear()
+                            run.pending_chained_followup_attachments.clear()
+                            run.pending_chained_pre_user_messages.clear()
+                            run.pending_chained_prompt_context = ""
+                            actor._relay_cancel_pending(
+                                "cancelled because the client disconnected"
                             )
-                            run.cancellation_state = "REQUESTED"
-                            run.outcome_state = "CANCELLED"
-                            run.execution_state = "TERMINAL"
-                            run.attachment_state = "CLOSED"
-                            if abort_conv_id and abort_req_id:
-                                await _robin_send_abort_generation(
-                                    actor.http_session,
-                                    actor.access_token,
+                            _robin_evict_specific_parked_actor(
+                                actor, session_id, session_key, boot_key, full_key
+                            )
+                            if (
+                                not attempt.upstream_failed
+                                and not attempt.pre_identity_timed_out
+                                and run.execution_state != "TERMINAL"
+                            ):
+                                (
                                     abort_conv_id,
                                     abort_req_id,
-                                    device_id=actor.device_id,
-                                    server_token=actor.server_token,
-                                    run=run,
+                                ) = await _robin_ensure_attempt_remote_identity(
+                                    attempt, wait_seconds=1.5
                                 )
-                                if not (
-                                    run.response_id
-                                    or decoder.response_id
-                                    or actor.response_id
-                                ):
-                                    resolved_rc = (
-                                        await _robin_resolve_response_id_via_list_turns(
+                                run.cancellation_state = "REQUESTED"
+                                run.outcome_state = "CANCELLED"
+                                run.execution_state = "TERMINAL"
+                                run.attachment_state = "CLOSED"
+                                if abort_conv_id and abort_req_id:
+                                    await _robin_send_abort_generation(
+                                        actor.http_session,
+                                        actor.access_token,
+                                        abort_conv_id,
+                                        abort_req_id,
+                                        device_id=actor.device_id,
+                                        server_token=actor.server_token,
+                                        run=run,
+                                    )
+                                    if not (
+                                        run.response_id
+                                        or decoder.response_id
+                                        or actor.response_id
+                                    ):
+                                        resolved_rc = await _robin_resolve_response_id_via_list_turns(
                                             actor.http_session,
                                             actor.access_token,
                                             abort_conv_id,
@@ -77339,55 +77494,59 @@ class GeminiHTTPClient:
                                             device_id=actor.device_id,
                                             server_token=actor.server_token,
                                         )
-                                    )
-                                    if resolved_rc:
-                                        run.response_id = resolved_rc
-                                        decoder.response_id = resolved_rc
-                                        actor.response_id = resolved_rc
-                            _GEMINI_DSH_STORE.save_run(run)
-                    _robin_rollback_attempt_continuation(
-                        attempt,
-                        session_id=session_id,
-                        session_key=session_key,
-                        boot_key=boot_key,
-                        full_key=full_key,
-                        credential_id=actor.credential_id,
-                        messages=messages,
-                        mid_turn_compacted=mid_turn_compacted,
-                    )
-
-                    if not attempt.actor_closed and not (
-                        attempt.normal_completion_or_handoff
-                        and attempt.handed_off_to_parked
-                    ):
-                        attempt.actor_closed = True
-                        _ROBIN_ACTIVE_RUNS.pop(run.run_id, None)
-                        _relay_clear_active_run(run)
-                        for task_attr in (
-                            "pq_pump_task",
-                            "ert_pump_task",
-                            "presence_task",
+                                        if resolved_rc:
+                                            run.response_id = resolved_rc
+                                            decoder.response_id = resolved_rc
+                                            actor.response_id = resolved_rc
+                                _GEMINI_DSH_STORE.save_run(run)
+                        _robin_rollback_attempt_continuation(
+                            attempt,
+                            session_id=session_id,
+                            session_key=session_key,
+                            boot_key=boot_key,
+                            full_key=full_key,
+                            credential_id=actor.credential_id,
+                            messages=messages,
+                            mid_turn_compacted=mid_turn_compacted,
+                        )
+                    finally:
+                        if not attempt.actor_closed and not (
+                            attempt.normal_completion_or_handoff
+                            and attempt.handed_off_to_parked
                         ):
-                            t = getattr(actor, task_attr, None)
-                            if t is not None and not t.done():
-                                t.cancel()
-                        if actor.ert_response is not None:
-                            try:
-                                actor.ert_response.keep_open = False
-                                actor.ert_response.release()
-                            except Exception:
-                                pass
-                        try:
-                            actor.response.keep_open = False
-                            if decoder.is_completed and hasattr(
-                                actor.response, "finish_cleanly"
+                            attempt.actor_closed = True
+                            _ROBIN_ACTIVE_RUNS.pop(run.run_id, None)
+                            _relay_clear_active_run(run)
+                            for task_attr in (
+                                "pq_pump_task",
+                                "ert_pump_task",
+                                "presence_task",
                             ):
-                                await actor.response.finish_cleanly(timeout_seconds=1.0)
-                            else:
-                                actor.response.release()
-                        except Exception:
-                            pass
-                        await actor.http_session.close()
+                                t = getattr(actor, task_attr, None)
+                                if t is not None and not t.done():
+                                    t.cancel()
+                            if actor.ert_response is not None:
+                                try:
+                                    actor.ert_response.keep_open = False
+                                    actor.ert_response.release()
+                                except Exception:
+                                    pass
+                            try:
+                                actor.response.keep_open = False
+                                if decoder.is_completed and hasattr(
+                                    actor.response, "finish_cleanly"
+                                ):
+                                    await actor.response.finish_cleanly(
+                                        timeout_seconds=1.0
+                                    )
+                                else:
+                                    actor.response.release()
+                            except BaseException:
+                                try:
+                                    actor.response.release()
+                                except Exception:
+                                    pass
+                            await _close_aiohttp_session_shielded(actor.http_session)
 
         return _robin_gen(), None
 
@@ -77418,47 +77577,50 @@ class GeminiHTTPClient:
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
         created_ts = int(time.time())
 
-        async for raw_line in gen:
-            text_line = raw_line.decode("utf-8", errors="replace").strip()
-            for subline in text_line.splitlines():
-                subline = subline.strip()
-                if not subline.startswith("data:"):
-                    continue
-                payload_str = subline[5:].strip()
-                if not payload_str or payload_str == "[DONE]":
-                    continue
-                try:
-                    chunk = json.loads(payload_str)
-                except json.JSONDecodeError:
-                    continue
-                if isinstance(chunk.get("error"), dict):
-                    err_obj = chunk["error"]
-                    err_str = str(err_obj.get("message") or "").lower()
-                    status_c = 429 if "quota" in err_str else 502
-                    return JSONResponse({"error": err_obj}, status_code=status_c)
-                if chunk.get("id"):
-                    completion_id = str(chunk["id"])
-                if chunk.get("created"):
-                    created_ts = int(chunk["created"])
-                if isinstance(chunk.get("usage"), dict):
-                    usage = dict(chunk["usage"])
-                choices = chunk.get("choices")
-                if not isinstance(choices, list) or not choices:
-                    continue
-                c0 = choices[0]
-                if c0.get("finish_reason"):
-                    finish_reason = str(c0["finish_reason"])
-                delta = c0.get("delta")
-                if not isinstance(delta, dict):
-                    continue
-                if delta.get("reasoning_content"):
-                    reasoning_parts.append(str(delta["reasoning_content"]))
-                if delta.get("content"):
-                    content_parts.append(str(delta["content"]))
-                if isinstance(delta.get("tool_calls"), list):
-                    for tc in delta["tool_calls"]:
-                        if isinstance(tc, dict):
-                            tool_calls_out.append(tc)
+        try:
+            async for raw_line in gen:
+                text_line = raw_line.decode("utf-8", errors="replace").strip()
+                for subline in text_line.splitlines():
+                    subline = subline.strip()
+                    if not subline.startswith("data:"):
+                        continue
+                    payload_str = subline[5:].strip()
+                    if not payload_str or payload_str == "[DONE]":
+                        continue
+                    try:
+                        chunk = json.loads(payload_str)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(chunk.get("error"), dict):
+                        err_obj = chunk["error"]
+                        err_str = str(err_obj.get("message") or "").lower()
+                        status_c = 429 if "quota" in err_str else 502
+                        return JSONResponse({"error": err_obj}, status_code=status_c)
+                    if chunk.get("id"):
+                        completion_id = str(chunk["id"])
+                    if chunk.get("created"):
+                        created_ts = int(chunk["created"])
+                    if isinstance(chunk.get("usage"), dict):
+                        usage = dict(chunk["usage"])
+                    choices = chunk.get("choices")
+                    if not isinstance(choices, list) or not choices:
+                        continue
+                    c0 = choices[0]
+                    if c0.get("finish_reason"):
+                        finish_reason = str(c0["finish_reason"])
+                    delta = c0.get("delta")
+                    if not isinstance(delta, dict):
+                        continue
+                    if delta.get("reasoning_content"):
+                        reasoning_parts.append(str(delta["reasoning_content"]))
+                    if delta.get("content"):
+                        content_parts.append(str(delta["content"]))
+                    if isinstance(delta.get("tool_calls"), list):
+                        for tc in delta["tool_calls"]:
+                            if isinstance(tc, dict):
+                                tool_calls_out.append(tc)
+        finally:
+            await _aclose_async_gen_shielded(gen)
 
         message_obj: dict[str, Any] = {
             "role": "assistant",
@@ -77614,6 +77776,19 @@ _AIS_BUILTIN_MODELS: dict[str, _AisModelInfo] = {
         top_k=64,
         capabilities=frozenset({1, 9, 10, 12, 13, 25, 42, 47, 48, 52, 62, 74, 83, 88}),
         default_thinking_level=3,
+        supported_thinking_levels=(1, 2, 3),
+    ),
+    "gemini-4-neon": _AisModelInfo(
+        model_id="gemini-4-neon",
+        input_limit=1048576,
+        output_limit=65536,
+        temperature=1.0,
+        top_p=0.95,
+        top_k=64,
+        capabilities=frozenset(
+            {1, 9, 10, 12, 13, 25, 42, 47, 48, 52, 62, 74, 83, 88, 91}
+        ),
+        default_thinking_level=2,
         supported_thinking_levels=(1, 2, 3),
     ),
 }
@@ -78150,6 +78325,7 @@ def _robin_identify_mid_turn_user_indices(messages: Sequence[Any]) -> set[int]:
     mid_turn: set[int] = set()
     n = len(msg_list)
     idx = 0
+    turn_seen_attribution = False
     while idx < n:
         m = msg_list[idx]
         if not isinstance(m, dict):
@@ -78161,8 +78337,20 @@ def _robin_identify_mid_turn_user_indices(messages: Sequence[Any]) -> set[int]:
             or _dsh_is_ve_fork_assistant_msg(m)
             or _dsh_is_empty_assistant_stub(m)
         ):
+            if role == "user":
+                u_clean_outer, _ = _dsh_split_user_text_and_context(
+                    _dsh_extract_message_plain_text(m)
+                )
+                if (
+                    u_clean_outer.strip() and not _dsh_is_job_notice_text(u_clean_outer)
+                ) or _dsh_user_msg_has_media_blocks(m):
+                    turn_seen_attribution = False
             idx += 1
             continue
+        if _GEMINI_ANY_ATTRIBUTION_BANNER_RE.search(
+            str(m.get("reasoning_content") or "")
+        ):
+            turn_seen_attribution = True
         hop_key = _dsh_assistant_hop_key(m, idx)
         next_a_idx = idx + 1
         while next_a_idx < n:
@@ -78175,6 +78363,7 @@ def _robin_identify_mid_turn_user_indices(messages: Sequence[Any]) -> set[int]:
                 break
             next_a_idx += 1
         if not hop_key:
+            turn_seen_attribution = False
             idx = next_a_idx
             continue
 
@@ -78252,8 +78441,11 @@ def _robin_identify_mid_turn_user_indices(messages: Sequence[Any]) -> set[int]:
                         ):
                             chain_has_sep = True
                             break
-            next_started_new_turn = bool(
+            next_has_attr = bool(
                 _GEMINI_ANY_ATTRIBUTION_BANNER_RE.search(next_reasoning)
+            )
+            next_started_new_turn = bool(
+                (turn_seen_attribution and next_has_attr)
                 or _dsh_is_ve_fork_assistant_msg(next_asst)
                 or chain_has_sep
             )
@@ -78277,6 +78469,7 @@ def _robin_identify_mid_turn_user_indices(messages: Sequence[Any]) -> set[int]:
             ):
                 for u_i in candidate_u[:-1]:
                     mid_turn.add(u_i)
+                turn_seen_attribution = False
             else:
                 for u_i in candidate_u:
                     mid_turn.add(u_i)
@@ -78303,6 +78496,7 @@ def _ais_identify_mid_turn_user_indices(
     mid_turn: set[int] = set()
     n = len(msg_list)
     idx = 0
+    turn_seen_attribution = False
     while idx < n:
         m = msg_list[idx]
         if not isinstance(m, dict):
@@ -78314,8 +78508,20 @@ def _ais_identify_mid_turn_user_indices(
             or _dsh_is_ve_fork_assistant_msg(m)
             or _dsh_is_empty_assistant_stub(m)
         ):
+            if role == "user":
+                u_clean_outer, _ = _dsh_split_user_text_and_context(
+                    _dsh_extract_message_plain_text(m)
+                )
+                if (
+                    u_clean_outer.strip() and not _dsh_is_job_notice_text(u_clean_outer)
+                ) or _dsh_user_msg_has_media_blocks(m):
+                    turn_seen_attribution = False
             idx += 1
             continue
+        if _GEMINI_ANY_ATTRIBUTION_BANNER_RE.search(
+            str(m.get("reasoning_content") or "")
+        ):
+            turn_seen_attribution = True
         hop_key = _dsh_assistant_hop_key(m, idx)
         next_a_idx = idx + 1
         while next_a_idx < n:
@@ -78328,6 +78534,7 @@ def _ais_identify_mid_turn_user_indices(
                 break
             next_a_idx += 1
         if not hop_key:
+            turn_seen_attribution = False
             idx = next_a_idx
             continue
 
@@ -78390,8 +78597,11 @@ def _ais_identify_mid_turn_user_indices(
                         ):
                             chain_has_sep = True
                             break
-            next_started_new_turn = bool(
+            next_has_attr = bool(
                 _GEMINI_ANY_ATTRIBUTION_BANNER_RE.search(next_reasoning)
+            )
+            next_started_new_turn = bool(
+                (turn_seen_attribution and next_has_attr)
                 or _dsh_is_ve_fork_assistant_msg(next_asst)
                 or chain_has_sep
             )
@@ -78415,6 +78625,7 @@ def _ais_identify_mid_turn_user_indices(
             ):
                 for u_i in candidate_u[:-1]:
                     mid_turn.add(u_i)
+                turn_seen_attribution = False
             else:
                 for u_i in candidate_u:
                     mid_turn.add(u_i)
@@ -79442,25 +79653,70 @@ def _gemini_guess_file_mime(
     ext = Path(str(path_or_name or "")).suffix.lower()
     mime_map = {
         ".pdf": "application/pdf",
+        ".doc": "application/msword",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".xls": "application/vnd.ms-excel",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ".ppt": "application/vnd.ms-powerpoint",
+        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ".odt": "application/vnd.oasis.opendocument.text",
+        ".rtf": "application/rtf",
+        ".zip": "application/zip",
         ".png": "image/png",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".webp": "image/webp",
         ".gif": "image/gif",
+        ".bmp": "image/bmp",
+        ".heic": "image/heic",
+        ".heif": "image/heif",
+        ".svg": "image/svg+xml",
         ".wav": "audio/wav",
         ".mp3": "audio/mpeg",
         ".ogg": "audio/ogg",
         ".m4a": "audio/mp4",
+        ".flac": "audio/flac",
+        ".aac": "audio/aac",
         ".mp4": "video/mp4",
         ".mov": "video/quicktime",
         ".webm": "video/webm",
+        ".avi": "video/x-msvideo",
+        ".mkv": "video/x-matroska",
         ".txt": "text/plain",
         ".md": "text/markdown",
         ".csv": "text/csv",
         ".html": "text/html",
+        ".xml": "application/xml",
         ".json": "application/json",
+        ".yaml": "text/yaml",
+        ".yml": "text/yaml",
+        ".toml": "application/toml",
+        ".py": "text/x-python",
+        ".js": "text/javascript",
+        ".ts": "text/typescript",
+        ".tsx": "text/typescript",
+        ".jsx": "text/javascript",
+        ".rs": "text/x-rust",
+        ".go": "text/x-go",
+        ".java": "text/x-java",
+        ".c": "text/x-c",
+        ".cc": "text/x-c++",
+        ".cpp": "text/x-c++",
+        ".h": "text/x-c",
+        ".hpp": "text/x-c++",
+        ".swift": "text/x-swift",
+        ".kt": "text/x-kotlin",
+        ".rb": "text/x-ruby",
+        ".php": "text/x-php",
+        ".sh": "text/x-shellscript",
+        ".sql": "application/sql",
     }
-    return mime_map.get(ext, fallback)
+    if ext in mime_map:
+        return mime_map[ext]
+    guessed, _ = mimetypes.guess_type(str(path_or_name or ""))
+    if guessed:
+        return guessed
+    return fallback
 
 
 def _ais_extract_dsh_file_handle_inline_parts(text: str) -> list[list[Any]]:
@@ -87634,42 +87890,47 @@ async def _gemini_wrap_response_with_harness_mirror(
                 had_error = True
                 raise
             finally:
-                if line_buf.strip():
-                    _ingest_sse_line(line_buf)
-                if not saw_fork_prompt:
-                    await _gemini_harness_ensure_user_synced(bridge)
-                    final_text = (
-                        "".join(step_text)
-                        .replace("\n\n\u2063\n\n", "\n\n")
-                        .replace("\u2063", "")
-                    )
-                    final_reasoning = "".join(step_reasoning)
-                    final_tcs = [tc_by_index[k] for k in sorted(tc_by_index)]
-                    eff_finish = (
-                        "error"
-                        if had_error
-                        else (
-                            last_finish_reason
-                            or ("tool_calls" if final_tcs else "stop")
+                try:
+                    if line_buf.strip():
+                        _ingest_sse_line(line_buf)
+                    if not saw_fork_prompt:
+                        await _gemini_harness_ensure_user_synced(bridge)
+                        final_text = (
+                            "".join(step_text)
+                            .replace("\n\n\u2063\n\n", "\n\n")
+                            .replace("\u2063", "")
                         )
-                    )
-                    if final_text or final_reasoning or final_tcs:
-                        await _harness_mirror_event(
-                            bridge,
-                            kind="step",
-                            text=final_text,
-                            reasoning=final_reasoning,
-                            tool_calls=final_tcs or None,
-                            finish_reason=eff_finish,
+                        final_reasoning = "".join(step_reasoning)
+                        final_tcs = [tc_by_index[k] for k in sorted(tc_by_index)]
+                        eff_finish = (
+                            "error"
+                            if had_error
+                            else (
+                                last_finish_reason
+                                or ("tool_calls" if final_tcs else "stop")
+                            )
                         )
-                    close_status = (
-                        "error"
-                        if had_error
-                        else (
-                            "tool_calls" if eff_finish == "tool_calls" else "completed"
+                        if final_text or final_reasoning or final_tcs:
+                            await _harness_mirror_event(
+                                bridge,
+                                kind="step",
+                                text=final_text,
+                                reasoning=final_reasoning,
+                                tool_calls=final_tcs or None,
+                                finish_reason=eff_finish,
+                            )
+                        close_status = (
+                            "error"
+                            if had_error
+                            else (
+                                "tool_calls"
+                                if eff_finish == "tool_calls"
+                                else "completed"
+                            )
                         )
-                    )
-                    await _harness_finish(bridge, close_status)
+                        await _harness_finish(bridge, close_status)
+                finally:
+                    await _aclose_async_gen_shielded(orig_iter)
 
         resp.body_iterator = _mirrored_sse_iter()
         return resp
@@ -93738,24 +93999,24 @@ def test_gemini_model_spec_and_envelopes():
     rc_after_roll_content = "".join(
         c["choices"][0]["delta"].get("content") or "" for c in rc_after_roll_chunks
     )
-    assert (
-        rc_after_roll_content == "See [test.py](file:///w/workspace/test.py#L10-L20)."
-    ), (
-        f"Expected Google search redirect stripped and %23 restored, got {rc_after_roll_content!r}"
+    assert rc_after_roll_content == "See [test.py](/w/workspace/test.py#L10-L20).", (
+        f"Expected Google search redirect and file:/// stripped and %23 restored, got {rc_after_roll_content!r}"
     )
-    # Also verify 1-char streaming fragmentation across `_RobinActionCardFilter` for `https://www.google.com/search?q=file:///...%23L1`
+    # Also verify 1-char streaming fragmentation across `_RobinActionCardFilter` for `https://www.google.com/search?q=file:///...%23L1` while leaving bare `file:///...` untouched
     frag_filter = _RobinActionCardFilter()
     raw_redir_md = (
         "查看 [voice_edge.py](https://www.google.com/search?q=file:///w/workspace/voice_edge.py%23L54684-L54971) "
-        "与 [doc.md](http://www.google.com/search?q=file:///w/workspace/doc.md%23section) 完成。"
+        "与 [doc.md](http://www.google.com/search?q=file:///w/workspace/doc.md%23section) "
+        "以及 [local.py](file:///w/workspace/local.py#L9) 和 `file:///` 完成。"
     )
     frag_out: list[str] = []
     for ch_c in raw_redir_md:
         frag_out.append(frag_filter.feed(ch_c))
     frag_out.append(frag_filter.flush())
     assert "".join(frag_out) == (
-        "查看 [voice_edge.py](file:///w/workspace/voice_edge.py#L54684-L54971) "
-        "与 [doc.md](file:///w/workspace/doc.md#section) 完成。"
+        "查看 [voice_edge.py](/w/workspace/voice_edge.py#L54684-L54971) "
+        "与 [doc.md](/w/workspace/doc.md#section) "
+        "以及 [local.py](file:///w/workspace/local.py#L9) 和 `file:///` 完成。"
     )
     assert not frag_filter.seen
 
@@ -93817,6 +94078,56 @@ def test_gemini_model_spec_and_envelopes():
     spec_pro31 = GeminiModelSpec.from_public_id("gemini:app/gemini-3.1-pro-high")
     assert spec_pro31.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_PRO
     assert spec_pro31.robin_mode_variant_id == ""
+    spec_neon = GeminiModelSpec.from_public_id("gemini:app/gemini-4-neon-high")
+    assert spec_neon.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_PRO
+    assert spec_neon.robin_mode_variant_id == ""
+    spec_neon_base = GeminiModelSpec.from_public_id("gemini:app/gemini-4-neon")
+    assert spec_neon_base.upstream_id == "gemini-4-neon-high"
+    assert spec_neon_base.thinking_level == "HIGH"
+    assert spec_neon_base.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_PRO
+    assert spec_neon_base.robin_mode_variant_id == ""
+    spec_neon_ais = GeminiModelSpec.from_public_id("gemini:aistudio/gemini-4-neon")
+    assert spec_neon_ais.endpoint == GEMINI_AISTUDIO_ENDPOINT
+    assert spec_neon_ais.upstream_id == "gemini-4-neon"
+    assert spec_neon_ais.thinking_level == "HIGH"
+    assert spec_neon_ais.aistudio_mode == "playground"
+    spec_neon_ais_low = GeminiModelSpec.from_public_id(
+        "gemini:aistudio/gemini-4-neon-low"
+    )
+    assert spec_neon_ais_low.upstream_id == "gemini-4-neon"
+    assert spec_neon_ais_low.thinking_level == "LOW"
+    spec_neon_ais_build = GeminiModelSpec.from_public_id(
+        "gemini:aistudio/gemini-4-neon-build-medium"
+    )
+    assert spec_neon_ais_build.upstream_id == "gemini-4-neon"
+    assert spec_neon_ais_build.thinking_level == "MEDIUM"
+    assert spec_neon_ais_build.aistudio_mode == "build"
+    assert _ais_get_model_info("gemini-4-neon").model_id == "gemini-4-neon"
+    assert (
+        _gemini_guess_file_mime("sample_doc.docx")
+        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    assert (
+        _robin_infer_attachment_file_type(
+            _gemini_guess_file_mime("sample_doc.docx"), "sample_doc.docx"
+        )
+        == 10
+    )
+    assert (
+        _gemini_guess_file_mime("sample_sheet.xlsx")
+        == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert (
+        _gemini_guess_file_mime("sample_slides.pptx")
+        == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    )
+    assert _gemini_guess_file_mime("sample_archive.zip") == "application/zip"
+    assert _gemini_guess_file_mime("sample_script.py") == "text/x-python"
+    assert _gemini_guess_file_mime("sample_photo.heic") == "image/heic"
+    assert (
+        _gemini_guess_file_mime("sample_unknown.vebin", "application/octet-stream")
+        == "application/octet-stream"
+    )
     spec_lite35 = GeminiModelSpec.from_public_id("gemini:app/gemini-3.5-flash-lite")
     assert spec_lite35.robin_mode_category == GEMINI_ROBIN_MODE_CATEGORY_FLASH_LITE
     assert spec_lite35.robin_mode_variant_id == ""
@@ -104274,6 +104585,179 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     ]
     assert 3 in _robin_identify_mid_turn_user_indices(normal_hop_with_hr_msgs)
 
+    # Late `rc_...` attribution banner in a multi-step tool hop (where earlier assistant steps
+    # had no attribution banner yet) + a mid-turn Harness loop nudge ("You are repeating...")
+    # must NOT cause `_robin_identify_mid_turn_user_indices` to misclassify the nudge as a new turn
+    # after a server restart (`_ROBIN_TOOL_HOP_USER_COUNTS.clear()`).
+    _ROBIN_TOOL_HOP_USER_COUNTS.clear()
+    late_attr_mid_nudge_msgs: list[dict[str, Any]] = [
+        {"role": "user", "content": "第一轮：开始修复"},
+        {
+            "role": "assistant",
+            "reasoning_content": "先运行自测验证。",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_late_attr_01",
+                    "type": "function",
+                    "function": {
+                        "name": "bash",
+                        "arguments": '{"command":"uv run main --self-test"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_late_attr_01",
+            "name": "bash",
+            "content": "144/144 passed",
+        },
+        {
+            "role": "user",
+            "content": "You are repeating the exact same tool call with identical arguments.",
+        },
+        {
+            "role": "assistant",
+            "reasoning_content": "自测全部通过。\n\nUsed 4 Argon model\n\n准备输出最终答复。",
+            "content": "已修复并跑通全量验证。",
+        },
+        {"role": "user", "content": "第二轮：继续追问不应分叉"},
+    ]
+    assert 3 in _robin_identify_mid_turn_user_indices(late_attr_mid_nudge_msgs)
+    _, late_attr_prior, _ = _robin_extract_turn_anchors(late_attr_mid_nudge_msgs)
+    assert [r for r, _ in late_attr_prior] == ["user", "assistant"]
+
+    # Cross-turn regression: Turn 1 ends with a normal assistant reply carrying an attribution
+    # banner (no tool_calls), then Turn 2 starts a tool hop WITHOUT an attribution banner,
+    # receives a mid-turn Harness nudge, and only emits its late attribution banner on the next
+    # assistant step. Both Robin and AI Studio scanners must reset `turn_seen_attribution` when
+    # skipping past Turn 1's non-tool assistant reply so Turn 2's nudge is still classified mid-turn.
+    _ROBIN_TOOL_HOP_USER_COUNTS.clear()
+    _AIS_TOOL_HOP_USER_COUNTS.clear()
+    cross_turn_late_attr_msgs: list[dict[str, Any]] = [
+        {"role": "user", "content": "第一轮：普通问答"},
+        {
+            "role": "assistant",
+            "reasoning_content": "Used 4 Neon model\n\n第一轮思考。",
+            "content": "第一轮完成。",
+        },
+        {"role": "user", "content": "第二轮：执行工具并触发迟到归属"},
+        {
+            "role": "assistant",
+            "reasoning_content": "先检查状态。",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_late_attr_t2_01",
+                    "type": "function",
+                    "function": {
+                        "name": "bash",
+                        "arguments": '{"command":"echo ok"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_late_attr_t2_01",
+            "name": "bash",
+            "content": "ok",
+        },
+        {
+            "role": "user",
+            "content": "You are repeating the exact same tool call with identical arguments.",
+        },
+        {
+            "role": "assistant",
+            "reasoning_content": "完成检查。\n\nUsed 4 Neon model\n\n输出结论。",
+            "content": "第二轮完成。",
+        },
+        {"role": "user", "content": "第三轮：继续追问"},
+    ]
+    assert 5 in _robin_identify_mid_turn_user_indices(cross_turn_late_attr_msgs)
+    assert 5 in _ais_identify_mid_turn_user_indices(cross_turn_late_attr_msgs)
+
+    # Real `aiohttp.ClientSession` + `anyio` cancellation & shutdown regression:
+    # 1) `_ClosingStreamingResponse` must deterministically close an async generator suspended at
+    #    `yield` when Starlette/anyio cancels `stream_response`, closing its `ClientSession`.
+    # 2) `_close_aiohttp_session_shielded` must close a `ClientSession` even inside an already
+    #    cancelled `anyio.CancelScope`.
+    # 3) `_robin_shutdown_close_all_async` must close parked actors' `http_session` on shutdown.
+    async def _verify_client_session_cancel_and_shutdown_cleanup() -> None:
+        import anyio
+
+        sess_stream = aiohttp.ClientSession()
+
+        async def _suspended_sse_gen() -> AsyncGenerator[bytes, None]:
+            try:
+                yield b"data: chunk1\n\n"
+                yield b"data: chunk2\n\n"
+            finally:
+                await _close_aiohttp_session_shielded(sess_stream)
+
+        resp_closing = _opencode_sse_response(_suspended_sse_gen())
+
+        async def _slow_send(message: Any) -> None:
+            if (
+                isinstance(message, dict)
+                and message.get("type") == "http.response.body"
+            ):
+                await asyncio.sleep(10.0)
+
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(resp_closing.stream_response, _slow_send)
+            await anyio.sleep(0.05)
+            tg.cancel_scope.cancel()
+        assert sess_stream.closed, (
+            "_ClosingStreamingResponse must close suspended async generator and its ClientSession on cancel"
+        )
+
+        sess_shielded = aiohttp.ClientSession()
+        with anyio.CancelScope() as cancelled_scope:
+            cancelled_scope.cancel()
+            await _close_aiohttp_session_shielded(sess_shielded)
+        assert sess_shielded.closed, (
+            "_close_aiohttp_session_shielded must close ClientSession inside a cancelled CancelScope"
+        )
+
+        sess_parked = aiohttp.ClientSession()
+        parked_run = _RobinRunState(
+            run_id="run_shutdown_close_01",
+            session_key="boot_shutdown_close_01",
+            client_session_id="boot_shutdown_close_01",
+            principal_id=fake_cred_a.credential_id,
+            boot_key="boot_shutdown_close_01",
+        )
+        parked_dec = _RobinStreamDecoder(
+            "chatcmpl-sd", 0, spec.public_id, run=parked_run
+        )
+
+        class _DummyResp:
+            keep_open = True
+
+            def release(self) -> None:
+                pass
+
+        parked_actor_sd = _RobinRunActor(
+            session_id="boot_shutdown_close_01",
+            session_key="boot_shutdown_close_01",
+            boot_key="boot_shutdown_close_01",
+            full_key="",
+            http_session=sess_parked,
+            response=_DummyResp(),
+            iterator=None,
+            decoder=parked_dec,
+            run=parked_run,
+        )
+        _robin_park_stream("boot_shutdown_close_01", parked_actor_sd)
+        await _robin_shutdown_close_all_async()
+        assert sess_parked.closed, (
+            "_robin_shutdown_close_all_async must close parked actor http_session on shutdown"
+        )
+
+    asyncio.run(_verify_client_session_cancel_and_shutdown_cleanup())
+
     # Also verify that a pure-attachment follow-up turn after a crashed tool hop is chained
     # with `_ve_robin_attachments` intact and never dropped:
     crash_att_turn1_msgs: list[dict[str, Any]] = [
@@ -111127,6 +111611,17 @@ async def gemini_internal_debug_recent_api(request: Any) -> JSONResponse:
     )
 
 
+class _VoiceEdgeAppLifespan:
+    def __init__(self, _app: Any) -> None:
+        self._app = _app
+
+    async def __aenter__(self) -> None:
+        return None
+
+    async def __aexit__(self, *_exc: Any) -> None:
+        await _robin_shutdown_close_all_async()
+
+
 app = Starlette(
     routes=[
         Route("/", endpoint=home, methods=["GET"]),
@@ -111163,6 +111658,7 @@ app = Starlette(
             allow_headers=["*"],
         ),
     ],
+    lifespan=_VoiceEdgeAppLifespan,
 )
 
 

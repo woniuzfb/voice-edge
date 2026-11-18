@@ -6,7 +6,7 @@
 - **语音与交互引擎**：实时语音转写（`faster-whisper` / Apple Speech）、流式 Edge-TTS 语音合成、macOS 全局听写、原生 HUD 浮层与本地唤醒词语音助手
 - **统一 OpenAI 与 MCP 网关**：标准 OpenAI 兼容 HTTP 接口（`/v1/chat/completions`、`/v1/audio/*`、`/v1/embeddings`、`/v1/rerank`、`/v1/completions`）与 MCP 服务
 - **浏览器模型中继**：配合 [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) Firefox 扩展接入 DeepSeek、豆包（Doubao）、Qwen、Microsoft 365 Copilot 以及 Google AI Studio Playground（`gemini:aistudio/*`）
-- **Gemini App 任务模式中继**：复用 macOS 原生 `Gemini.app` 接入 Carbon/Argon 模型（`gemini:app/*`），通过 Robin gRPC 与 `ExecuteRemoteTools`（ERT）双向流驱动 [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
+- **Gemini App 任务模式中继**：复用 macOS 原生 `Gemini.app` 接入 Carbon/Neon 模型（`gemini:app/*`），通过 Robin gRPC 与 `ExecuteRemoteTools`（ERT）双向流驱动 [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
 - **第三方 API 中继**：OpenRouter（`openrouter:*`）与 OpenCode（`opencode:zen/*`、`opencode:go/*`），支持多 Key 轮询与上游协议自动转换
 - **小米小爱同学桥接**：局域网智能音箱桥接，支持唤醒词路由、流式 TTS 播报与小米原生助手兜底
 
@@ -34,7 +34,7 @@ uv run python -m camoufox fetch
 
 通过 VS Code 使用 Voice Edge 时，请安装上面的 Continue 插件。
 
-使用 Gemini App Carbon/Argon 模型（`gemini:app/*`）或 AI Studio Playground 模型（`gemini:aistudio/*`）进行 Agent 任务编排时，请安装上面的 Voice-Edge Harness（`veh`）。
+使用 Gemini App Carbon/Neon 模型（`gemini:app/*`）或 AI Studio Playground 模型（`gemini:aistudio/*`）进行 Agent 任务编排时，请安装上面的 Voice-Edge Harness（`veh`）。
 
 ## 运行
 
@@ -492,7 +492,7 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
   - 自动持久化 Playground 会话历史（`prompts/<id>`）并同步生成标题
 - **模型 ID**：
   - `gemini:aistudio/gemini-4-carbon`（`-high`、`-medium`、`-low`）
-  - `gemini:aistudio/gemini-4-argon`（`-high`、`-medium`、`-low`）
+  - `gemini:aistudio/gemini-4-neon`（`-high`、`-medium`、`-low`）
   - `gemini:aistudio/gemini-4-hydrogen`（`-high`、`-medium`、`-low`）
   - 任意由 `ListModels` 动态发现的上游模型（`gemini:aistudio/<model-slug>`）
 
@@ -506,7 +506,7 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
   - 浏览器扩展弹窗内置独立的 `Build History (Voice Edge)` 面板，并通过 `CreateApplet` / `GetApplet` 自动同步会话标题
 - **模型 ID**：
   - `gemini:aistudio/gemini-4-carbon-build`（`-high`、`-medium`、`-low`）
-  - `gemini:aistudio/gemini-4-argon-build`（`-high`、`-medium`、`-low`）
+  - `gemini:aistudio/gemini-4-neon-build`（`-high`、`-medium`、`-low`）
   - `gemini:aistudio/gemini-4-hydrogen-build`（`-high`、`-medium`、`-low`）
   - 任意在 `ListModels` 中声明能力码 `48`（`code_assistant`）的上游模型（`gemini:aistudio/<model-slug>-build`）
 
@@ -519,7 +519,7 @@ Voice Edge 在 `gemini:` 命名空间下通过 `POST /v1/chat/completions` 暴�
   - 可选公网 HTTPS $\leftrightarrow$ 出站 WSS 用户工具中继（`tools/veh_relay.py`，`VEH MCP Server`）：将当前活跃回合的 DSH 工具暴露为带单客户端 OAuth 2.0 + PKCE（`S256`）认证的标准 Streamable HTTP MCP 服务（`/mcp`），替代 ERT 的 `FunctionCall` 下发与 `FunctionResponse` 回传，同时将 OAuth 状态、MCP 路由、`job_id` 生成、后台 `command_status` 轮询与工具结果对账全部保留在 Mac 本机 `voice_edge` 内（Mac 无需开放任何入站端口）
 - **模型 ID**：
   - `gemini:app/gemini-4-carbon`（`-high`、`-medium`、`-low`）
-  - `gemini:app/gemini-4-argon`（`-high`、`-medium`、`-low`）
+  - `gemini:app/gemini-4-neon`（`-high`、`-medium`、`-low`）
   - `gemini:app/gemini-4-hydrogen`（`-high`、`-medium`、`-low`）
 
 #### 公网 MCP 用户工具中继（`tools/veh_relay.py`）

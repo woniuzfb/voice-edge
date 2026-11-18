@@ -6,7 +6,7 @@
 - **Speech & Voice Interaction**: Real-time STT (`faster-whisper` / Apple Speech), streaming Edge-TTS, global macOS dictation, HUD overlay, and local wake-word voice chat
 - **Unified OpenAI & MCP Gateway**: Standard OpenAI-compatible HTTP endpoints (`/v1/chat/completions`, `/v1/audio/*`, `/v1/embeddings`, `/v1/rerank`, `/v1/completions`) and MCP server
 - **Browser-Backed Model Relays**: DeepSeek, Doubao, Qwen, Microsoft 365 Copilot, and Google AI Studio Playground (`gemini:aistudio/*`), powered by the [voice-edge-auth-sync](https://github.com/woniuzfb/voice-edge-auth-sync) Firefox extension
-- **Gemini App Task-Mode Relay**: Native macOS Gemini app Carbon/Argon models (`gemini:app/*`) with bidirectional `ExecuteRemoteTools` (ERT) streaming for [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
+- **Gemini App Task-Mode Relay**: Native macOS Gemini app Carbon/Neon models (`gemini:app/*`) with bidirectional `ExecuteRemoteTools` (ERT) streaming for [Voice-Edge Harness (veh)](https://github.com/woniuzfb/voice-edge-harness)
 - **Third-Party API Relays**: OpenRouter (`openrouter:*`) and OpenCode (`opencode:zen/*`, `opencode:go/*`) with multi-key round-robin rotation and protocol translation
 - **Xiaomi XiaoAI Bridge**: Smart speaker LAN bridge with wake-word routing, streaming TTS playback, and native Xiaomi assistant fallback
 
@@ -34,7 +34,7 @@ Install the Firefox authentication-sync extension when using browser-backed prov
 
 Install the Continue extension when using Voice Edge through VS Code.
 
-Install the Voice-Edge Harness (`veh`) when using Gemini App Carbon/Argon (`gemini:app/*`) or AI Studio Playground (`gemini:aistudio/*`) models in agentic task mode.
+Install the Voice-Edge Harness (`veh`) when using Gemini App Carbon/Neon (`gemini:app/*`) or AI Studio Playground (`gemini:aistudio/*`) models in agentic task mode.
 
 ## Running
 
@@ -498,7 +498,7 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
   - Automatic Playground history persistence (`prompts/<id>`) and generated session title synchronization
 - **Model IDs**:
   - `gemini:aistudio/gemini-4-carbon` (`-high`, `-medium`, `-low`)
-  - `gemini:aistudio/gemini-4-argon` (`-high`, `-medium`, `-low`)
+  - `gemini:aistudio/gemini-4-neon` (`-high`, `-medium`, `-low`)
   - `gemini:aistudio/gemini-4-hydrogen` (`-high`, `-medium`, `-low`)
   - Any upstream model dynamically discovered via `ListModels` (`gemini:aistudio/<model-slug>`)
 
@@ -512,7 +512,7 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
   - Dedicated `Build History (Voice Edge)` panel in the browser extension popup and automatic session title synchronization via `CreateApplet` / `GetApplet`
 - **Model IDs**:
   - `gemini:aistudio/gemini-4-carbon-build` (`-high`, `-medium`, `-low`)
-  - `gemini:aistudio/gemini-4-argon-build` (`-high`, `-medium`, `-low`)
+  - `gemini:aistudio/gemini-4-neon-build` (`-high`, `-medium`, `-low`)
   - `gemini:aistudio/gemini-4-hydrogen-build` (`-high`, `-medium`, `-low`)
   - Any upstream model advertising capability `48` (`code_assistant`) in `ListModels` (`gemini:aistudio/<model-slug>-build`)
 
@@ -525,7 +525,7 @@ Voice Edge exposes three Gemini relay modes under the `gemini:` namespace over `
   - Optional public HTTPS $\leftrightarrow$ outbound WSS user-tool relay (`tools/veh_relay.py`, `VEH MCP Server`) that exposes the active turn's DSH tools as a standard Streamable HTTP MCP server (`/mcp`) with OAuth 2.0 + PKCE (`S256`), replacing ERT's `FunctionCall` / `FunctionResponse` delivery while keeping all OAuth state, MCP routing, `job_id` generation, background `command_status` polling, and tool reconciliation on the Mac without opening inbound local ports
 - **Model IDs**:
   - `gemini:app/gemini-4-carbon` (`-high`, `-medium`, `-low`)
-  - `gemini:app/gemini-4-argon` (`-high`, `-medium`, `-low`)
+  - `gemini:app/gemini-4-neon` (`-high`, `-medium`, `-low`)
   - `gemini:app/gemini-4-hydrogen` (`-high`, `-medium`, `-low`)
 
 #### Public MCP User-Tool Relay (`tools/veh_relay.py`)
