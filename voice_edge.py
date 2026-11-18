@@ -362,11 +362,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49077
 #    VE_OPENCODE_FREE                       "1"                                          L49115
 #    VE_OPENCODE_GO                         "0"                                          L49120
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L69905
-#    VE_GEMINI_API_KEYS                     ""                                           L69909
-#    VE_GEMINI_BACKEND                      "auto"                                       L69928
-#    VE_GEMINI_PROJECT_ID                   ""                                           L69935
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55079
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70203
+#    VE_GEMINI_API_KEYS                     ""                                           L70207
+#    VE_GEMINI_BACKEND                      "auto"                                       L70226
+#    VE_GEMINI_PROJECT_ID                   ""                                           L70233
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55080
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1533
@@ -379,15 +379,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L70953
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L70957
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L70961
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L70983
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L70949
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L70939
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L70927
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L70935
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L70931
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71251
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71255
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71259
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71281
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71247
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71237
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71225
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71233
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L71229
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -51970,6 +51970,7 @@ _ROBIN_IDENTITY_LOCK = threading.Lock()
 _ROBIN_DESKTOP_IDENTITY: _RobinDesktopIdentity | None = None
 _ROBIN_BARD_MODE_BY_ACCOUNT: dict[str, str] = {}
 _ROBIN_BARD_MODES_BY_ACCOUNT: dict[str, dict[int, str]] = {}
+_ROBIN_BARD_MODES_FROM_FALLBACK: set[str] = set()
 _ROBIN_MODE_POLICY_BY_ACCOUNT: dict[str, list[dict[str, Any]]] = {}
 _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT: dict[str, dict[str, int | float]] = {}
 
@@ -55204,6 +55205,15 @@ class _GeminiDshStore:
                 projection_revision INTEGER NOT NULL DEFAULT 0,
                 updated_at REAL NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS account_modes (
+                scope_key TEXT PRIMARY KEY,
+                default_mode_id TEXT NOT NULL DEFAULT '',
+                modes_by_category_json TEXT NOT NULL DEFAULT '{}',
+                policy_name TEXT NOT NULL DEFAULT '',
+                policy_configs_json TEXT NOT NULL DEFAULT '[]',
+                attachment_limits_json TEXT NOT NULL DEFAULT '{}',
+                updated_at REAL NOT NULL
+            );
             """
         )
         for col_ddl in (
@@ -55264,6 +55274,7 @@ class _GeminiDshStore:
                         DELETE FROM invocations;
                         DELETE FROM outbound_actions;
                         DELETE FROM delivery_cursors;
+                        DELETE FROM account_modes;
                         """
                     )
                     self._conn.commit()
@@ -55761,6 +55772,125 @@ class _GeminiDshStore:
                     time.time(),
                 ),
             )
+            conn.commit()
+
+    def save_account_modes(
+        self,
+        *,
+        scope_keys: Sequence[str],
+        default_mode_id: str,
+        modes_by_category: dict[int, str],
+        policy_name: str = "",
+        policy_configs: list[dict[str, Any]] | None = None,
+        attachment_limits: dict[str, int | float] | None = None,
+    ) -> None:
+        clean_keys = [str(k).strip() for k in scope_keys if str(k).strip()]
+        if not clean_keys or (not default_mode_id and not modes_by_category):
+            return
+        modes_json = json.dumps(
+            {
+                str(int(k)): str(v).strip()
+                for k, v in modes_by_category.items()
+                if int(k) > 0 and str(v).strip()
+            },
+            ensure_ascii=False,
+        )
+        pol_json = json.dumps(list(policy_configs or []), ensure_ascii=False)
+        lim_json = json.dumps(dict(attachment_limits or {}), ensure_ascii=False)
+        now = time.time()
+        with self._lock:
+            conn = self._ensure_conn()
+            for key in clean_keys:
+                conn.execute(
+                    """
+                    INSERT INTO account_modes (
+                        scope_key, default_mode_id, modes_by_category_json,
+                        policy_name, policy_configs_json, attachment_limits_json, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(scope_key) DO UPDATE SET
+                        default_mode_id = excluded.default_mode_id,
+                        modes_by_category_json = excluded.modes_by_category_json,
+                        policy_name = CASE
+                            WHEN excluded.policy_name != '' THEN excluded.policy_name
+                            ELSE account_modes.policy_name
+                        END,
+                        policy_configs_json = CASE
+                            WHEN excluded.policy_configs_json != '[]' THEN excluded.policy_configs_json
+                            ELSE account_modes.policy_configs_json
+                        END,
+                        attachment_limits_json = CASE
+                            WHEN excluded.attachment_limits_json != '{}' THEN excluded.attachment_limits_json
+                            ELSE account_modes.attachment_limits_json
+                        END,
+                        updated_at = excluded.updated_at
+                    """,
+                    (
+                        key,
+                        str(default_mode_id or "").strip(),
+                        modes_json,
+                        str(policy_name or "").strip(),
+                        pol_json,
+                        lim_json,
+                        now,
+                    ),
+                )
+            conn.commit()
+
+    def load_account_modes(self, *, scope_keys: Sequence[str]) -> dict[str, Any] | None:
+        clean_keys = [str(k).strip() for k in scope_keys if str(k).strip()]
+        if not clean_keys:
+            return None
+        with self._lock:
+            conn = self._ensure_conn()
+            for key in clean_keys:
+                row = conn.execute(
+                    "SELECT * FROM account_modes WHERE scope_key = ?", (key,)
+                ).fetchone()
+                if row is None:
+                    continue
+                try:
+                    raw_modes = json.loads(row["modes_by_category_json"] or "{}")
+                except Exception:
+                    raw_modes = {}
+                modes_by_cat: dict[int, str] = {}
+                if isinstance(raw_modes, dict):
+                    for k, v in raw_modes.items():
+                        try:
+                            cat_int = int(k)
+                        except (TypeError, ValueError):
+                            continue
+                        v_str = str(v or "").strip()
+                        if cat_int > 0 and v_str:
+                            modes_by_cat[cat_int] = v_str
+                default_mode = str(row["default_mode_id"] or "").strip()
+                if not default_mode and not modes_by_cat:
+                    continue
+                try:
+                    pol_cfgs = json.loads(row["policy_configs_json"] or "[]")
+                except Exception:
+                    pol_cfgs = []
+                try:
+                    att_lims = json.loads(row["attachment_limits_json"] or "{}")
+                except Exception:
+                    att_lims = {}
+                return {
+                    "scope_key": key,
+                    "default_mode_id": default_mode,
+                    "modes_by_category": modes_by_cat,
+                    "policy_name": str(row["policy_name"] or "").strip(),
+                    "policy_configs": pol_cfgs if isinstance(pol_cfgs, list) else [],
+                    "attachment_limits": att_lims if isinstance(att_lims, dict) else {},
+                }
+        return None
+
+    def delete_account_modes(self, *, scope_keys: Sequence[str]) -> None:
+        clean_keys = [str(k).strip() for k in scope_keys if str(k).strip()]
+        if not clean_keys:
+            return
+        with self._lock:
+            conn = self._ensure_conn()
+            for key in clean_keys:
+                conn.execute("DELETE FROM account_modes WHERE scope_key = ?", (key,))
             conn.commit()
 
 
@@ -63308,32 +63438,9 @@ class _RobinRunActor:
             refreshed = await refresher(self.http_session, cred, force_refresh=force)
             if refreshed:
                 self.access_token = str(refreshed)
-                if old_token and self.access_token != old_token:
-                    old_acct_key = _robin_account_key(old_token)
-                    new_acct_key = _robin_account_key(self.access_token)
-                    with _ROBIN_IDENTITY_LOCK:
-                        old_mode = _ROBIN_BARD_MODE_BY_ACCOUNT.get(old_acct_key)
-                        if old_mode is not None:
-                            _ROBIN_BARD_MODE_BY_ACCOUNT[new_acct_key] = old_mode
-                        old_modes_map = _ROBIN_BARD_MODES_BY_ACCOUNT.get(old_acct_key)
-                        if old_modes_map is not None:
-                            _ROBIN_BARD_MODES_BY_ACCOUNT[new_acct_key] = dict(
-                                old_modes_map
-                            )
-                        old_pol = _ROBIN_MODE_POLICY_BY_ACCOUNT.get(old_acct_key)
-                        if old_pol is not None:
-                            _ROBIN_MODE_POLICY_BY_ACCOUNT[new_acct_key] = list(old_pol)
-                        old_lim = _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT.get(old_acct_key)
-                        if old_lim is not None:
-                            _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT[new_acct_key] = old_lim
-                    if self.device_id:
-                        old_reg = _ROBIN_REGISTERED_DEVICES.get(
-                            f"{old_token[:24]}:{self.device_id}"
-                        )
-                        if old_reg is not None:
-                            _ROBIN_REGISTERED_DEVICES[
-                                f"{self.access_token[:24]}:{self.device_id}"
-                            ] = old_reg
+                _robin_migrate_account_caches(
+                    old_token, self.access_token, device_id=self.device_id
+                )
         except Exception as exc:
             _llm_log.warning(
                 "Robin actor access_token refresh failed (run=%s force=%s): %s",
@@ -67959,6 +68066,46 @@ def _robin_account_key(access_token: str) -> str:
     return hashlib.sha256(access_token.encode("utf-8", "replace")).hexdigest()[:16]
 
 
+def _robin_mode_store_scope_keys(access_token: str, device_id: str = "") -> list[str]:
+    """Return ordered SQLite persistence keys (`acct:<hash>`, `dev:<device_id>`) for account mode cache."""
+    keys: list[str] = []
+    if access_token:
+        keys.append(f"acct:{_robin_account_key(access_token)}")
+    clean_dev = str(device_id or "").strip()
+    if clean_dev and clean_dev != "default":
+        keys.append(f"dev:{clean_dev}")
+    return keys
+
+
+def _robin_migrate_account_caches(
+    old_token: str, new_token: str, *, device_id: str = ""
+) -> None:
+    """Copy per-account Robin mode/policy/upload/device caches when an OAuth access_token rotates."""
+    if not old_token or not new_token or old_token == new_token:
+        return
+    old_acct_key = _robin_account_key(old_token)
+    new_acct_key = _robin_account_key(new_token)
+    with _ROBIN_IDENTITY_LOCK:
+        old_mode = _ROBIN_BARD_MODE_BY_ACCOUNT.get(old_acct_key)
+        if old_mode is not None:
+            _ROBIN_BARD_MODE_BY_ACCOUNT[new_acct_key] = old_mode
+        old_modes_map = _ROBIN_BARD_MODES_BY_ACCOUNT.get(old_acct_key)
+        if old_modes_map is not None:
+            _ROBIN_BARD_MODES_BY_ACCOUNT[new_acct_key] = dict(old_modes_map)
+        if old_acct_key in _ROBIN_BARD_MODES_FROM_FALLBACK:
+            _ROBIN_BARD_MODES_FROM_FALLBACK.add(new_acct_key)
+        old_pol = _ROBIN_MODE_POLICY_BY_ACCOUNT.get(old_acct_key)
+        if old_pol is not None:
+            _ROBIN_MODE_POLICY_BY_ACCOUNT[new_acct_key] = list(old_pol)
+        old_lim = _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT.get(old_acct_key)
+        if old_lim is not None:
+            _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT[new_acct_key] = dict(old_lim)
+    if device_id:
+        old_reg = _ROBIN_REGISTERED_DEVICES.get(f"{old_token[:24]}:{device_id}")
+        if old_reg is not None:
+            _ROBIN_REGISTERED_DEVICES[f"{new_token[:24]}:{device_id}"] = old_reg
+
+
 def _robin_account_bard_mode_id(
     access_token: str, *, category: int | None = None
 ) -> str:
@@ -68320,17 +68467,20 @@ async def _robin_resolve_bard_mode_id(
     )
     account_key = _robin_account_key(access_token)
     cached_cat = ""
+    is_fallback_cached = False
     with _ROBIN_IDENTITY_LOCK:
+        is_fallback_cached = account_key in _ROBIN_BARD_MODES_FROM_FALLBACK
         by_cat = _ROBIN_BARD_MODES_BY_ACCOUNT.get(account_key)
         if by_cat and target_cat in by_cat:
             cached_cat = by_cat[target_cat]
         cached = _ROBIN_BARD_MODE_BY_ACCOUNT.get(account_key)
-    if cached_cat:
-        _robin_apply_bard_mode_id(cached_cat)
-        return cached_cat
-    if cached and category is None:
-        _robin_apply_bard_mode_id(cached)
-        return cached
+    if not is_fallback_cached:
+        if cached_cat:
+            _robin_apply_bard_mode_id(cached_cat)
+            return cached_cat
+        if cached and category is None:
+            _robin_apply_bard_mode_id(cached)
+            return cached
 
     payload = _robin_pack_grpc_frames([_robin_build_get_user_status_request()])
     headers = {
@@ -68354,59 +68504,103 @@ async def _robin_resolve_bard_mode_id(
     resolved_default = ""
     modes_by_cat: dict[int, str] = {}
     resolved_limits: dict[str, int | float] = {}
-    try:
-        if session is not None and _robin_session_post_is_custom(session):
-            resp = await session.post(
-                GEMINI_ROBIN_USER_STATUS_URL, data=payload, headers=headers
-            )
-            try:
-                raw = await resp.read() if hasattr(resp, "read") else b""
-            finally:
-                if hasattr(resp, "release"):
+    is_custom_session = session is not None and _robin_session_post_is_custom(session)
+    max_attempts = 2
+    last_status = 0
+    raw_len = 0
+    last_rpc_error: Exception | None = None
+    attempts_used = 0
+    for attempt in range(max_attempts):
+        attempts_used = attempt + 1
+        rpc_exc: Exception | None = None
+        raw = b""
+        status = 0
+        try:
+            if is_custom_session and session is not None:
+                resp = await session.post(
+                    GEMINI_ROBIN_USER_STATUS_URL, data=payload, headers=headers
+                )
+                try:
+                    raw = await resp.read() if hasattr(resp, "read") else b""
+                finally:
+                    if hasattr(resp, "release"):
+                        resp.release()
+                status = int(getattr(resp, "status", 200) or 0)
+            else:
+                resp = await _robin_post_http2_grpc(
+                    GEMINI_ROBIN_USER_STATUS_URL,
+                    headers,
+                    payload,
+                    end_stream=True,
+                )
+                try:
+                    raw = await resp.read()
+                finally:
                     resp.release()
-            status = int(getattr(resp, "status", 200) or 0)
-        else:
-            resp = await _robin_post_http2_grpc(
-                GEMINI_ROBIN_USER_STATUS_URL,
-                headers,
-                payload,
-                end_stream=True,
+                status = int(getattr(resp, "status", 0) or 0)
+            last_status = status
+            raw_len = len(raw)
+            if status < 400 and raw:
+                parsed = _robin_parse_get_user_status_response(raw)
+                for m_opt in parsed.get("modes") or []:
+                    if not isinstance(m_opt, dict):
+                        continue
+                    m_cat = int(m_opt.get("category") or 0)
+                    m_id = str(m_opt.get("mode_id") or "").strip()
+                    if m_cat > 0 and m_id and m_cat not in modes_by_cat:
+                        modes_by_cat[m_cat] = m_id
+                resolved_default = _robin_select_bard_mode(
+                    parsed["modes"], category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+                )
+                resolved = (
+                    _robin_select_bard_mode(parsed["modes"], category=target_cat)
+                    or resolved_default
+                )
+                for m_opt in parsed.get("modes") or []:
+                    if isinstance(m_opt, dict) and (
+                        m_opt.get("mode_id") == resolved or not resolved_limits
+                    ):
+                        raw_lim = m_opt.get("attachment_limits")
+                        if isinstance(raw_lim, dict) and raw_lim:
+                            resolved_limits = dict(raw_lim)
+                            if m_opt.get("mode_id") == resolved:
+                                break
+        except Exception as exc:
+            rpc_exc = exc
+            last_rpc_error = exc
+            _llm_log.debug(
+                "GetUserStatus attempt %d/%d bard_mode_id resolve failed: %s",
+                attempt + 1,
+                max_attempts,
+                exc,
             )
-            try:
-                raw = await resp.read()
-            finally:
-                resp.release()
-            status = int(getattr(resp, "status", 0) or 0)
-        if status < 400 and raw:
-            parsed = _robin_parse_get_user_status_response(raw)
-            for m_opt in parsed.get("modes") or []:
-                if not isinstance(m_opt, dict):
-                    continue
-                m_cat = int(m_opt.get("category") or 0)
-                m_id = str(m_opt.get("mode_id") or "").strip()
-                if m_cat > 0 and m_id and m_cat not in modes_by_cat:
-                    modes_by_cat[m_cat] = m_id
-            resolved_default = _robin_select_bard_mode(
-                parsed["modes"], category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
-            )
-            resolved = (
-                _robin_select_bard_mode(parsed["modes"], category=target_cat)
-                or resolved_default
-            )
-            for m_opt in parsed.get("modes") or []:
-                if isinstance(m_opt, dict) and (
-                    m_opt.get("mode_id") == resolved or not resolved_limits
-                ):
-                    raw_lim = m_opt.get("attachment_limits")
-                    if isinstance(raw_lim, dict) and raw_lim:
-                        resolved_limits = dict(raw_lim)
-                        if m_opt.get("mode_id") == resolved:
-                            break
-    except Exception as exc:
-        _llm_log.debug("GetUserStatus bard_mode_id resolve failed: %s", exc)
 
+        if resolved or modes_by_cat:
+            last_rpc_error = None
+            break
+        if attempt + 1 < max_attempts:
+            should_retry = (
+                rpc_exc is not None
+                or status >= 500
+                or status == 429
+                or status == 0
+                or (not is_custom_session and status < 400 and not raw)
+            )
+            if not should_retry:
+                break
+            if not is_custom_session:
+                await asyncio.sleep(0.25)
+
+    scope_keys = _robin_mode_store_scope_keys(access_token, device_id)
+    used_store_fallback = False
+    err_desc = (
+        f"{type(last_rpc_error).__name__}: {last_rpc_error}"
+        if last_rpc_error is not None and str(last_rpc_error)
+        else (type(last_rpc_error).__name__ if last_rpc_error is not None else "")
+    )
     if resolved or modes_by_cat:
         with _ROBIN_IDENTITY_LOCK:
+            _ROBIN_BARD_MODES_FROM_FALLBACK.discard(account_key)
             if resolved_default or resolved:
                 _ROBIN_BARD_MODE_BY_ACCOUNT[account_key] = resolved_default or resolved
             if modes_by_cat:
@@ -68418,14 +68612,114 @@ async def _robin_resolve_bard_mode_id(
                 _ROBIN_MODE_POLICY_BY_ACCOUNT[account_key] = list(pol_cfgs)
             if resolved_limits:
                 _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT[account_key] = resolved_limits
+        _GEMINI_DSH_STORE.save_account_modes(
+            scope_keys=scope_keys,
+            default_mode_id=resolved_default or resolved,
+            modes_by_category=modes_by_cat,
+            policy_name=str(parsed.get("policy_name") or ""),
+            policy_configs=(
+                parsed.get("policy_configs")
+                if isinstance(parsed.get("policy_configs"), list)
+                else None
+            ),
+            attachment_limits=resolved_limits or None,
+        )
         if resolved:
             _robin_apply_bard_mode_id(resolved)
     else:
-        _llm_log.warning(
-            "GetUserStatus carried no matching mode for category=%d; sending RequestMetadata without "
-            "bard_mode_id instead of guessing one",
-            target_cat,
-        )
+        server_modes_list = parsed.get("modes") or []
+        if not server_modes_list:
+            persisted = _GEMINI_DSH_STORE.load_account_modes(scope_keys=scope_keys)
+            if persisted:
+                p_modes = dict(persisted.get("modes_by_category") or {})
+                p_default = str(persisted.get("default_mode_id") or "").strip()
+                p_resolved = (
+                    p_modes.get(target_cat)
+                    or p_modes.get(GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK)
+                    or p_default
+                )
+                if p_resolved or p_modes:
+                    used_store_fallback = True
+                    modes_by_cat = p_modes
+                    resolved_default = (
+                        p_modes.get(GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK)
+                        or p_default
+                        or p_resolved
+                    )
+                    resolved = p_resolved
+                    p_pol_cfgs = persisted.get("policy_configs")
+                    p_limits = persisted.get("attachment_limits")
+                    if isinstance(p_limits, dict) and p_limits:
+                        resolved_limits = dict(p_limits)
+                    if not parsed.get("policy_name") and persisted.get("policy_name"):
+                        parsed["policy_name"] = persisted["policy_name"]
+                    if not parsed.get("policy_configs") and isinstance(
+                        p_pol_cfgs, list
+                    ):
+                        parsed["policy_configs"] = p_pol_cfgs
+                    with _ROBIN_IDENTITY_LOCK:
+                        _ROBIN_BARD_MODES_FROM_FALLBACK.add(account_key)
+                        if resolved_default or resolved:
+                            _ROBIN_BARD_MODE_BY_ACCOUNT[account_key] = (
+                                resolved_default or resolved
+                            )
+                        if modes_by_cat:
+                            existing_map = dict(
+                                _ROBIN_BARD_MODES_BY_ACCOUNT.get(account_key) or {}
+                            )
+                            existing_map.update(modes_by_cat)
+                            _ROBIN_BARD_MODES_BY_ACCOUNT[account_key] = existing_map
+                        if isinstance(p_pol_cfgs, list) and p_pol_cfgs:
+                            _ROBIN_MODE_POLICY_BY_ACCOUNT[account_key] = list(
+                                p_pol_cfgs
+                            )
+                        if resolved_limits:
+                            _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT[account_key] = (
+                                resolved_limits
+                            )
+                    if resolved:
+                        _robin_apply_bard_mode_id(resolved)
+                    _llm_log.warning(
+                        "GetUserStatus failed or returned empty modes for category=%d "
+                        "(attempts=%d, status=%d, err=%s); falling back to persisted bard_mode_id=%s",
+                        target_cat,
+                        attempts_used,
+                        last_status,
+                        err_desc or "empty_response",
+                        resolved,
+                    )
+        if not used_store_fallback:
+            if last_rpc_error is not None or last_status >= 400:
+                _llm_log.warning(
+                    "GetUserStatus RPC failed for category=%d (attempts=%d, status=%d, err=%s); "
+                    "sending RequestMetadata without bard_mode_id",
+                    target_cat,
+                    attempts_used,
+                    last_status,
+                    err_desc or f"http_{last_status}",
+                )
+            elif not server_modes_list:
+                if is_custom_session and last_status == 200 and raw_len == 0:
+                    _llm_log.debug(
+                        "GetUserStatus custom session returned empty payload for category=%d",
+                        target_cat,
+                    )
+                else:
+                    _llm_log.warning(
+                        "GetUserStatus returned empty modes list for category=%d "
+                        "(attempts=%d, status=%d, bytes=%d); sending RequestMetadata without bard_mode_id",
+                        target_cat,
+                        attempts_used,
+                        last_status,
+                        raw_len,
+                    )
+            else:
+                _llm_log.warning(
+                    "GetUserStatus carried no matching mode for category=%d (modes_count=%d); "
+                    "sending RequestMetadata without bard_mode_id instead of guessing one",
+                    target_cat,
+                    len(server_modes_list),
+                )
     _gemini_debug_log_event(
         session_id,
         "user_status",
@@ -68438,6 +68732,10 @@ async def _robin_resolve_bard_mode_id(
             "attachment_limits": resolved_limits,
             "modes_count": len(parsed.get("modes") or []),
             "selected_mode_ids": parsed.get("selected_mode_ids") or [],
+            "http_status": last_status,
+            "attempts": attempts_used,
+            "rpc_error": err_desc,
+            "fallback_from_store": used_store_fallback,
             "identity": _robin_desktop_identity().describe(),
         },
     )
@@ -72480,6 +72778,8 @@ class GeminiHTTPClient:
                     cred.user_tier = c_tier
         if not force_refresh and not cred.needs_refresh() and cred.access_token:
             return cred.access_token
+        old_token = str(cred.access_token or "")
+        cred_dev_id = _robin_get_device_id(cred.credential_id)
         if cred.auth_method == "gemini_app":
             with _GEMINI_APP_CRED_LOCK:
                 _GEMINI_APP_CRED_CACHE = (0.0, [])
@@ -72501,6 +72801,9 @@ class GeminiHTTPClient:
                     ):
                         cred.access_token = fresh.access_token
                         cred.expiry = fresh.expiry
+                        _robin_migrate_account_caches(
+                            old_token, cred.access_token, device_id=cred_dev_id
+                        )
                         self._persist_refreshed_token(cred)
                         return cred.access_token
                     break
@@ -72555,6 +72858,9 @@ class GeminiHTTPClient:
                             cred.auth_method = method
                             cred.client_id = cid
                             cred.client_secret = csecret
+                            _robin_migrate_account_caches(
+                                old_token, access_token, device_id=cred_dev_id
+                            )
                             self._persist_refreshed_token(cred)
                             return access_token
                     last_err = _opencode_error_fields(raw, resp.status)[1]
@@ -93933,12 +94239,110 @@ def test_robin_bard_mode_id_is_resolved_from_user_status():
             assert pro_resolved == "dddddddddddddddd", pro_resolved
             assert post_calls == 1
             assert _robin_desktop_identity().bard_mode_id == "dddddddddddddddd"
+
+            # Verify cold-start transient failure retry (attempt 1 raises TimeoutError, attempt 2 succeeds)
+            # and SQLite persistent fallback when both attempts fail after a process restart / token rotation.
+            rotated_tok = "tok_selftest_user_status_rotated_0002"
+            rotated_acct = _robin_account_key(rotated_tok)
+            flaky_calls = 0
+
+            class _FlakyUserStatusSession:
+                async def post(
+                    self, url: str, *, data: bytes = b"", headers: Any = None
+                ) -> _FakeUserStatusResp:
+                    nonlocal flaky_calls
+                    flaky_calls += 1
+                    assert url == GEMINI_ROBIN_USER_STATUS_URL
+                    assert data and headers
+                    if flaky_calls == 1:
+                        raise TimeoutError("simulated cold-start GetUserStatus timeout")
+                    if flaky_calls in (3, 4):
+                        raise TimeoutError("simulated sustained GetUserStatus outage")
+                    return _FakeUserStatusResp()
+
+            flaky_sess: Any = _FlakyUserStatusSession()
+            try:
+                with _ROBIN_IDENTITY_LOCK:
+                    _ROBIN_BARD_MODE_BY_ACCOUNT.pop(selftest_acct, None)
+                    _ROBIN_BARD_MODES_BY_ACCOUNT.pop(selftest_acct, None)
+                    _ROBIN_BARD_MODES_FROM_FALLBACK.discard(selftest_acct)
+                _GEMINI_DSH_STORE.delete_account_modes(
+                    scope_keys=_robin_mode_store_scope_keys(
+                        selftest_tok, "device-under-test"
+                    )
+                )
+                retried_resolved = asyncio.run(
+                    _robin_resolve_bard_mode_id(
+                        flaky_sess,
+                        selftest_tok,
+                        "device-under-test",
+                        category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+                    )
+                )
+                assert retried_resolved == "bbbbbbbbbbbbbbbb", retried_resolved
+                assert flaky_calls == 2, (
+                    f"expected 2 attempts on transient failure, got {flaky_calls}"
+                )
+
+                # Simulate service restart + OAuth token rotation on the same device_id while
+                # GetUserStatus fails on both attempts (flaky_calls 3 and 4): must recover from
+                # SQLite `dev:device-under-test` without downgrading to empty bard_mode_id.
+                with _ROBIN_IDENTITY_LOCK:
+                    _ROBIN_BARD_MODE_BY_ACCOUNT.clear()
+                    _ROBIN_BARD_MODES_BY_ACCOUNT.clear()
+                    _ROBIN_BARD_MODES_FROM_FALLBACK.clear()
+                _robin_apply_bard_mode_id(baseline)
+                fallback_resolved = asyncio.run(
+                    _robin_resolve_bard_mode_id(
+                        flaky_sess,
+                        rotated_tok,
+                        "device-under-test",
+                        category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+                    )
+                )
+                assert fallback_resolved == "bbbbbbbbbbbbbbbb", fallback_resolved
+                assert flaky_calls == 4, (
+                    f"expected 2 failed attempts before SQLite fallback, got {flaky_calls}"
+                )
+                assert rotated_acct in _ROBIN_BARD_MODES_FROM_FALLBACK
+
+                # Next call when network recovers (flaky_calls == 5) must refresh live GetUserStatus
+                # and clear `_ROBIN_BARD_MODES_FROM_FALLBACK`.
+                recovered_resolved = asyncio.run(
+                    _robin_resolve_bard_mode_id(
+                        flaky_sess,
+                        rotated_tok,
+                        "device-under-test",
+                        category=GEMINI_ROBIN_MODE_CATEGORY_PRO,
+                    )
+                )
+                assert recovered_resolved == "dddddddddddddddd", recovered_resolved
+                assert flaky_calls == 5
+                assert rotated_acct not in _ROBIN_BARD_MODES_FROM_FALLBACK
+            finally:
+                with _ROBIN_IDENTITY_LOCK:
+                    _ROBIN_BARD_MODE_BY_ACCOUNT.pop(rotated_acct, None)
+                    _ROBIN_BARD_MODES_BY_ACCOUNT.pop(rotated_acct, None)
+                    _ROBIN_BARD_MODES_FROM_FALLBACK.discard(rotated_acct)
+                    _ROBIN_MODE_POLICY_BY_ACCOUNT.pop(rotated_acct, None)
+                    _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT.pop(rotated_acct, None)
+                _GEMINI_DSH_STORE.delete_account_modes(
+                    scope_keys=_robin_mode_store_scope_keys(
+                        rotated_tok, "device-under-test"
+                    )
+                )
         finally:
             with _ROBIN_IDENTITY_LOCK:
                 _ROBIN_BARD_MODE_BY_ACCOUNT.pop(selftest_acct, None)
                 _ROBIN_BARD_MODES_BY_ACCOUNT.pop(selftest_acct, None)
+                _ROBIN_BARD_MODES_FROM_FALLBACK.discard(selftest_acct)
                 _ROBIN_MODE_POLICY_BY_ACCOUNT.pop(selftest_acct, None)
                 _ROBIN_UPLOAD_LIMITS_BY_ACCOUNT.pop(selftest_acct, None)
+            _GEMINI_DSH_STORE.delete_account_modes(
+                scope_keys=_robin_mode_store_scope_keys(
+                    selftest_tok, "device-under-test"
+                )
+            )
     finally:
         _robin_apply_bard_mode_id(saved_mode, allow_empty=True)
 
