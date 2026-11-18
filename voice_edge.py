@@ -161,9 +161,9 @@ if sys.version_info < (3, 11):
 #    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2304
 #    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2363
 #    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2814
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42938
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43587
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43599
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42940
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43589
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43601
 #    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19539
 #    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19536
 #    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19502
@@ -200,28 +200,28 @@ if sys.version_info < (3, 11):
 #    VE_XIAOAI_LOG_DEBUG                        "0"                                      L438
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42824
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42847
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42874
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42933
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43476
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43479
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43487
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43499
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43501
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43510
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43516
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43522
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43538
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43543
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43550
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43557
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43566
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43573
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43621
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45390
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45391
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45392
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42826
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42849
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42876
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42935
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43478
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43481
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43489
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43501
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43503
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43512
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43518
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43524
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43540
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43545
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43552
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43559
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43568
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43575
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43623
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45392
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45393
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45394
 #
 #  【Qwen】
 #    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15045
@@ -293,80 +293,80 @@ if sys.version_info < (3, 11):
 #    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25032
 #    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25039
 #    M365_CONV_MAP_MAX                      "1024"                                       L25208
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25855
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25873
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25857
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25875
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38162
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38372
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38434
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38456
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38463
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38558
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38560
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38564
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39757
-#    MI_USER                                ""                                           L39483
-#    MI_PASS                                ""                                           L39509
-#    XIAOAI_HARDWARE                        "LX06"                                       L39511
-#    MI_DID                                 ""                                           L39513
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39516
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39520
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39523
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39526
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39532
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39543
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39548
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39529
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39539
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39559
-#    XIAOAI_VOICE                           "zh"                                         L39561
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39563
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39566
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39569
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39572
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39576
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39580
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39585
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39590
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39595
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39600
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39605
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39613
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39618
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39623
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39628
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39633
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39638
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39643
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39646
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39650
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39654
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39658
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39663
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39668
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39672
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39675
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39678
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39681
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39684
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39687
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39690
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39693
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39700
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39706
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39710
+#    XIAOAI_ENABLED                         "0"                                          L38164
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38374
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38436
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38458
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38465
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38560
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38562
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38566
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39759
+#    MI_USER                                ""                                           L39485
+#    MI_PASS                                ""                                           L39511
+#    XIAOAI_HARDWARE                        "LX06"                                       L39513
+#    MI_DID                                 ""                                           L39515
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39518
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39522
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39525
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39528
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39534
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39545
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39550
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39531
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39541
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39561
+#    XIAOAI_VOICE                           "zh"                                         L39563
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39565
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39568
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39571
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39574
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39578
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39582
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39587
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39592
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39597
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39602
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39607
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39615
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39620
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39625
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39630
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39635
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39640
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39645
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39648
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39652
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39656
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39660
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39665
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39670
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39674
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39677
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39680
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39683
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39686
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39689
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39692
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39695
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39702
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39708
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39712
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48152
-#    VE_OPENCODE_API_KEYS                   ""                                           L49077
-#    VE_OPENCODE_FREE                       "1"                                          L49115
-#    VE_OPENCODE_GO                         "0"                                          L49120
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70203
-#    VE_GEMINI_API_KEYS                     ""                                           L70207
-#    VE_GEMINI_BACKEND                      "auto"                                       L70226
-#    VE_GEMINI_PROJECT_ID                   ""                                           L70233
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55080
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48154
+#    VE_OPENCODE_API_KEYS                   ""                                           L49079
+#    VE_OPENCODE_FREE                       "1"                                          L49117
+#    VE_OPENCODE_GO                         "0"                                          L49122
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70248
+#    VE_GEMINI_API_KEYS                     ""                                           L70252
+#    VE_GEMINI_BACKEND                      "auto"                                       L70271
+#    VE_GEMINI_PROJECT_ID                   ""                                           L70278
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55106
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1531
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1532
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1533
@@ -379,15 +379,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71251
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71255
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71259
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71281
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71247
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71237
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71225
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71233
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L71229
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71296
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71300
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71304
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71326
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71292
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71282
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71270
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71278
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L71274
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -25545,10 +25545,12 @@ VOICE_EDGE_HARNESS_TOOL_TIMEOUT = max(
 
 
 def _harness_enabled(model_name: str) -> bool:
-    """True only for metadata-opted-in models with a configured endpoint.
+    """True only for metadata-opted-in models or `gemini:` models with a configured endpoint.
     Everything else takes the historical direct path byte-for-byte."""
     if not (VOICE_EDGE_HARNESS_URL and VOICE_EDGE_HARNESS_TOKEN):
         return False
+    if _gemini_is_model(model_name):
+        return True
     return bool((BROWSER_MODEL_METADATA.get(model_name) or {}).get("deepseek_harness"))
 
 
@@ -40717,7 +40719,7 @@ class XiaoGPTBridge:
                         self.config.poll_error_backoff_max,
                         float(2 ** min(self.poll_consecutive_errors - 1, 5)),
                     )
-                    _xiaoai_log.warning(
+                    _xiaoai_log.debug(
                         "XiaoAI poll retryable API error: poll=%d status=%d "
                         "consecutive=%d session_rebuilt=%s retry_in=%.1fs "
                         "error=%s",
@@ -52565,7 +52567,7 @@ def _robin_get_device_id(
 
 
 def _robin_build_request_metadata(
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     *,
     device_id: str = "",
     bard_mode_id: str | None = None,
@@ -52610,7 +52612,7 @@ def _robin_build_request_metadata(
     )
 
 
-def _robin_build_get_user_status_request(locale: str = "zh-CN") -> bytes:
+def _robin_build_get_user_status_request(locale: str = "en-US") -> bytes:
     """Build GetUserStatusRequest."""
     return _pb_bytes_field(1, _robin_build_request_metadata(locale=locale))
 
@@ -52935,7 +52937,7 @@ def _robin_build_register_device_request(
     device_id: str,
     device_name: str | None = None,
     connected_folders: Sequence[str] | None = None,
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     tools: Sequence[Any] | None = None,
     *,
     dsh_sandbox_mode: str = "workspace-write",
@@ -53096,7 +53098,7 @@ def _robin_build_process_file_request(
     file_name: str,
     *,
     storage_type: int = 1,
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     device_id: str = "",
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -53292,7 +53294,7 @@ def _robin_build_process_query_frames(
     device_name: str | None = None,
     connected_folders: Sequence[str] | None = None,
     tools: Sequence[Any] | None = None,
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     *,
     include_thinking_field_48: bool = False,
     dsh_sandbox_mode: str = "workspace-write",
@@ -53354,7 +53356,7 @@ def _robin_build_resume_turn_frames(
     conversation_id: str,
     request_id: str,
     device_id: str = "",
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     *,
     device_name: str | None = None,
     connected_folders: Sequence[str] | None = None,
@@ -53792,7 +53794,7 @@ def _robin_build_robin_op_result_frames(
 def _robin_build_report_presence_frame(
     conversation_id: str,
     device_id: str = "",
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     *,
     is_active: bool = True,
     bard_mode_id: str | None = None,
@@ -53812,7 +53814,7 @@ def _robin_build_abort_generation_frame(
     conversation_id: str,
     request_id: str,
     device_id: str = "",
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     *,
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -53831,7 +53833,7 @@ def _robin_build_abort_generation_frame(
 def _robin_build_list_turns_frame(
     conversation_id: str,
     device_id: str = "",
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     limit: int = 100,
     *,
     bard_mode_id: str | None = None,
@@ -53851,7 +53853,7 @@ def _robin_build_list_turns_frame(
 def _robin_build_list_conversations_request(
     limit: int = 20,
     device_id: str = "",
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     *,
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -54694,6 +54696,8 @@ def _robin_parse_process_query_response(frame_bytes: bytes) -> dict[str, Any]:
         "completion_status": 0,
         "is_completed": False,
         "attribution": "",
+        "response_bard_mode_id": "",
+        "resolved_mode_category": 0,
         "eod": False,
         "error_code": 0,
         "error_message": "",
@@ -54746,6 +54750,7 @@ def _robin_parse_process_query_response(frame_bytes: bytes) -> dict[str, Any]:
                 if xfno == 2 and ((xwtype == 0 and int(xval) == 1) or xwtype == 2):
                     out["eod"] = True
                 elif xfno == 1 and xwtype == 2 and isinstance(xval, (bytes, bytearray)):
+                    raw_model_attribution_name = ""
                     for cfno, cwtype, cval in _pb_iter_fields(bytes(xval)):
                         if (
                             cfno == 2
@@ -54811,6 +54816,14 @@ def _robin_parse_process_query_response(frame_bytes: bytes) -> dict[str, Any]:
                         ):
                             out["history_states_raw"].append(bytes(cval))
                         elif (
+                            cfno == 25
+                            and cwtype == 2
+                            and isinstance(cval, (bytes, bytearray))
+                        ):
+                            out["response_bard_mode_id"] = (
+                                bytes(cval).decode("utf-8", errors="replace").strip()
+                            )
+                        elif (
                             cfno == 27
                             and cwtype == 2
                             and isinstance(cval, (bytes, bytearray))
@@ -54829,23 +54842,26 @@ def _robin_parse_process_query_response(frame_bytes: bytes) -> dict[str, Any]:
                         ):
                             raw_attr_bytes = bytes(cval)
                             attr_str = ""
-                            for afno, awtype, aval in _pb_iter_fields(raw_attr_bytes):
-                                if (
-                                    afno == 1
-                                    and awtype == 2
-                                    and isinstance(aval, (bytes, bytearray))
+                            if len(raw_attr_bytes) >= 2 and raw_attr_bytes[0] == 0x0A:
+                                for afno, awtype, aval in _pb_iter_fields(
+                                    raw_attr_bytes
                                 ):
-                                    cand_str = (
-                                        bytes(aval)
-                                        .decode("utf-8", errors="replace")
-                                        .strip()
-                                    )
-                                    if cand_str and not any(
-                                        ord(ch) < 32 and ch not in "\r\n\t"
-                                        for ch in cand_str
+                                    if (
+                                        afno == 1
+                                        and awtype == 2
+                                        and isinstance(aval, (bytes, bytearray))
                                     ):
-                                        attr_str = cand_str
-                                        break
+                                        cand_str = (
+                                            bytes(aval)
+                                            .decode("utf-8", errors="replace")
+                                            .strip()
+                                        )
+                                        if cand_str and not any(
+                                            ord(ch) < 32 and ch not in "\r\n\t"
+                                            for ch in cand_str
+                                        ):
+                                            attr_str = cand_str
+                                            break
                             if not attr_str:
                                 direct_str = raw_attr_bytes.decode(
                                     "utf-8", errors="replace"
@@ -54856,10 +54872,9 @@ def _robin_parse_process_query_response(frame_bytes: bytes) -> dict[str, Any]:
                                 ):
                                     attr_str = direct_str
                             if attr_str:
-                                if "旧版" in attr_str and not out.get("response_id"):
-                                    out.setdefault("fallback_attribution", attr_str)
-                                else:
-                                    out["attribution"] = attr_str
+                                raw_model_attribution_name = attr_str
+                        elif cfno == 41 and cwtype == 0 and isinstance(cval, int):
+                            out["resolved_mode_category"] = int(cval)
                         elif (
                             cfno == 1
                             and cwtype == 2
@@ -54937,6 +54952,17 @@ def _robin_parse_process_query_response(frame_bytes: bytes) -> dict[str, Any]:
                                     out["completion_status"] = int(mval)
                                     if int(mval) == 2:
                                         out["is_completed"] = True
+                    if raw_model_attribution_name:
+                        if (
+                            out["response_id"]
+                            or out["response_bard_mode_id"]
+                            or out["resolved_mode_category"]
+                        ):
+                            out["attribution"] = raw_model_attribution_name
+                        else:
+                            out.setdefault(
+                                "fallback_attribution", raw_model_attribution_name
+                            )
     return out
 
 
@@ -61420,7 +61446,7 @@ def _gemini_detect_client_dialect(
             ):
                 saw_veh = True
         elif r == "system":
-            if "Previous conversation summary:" in txt:
+            if "Previous conversation summary:" in txt or "<important_rules>" in txt:
                 return "continue"
             if (
                 "VoiceEdge Harness" in txt
@@ -65036,7 +65062,7 @@ class _RobinRunActor:
             "accept-encoding": "identity,gzip",
             "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
             "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-            "accept-language": "zh_CN",
+            "accept-language": "en",
         }
         if self.server_token:
             headers["X-Server-Token"] = self.server_token
@@ -66733,38 +66759,20 @@ class _RobinStreamDecoder:
         self.report_usage = bool(report_usage)
         self.action_card_filter = _RobinActionCardFilter()
         self.model_attribution_emitted = False
+        self.fallback_attribution = ""
 
     def _resolve_server_model_banner(self) -> str:
-        """Return the standalone server model attribution text (e.g. `'使用了 4 Argon 模型'`)."""
-        attr = str(self.run.attribution or "").strip()
-        if attr:
-            return attr
-        low_m = str(self.model_id or "").lower()
-        if "carbon" in low_m:
-            return "使用了 4 Carbon 模型"
-        if "argon" in low_m:
-            return "使用了 4 Argon 模型"
-        if "pro" in low_m:
-            return "使用了 3.1 Pro 模型"
-        if "3.5-flash-lite" in low_m:
-            return "使用了 3.5 Flash-Lite 模型"
-        if "flash-lite" in low_m:
-            return "使用了 Flash-Lite 模型"
-        if "hydrogen" in low_m:
-            return "使用了 4 Hydrogen 模型"
-        if "3.8-flash" in low_m:
-            return "使用了 3.8 Flash 模型"
-        if "flash" in low_m:
-            return "使用了 Flash 模型"
-        clean_id = str(self.model_id or "Gemini").removeprefix("gemini:")
-        return f"使用了 {clean_id} 模型"
+        """Return the standalone server model attribution text from `f30` (never guessed from `model_id`)."""
+        return str(self.run.attribution or self.fallback_attribution or "").strip()
 
     def _maybe_emit_model_attribution_chunk(self) -> list[dict[str, Any]]:
-        """Emit a separate initial `reasoning_content` chunk showing only the active server model."""
+        """Emit a separate initial `reasoning_content` chunk showing the server-returned model attribution."""
         if self.model_attribution_emitted:
             return []
-        self.model_attribution_emitted = True
         banner = self._resolve_server_model_banner()
+        if not banner:
+            return []
+        self.model_attribution_emitted = True
         return [self._make_chunk({"reasoning_content": f"{banner}\n\n"})]
 
     def _make_chunk(
@@ -66798,8 +66806,10 @@ class _RobinStreamDecoder:
             return []
         for fr in frames:
             p_scan = _robin_parse_process_query_response(fr)
+            if p_scan.get("fallback_attribution") and not self.fallback_attribution:
+                self.fallback_attribution = str(p_scan["fallback_attribution"]).strip()
             if p_scan.get("attribution"):
-                self.run.attribution = p_scan["attribution"]
+                self.run.attribution = str(p_scan["attribution"]).strip()
                 break
         out_chunks: list[dict[str, Any]] = []
         for frame in frames:
@@ -66833,8 +66843,10 @@ class _RobinStreamDecoder:
             if self.run.identity_ready_event is not None:
                 self.run.identity_ready_event.set()
 
+        if parsed.get("fallback_attribution"):
+            self.fallback_attribution = str(parsed["fallback_attribution"]).strip()
         if parsed["attribution"]:
-            self.run.attribution = parsed["attribution"]
+            self.run.attribution = str(parsed["attribution"]).strip()
         elif (
             parsed.get("fallback_attribution")
             and not self.run.attribution
@@ -66849,8 +66861,9 @@ class _RobinStreamDecoder:
             "request_id": parsed["request_id"],
             "response_id": parsed["response_id"],
             "conversation_title": parsed.get("conversation_title", ""),
-            "attribution": parsed["attribution"]
-            or parsed.get("fallback_attribution", ""),
+            "attribution": parsed["attribution"],
+            "fallback_attribution": parsed.get("fallback_attribution", ""),
+            "effective_attribution": self.run.attribution or self.fallback_attribution,
             "live_states_count": len(parsed["live_states_raw"]),
             "history_states_count": len(parsed["history_states_raw"]),
             "answer_len": len(parsed["answer_text"]),
@@ -66932,14 +66945,35 @@ class _RobinStreamDecoder:
                 synth_l = _pb_bytes_field(13, synth_s)
                 self.run.state_tape.append_live(synth_l, response_id=self.response_id)
 
-        # 3. Project thought delta from ThoughtProjector (preceded by standalone server model chunk)
-        thought_delta = self.run.thought_projector.consume_delta()
+        # 3. Project thought delta from ThoughtProjector (preceded by standalone server model chunk).
+        # Hold status-only pre-candidate live states while `self.run.attribution` is not yet received
+        # and the frame only carries pre-candidate `fallback_attribution` (`response_id == ""` and no
+        # `response_bard_mode_id` / `resolved_mode_category`), so the authoritative candidate frame's
+        # `model_attribution_name` (`f30`) is emitted first across any UI locale.
+        awaiting_real_server_attribution = (
+            not self.model_attribution_emitted
+            and not self.run.attribution
+            and bool(self.fallback_attribution)
+            and not self.response_id
+            and not parsed["answer_text"]
+            and not parsed["is_completed"]
+            and not parsed["eod"]
+            and not parsed["inline_tool_calls"]
+            and not parsed["legacy_thoughts"]
+        )
+        thought_delta = (
+            ""
+            if awaiting_real_server_attribution
+            else self.run.thought_projector.consume_delta()
+        )
         if thought_delta:
             out.extend(self._maybe_emit_model_attribution_chunk())
             self.emitted_reasoning_chars += len(thought_delta)
             self.emitted_reasoning_text += thought_delta
             out.append(self._make_chunk({"reasoning_content": thought_delta}))
-        elif parsed["answer_text"] and not self.model_attribution_emitted:
+        elif (
+            parsed["answer_text"] or self.run.attribution
+        ) and not self.model_attribution_emitted:
             out.extend(self._maybe_emit_model_attribution_chunk())
 
         # 4. Project answer delta from AnswerProjector
@@ -67087,6 +67121,17 @@ class _RobinStreamDecoder:
         adapter decides how the deltas reach DSH.
         """
         out: list[dict[str, Any]] = []
+        if invocations:
+            pending_thought = self.run.thought_projector.consume_delta()
+            if pending_thought:
+                out.extend(self._maybe_emit_model_attribution_chunk())
+                self.emitted_reasoning_chars += len(pending_thought)
+                self.emitted_reasoning_text += pending_thought
+                out.append(self._make_chunk({"reasoning_content": pending_thought}))
+            elif (
+                self.run.attribution or self.fallback_attribution
+            ) and not self.model_attribution_emitted:
+                out.extend(self._maybe_emit_model_attribution_chunk())
         dsh_tool_deltas: list[dict[str, Any]] = []
         for inv in invocations:
             idx = len(self.pending_tool_calls)
@@ -68183,7 +68228,7 @@ async def _robin_call_process_file(
         "accept-encoding": "identity,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -68306,7 +68351,7 @@ async def _robin_upload_and_process_single_file(
             "X-Goog-Upload-Content-Type": spec.mime_type or "application/octet-stream",
             "Push-Id": GEMINI_ROBIN_UPLOAD_PUSH_ID,
             "User-Agent": ua,
-            "Accept-Language": "zh-CN,zh-Hans;q=0.9",
+            "Accept-Language": "en-US;q=0.9",
         }
         async with session.post(
             GEMINI_ROBIN_UPLOAD_URL, data=b"", headers=start_headers
@@ -68354,7 +68399,7 @@ async def _robin_upload_and_process_single_file(
             "Upload-Draft-Interop-Version": "6",
             "Upload-Complete": "?1",
             "User-Agent": ua,
-            "Accept-Language": "zh-CN,zh-Hans;q=0.9",
+            "Accept-Language": "en-US;q=0.9",
         }
         if _robin_session_post_is_custom(session) and not _robin_session_put_is_custom(
             session
@@ -68490,7 +68535,7 @@ async def _robin_resolve_bard_mode_id(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -68792,7 +68837,7 @@ async def _robin_ensure_device_registered(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -68873,7 +68918,7 @@ async def _robin_fetch_conversation_title(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -68912,7 +68957,7 @@ async def _robin_fetch_conversation_title(
 
 def _robin_build_list_remy_goals_request(
     device_id: str = "",
-    locale: str = "zh-CN",
+    locale: str = "en-US",
     *,
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -68989,7 +69034,7 @@ async def _robin_fetch_recent_goal_titles(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -69065,7 +69110,7 @@ async def _robin_reconcile_via_list_turns(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -69174,7 +69219,7 @@ async def _robin_resolve_response_id_via_list_turns(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -69233,7 +69278,7 @@ async def _robin_open_execute_remote_tools_stream(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -69310,7 +69355,7 @@ async def _robin_send_report_presence(
         "grpc-timeout": "59999998u",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -69378,7 +69423,7 @@ async def _robin_send_abort_generation(
         "grpc-accept-encoding": "identity,deflate,gzip",
         "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
         "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "zh_CN",
+        "accept-language": "en",
     }
     if server_token:
         headers["X-Server-Token"] = server_token
@@ -73065,7 +73110,7 @@ class GeminiHTTPClient:
             "accept-encoding": "identity,gzip",
             "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
             "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-            "accept-language": "zh_CN",
+            "accept-language": "en",
         }
         robin_targets: list[tuple[str, str, dict[str, str], dict[str, Any] | bytes]] = [
             (
@@ -74988,7 +75033,10 @@ class GeminiHTTPClient:
                         and not is_auxiliary_req
                         and not _att.flush_cached_actor_only
                     ):
-                        if not _att.decoder.model_attribution_emitted:
+                        if (
+                            not _att.decoder.model_attribution_emitted
+                            and _att.decoder.run.attribution
+                        ):
                             attr_chunks = (
                                 _att.decoder._maybe_emit_model_attribution_chunk()
                             )
@@ -77147,11 +77195,12 @@ def _ais_update_dynamic_models(raw_list_models: Any) -> int:
 
 
 _GEMINI_ATTRIBUTION_BANNER_RE = re.compile(
-    r"^\s*(?:>\s*⏳[^\n]*\n+\s*)*使用了\s+[^\n]+\s*模型\s*\n+(?:\s*>\s*⏳[^\n]*\n+)*",
+    r"^\s*(?:>\s*⏳[^\n]*\n+\s*)*(?:使用了\s+[^\n]+\s*模型|[Uu]sed\s+[^\n]+\s+[Mm]odel)\s*\n+(?:\s*>\s*⏳[^\n]*\n+)*",
     re.UNICODE,
 )
 _GEMINI_ANY_ATTRIBUTION_BANNER_RE = re.compile(
-    r"(?:^|\n)\s*使用了\s+[^\n]+\s*模型\s*\n+", re.UNICODE
+    r"(?:^|\n)\s*(?:使用了\s+[^\n]+\s*模型|[Uu]sed\s+[^\n]+\s+[Mm]odel)\s*\n+",
+    re.UNICODE,
 )
 _GEMINI_PROGRESS_REMINDER_RE = re.compile(
     r"(?:^|\n+)\s*>\s*⏳[^\n]*(?:\n+|$)", re.UNICODE
@@ -86857,6 +86906,305 @@ async def _direct_aistudio_chat_response(
     return JSONResponse(resp_payload)
 
 
+async def _gemini_prepare_harness_mirror(
+    public_model: str,
+    body: dict[str, Any],
+    messages: list[Any],
+) -> Optional[dict[str, Any]]:
+    """Bind a non-VEH `gemini:` conversation to `voiceedge-harness` for passive session mirroring."""
+    if not _harness_enabled(public_model):
+        return None
+    tv = _gemini_parse_transcript(messages, body=body, tools=body.get("tools"))
+    if tv.client_kind == "veh":
+        return None
+    if (
+        tv.is_uncompact_req
+        or tv.is_compaction_req
+        or tv.is_post_turn_notice_only
+        or (tv.tail_has_aborted_tool and not tv.tail_human_user_texts)
+        or (tv.fork_choice and tv.fork_choice.lower().startswith("cancel"))
+    ):
+        return None
+    if tv.is_title_req:
+        boot_key, first_human_text = _dsh_extract_title_request_boot_key(
+            messages, principal_id="gemini_harness"
+        )
+        full_key = ""
+        raw_last_u = _client_prompt_from_message(
+            _client_latest_user_message(messages)
+        ).strip()
+        if (
+            raw_last_u.startswith("Given the following")
+            and "please reply with a title" in raw_last_u
+        ):
+            user_mirror_text = raw_last_u
+        else:
+            user_mirror_text = (
+                "Given the following conversation, please reply with a title for the chat that is 3-4 words in length:\n\n"
+                f"{first_human_text or raw_last_u}"
+            )
+    else:
+        _, boot_key, full_key = _dsh_conversation_keys(
+            "gemini_harness", messages, transcript=tv
+        )
+        user_mirror_text = ""
+        if not tv.is_tool_continuation and tv.effective_last_role == "user":
+            latest_u_msg = _client_latest_user_message(messages)
+            latest_atts: list[dict[str, Any]] = []
+            if isinstance(latest_u_msg, dict):
+                try:
+                    latest_atts = await _client_collect_attachments([latest_u_msg])
+                except Exception:
+                    latest_atts = []
+            ordered_u = _harness_ordered_user_content(latest_u_msg, latest_atts)
+            clean_u, _ = _dsh_split_user_text_and_context(ordered_u)
+            fallback_u = (
+                tv.tail_human_user_texts[-1].strip() if tv.tail_human_user_texts else ""
+            )
+            user_mirror_text = clean_u.strip() or ordered_u.strip() or fallback_u
+        elif tv.is_tool_continuation and (
+            tv.tail_steer_user_texts or tv.tail_human_user_texts
+        ):
+            user_mirror_text = "\n\n".join(
+                t.strip()
+                for t in (tv.tail_steer_user_texts or tv.tail_human_user_texts)
+                if t and t.strip()
+            )
+
+    conversation_key = full_key or boot_key
+    if not conversation_key:
+        return None
+    bind_payload: dict[str, Any] = {
+        "conversation_key": conversation_key,
+        "boot_key": boot_key,
+        "full_key": full_key,
+        "model": public_model,
+    }
+    cwd = str(tv.policy.get("workspace_root") or "").strip()
+    if cwd:
+        bind_payload["cwd"] = cwd
+    try:
+        response = await _harness_post("/session/bind", bind_payload)
+    except Exception as exc:
+        _llm_log.warning(
+            "[harness] gemini session bind failed; continuing without bridge: %s",
+            exc,
+        )
+        return None
+    try:
+        sequence = int(response.get("sequence") or 0)
+    except (TypeError, ValueError):
+        sequence = 0
+    return {
+        "key": str(response.get("conversation_key") or conversation_key),
+        "session_id": str(response.get("harness_session_id") or ""),
+        "sequence": sequence,
+        "openai_tools": [],
+        "names": set(),
+        "boot_key": boot_key or "",
+        "full_key": full_key or "",
+        "model": public_model,
+        "pending_user_text": user_mirror_text,
+        "user_synced": False,
+    }
+
+
+async def _gemini_harness_ensure_user_synced(bridge: dict[str, Any]) -> None:
+    """Emit the deferred `voice-edge/sync` user message once confirmed not to be a fork prompt."""
+    if bridge.get("user_synced"):
+        return
+    bridge["user_synced"] = True
+    pending_u = str(bridge.get("pending_user_text") or "")
+    if pending_u:
+        await _harness_user_message(
+            bridge, str(bridge.get("model") or "gemini"), pending_u
+        )
+
+
+async def _gemini_wrap_response_with_harness_mirror(
+    resp: Response, bridge: Optional[dict[str, Any]]
+) -> Response:
+    """Tap a streaming or non-streaming `gemini:` response and mirror events to `voiceedge-harness`."""
+    if bridge is None:
+        return resp
+    if isinstance(resp, StreamingResponse):
+        orig_iter = resp.body_iterator
+
+        async def _mirrored_sse_iter() -> AsyncGenerator[bytes | str, None]:
+            step_text: list[str] = []
+            step_reasoning: list[str] = []
+            tc_by_index: dict[int, dict[str, Any]] = {}
+            last_finish_reason = ""
+            had_error = False
+            saw_fork_prompt = False
+            line_buf = ""
+
+            def _ingest_sse_line(ln: str) -> None:
+                nonlocal last_finish_reason, had_error, saw_fork_prompt
+                s_ln = ln.strip()
+                if not s_ln.startswith("data: "):
+                    return
+                data_s = s_ln[6:].strip()
+                if not data_s or data_s == "[DONE]":
+                    return
+                try:
+                    obj = json.loads(data_s)
+                except Exception:
+                    return
+                if not isinstance(obj, dict):
+                    return
+                if "error" in obj:
+                    had_error = True
+                for ch in obj.get("choices") or ():
+                    if not isinstance(ch, dict):
+                        continue
+                    delta = ch.get("delta") or {}
+                    if isinstance(delta, dict):
+                        r_part = delta.get("reasoning_content")
+                        if isinstance(r_part, str) and r_part:
+                            step_reasoning.append(r_part)
+                        c_part = delta.get("content")
+                        if isinstance(c_part, str) and c_part:
+                            step_text.append(c_part)
+                        tcs = delta.get("tool_calls")
+                        if isinstance(tcs, list):
+                            for tc_pos, tc in enumerate(tcs):
+                                if not isinstance(tc, dict):
+                                    continue
+                                idx = int(tc.get("index", tc_pos))
+                                entry = tc_by_index.setdefault(
+                                    idx,
+                                    {
+                                        "id": "",
+                                        "type": "function",
+                                        "function": {"name": "", "arguments": ""},
+                                    },
+                                )
+                                if tc.get("id"):
+                                    entry["id"] = str(tc["id"])
+                                fn = tc.get("function") or {}
+                                if isinstance(fn, dict):
+                                    if fn.get("name"):
+                                        entry["function"]["name"] += str(fn["name"])
+                                    if fn.get("arguments"):
+                                        entry["function"]["arguments"] += str(
+                                            fn["arguments"]
+                                        )
+                                if str(entry["id"]).startswith("call_ve_fork_"):
+                                    saw_fork_prompt = True
+                    fr = ch.get("finish_reason")
+                    if isinstance(fr, str) and fr:
+                        last_finish_reason = fr
+
+            try:
+                async for chunk in orig_iter:
+                    if isinstance(chunk, (bytes, bytearray, memoryview)):
+                        chunk_b = bytes(chunk)
+                        chunk_txt = chunk_b.decode("utf-8", errors="replace")
+                        out_chunk: bytes | str = chunk_b
+                    else:
+                        chunk_txt = str(chunk)
+                        out_chunk = chunk_txt
+                    line_buf += chunk_txt
+                    while "\n" in line_buf:
+                        one_line, line_buf = line_buf.split("\n", 1)
+                        _ingest_sse_line(one_line)
+                    if not saw_fork_prompt and not bridge.get("user_synced"):
+                        await _gemini_harness_ensure_user_synced(bridge)
+                    yield out_chunk
+            except Exception:
+                had_error = True
+                raise
+            finally:
+                if line_buf.strip():
+                    _ingest_sse_line(line_buf)
+                if not saw_fork_prompt:
+                    await _gemini_harness_ensure_user_synced(bridge)
+                    final_text = (
+                        "".join(step_text)
+                        .replace("\n\n\u2063\n\n", "\n\n")
+                        .replace("\u2063", "")
+                    )
+                    final_reasoning = "".join(step_reasoning)
+                    final_tcs = [tc_by_index[k] for k in sorted(tc_by_index)]
+                    eff_finish = (
+                        "error"
+                        if had_error
+                        else (
+                            last_finish_reason
+                            or ("tool_calls" if final_tcs else "stop")
+                        )
+                    )
+                    if final_text or final_reasoning or final_tcs:
+                        await _harness_mirror_event(
+                            bridge,
+                            kind="step",
+                            text=final_text,
+                            reasoning=final_reasoning,
+                            tool_calls=final_tcs or None,
+                            finish_reason=eff_finish,
+                        )
+                    close_status = (
+                        "error"
+                        if had_error
+                        else (
+                            "tool_calls" if eff_finish == "tool_calls" else "completed"
+                        )
+                    )
+                    await _harness_finish(bridge, close_status)
+
+        resp.body_iterator = _mirrored_sse_iter()
+        return resp
+
+    status_code = int(getattr(resp, "status_code", 200) or 200)
+    if status_code >= 400:
+        await _gemini_harness_ensure_user_synced(bridge)
+        await _harness_finish(bridge, "error")
+        return resp
+    try:
+        raw_body = bytes(getattr(resp, "body", b"") or b"")
+        data = (
+            json.loads(raw_body.decode("utf-8", errors="replace")) if raw_body else {}
+        )
+    except Exception:
+        data = {}
+    choices = data.get("choices") if isinstance(data, dict) else None
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        ch0 = choices[0]
+        raw_msg = ch0.get("message")
+        msg: dict[str, Any] = raw_msg if isinstance(raw_msg, dict) else {}
+        raw_tcs = msg.get("tool_calls")
+        tcs: list[Any] = raw_tcs if isinstance(raw_tcs, list) else []
+        if any(
+            isinstance(tc, dict) and str(tc.get("id") or "").startswith("call_ve_fork_")
+            for tc in tcs
+        ):
+            return resp
+        await _gemini_harness_ensure_user_synced(bridge)
+        text = (
+            str(msg.get("content") or "")
+            .replace("\n\n\u2063\n\n", "\n\n")
+            .replace("\u2063", "")
+        )
+        reasoning = str(msg.get("reasoning_content") or "")
+        finish_reason = str(
+            ch0.get("finish_reason") or ("tool_calls" if tcs else "stop")
+        )
+        if text or reasoning or tcs:
+            await _harness_mirror_event(
+                bridge,
+                kind="step",
+                text=text,
+                reasoning=reasoning,
+                tool_calls=tcs or None,
+                finish_reason=finish_reason,
+            )
+        await _harness_finish(
+            bridge, "tool_calls" if finish_reason == "tool_calls" else "completed"
+        )
+    return resp
+
+
 async def _direct_gemini_chat_response(
     body: dict[str, Any],
     messages: list[Any],
@@ -86869,13 +87217,15 @@ async def _direct_gemini_chat_response(
         body.get("model") or f"{GEMINI_MODEL_PREFIX}{GEMINI_DEFAULT_MODEL}"
     )
     spec = GeminiModelSpec.from_public_id(public_model)
+    harness_bridge = await _gemini_prepare_harness_mirror(public_model, body, messages)
     if spec.endpoint == GEMINI_AISTUDIO_ENDPOINT:
-        return await _direct_aistudio_chat_response(
+        ais_resp = await _direct_aistudio_chat_response(
             spec, body, messages, stream_mode, request=request
         )
+        return await _gemini_wrap_response_with_harness_mirror(ais_resp, harness_bridge)
     creds = _gemini_discover_credentials(allow_keychain=True)
     if not creds:
-        return JSONResponse(
+        err_no_creds = JSONResponse(
             {
                 "error": {
                     "message": (
@@ -86887,23 +87237,34 @@ async def _direct_gemini_chat_response(
             },
             status_code=503,
         )
+        return await _gemini_wrap_response_with_harness_mirror(
+            err_no_creds, harness_bridge
+        )
     backend = _gemini_env_backend()
     client = GeminiHTTPClient(creds, backend=backend)
     base_payload = _gemini_base_payload(
         spec, body, messages, credential_id=creds[0].credential_id
     )
     if not stream_mode:
-        return await client.chat_completion(
+        comp_resp = await client.chat_completion(
             spec, base_payload, messages, request=request
+        )
+        return await _gemini_wrap_response_with_harness_mirror(
+            comp_resp, harness_bridge
         )
     gen, err_resp = await client.chat_stream(
         spec, base_payload, messages, request=request
     )
     if err_resp is not None or gen is None:
-        return err_resp or JSONResponse(
+        fail_resp = err_resp or JSONResponse(
             {"error": {"message": "Gemini stream failed"}}, status_code=502
         )
-    return _opencode_sse_response(gen)
+        return await _gemini_wrap_response_with_harness_mirror(
+            fail_resp, harness_bridge
+        )
+    return await _gemini_wrap_response_with_harness_mirror(
+        _opencode_sse_response(gen), harness_bridge
+    )
 
 
 async def chat_api(request):
@@ -91930,6 +92291,8 @@ def test_harness_metadata_opt_in_is_m365_only():
 def test_harness_enabled_requires_flag_and_endpoint():
     # Endpoint unconfigured -> always off, even for opted-in models.
     assert _harness_enabled("LLM:m365-claude-opus") is False
+    assert _harness_enabled("gemini:app/gemini-4-carbon-medium") is False
+    assert _harness_enabled("gemini:aistudio/gemini-4-argon-high") is False
     assert _harness_enabled("LLM:doubao") is False
     old_url = VOICE_EDGE_HARNESS_URL
     old_token = VOICE_EDGE_HARNESS_TOKEN
@@ -91938,12 +92301,16 @@ def test_harness_enabled_requires_flag_and_endpoint():
         globals()["VOICE_EDGE_HARNESS_TOKEN"] = "t"
         assert _harness_enabled("LLM:m365-claude-opus") is True
         assert _harness_enabled("LLM:m365-chatgpt-6.1") is True
+        assert _harness_enabled("gemini:app/gemini-4-carbon-medium") is True
+        assert _harness_enabled("gemini:aistudio/gemini-4-argon-high") is True
+        assert _harness_enabled("gemini:gemini-4-argon") is True
         # Non-opted-in browser models stay on the direct path.
         assert _harness_enabled("LLM:doubao") is False
         assert _harness_enabled("LLM:deepseek") is False
         # Token missing -> off even with a URL.
         globals()["VOICE_EDGE_HARNESS_TOKEN"] = ""
         assert _harness_enabled("LLM:m365-claude-opus") is False
+        assert _harness_enabled("gemini:app/gemini-4-carbon-medium") is False
     finally:
         globals()["VOICE_EDGE_HARNESS_URL"] = old_url
         globals()["VOICE_EDGE_HARNESS_TOKEN"] = old_token
@@ -92632,6 +92999,14 @@ def test_gemini_model_spec_and_envelopes():
         ("turn1", raw_turn1, expected_turn1, 14),
         ("turn2", raw_turn2, expected_turn2, 20),
     ):
+        frames = _robin_unpack_grpc_frames(bytearray(raw_stream))
+        expected_server_attr = next(
+            p["attribution"]
+            for fr in frames
+            if (p := _robin_parse_process_query_response(fr)).get("attribution")
+        )
+        assert expected_server_attr, f"{label} stream must carry server f30 attribution"
+
         # Path A: Live streaming via _RobinStreamDecoder (including arbitrary byte fragmentation)
         dec_live = _RobinStreamDecoder(
             f"chatcmpl-{label}", 1700000000, "gemini:gemini-4-argon"
@@ -92645,8 +93020,8 @@ def test_gemini_model_spec_and_envelopes():
                 if rc:
                     emitted_deltas.append(rc)
         assert len(emitted_deltas) >= 2
-        assert emitted_deltas[0] == "使用了 4 Argon 模型\n\n", (
-            f"{label} first reasoning chunk must be standalone server model banner, got {emitted_deltas[0]!r}"
+        assert emitted_deltas[0] == f"{expected_server_attr}\n\n", (
+            f"{label} first reasoning chunk must equal server f30 attribution {expected_server_attr!r}, got {emitted_deltas[0]!r}"
         )
         assert "".join(emitted_deltas[1:]) == expected_thought, (
             f"{label} Path A mismatch: {''.join(emitted_deltas[1:])!r} != {expected_thought!r}"
@@ -92656,7 +93031,6 @@ def test_gemini_model_spec_and_envelopes():
         assert dec_live.is_completed and dec_live.eod
 
         # Path B: Reconstruct strictly from terminal H = .1003.1.8[] snapshot
-        frames = _robin_unpack_grpc_frames(bytearray(raw_stream))
         terminal_h: list[bytes] = []
         for fr in frames:
             parsed_fr = _robin_parse_process_query_response(fr)
@@ -92671,6 +93045,73 @@ def test_gemini_model_spec_and_envelopes():
         # Second terminal patch frame with identical H must calibrate without duplicating
         assert not tape_b.reconcile_terminal_history(terminal_h)
         assert proj_b.consume_delta() == ""
+
+    # Verify locale- and account-agnostic server attribution across arbitrary `f30` strings:
+    # when Frame 1 is a status-only pre-candidate frame (`response_id == ""`, no `f25`/`f41`) with
+    # localized placeholder `f30` (e.g. English "Used Legacy model" or Chinese "使用了 旧版 模型")
+    # and a live thought state, and Frame 2 is the authoritative candidate frame (`response_id == "rc_..."`,
+    # `f25 = response_bard_mode_id`, `f41 = resolved_mode_category`) carrying the account's actual
+    # `f30 = model_attribution_name` (encoded directly as a wire string), `_RobinStreamDecoder`
+    # must emit the exact candidate-frame `f30` string across all languages without hardcoded locale strings.
+    for srv_idx, (pre_status_attr, dynamic_server_attr) in enumerate(
+        (
+            ("使用了 旧版 模型", "使用了 4 Argon 模型"),
+            ("使用了 旧版 模型", "使用了 4 Carbon 模型"),
+            ("使用了 旧版 模型", "使用了 旧版 模型"),
+            ("Used Legacy model", "Used 4 Hydrogen model"),
+            ("Used Legacy model", "Used 3.1 Pro model"),
+            ("Used Legacy model", "Used Legacy model"),
+        )
+    ):
+        pre_rc_cgr = (
+            _pb_bytes_field(
+                2,
+                _pb_bytes_field(1, "c_attr_01")
+                + _pb_bytes_field(2, f"r_attr_{srv_idx}"),
+            )
+            + _pb_bytes_field(
+                6, _pb_bytes_field(13, _pb_bytes_field(4, "第一阶段思考。\n\n\n"))
+            )
+            + _pb_bytes_field(30, pre_status_attr.encode("utf-8"))
+        )
+        pre_rc_frame = _pb_bytes_field(1003, _pb_bytes_field(1, pre_rc_cgr))
+        rc_cgr = (
+            _pb_bytes_field(
+                1,
+                _pb_bytes_field(1, f"rc_attr_{srv_idx}")
+                + _pb_bytes_field(2, _pb_bytes_field(1, "已完成回答。"))
+                + _pb_varint_field(19, 2),
+            )
+            + _pb_bytes_field(
+                2,
+                _pb_bytes_field(1, "c_attr_01")
+                + _pb_bytes_field(2, f"r_attr_{srv_idx}"),
+            )
+            + _pb_bytes_field(25, "56fdd199312815e2")
+            + _pb_bytes_field(30, dynamic_server_attr.encode("utf-8"))
+            + _pb_varint_field(41, 1)
+        )
+        rc_frame = _pb_bytes_field(
+            1003, _pb_bytes_field(1, rc_cgr) + _pb_varint_field(2, 1)
+        )
+        dec_dyn = _RobinStreamDecoder(
+            f"chatcmpl-dyn-{srv_idx}",
+            1700000000,
+            "gemini:app/gemini-4-carbon-medium",
+        )
+        ch_1 = dec_dyn.feed_bytes(_robin_pack_grpc_frames([pre_rc_frame]))
+        assert ch_1 == [], (
+            f"pre-rc frame must not emit status-frame fallback attribution before candidate frame arrives, got {ch_1}"
+        )
+        ch_2 = dec_dyn.feed_bytes(_robin_pack_grpc_frames([rc_frame]))
+        rc_deltas = [
+            c["choices"][0]["delta"].get("reasoning_content")
+            for c in ch_2
+            if c["choices"][0]["delta"].get("reasoning_content")
+        ]
+        assert rc_deltas == [f"{dynamic_server_attr}\n\n", "第一阶段思考。"], (
+            f"expected exact server attribution {dynamic_server_attr!r}, got {rc_deltas!r}"
+        )
 
     # Verify exception: the first row of any thought block (initial or after tool handoff)
     # never gets a leading newline regardless of whether it is `text` or `tool`.
@@ -96956,6 +97397,7 @@ def test_gemini_end_to_end_oauth_refresh_and_ccpa_relay():
                     _pb_bytes_field(1, model_resp)
                     + _pb_bytes_field(2, resp_ids)
                     + _pb_bytes_field(6, live_s)
+                    + _pb_bytes_field(30, _pb_bytes_field(1, "使用了 4 Argon 模型"))
                 )
                 stream_ext = _pb_bytes_field(1, client_gen_resp)
                 if not stream_hang_mode and not tool_handoff_mode:
@@ -101616,20 +102058,26 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     assert "User: 第三轮：继续执行修改并检查日志" in comp_q_t1_int
     assert "You are performing context compaction" in comp_q_t1_int
 
-    # Verify `_GEMINI_ATTRIBUTION_BANNER_RE` + `_GEMINI_PROGRESS_REMINDER_RE` strip both banner and `> ⏳` reminders:
-    sample_rc_with_reminder = (
-        "\n\n> ⏳ 远端深度思考或重放状态中（已完成 1 次流续接，已等待约 34s；脚本保持连接不主动中断，如需停止可随时点击停止按钮）…\n\n"
-        "使用了 gemini-3-pro (Thinking: High) 模型\n\n"
-        "\n\n> ⏳ 远端模型仍在处理中（已等待 45s，期间暂无新增状态输出；如需中止可随时点击停止按钮）…\n\n"
-        "First real thought block."
-    )
-    cleaned_rc = _GEMINI_PROGRESS_REMINDER_RE.sub(
-        "\n\n",
-        _GEMINI_ATTRIBUTION_BANNER_RE.sub("", sample_rc_with_reminder),
-    ).strip()
-    assert cleaned_rc == "First real thought block.", (
-        f"Unexpected cleaned_rc: {cleaned_rc!r}"
-    )
+    # Verify `_GEMINI_ATTRIBUTION_BANNER_RE` + `_GEMINI_PROGRESS_REMINDER_RE` strip both Chinese and English banners and `> ⏳` reminders:
+    for banner_line in (
+        "使用了 gemini-3-pro (Thinking: High) 模型\n\n",
+        "Used 4 Argon model\n\n",
+        "Used 4 Hydrogen model\n\n",
+    ):
+        sample_rc_with_reminder = (
+            "\n\n> ⏳ 远端深度思考或重放状态中（已完成 1 次流续接，已等待约 34s；脚本保持连接不主动中断，如需停止可随时点击停止按钮）…\n\n"
+            f"{banner_line}"
+            "\n\n> ⏳ 远端模型仍在处理中（已等待 45s，期间暂无新增状态输出；如需中止可随时点击停止按钮）…\n\n"
+            "First real thought block."
+        )
+        assert _GEMINI_ANY_ATTRIBUTION_BANNER_RE.search(sample_rc_with_reminder)
+        cleaned_rc = _GEMINI_PROGRESS_REMINDER_RE.sub(
+            "\n\n",
+            _GEMINI_ATTRIBUTION_BANNER_RE.sub("", sample_rc_with_reminder),
+        ).strip()
+        assert cleaned_rc == "First real thought block.", (
+            f"Unexpected cleaned_rc for {banner_line!r}: {cleaned_rc!r}"
+        )
 
     # Verify transient upstream `BardStatusException: Dependency RPC failed ... DEADLINE_EXCEEDED`
     # is classified as resumable (`_robin_is_transient_pq_stream_error == True`), while quota /
@@ -104343,10 +104791,18 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             + _pb_bytes_field(2, _pb_bytes_field(1, ans_s))
             + _pb_varint_field(19, 2 if is_completed else 1)
         )
-        inner_1003 = _pb_bytes_field(
-            2,
-            _pb_bytes_field(1, conv_id_s) + _pb_bytes_field(2, req_id_s),
-        ) + _pb_bytes_field(1, inner_cand)
+        inner_1003 = (
+            _pb_bytes_field(
+                2,
+                _pb_bytes_field(1, conv_id_s) + _pb_bytes_field(2, req_id_s),
+            )
+            + _pb_bytes_field(1, inner_cand)
+            + (
+                _pb_bytes_field(30, _pb_bytes_field(1, "使用了 4 Argon 模型"))
+                if resp_id_s
+                else b""
+            )
+        )
         frames = [_pb_bytes_field(1003, _pb_bytes_field(1, inner_1003))]
         if is_completed:
             frames.append(_pb_bytes_field(1006, _pb_varint_field(1, 1)))
@@ -108487,6 +108943,237 @@ def test_gemini_multi_client_refactor_and_stream_driver():
             if f.get("id") == "ais-selftest-1"
         ]
         assert ais_frames_full[0].get("preview") == "sensitive_ais_stream_chunk_payload"
+
+        # Verify `pq_frame` debug events separately record `attribution`, `fallback_attribution`, and `effective_attribution`
+        dbg_pq_dec = _RobinStreamDecoder(
+            "chatcmpl-dbg-pq",
+            1700000000,
+            "gemini:app/gemini-4-carbon-medium",
+        )
+        dbg_pq_dec.run.client_session_id = "sid_pq_dbg_01"
+        dbg_pre_fr = _pb_bytes_field(
+            1003,
+            _pb_bytes_field(
+                1,
+                _pb_bytes_field(
+                    6, _pb_bytes_field(13, _pb_bytes_field(4, "Step 1\n\n\n"))
+                )
+                + _pb_bytes_field(30, b"Used Legacy model"),
+            ),
+        )
+        dbg_cand_fr = _pb_bytes_field(
+            1003,
+            _pb_bytes_field(
+                1,
+                _pb_bytes_field(1, _pb_bytes_field(1, "rc_dbg_01"))
+                + _pb_bytes_field(25, "95a4c0abcba24364")
+                + _pb_bytes_field(30, b"Used 4 Argon model")
+                + _pb_varint_field(41, 8),
+            ),
+        )
+        dbg_post_fr = _pb_bytes_field(
+            1003,
+            _pb_bytes_field(
+                1,
+                _pb_bytes_field(
+                    6, _pb_bytes_field(13, _pb_bytes_field(4, "Step 2\n\n\n"))
+                )
+                + _pb_bytes_field(30, b"Used Legacy model"),
+            ),
+        )
+        dbg_pq_dec.feed_pq_frame(dbg_pre_fr)
+        dbg_pq_dec.feed_pq_frame(dbg_cand_fr)
+        dbg_pq_dec.feed_pq_frame(dbg_post_fr)
+        pq_dbg_evs = [
+            e["data"]
+            for e in _GEMINI_RECENT_DEBUG_EVENTS
+            if e.get("session_id") == "sid_pq_dbg_01" and e.get("event") == "pq_frame"
+        ]
+        assert len(pq_dbg_evs) == 3
+        assert pq_dbg_evs[0]["attribution"] == ""
+        assert pq_dbg_evs[0]["fallback_attribution"] == "Used Legacy model"
+        assert pq_dbg_evs[0]["effective_attribution"] == "Used Legacy model"
+        assert pq_dbg_evs[1]["attribution"] == "Used 4 Argon model"
+        assert pq_dbg_evs[1]["fallback_attribution"] == ""
+        assert pq_dbg_evs[1]["effective_attribution"] == "Used 4 Argon model"
+        assert pq_dbg_evs[2]["attribution"] == ""
+        assert pq_dbg_evs[2]["fallback_attribution"] == "Used Legacy model"
+        assert pq_dbg_evs[2]["effective_attribution"] == "Used 4 Argon model"
+
+        # 6c. Verify `gemini:` models (`gemini:app/*`, `gemini:aistudio/*`) mirror Continue-initiated
+        #     conversations (Turn 1, tool continuation, and `ChatDescriber` title turn) to `voiceedge-harness`
+        #     (`/session/bind`, `voice-edge/sync`, `voice-edge/model-event`, `voice-edge/finish`), while
+        #     `veh`-initiated requests never mirror back into `voiceedge-harness`.
+        harness_calls: list[tuple[str, dict[str, Any]]] = []
+        orig_harness_post = globals()["_harness_post"]
+        orig_url = VOICE_EDGE_HARNESS_URL
+        orig_tok = VOICE_EDGE_HARNESS_TOKEN
+        orig_ais_rpc = AIS_BROWSER_RUNTIME._custom_rpc_handler
+
+        async def _spy_harness_post(
+            path: str, payload: dict[str, Any], timeout_seconds: float = 0.0
+        ) -> dict[str, Any]:
+            _ = timeout_seconds
+            harness_calls.append((path, json.loads(json.dumps(payload))))
+            if path == "/session/bind":
+                return {
+                    "conversation_key": payload.get("conversation_key") or "k",
+                    "harness_session_id": "voice-edge-selftest-gemini",
+                    "synced": True,
+                    "sequence": len(harness_calls),
+                    "tools": [],
+                }
+            return {
+                "conversation_key": payload.get("conversation_key") or "k",
+                "harness_session_id": "voice-edge-selftest-gemini",
+                "synced": True,
+                "sequence": len(harness_calls),
+            }
+
+        def _mock_ais_mirror_rpc(kind: str, **kwargs: Any) -> Any:
+            url = str(kwargs.get("url") or "")
+            rpc_name = url.rsplit("/", 1)[-1]
+            if kind == "AIS_STREAM" and rpc_name == "GenerateContent":
+                stream_m = (
+                    '[[[[[[[[null,"AIS mirror thinking...",null,null,null,null,null,null,null,null,null,null,1]],"model"]]]]'
+                    ',[[[[[[null,"AIS mirror reply!"],[null,"",null,null,null,null,null,null,null,null,null,null,null,null,"SIG_AIS_MIRROR_1"]],"model"],1]'
+                    '],null,[10,6,30,null,[[1,10]],null,[[1,6]],null,null,14],null,null,null,null,"v1_ais_mirror_1"]]]'
+                )
+                return [
+                    {"type": "AIS_HEAD", "status": 200, "headers": {}},
+                    {"type": "AIS_CHUNK", "seq": 0, "data": stream_m},
+                    {"type": "AIS_END", "seq": 1, "status": 200},
+                ]
+            if kind == "AIS_CALL" and rpc_name == "GenerateTitle":
+                return ["Gemini Mirror 会话标题"]
+            if kind == "AIS_CALL" and rpc_name in ("CreatePrompt", "UpdatePrompt"):
+                return [
+                    "prompts/ais_mirror_01",
+                    None,
+                    None,
+                    None,
+                    ["Gemini Mirror 会话标题"],
+                ]
+            if kind == "AIS_CALL" and rpc_name == "ListPrompts":
+                return [[]]
+            raise AssertionError(f"Unexpected AIS RPC: {kind} {rpc_name}")
+
+        globals()["VOICE_EDGE_HARNESS_URL"] = "http://127.0.0.1:3080/api/voice-edge"
+        globals()["VOICE_EDGE_HARNESS_TOKEN"] = "tok_selftest_harness"
+        globals()["_harness_post"] = _spy_harness_post
+        AIS_BROWSER_RUNTIME._custom_rpc_handler = _mock_ais_mirror_rpc
+        try:
+            # (i) Continue Turn 1 on `gemini:aistudio/gemini-4-argon-high` (streaming)
+            cont_mirror_msgs: list[dict[str, Any]] = [
+                {"role": "system", "content": sys_cont},
+                {"role": "user", "content": "请帮我分析 mirror 链路"},
+            ]
+            resp_m1 = asyncio.run(
+                _direct_gemini_chat_response(
+                    {
+                        "model": ais_spec.public_id,
+                        "tools": continue_tools,
+                        "stream": True,
+                    },
+                    cont_mirror_msgs,
+                    stream_mode=True,
+                )
+            )
+            assert isinstance(resp_m1, StreamingResponse)
+
+            async def _drain_streaming_resp(sr: StreamingResponse) -> bytes:
+                out_b = bytearray()
+                async for part in sr.body_iterator:
+                    if isinstance(part, bytes):
+                        out_b.extend(part)
+                    else:
+                        out_b.extend(str(part).encode("utf-8"))
+                return bytes(out_b)
+
+            raw_m1 = asyncio.run(_drain_streaming_resp(resp_m1))
+            assert b"AIS mirror reply!" in raw_m1
+            assert [c[0] for c in harness_calls] == [
+                "/session/bind",
+                "/event",
+                "/event",
+                "/event",
+            ]
+            bind_call_1 = harness_calls[0][1]
+            sync_call_1 = harness_calls[1][1]
+            model_ev_1 = harness_calls[2][1]
+            fin_ev_1 = harness_calls[3][1]
+            assert bind_call_1["model"] == ais_spec.public_id
+            assert bind_call_1["boot_key"].startswith("boot_")
+            assert sync_call_1["type"] == "voice-edge/sync"
+            assert sync_call_1["messages"] == [
+                {"role": "user", "text": "请帮我分析 mirror 链路"}
+            ]
+            assert model_ev_1["type"] == "voice-edge/model-event"
+            assert model_ev_1["text"] == "AIS mirror reply!"
+            assert "AIS mirror thinking..." in model_ev_1["reasoning"]
+            assert fin_ev_1["type"] == "voice-edge/finish"
+            assert fin_ev_1["status"] == "completed"
+
+            # (ii) Continue `ChatDescriber` title turn shares the exact same `boot_key` and folds title
+            harness_calls.clear()
+            title_mirror_msgs = [
+                {
+                    "role": "user",
+                    "content": (
+                        "Given the following... please reply with a title for the chat that is 3-4 words in length:\n\n"
+                        "请帮我分析 mirror 链路"
+                    ),
+                }
+            ]
+            resp_m_title = asyncio.run(
+                _direct_gemini_chat_response(
+                    {"model": ais_spec.public_id, "stream": False},
+                    title_mirror_msgs,
+                    stream_mode=False,
+                )
+            )
+            assert resp_m_title.status_code == 200
+            assert [c[0] for c in harness_calls] == [
+                "/session/bind",
+                "/event",
+                "/event",
+                "/event",
+            ]
+            assert harness_calls[0][1]["boot_key"] == bind_call_1["boot_key"]
+            assert harness_calls[1][1]["messages"][0]["text"].startswith(
+                "Given the following"
+            )
+            assert (
+                "please reply with a title"
+                in harness_calls[1][1]["messages"][0]["text"]
+            )
+            assert harness_calls[2][1]["text"] == "Gemini Mirror 会话标题"
+
+            # (iii) Request originating from `voiceedge-harness` (`client_kind == "veh"`) must NOT mirror back
+            harness_calls.clear()
+            veh_mirror_msgs = [
+                {
+                    "role": "system",
+                    "content": "You are an AI agent powered by VoiceEdge Harness.\nCurrent VEH file policy: workspace-write.",
+                },
+                {"role": "user", "content": "来自 VEH 自身的请求"},
+            ]
+            resp_veh_no_mirror = asyncio.run(
+                _direct_gemini_chat_response(
+                    {"model": ais_spec.public_id, "stream": False},
+                    veh_mirror_msgs,
+                    stream_mode=False,
+                )
+            )
+            assert resp_veh_no_mirror.status_code == 200
+            assert harness_calls == [], (
+                f"VEH-originated gemini request must not mirror back to harness, got {harness_calls}"
+            )
+        finally:
+            globals()["VOICE_EDGE_HARNESS_URL"] = orig_url
+            globals()["VOICE_EDGE_HARNESS_TOKEN"] = orig_tok
+            globals()["_harness_post"] = orig_harness_post
+            AIS_BROWSER_RUNTIME._custom_rpc_handler = orig_ais_rpc
     finally:
         _GEMINI_DEBUG_DIR_PATH = prev_dbg_dir
         shutil.rmtree(selftest_dbg_dir, ignore_errors=True)
