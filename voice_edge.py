@@ -364,10 +364,10 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49106
 #    VE_OPENCODE_FREE                       "1"                                          L49144
 #    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70915
-#    VE_GEMINI_API_KEYS                     ""                                           L70919
-#    VE_GEMINI_BACKEND                      "auto"                                       L70938
-#    VE_GEMINI_PROJECT_ID                   ""                                           L70945
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70954
+#    VE_GEMINI_API_KEYS                     ""                                           L70958
+#    VE_GEMINI_BACKEND                      "auto"                                       L70977
+#    VE_GEMINI_PROJECT_ID                   ""                                           L70984
 #    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55425
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L71965
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L71969
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L71973
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L71995
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L71961
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71951
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71939
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71947
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L71943
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72005
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72009
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72013
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72035
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72001
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71991
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71979
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71987
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L71983
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -55476,6 +55476,7 @@ class _GeminiDshStore:
                 conv_base_msg_idx INTEGER NOT NULL DEFAULT 0,
                 context_tokens INTEGER NOT NULL DEFAULT 0,
                 compacted INTEGER NOT NULL DEFAULT 0,
+                veh_mcp_tools_hash TEXT NOT NULL DEFAULT '',
                 updated_at REAL NOT NULL
             );
             CREATE TABLE IF NOT EXISTS runs (
@@ -55577,6 +55578,7 @@ class _GeminiDshStore:
             "ALTER TABLE sessions ADD COLUMN conv_base_msg_idx INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE sessions ADD COLUMN context_tokens INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE sessions ADD COLUMN compacted INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE sessions ADD COLUMN veh_mcp_tools_hash TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE sessions DROP COLUMN branch_heads_json",
         ):
             try:
@@ -55757,6 +55759,7 @@ class _GeminiDshStore:
         conv_base_msg_idx: int = 0,
         context_tokens: int = 0,
         compacted: bool = False,
+        veh_mcp_tools_hash: str = "",
     ) -> None:
         folders_json = json.dumps(list(connected_folders or []), ensure_ascii=False)
         now = time.time()
@@ -55797,8 +55800,8 @@ class _GeminiDshStore:
                     connected_folders_json, active_run_id, owner_epoch,
                     synced_turn_count, synced_turns_hash,
                     interrupted_req_id, interrupted_resp_id, interrupted_turn_count, interrupted_turns_hash,
-                    conv_base_msg_idx, context_tokens, compacted, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    conv_base_msg_idx, context_tokens, compacted, veh_mcp_tools_hash, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(session_key) DO UPDATE SET
                     client_session_id = excluded.client_session_id,
                     principal_id = excluded.principal_id,
@@ -55823,6 +55826,7 @@ class _GeminiDshStore:
                     conv_base_msg_idx = CASE WHEN sessions.conversation_id != '' AND excluded.conversation_id = sessions.conversation_id AND sessions.conv_base_msg_idx > 0 AND excluded.conv_base_msg_idx > sessions.conv_base_msg_idx THEN sessions.conv_base_msg_idx WHEN excluded.conv_base_msg_idx >= 0 THEN excluded.conv_base_msg_idx ELSE sessions.conv_base_msg_idx END,
                     context_tokens = CASE WHEN sessions.conversation_id != '' AND excluded.conversation_id = sessions.conversation_id AND excluded.context_tokens > sessions.context_tokens THEN excluded.context_tokens WHEN (sessions.conversation_id = '' OR excluded.conversation_id != sessions.conversation_id) AND excluded.context_tokens > 0 THEN excluded.context_tokens ELSE sessions.context_tokens END,
                     compacted = CASE WHEN excluded.compacted > 0 THEN 1 ELSE sessions.compacted END,
+                    veh_mcp_tools_hash = CASE WHEN sessions.conversation_id != '' AND excluded.conversation_id != '' AND excluded.conversation_id != sessions.conversation_id THEN excluded.veh_mcp_tools_hash WHEN excluded.veh_mcp_tools_hash != '' THEN excluded.veh_mcp_tools_hash ELSE sessions.veh_mcp_tools_hash END,
                     updated_at = excluded.updated_at
                 """,
                 (
@@ -55850,6 +55854,7 @@ class _GeminiDshStore:
                     int(conv_base_msg_idx),
                     int(context_tokens),
                     1 if compacted else 0,
+                    str(veh_mcp_tools_hash or ""),
                     now,
                 ),
             )
@@ -59129,6 +59134,25 @@ def _robin_normalize_dsh_tools(tools: Sequence[Any] | None) -> list[dict[str, An
     return normalized
 
 
+def _robin_tools_signature(tools: Sequence[Any] | None) -> str:
+    """Return a stable short hash of the sorted unique tool names in `tools`, or `''` when empty."""
+    if not tools:
+        return ""
+    names: set[str] = set()
+    for item in tools:
+        if not isinstance(item, dict):
+            continue
+        fn = item.get("function") if item.get("type") == "function" else item
+        if not isinstance(fn, dict):
+            continue
+        nm = str(fn.get("name") or "").strip()
+        if nm:
+            names.add(nm)
+    if not names:
+        return ""
+    return hashlib.sha256("\n".join(sorted(names)).encode("utf-8")).hexdigest()[:16]
+
+
 def _robin_parse_mcp_execute_args(raw_args: Any) -> tuple[str, str, dict[str, Any]]:
     """Unpack `execute_mcp` arguments into `(server_name, tool_name, inner_args)`."""
     if not isinstance(raw_args, dict):
@@ -61204,6 +61228,7 @@ class _RobinRunState:
     # Set once a Relay invocation appears on this run: PQ tool announcements can no
     # longer be attributed to ERT, so the ERT tool-deficit wakeup is disabled.
     relay_mode: bool = False
+    veh_mcp_tools_hash: str = ""
 
     # Orthogonal state dimensions
     submission_state: str = "PREPARED"  # PREPARED / SENT / IDENTIFIED / UNKNOWN
@@ -61313,6 +61338,7 @@ class _RobinSessionState:
     conv_base_msg_idx: int = 0
     context_tokens: int = 0
     compacted: bool = False
+    veh_mcp_tools_hash: str = ""
     updated_at: float = field(default_factory=time.time)
     conversation_ready_event: asyncio.Event | None = None
     title_ready_event: asyncio.Event | None = None
@@ -61499,6 +61525,7 @@ def _robin_row_to_session_state(
         conv_base_msg_idx=int(row.get("conv_base_msg_idx") or 0),
         context_tokens=int(row.get("context_tokens") or 0),
         compacted=bool(row.get("compacted")),
+        veh_mcp_tools_hash=str(row.get("veh_mcp_tools_hash") or ""),
         updated_at=float(row.get("updated_at") or time.time()),
     )
 
@@ -62826,6 +62853,7 @@ def _robin_lookup_continuation(
                     conv_base_msg_idx=parent_state.conv_base_msg_idx,
                     context_tokens=fork_ctx_tokens,
                     compacted=False,
+                    veh_mcp_tools_hash=parent_state.veh_mcp_tools_hash,
                 )
                 _robin_bind_session_in_cache(fork_state)
                 _GEMINI_DSH_STORE.upsert_session(
@@ -62849,6 +62877,7 @@ def _robin_lookup_continuation(
                     conv_base_msg_idx=fork_state.conv_base_msg_idx,
                     context_tokens=fork_state.context_tokens,
                     compacted=False,
+                    veh_mcp_tools_hash=fork_state.veh_mcp_tools_hash,
                 )
                 return fork_state, trailing_idx, False
             return None, trailing_idx, False
@@ -63155,6 +63184,7 @@ def _robin_store_continuation(
     interrupted_resp_id: str = "",
     interrupted_turn_count: int = 0,
     interrupted_turns_hash: str = "",
+    veh_mcp_tools_hash: str = "",
 ) -> _RobinSessionState | None:
     """Persist `(c_, r_, rc_)` parent and `(boot_key, full_key)` as `provisional` or `committed`."""
     _ = pin_checkpoint
@@ -63485,6 +63515,7 @@ def _robin_store_continuation(
                 conv_base_msg_idx=existing.conv_base_msg_idx,
                 context_tokens=existing.context_tokens,
                 compacted=existing.compacted,
+                veh_mcp_tools_hash=existing.veh_mcp_tools_hash,
             )
             return existing
 
@@ -63606,6 +63637,11 @@ def _robin_store_continuation(
             if (existing is not None and "::fork::" not in primary_key)
             else False
         )
+        resolved_veh_mcp_tools_hash = str(veh_mcp_tools_hash or "").strip() or (
+            existing.veh_mcp_tools_hash
+            if (has_existing_same_conv and existing is not None)
+            else ""
+        )
         if interrupted_req_id and interrupted_resp_id:
             resolved_int_req = str(interrupted_req_id).strip()
             resolved_int_resp = str(interrupted_resp_id).strip()
@@ -63654,6 +63690,7 @@ def _robin_store_continuation(
             existing.conv_base_msg_idx = resolved_base_idx
             existing.context_tokens = resolved_context_tokens
             existing.compacted = preserved_compacted
+            existing.veh_mcp_tools_hash = resolved_veh_mcp_tools_hash
             existing.updated_at = time.time()
             state = existing
         else:
@@ -63684,6 +63721,7 @@ def _robin_store_continuation(
                 conv_base_msg_idx=resolved_base_idx,
                 context_tokens=resolved_context_tokens,
                 compacted=preserved_compacted,
+                veh_mcp_tools_hash=resolved_veh_mcp_tools_hash,
                 updated_at=time.time(),
             )
         if state.conversation_ready_event is not None:
@@ -63716,6 +63754,7 @@ def _robin_store_continuation(
             conv_base_msg_idx=resolved_base_idx,
             context_tokens=resolved_context_tokens,
             compacted=preserved_compacted,
+            veh_mcp_tools_hash=resolved_veh_mcp_tools_hash,
         )
         return state
 
@@ -71215,6 +71254,7 @@ _GEMINI_INTERNAL_PAYLOAD_KEYS: frozenset[str] = frozenset(
         "_ve_post_turn_job_notice_only",
         "_ve_uncompact_session",
         "_ve_relay_inject_veh_mention",
+        "_ve_relay_veh_tools_hash",
         "_ve_transcript_view",
         "_ve_turn_plan",
         "_ve_request_kind",
@@ -72701,8 +72741,8 @@ async def _relay_mcp_tools_call(
             _relay_mcp_tool_result(
                 {
                     "status": "error",
-                    "error": "no active turn: the client tool catalog is only available "
-                    "while a user turn with tools is running.",
+                    "error": "no active turn: no client tools are attached to the current turn; "
+                    "answer directly without calling client tools.",
                 },
                 is_error=True,
             ),
@@ -72711,7 +72751,16 @@ async def _relay_mcp_tools_call(
     if tool_name == "list_mcp" or (
         tool_name not in ledger.local_tool_names and tool_name != "command_status"
     ):
-        return _relay_jsonrpc_error(rpc_id, -32602, f"unknown tool: {tool_name}")
+        avail_names = sorted(ledger.local_tool_names)
+        if avail_names and tool_name != "list_mcp":
+            avail_preview = ", ".join(avail_names[:20])
+            err_msg = (
+                f"unknown tool: {tool_name} (not enabled in current turn; "
+                f"available tools: {avail_preview})"
+            )
+        else:
+            err_msg = f"unknown tool: {tool_name}"
+        return _relay_jsonrpc_error(rpc_id, -32602, err_msg)
     if not isinstance(tool_args, dict):
         return _relay_jsonrpc_error(rpc_id, -32602, "arguments must be an object")
     wire_call_id = str(tool_args.pop("_ve_wire_call_id", "") or "")
@@ -73720,7 +73769,7 @@ class GeminiHTTPClient:
             if isinstance(robin_attachments, list) and robin_attachments
             else "Hello"
         )
-        if base_payload.get("_ve_relay_inject_veh_mention") and not conv_id:
+        if base_payload.get("_ve_relay_inject_veh_mention"):
             if "@VEH MCP Server" not in query_text:
                 query_text = f"{query_text}{_VE_RELAY_VEH_MENTION_SUFFIX}"
         robin_tools = base_payload.get("_ve_robin_tools")
@@ -75070,6 +75119,7 @@ class GeminiHTTPClient:
                 )
             await _robin_flush_deferred_aborts()
             init_prov_epoch = 0
+            resolved_sess: _RobinSessionState | None = None
             if not is_auxiliary_req:
                 # Resolve or pre-register session state (`boot_key` / `full_key`) so concurrent
                 # DSH title generation requests can immediately locate and await `conversation_ready_event`.
@@ -75110,12 +75160,47 @@ class GeminiHTTPClient:
                             status_code=503,
                         ),
                     )
-                is_new_remote_conversation = not bool(
-                    str(base_payload.get("_ve_robin_conv_id") or "").strip()
+                cur_conv_id = str(base_payload.get("_ve_robin_conv_id") or "").strip()
+                is_new_remote_conversation = not bool(cur_conv_id)
+                cur_tools_hash = _robin_tools_signature(robin_tools)
+                prev_tools_hash = (
+                    resolved_sess.veh_mcp_tools_hash
+                    if (
+                        not is_new_remote_conversation
+                        and resolved_sess is not None
+                        and resolved_sess.conversation_id == cur_conv_id
+                    )
+                    else ""
                 )
-                if is_new_remote_conversation:
+                if is_new_remote_conversation or (
+                    cur_tools_hash and cur_tools_hash != prev_tools_hash
+                ):
                     base_payload = dict(base_payload)
                     base_payload["_ve_relay_inject_veh_mention"] = True
+                    base_payload["_ve_relay_veh_tools_hash"] = cur_tools_hash
+            elif not has_robin_tools and not is_auxiliary_req:
+                # When a follow-up request carries no `tools`, drop any lingering Relay
+                # binding belonging to this session so stale tool calls cannot leak into
+                # a tool-less turn.
+                cur_relay_run = _relay_active_run()
+                if cur_relay_run is not None:
+                    cur_conv_id = str(
+                        base_payload.get("_ve_robin_conv_id") or ""
+                    ).strip()
+                    same_session = bool(
+                        (session_key and cur_relay_run.session_key == session_key)
+                        or (boot_key and cur_relay_run.boot_key == boot_key)
+                        or (full_key and cur_relay_run.full_key == full_key)
+                        or (
+                            cur_conv_id
+                            and (
+                                cur_relay_run.conversation_id == cur_conv_id
+                                or cur_relay_run.parent_conv_id == cur_conv_id
+                            )
+                        )
+                    )
+                    if same_session:
+                        _relay_clear_active_run(cur_relay_run)
 
             pre_run: _RobinRunState | None = None
             if has_robin_tools and not is_auxiliary_req:
@@ -75156,6 +75241,9 @@ class GeminiHTTPClient:
                         base_payload.get("_ve_base_context_tokens") or 0
                     ),
                     initial_messages=list(messages),
+                    veh_mcp_tools_hash=str(
+                        base_payload.get("_ve_relay_veh_tools_hash") or ""
+                    ),
                     submission_state="PREPARED",
                     execution_state="SUBMITTING",
                     attachment_state="STREAMING",
@@ -75254,6 +75342,9 @@ class GeminiHTTPClient:
                     base_payload.get("_ve_base_context_tokens") or 0
                 ),
                 initial_messages=list(messages),
+                veh_mcp_tools_hash=str(
+                    base_payload.get("_ve_relay_veh_tools_hash") or ""
+                ),
                 submission_state="SENT",
                 execution_state="RUNNING",
                 attachment_state="STREAMING",
@@ -76697,6 +76788,7 @@ class GeminiHTTPClient:
                                     committed_answer=commit_ans_for_store,
                                     conv_base_msg_idx=run.conv_base_msg_idx,
                                     context_tokens=committed_ctx_tokens,
+                                    veh_mcp_tools_hash=run.veh_mcp_tools_hash,
                                 )
                                 if (
                                     flush_cached_actor_only
@@ -76921,6 +77013,7 @@ class GeminiHTTPClient:
                                 else:
                                     next_payload.pop("_ve_robin_attachments", None)
                                 next_payload.pop("_ve_relay_inject_veh_mention", None)
+                                next_payload.pop("_ve_relay_veh_tools_hash", None)
                                 next_payload["_ve_session_key"] = flushed_sess_key
                                 next_payload["_ve_session_id"] = flushed_client_sid
                                 next_payload["_ve_base_context_tokens"] = (
@@ -107616,11 +107709,12 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             in veh_captured_wire_bodies[1]
         )
 
-        # 6d. Continuation on an existing remote conversation (`_ve_robin_conv_id != ""`) does NOT re-inject:
+        # 6d. Continuation on an existing remote conversation with the SAME already-injected
+        #     toolset (`c_veh_new_01` committed by 6b) does NOT re-inject:
         base_cont = dict(base_fork)
-        base_cont["_ve_robin_conv_id"] = "c_existing_veh_conv_01"
-        base_cont["_ve_robin_parent_req_id"] = "r_existing_01"
-        base_cont["_ve_robin_parent_resp_id"] = "rc_existing_01"
+        base_cont["_ve_robin_conv_id"] = "c_veh_new_01"
+        base_cont["_ve_robin_parent_req_id"] = "r_veh_01"
+        base_cont["_ve_robin_parent_resp_id"] = "rc_veh_01"
         veh_captured_wire_bodies.clear()
         veh_captured_urls.clear()
         gen_v4, err_v4 = asyncio.run(
@@ -107633,6 +107727,262 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
             not in veh_captured_wire_bodies[0]
         )
+
+        # 6e. Toolset transitions on the SAME remote conversation:
+        #     tool-less turn -> Plan (read-only) -> Plan (same) -> Agent (expanded) -> Plan (shrunk) -> tool-less turn:
+        plan_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "read_file",
+                    "description": "Read a workspace file",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"filepath": {"type": "string"}},
+                        "required": ["filepath"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "ls",
+                    "description": "List workspace directory",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            },
+        ]
+        agent_tools = [
+            *plan_tools,
+            {
+                "type": "function",
+                "function": {
+                    "name": "edit_existing_file",
+                    "description": "Edit an existing workspace file",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"filepath": {"type": "string"}},
+                        "required": ["filepath"],
+                    },
+                },
+            },
+        ]
+        plan_hash = _robin_tools_signature(plan_tools)
+        agent_hash = _robin_tools_signature(agent_tools)
+        assert plan_hash and agent_hash and plan_hash != agent_hash
+
+        # R1: Chat mode (no tools) establishes `c_veh_new_01` without injecting `@VEH MCP Server`
+        cont_r1_msgs: list[dict[str, Any]] = [
+            {"role": "system", "content": "You are a helpful coding assistant."},
+            {"role": "user", "content": "先在 Chat 模式随便聊一句"},
+        ]
+        base_r1 = _gemini_base_payload(
+            spec,
+            {"model": spec.public_id, "stream": True},
+            cont_r1_msgs,
+            credential_id=fake_cred_a.credential_id,
+        )
+        veh_captured_wire_bodies.clear()
+        gen_r1, err_r1 = asyncio.run(
+            client.chat_stream(spec, dict(base_r1), cont_r1_msgs)
+        )
+        assert err_r1 is None and gen_r1 is not None
+        asyncio.run(_selftest_consume_sse_chunks(gen_r1))
+        assert len(veh_captured_wire_bodies) == 1
+        assert (
+            _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
+            not in veh_captured_wire_bodies[0]
+        )
+
+        # R2: Switch to Plan mode (read-only tools) on the SAME `conv_id` -> late inject `@VEH MCP Server`
+        cont_r2_msgs: list[dict[str, Any]] = [
+            *cont_r1_msgs,
+            {"role": "assistant", "content": "ok"},
+            {"role": "user", "content": "切到 Plan 模式看下代码"},
+        ]
+        base_r2 = _gemini_base_payload(
+            spec,
+            {"model": spec.public_id, "stream": True, "tools": plan_tools},
+            cont_r2_msgs,
+            credential_id=fake_cred_a.credential_id,
+        )
+        assert base_r2.get("_ve_robin_conv_id") == "c_veh_new_01"
+        veh_captured_wire_bodies.clear()
+        gen_r2, err_r2 = asyncio.run(
+            client.chat_stream(spec, dict(base_r2), cont_r2_msgs)
+        )
+        assert err_r2 is None and gen_r2 is not None
+        asyncio.run(_selftest_consume_sse_chunks(gen_r2))
+        assert len(veh_captured_wire_bodies) == 1
+        assert (
+            f"切到 Plan 模式看下代码{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
+            in veh_captured_wire_bodies[0]
+        )
+
+        # R3: Stay in Plan mode (same toolset) -> must NOT re-inject
+        cont_r3_msgs: list[dict[str, Any]] = [
+            *cont_r2_msgs,
+            {"role": "assistant", "content": "ok"},
+            {"role": "user", "content": "继续在 Plan 模式分析"},
+        ]
+        base_r3 = _gemini_base_payload(
+            spec,
+            {"model": spec.public_id, "stream": True, "tools": plan_tools},
+            cont_r3_msgs,
+            credential_id=fake_cred_a.credential_id,
+        )
+        assert base_r3.get("_ve_robin_conv_id") == "c_veh_new_01"
+        veh_captured_wire_bodies.clear()
+        gen_r3, err_r3 = asyncio.run(
+            client.chat_stream(spec, dict(base_r3), cont_r3_msgs)
+        )
+        assert err_r3 is None and gen_r3 is not None
+        asyncio.run(_selftest_consume_sse_chunks(gen_r3))
+        assert len(veh_captured_wire_bodies) == 1
+        assert (
+            _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
+            not in veh_captured_wire_bodies[0]
+        )
+
+        # R4: Switch Plan -> Agent (expanded toolset) -> re-injects to refresh `tools/list`;
+        #     also verify 6f: if `_open_stream` fails first (502), retry still injects!
+        cont_r4_msgs: list[dict[str, Any]] = [
+            *cont_r3_msgs,
+            {"role": "assistant", "content": "ok"},
+            {"role": "user", "content": "切到 Agent 模式修改文件"},
+        ]
+        base_r4 = _gemini_base_payload(
+            spec,
+            {"model": spec.public_id, "stream": True, "tools": agent_tools},
+            cont_r4_msgs,
+            credential_id=fake_cred_a.credential_id,
+        )
+        assert base_r4.get("_ve_robin_conv_id") == "c_veh_new_01"
+        veh_captured_wire_bodies.clear()
+        veh_fail_first = True
+        gen_r4_fail, err_r4_fail = asyncio.run(
+            client.chat_stream(spec, dict(base_r4), cont_r4_msgs)
+        )
+        assert gen_r4_fail is None and err_r4_fail is not None
+        gen_r4_ok, err_r4_ok = asyncio.run(
+            client.chat_stream(spec, dict(base_r4), cont_r4_msgs)
+        )
+        assert err_r4_ok is None and gen_r4_ok is not None
+        asyncio.run(_selftest_consume_sse_chunks(gen_r4_ok))
+        assert len(veh_captured_wire_bodies) == 2
+        assert (
+            f"切到 Agent 模式修改文件{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
+            in veh_captured_wire_bodies[0]
+        )
+        assert (
+            f"切到 Agent 模式修改文件{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
+            in veh_captured_wire_bodies[1]
+        )
+
+        # R5: Switch Agent -> Plan (shrunk read-only toolset) -> refreshes mention AND Relay
+        #     blocks write tool `edit_existing_file` while listing current Plan tools
+        cont_r5_msgs: list[dict[str, Any]] = [
+            *cont_r4_msgs,
+            {"role": "assistant", "content": "ok"},
+            {"role": "user", "content": "切回 Plan 只读模式"},
+        ]
+        base_r5 = _gemini_base_payload(
+            spec,
+            {"model": spec.public_id, "stream": True, "tools": plan_tools},
+            cont_r5_msgs,
+            credential_id=fake_cred_a.credential_id,
+        )
+        assert base_r5.get("_ve_robin_conv_id") == "c_veh_new_01"
+        veh_captured_wire_bodies.clear()
+        gen_r5, err_r5 = asyncio.run(
+            client.chat_stream(spec, dict(base_r5), cont_r5_msgs)
+        )
+        assert err_r5 is None and gen_r5 is not None
+        asyncio.run(_selftest_consume_sse_chunks(gen_r5))
+        assert len(veh_captured_wire_bodies) == 1
+        assert (
+            f"切回 Plan 只读模式{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
+            in veh_captured_wire_bodies[0]
+        )
+        plan_check_run = _RobinRunState(
+            run_id="run_selftest_plan_guard",
+            session_key=str(base_r5.get("_ve_session_key") or ""),
+            client_session_id=str(base_r5.get("_ve_session_id") or ""),
+            principal_id=fake_cred_a.credential_id,
+            boot_key=str(base_r5.get("_ve_boot_key") or ""),
+            full_key=str(base_r5.get("_ve_full_key") or ""),
+            conversation_id="c_veh_new_01",
+            dsh_tools=plan_tools,
+            execution_state="RUNNING",
+        )
+        import types as _selftest_types
+
+        plan_check_actor = cast(
+            _RobinRunActor, _selftest_types.SimpleNamespace(run=plan_check_run)
+        )
+        _ROBIN_ACTIVE_RUNS[plan_check_run.run_id] = plan_check_run
+        _relay_bind_active_run(plan_check_run, plan_check_actor)
+        try:
+            st_blk, _, body_blk = asyncio.run(
+                _relay_mcp_tools_call(
+                    "edit_existing_file",
+                    {"filepath": "test.py"},
+                    rpc_id=91,
+                    http_id="h_plan_blk",
+                    connection_id="c_plan_blk",
+                    abort_evt=None,
+                )
+            )
+            assert st_blk == 200
+            blk_doc = json.loads(body_blk.decode("utf-8"))
+            assert blk_doc["error"]["code"] == -32602
+            assert "unknown tool: edit_existing_file" in blk_doc["error"]["message"]
+            assert "ls, read_file" in blk_doc["error"]["message"]
+
+            # R6: A follow-up request without `tools` clears lingering same-session Relay
+            #     binding and returns a clear rejection on `tools/call`
+            cont_r6_msgs: list[dict[str, Any]] = [
+                *cont_r5_msgs,
+                {"role": "assistant", "content": "ok"},
+                {"role": "user", "content": "不带工具的普通文本追问"},
+            ]
+            base_r6 = _gemini_base_payload(
+                spec,
+                {"model": spec.public_id, "stream": True},
+                cont_r6_msgs,
+                credential_id=fake_cred_a.credential_id,
+            )
+            veh_captured_wire_bodies.clear()
+            gen_r6, err_r6 = asyncio.run(
+                client.chat_stream(spec, dict(base_r6), cont_r6_msgs)
+            )
+            assert err_r6 is None and gen_r6 is not None
+            asyncio.run(_selftest_consume_sse_chunks(gen_r6))
+            assert _relay_active_run() is None
+            assert (
+                _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
+                not in veh_captured_wire_bodies[0]
+            )
+            st_chat, _, body_chat = asyncio.run(
+                _relay_mcp_tools_call(
+                    "read_file",
+                    {"filepath": "test.py"},
+                    rpc_id=92,
+                    http_id="h_chat_blk",
+                    connection_id="c_chat_blk",
+                    abort_evt=None,
+                )
+            )
+            assert st_chat == 200
+            chat_doc = json.loads(body_chat.decode("utf-8"))
+            assert chat_doc["result"]["isError"] is True
+            assert (
+                "no client tools are attached"
+                in chat_doc["result"]["content"][0]["text"]
+            )
+        finally:
+            _ROBIN_ACTIVE_RUNS.pop(plan_check_run.run_id, None)
+            _relay_clear_active_run(plan_check_run)
     finally:
         globals()["_relay_enabled"] = orig_relay_enabled
         globals()["_relay_wait_ready"] = orig_relay_wait_ready
