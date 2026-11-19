@@ -364,11 +364,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49106
 #    VE_OPENCODE_FREE                       "1"                                          L49144
 #    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L70954
-#    VE_GEMINI_API_KEYS                     ""                                           L70958
-#    VE_GEMINI_BACKEND                      "auto"                                       L70977
-#    VE_GEMINI_PROJECT_ID                   ""                                           L70984
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55425
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71128
+#    VE_GEMINI_API_KEYS                     ""                                           L71132
+#    VE_GEMINI_BACKEND                      "auto"                                       L71151
+#    VE_GEMINI_PROJECT_ID                   ""                                           L71158
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55511
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1535
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72005
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72009
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72013
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72035
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72001
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L71991
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L71979
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L71987
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L71983
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72179
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72183
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72187
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72209
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72175
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72165
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72153
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72161
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L72157
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -54974,18 +54974,104 @@ class _RobinActionCardFilter:
         return res
 
 
+_ROBIN_INVALID_URL_MD_LINK_RE = re.compile(
+    r"\[\[invalid URL\]\]\((<?)([^)\r\n]+?)(>?)\)",
+    re.IGNORECASE,
+)
+_ROBIN_INVALID_URL_LINE_FRAG_RE = re.compile(r"^L(\d+)(?:-L?(\d+))?$", re.IGNORECASE)
+_ROBIN_INVALID_URL_MARKER = "[[invalid URL]]"
+
+
+def _robin_restore_invalid_url_links(text: str) -> str:
+    """Restore `[[invalid URL]](<path>)` rewritten by upstream URL validation back to filename labels."""
+    if not text or "invalid URL" not in text:
+        return text
+
+    def _repl(match: re.Match[str]) -> str:
+        open_ang, raw_target, close_ang = match.group(1), match.group(2), match.group(3)
+        target = raw_target.strip()
+        if not target:
+            return match.group(0)
+        # Keep real HTTP(S) URLs untouched unless they point to a file path with a clear filename
+        path_part = target
+        frag = ""
+        if "#" in path_part:
+            path_part, frag = path_part.split("#", 1)
+        if path_part.startswith("file://"):
+            path_part = path_part[7:]
+        path_part = urllib.parse.unquote(path_part).rstrip("/\\")
+        if not path_part or path_part.startswith(("http://", "https://")):
+            return match.group(0)
+        basename = path_part.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].strip()
+        if not basename:
+            return match.group(0)
+        line_suffix = ""
+        if frag:
+            m_ln = _ROBIN_INVALID_URL_LINE_FRAG_RE.match(frag.strip())
+            if m_ln:
+                start_ln = m_ln.group(1)
+                end_ln = m_ln.group(2)
+                line_suffix = f":{start_ln}-{end_ln}" if end_ln else f":{start_ln}"
+        return f"[{basename}{line_suffix}]({open_ang}{raw_target}{close_ang})"
+
+    return _ROBIN_INVALID_URL_MD_LINK_RE.sub(_repl, text)
+
+
+def _robin_invalid_url_safe_emit_end(text: str, start: int) -> int:
+    """Return the safe end offset in `text[start:]` without tearing a partial `[[invalid URL]](...)`."""
+    tail = text[start:]
+    if not tail:
+        return start
+    # 1. Hold back an unclosed `[[invalid URL]](...` waiting for its closing `)`
+    marker_idx = tail.rfind(_ROBIN_INVALID_URL_MARKER)
+    if marker_idx >= 0:
+        after = tail[marker_idx + len(_ROBIN_INVALID_URL_MARKER) :]
+        if after == "" or (
+            after.startswith("(")
+            and ")" not in after
+            and "\n" not in after
+            and "\r" not in after
+            and len(after) < 512
+        ):
+            return start + marker_idx
+    # 2. Hold back a trailing strict prefix of `[[invalid URL]]` (e.g. `[`, `[[`, `[[inval`)
+    max_pfx = min(len(tail), len(_ROBIN_INVALID_URL_MARKER) - 1)
+    for k in range(max_pfx, 0, -1):
+        if _ROBIN_INVALID_URL_MARKER.startswith(tail[-k:]):
+            return len(text) - k
+    return len(text)
+
+
 class _RobinAnswerProjector:
     """Projects cumulative `.1003.1.1.2.1` answer snapshots into append-only `content` deltas."""
 
     def __init__(self) -> None:
         self.committed_text: str = ""
         self.delivered_char_offset: int = 0
+        self._max_raw_len: int = 0
 
-    def update_snapshot(self, snapshot: str) -> str:
+    def update_snapshot(self, snapshot: str, *, final: bool = False) -> str:
         if not snapshot:
             return ""
-        if len(snapshot) >= len(self.committed_text):
-            self.committed_text = snapshot
+        if len(snapshot) >= self._max_raw_len:
+            self._max_raw_len = len(snapshot)
+            self.committed_text = _robin_restore_invalid_url_links(snapshot)
+        if len(self.committed_text) <= self.delivered_char_offset:
+            return ""
+        emit_end = (
+            len(self.committed_text)
+            if final
+            else _robin_invalid_url_safe_emit_end(
+                self.committed_text, self.delivered_char_offset
+            )
+        )
+        if emit_end <= self.delivered_char_offset:
+            return ""
+        delta = self.committed_text[self.delivered_char_offset : emit_end]
+        self.delivered_char_offset = emit_end
+        return delta
+
+    def flush(self) -> str:
         if len(self.committed_text) <= self.delivered_char_offset:
             return ""
         delta = self.committed_text[self.delivered_char_offset :]
@@ -55560,6 +55646,11 @@ class _GeminiDshStore:
                 attachment_limits_json TEXT NOT NULL DEFAULT '{}',
                 updated_at REAL NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS tool_hop_user_counts (
+                hop_key TEXT PRIMARY KEY,
+                user_count INTEGER NOT NULL,
+                updated_at REAL NOT NULL
+            );
             """
         )
         for col_ddl in (
@@ -55622,6 +55713,7 @@ class _GeminiDshStore:
                         DELETE FROM outbound_actions;
                         DELETE FROM delivery_cursors;
                         DELETE FROM account_modes;
+                        DELETE FROM tool_hop_user_counts;
                         """
                     )
                     self._conn.commit()
@@ -56242,6 +56334,48 @@ class _GeminiDshStore:
             for key in clean_keys:
                 conn.execute("DELETE FROM account_modes WHERE scope_key = ?", (key,))
             conn.commit()
+
+    def upsert_tool_hop_user_count(self, hop_key: str, user_count: int) -> None:
+        key = str(hop_key or "").strip()
+        if not key:
+            return
+        with self._lock:
+            conn = self._ensure_conn()
+            conn.execute(
+                """
+                INSERT INTO tool_hop_user_counts (hop_key, user_count, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(hop_key) DO UPDATE SET
+                    user_count = excluded.user_count,
+                    updated_at = excluded.updated_at
+                """,
+                (key, int(user_count), time.time()),
+            )
+            conn.execute(
+                """
+                DELETE FROM tool_hop_user_counts
+                WHERE hop_key NOT IN (
+                    SELECT hop_key FROM tool_hop_user_counts
+                    ORDER BY updated_at DESC
+                    LIMIT 4096
+                )
+                """
+            )
+            conn.commit()
+
+    def get_tool_hop_user_count(self, hop_key: str) -> int | None:
+        key = str(hop_key or "").strip()
+        if not key:
+            return None
+        with self._lock:
+            conn = self._ensure_conn()
+            row = conn.execute(
+                "SELECT user_count FROM tool_hop_user_counts WHERE hop_key = ?",
+                (key,),
+            ).fetchone()
+            if row is None:
+                return None
+            return int(row["user_count"])
 
 
 _GEMINI_DSH_STORE = _GeminiDshStore()
@@ -56887,7 +57021,7 @@ _DSH_KNOWN_JOB_IDS_LOCK = threading.RLock()
 _DSH_KNOWN_JOB_IDS: set[str] = set()
 
 _DSH_MOVED_TO_BG_JOB_RE = re.compile(
-    r"(?:^|\n)\s*(?:Command\s+|\[\s*still running\b[^\n;\]]*;\s*)?moved to background job\s+([A-Za-z0-9_.:-]+)",
+    r"(?:^|\n)\s*(?:Command\s+|\[\s*still running\b[^\n;\]]*;\s*)?moved to background (?:job|as)\s+([A-Za-z0-9_.:-]+)",
     flags=re.IGNORECASE,
 )
 _DSH_JOB_COMPLETION_NOTICE_RE = re.compile(
@@ -56938,7 +57072,7 @@ def _dsh_extract_moved_bg_job_id(text: str) -> str:
     m = _DSH_MOVED_TO_BG_JOB_RE.search(str(text))
     if m is None:
         return ""
-    return _dsh_record_job_id(m.group(1))
+    return _dsh_record_job_id(m.group(1).rstrip(".,;:)"))
 
 
 def _dsh_strip_job_notice_prefix(text: str) -> str:
@@ -59361,17 +59495,38 @@ def _robin_adapt_caller_tool(
             wait_flag = args.pop("waitForCompletion", None)
             if wait_flag is None:
                 wait_flag = True
-            args = {"command": cmd, "waitForCompletion": bool(wait_flag)}
+            timeout_ms = _dsh_coerce_bash_timeout_ms(args)
+            args.pop("WaitMsBeforeAsync", None)
+            args.pop("wait_ms_before_async", None)
+            args.pop("RequiresNetworkAccess", None)
+            args = {
+                "command": cmd,
+                "waitForCompletion": bool(wait_flag),
+                "timeoutMs": max(1000, timeout_ms),
+            }
         elif name == "job_output":
             raw_to = args.get("timeout_ms") or args.get("timeoutMs")
             try:
                 parsed_to = int(float(raw_to)) if raw_to is not None else 10000
             except (TypeError, ValueError):
                 parsed_to = 10000
-            args.pop("timeoutMs", None)
-            args["timeout_ms"] = min(
-                max(500, parsed_to), GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS
-            )
+            clamped_to = min(max(500, parsed_to), GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS)
+            if (
+                "run_terminal_command" in local_tool_names
+                and "bash" not in local_tool_names
+            ):
+                job_id = str(
+                    args.pop("jobId", None) or args.pop("job_id", None) or ""
+                ).strip()
+                wait_flag = args.get("wait")
+                args.pop("timeout_ms", None)
+                args["jobId"] = job_id
+                args["timeoutMs"] = clamped_to
+                if wait_flag is None:
+                    args["wait"] = True
+            else:
+                args.pop("timeoutMs", None)
+                args["timeout_ms"] = clamped_to
         elif name == "read":
             file_path = _robin_resolve_tool_path(
                 args.pop("AbsolutePath", None)
@@ -59828,9 +59983,11 @@ def _robin_adapt_caller_tool(
                 norm_root = os.path.normpath(workspace_root) if workspace_root else ""
                 if resolved_wd and resolved_wd != norm_root:
                     cmd = f"cd {shlex.quote(resolved_wd)} && {cmd}"
+            timeout_ms = _dsh_coerce_bash_timeout_ms(dict(args))
             return "run_terminal_command", {
                 "command": cmd,
                 "waitForCompletion": True,
+                "timeoutMs": max(1000, timeout_ms),
             }
 
     if name in ("grep_search", "grep"):
@@ -67632,7 +67789,10 @@ class _RobinStreamDecoder:
         self.last_frame_eod = bool(parsed["eod"])
         self.last_frame_completed = bool(parsed["is_completed"] or self.is_completed)
         if parsed["is_completed"]:
-            tail_delta = self.action_card_filter.flush()
+            proj_tail = self.run.answer_projector.flush()
+            tail_delta = (
+                self.action_card_filter.feed(proj_tail) if proj_tail else ""
+            ) + self.action_card_filter.flush()
             if tail_delta:
                 self.emitted_answer_chars += len(tail_delta)
                 self.emitted_answer_text += tail_delta
@@ -67858,6 +68018,18 @@ class _RobinStreamDecoder:
         out: list[dict[str, Any]] = []
         if self._buf:
             out.extend(self.feed_bytes(b""))
+        held_ans = self.run.answer_projector.flush()
+        if held_ans:
+            vis_held = self.action_card_filter.feed(held_ans)
+            if vis_held:
+                self.emitted_answer_chars += len(vis_held)
+                self.emitted_answer_text += vis_held
+                out.append(self._make_chunk({"content": vis_held}))
+        tail_ac = self.action_card_filter.flush()
+        if tail_ac:
+            self.emitted_answer_chars += len(tail_ac)
+            self.emitted_answer_text += tail_ac
+            out.append(self._make_chunk({"content": tail_ac}))
         reason = self.finish_reason or (
             "tool_calls" if self.pending_tool_calls else "stop"
         )
@@ -69868,7 +70040,9 @@ async def _robin_reconcile_via_list_turns(
             clean_answer, card_seen = _robin_strip_action_card_markers(
                 str(matched["answer_text"])
             )
-            ans_delta = decoder.run.answer_projector.update_snapshot(clean_answer)
+            ans_delta = decoder.run.answer_projector.update_snapshot(
+                clean_answer, final=True
+            )
             if ans_delta:
                 out_chunks.extend(decoder._maybe_emit_model_attribution_chunk())
                 decoder.emitted_answer_chars += len(ans_delta)
@@ -78196,13 +78370,29 @@ def _robin_record_tool_hop_user_count(hop_key: str, count: int) -> None:
     _ROBIN_TOOL_HOP_USER_COUNTS.move_to_end(hop_key)
     while len(_ROBIN_TOOL_HOP_USER_COUNTS) > 4096:
         _ROBIN_TOOL_HOP_USER_COUNTS.popitem(last=False)
+    try:
+        _GEMINI_DSH_STORE.upsert_tool_hop_user_count(hop_key, count)
+    except Exception:
+        pass
 
 
 def _robin_get_tool_hop_user_count(hop_key: str) -> int | None:
     """Look up a previously recorded mid-turn `user` message count for `hop_key` in a Robin session."""
     if not hop_key:
         return None
-    return _ROBIN_TOOL_HOP_USER_COUNTS.get(hop_key)
+    cached = _ROBIN_TOOL_HOP_USER_COUNTS.get(hop_key)
+    if cached is not None:
+        return cached
+    try:
+        persisted = _GEMINI_DSH_STORE.get_tool_hop_user_count(hop_key)
+    except Exception:
+        persisted = None
+    if persisted is not None:
+        _ROBIN_TOOL_HOP_USER_COUNTS[hop_key] = persisted
+        _ROBIN_TOOL_HOP_USER_COUNTS.move_to_end(hop_key)
+        while len(_ROBIN_TOOL_HOP_USER_COUNTS) > 4096:
+            _ROBIN_TOOL_HOP_USER_COUNTS.popitem(last=False)
+    return persisted
 
 
 def _ais_record_tool_hop_user_count(
@@ -104636,6 +104826,65 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         base_turn3_after_crash.get("_ve_query_text")
         == "第三轮：重启网关后继续追问不应触发分叉"
     )
+
+    # Verify SQLite persistence of `_ROBIN_TOOL_HOP_USER_COUNTS` across a server restart for clients
+    # (such as Continue) that omit `reasoning_content` and VEH runtime-context blocks:
+    # When Turn 1 ends mid-tool-hop and Turn 2 is a real human user message right after `role="tool"`,
+    # Turn 2 records `hop_key -> 0` in SQLite; after clearing `_ROBIN_TOOL_HOP_USER_COUNTS` (simulating
+    # a process restart), Turn 3 must still recognize Turn 2 as a real turn and continue without forking.
+    cont_hop_t1_msgs: list[dict[str, Any]] = [
+        {"role": "user", "content": "第一轮：执行工具后客户端中断"},
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_cont_persist_01",
+                    "type": "function",
+                    "function": {
+                        "name": "read_file",
+                        "arguments": '{"filepath":"test.py"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_cont_persist_01",
+            "name": "read_file",
+            "content": "print('ok')",
+        },
+        {"role": "user", "content": "第二轮：重启客户端后的新问题"},
+    ]
+    assert 3 not in _robin_identify_mid_turn_user_indices(cont_hop_t1_msgs)
+    _robin_store_continuation(
+        "",
+        cont_hop_t1_msgs,
+        "c_cont_persist",
+        "r_cont_p2",
+        "rc_cont_p2",
+        credential_id=fake_cred_a.credential_id,
+        binding_state="committed",
+        committed_answer="第二轮完整答复",
+    )
+    _ROBIN_TOOL_HOP_USER_COUNTS.clear()
+    cont_hop_t3_msgs: list[dict[str, Any]] = [
+        *cont_hop_t1_msgs,
+        {"role": "assistant", "content": "第二轮完整答复"},
+        {"role": "user", "content": "第三轮：重启服务端后不应误分叉"},
+    ]
+    assert 3 not in _robin_identify_mid_turn_user_indices(cont_hop_t3_msgs)
+    base_cont_t3 = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        cont_hop_t3_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert "::fork::" not in str(base_cont_t3.get("_ve_session_key") or "")
+    assert base_cont_t3.get("_ve_robin_conv_id") == "c_cont_persist"
+    assert base_cont_t3.get("_ve_robin_parent_req_id") == "r_cont_p2"
+    assert base_cont_t3.get("_ve_robin_parent_resp_id") == "rc_cont_p2"
+
     # Also verify that:
     # - When `reasoning_content` only carries Phase 1's cached thoughts (without a Phase 2 attribution banner),
     #   `_VE_CHAINED_TURN_SEP` still prevents Turn 2's user message from being misclassified as `mid_turn`!
@@ -107990,6 +108239,30 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         globals()["_robin_resolve_bard_mode_id"] = orig_resolve_bard_mode
         globals()["_robin_ensure_device_registered"] = orig_ensure_dev_reg
 
+    # (6g) Streaming `[[invalid URL]](<path>)` restoration in `_RobinAnswerProjector`:
+    #      verify full link restoration (plain path, `#L..` range, `file://` URI, HTTP untouched)
+    #      and character-by-character streaming without tearing partial markers before `flush()`:
+    inv_url_raw = (
+        "已更新 [[invalid URL]](</w/workspace/GUIDE.md>) 与 "
+        "[[invalid URL]](</w/workspace/NOTES.md#L16-L24>) 及 "
+        "[[invalid URL]](file:///w/workspace/INDEX.md#L8)，"
+        "保留 [[invalid URL]](https://example.com/a.md) 与末尾 [[invalid URL]]"
+    )
+    inv_url_expected = (
+        "已更新 [GUIDE.md](</w/workspace/GUIDE.md>) 与 "
+        "[NOTES.md:16-24](</w/workspace/NOTES.md#L16-L24>) 及 "
+        "[INDEX.md:8](file:///w/workspace/INDEX.md#L8)，"
+        "保留 [[invalid URL]](https://example.com/a.md) 与末尾 [[invalid URL]]"
+    )
+    assert _robin_restore_invalid_url_links(inv_url_raw) == inv_url_expected
+    inv_proj = _RobinAnswerProjector()
+    streamed_out = ""
+    for end_i in range(1, len(inv_url_raw) + 1):
+        streamed_out += inv_proj.update_snapshot(inv_url_raw[:end_i])
+    streamed_out += inv_proj.flush()
+    assert streamed_out == inv_url_expected
+    assert inv_proj.committed_text == inv_url_expected
+
     # (7) Pre-identity timeout (`GEMINI_FIRST_EVENT_TIMEOUT_SECONDS`) across BOTH the main loop
     #     and the ERT coalesce loop, verifying fast failure, snapshot restoration, pending pre-id
     #     chunk discard, Relay pending cancellation, and HTTP session cleanup:
@@ -109301,7 +109574,46 @@ def test_gemini_multi_client_refactor_and_stream_driver():
         workspace_root=ws_root,
     ) == (
         "run_terminal_command",
-        {"command": "cd /w/workspace/sub && pytest -q", "waitForCompletion": True},
+        {
+            "command": "cd /w/workspace/sub && pytest -q",
+            "waitForCompletion": True,
+            "timeoutMs": 10000,
+        },
+    )
+    assert _robin_adapt_caller_tool(
+        "client:run_command",
+        {"CommandLine": "pytest -q", "WaitMsBeforeAsync": 5000},
+        cont_tool_set,
+        workspace_root=ws_root,
+    ) == (
+        "run_terminal_command",
+        {
+            "command": "pytest -q",
+            "waitForCompletion": True,
+            "timeoutMs": 5000,
+        },
+    )
+    assert _robin_adapt_caller_tool(
+        "job_output",
+        {"job_id": "job_1", "timeout_ms": 20000},
+        cont_tool_set | {"job_output"},
+        workspace_root=ws_root,
+    ) == (
+        "job_output",
+        {"jobId": "job_1", "timeoutMs": 10000, "wait": True},
+    )
+    _cont_promoted = (
+        "phase 1\n[still running after 10000ms; moved to background job job_1]\n"
+        'Use job_output(jobId="job_1", wait=true) to poll incremental output, '
+        'job_list() to check status, or job_kill(jobId="job_1") to terminate.'
+    )
+    assert _dsh_extract_moved_bg_job_id(_cont_promoted) == "job_1"
+    assert _dsh_is_bg_job_still_running_output(_cont_promoted) is True
+    assert (
+        _dsh_is_bg_job_still_running_output(
+            "[jobId: job_1] [status: completed] [elapsedMs: 3200] [exit code: 0]\ndone"
+        )
+        is False
     )
     assert _robin_adapt_caller_tool(
         "client:multi_replace_file_content",
