@@ -364,10 +364,10 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49106
 #    VE_OPENCODE_FREE                       "1"                                          L49144
 #    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71129
-#    VE_GEMINI_API_KEYS                     ""                                           L71133
-#    VE_GEMINI_BACKEND                      "auto"                                       L71152
-#    VE_GEMINI_PROJECT_ID                   ""                                           L71159
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71185
+#    VE_GEMINI_API_KEYS                     ""                                           L71189
+#    VE_GEMINI_BACKEND                      "auto"                                       L71208
+#    VE_GEMINI_PROJECT_ID                   ""                                           L71215
 #    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55511
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72180
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72184
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72188
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72210
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72176
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72166
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72154
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72162
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L72158
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72236
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72240
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72244
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72266
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72232
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72222
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72210
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72218
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L72214
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -60581,7 +60581,7 @@ class _RobinToolLedger:
         return cmd_str, cwd_str
 
     def _build_background_handoff_dict(
-        self, inv: _RobinToolInvocation
+        self, inv: _RobinToolInvocation, *, extra_message: str = ""
     ) -> dict[str, Any]:
         """Build the source-neutral `status='background'` hand-off payload."""
         if not inv.bg_command_id:
@@ -60591,6 +60591,9 @@ class _RobinToolLedger:
             "Command is running in the background. Use command_status with this command_id "
             "to check progress."
         )
+        extra_suffix = f"\n\n{extra_message}" if extra_message else ""
+        if extra_suffix:
+            msg_text = f"{msg_text}{extra_suffix}"
         if inv.orig_call_name == "execute_mcp" or inv.mcp_tool:
             hint = (
                 "Use command_status with this command_id "
@@ -60608,7 +60611,7 @@ class _RobinToolLedger:
                 "output": (
                     f"Command is running in the background (command_id={inv.bg_command_id}). "
                     f'{hint}CommandId="{inv.bg_command_id}" '
-                    "to check progress and retrieve the output."
+                    f"to check progress and retrieve the output.{extra_suffix}"
                 ),
             }
         else:
@@ -60625,16 +60628,20 @@ class _RobinToolLedger:
                     f"Command is running in the background "
                     f"(command_id={inv.bg_command_id}). "
                     f'Call command_status with CommandId="{inv.bg_command_id}" '
-                    "to check progress and retrieve the output."
+                    f"to check progress and retrieve the output.{extra_suffix}"
                 )
         return resp_dict
 
-    def _build_background_handoff_frame(self, inv: _RobinToolInvocation) -> bytes:
+    def _build_background_handoff_frame(
+        self, inv: _RobinToolInvocation, *, extra_message: str = ""
+    ) -> bytes:
         """ERT adapter: encode the hand-off payload as a `FunctionResponse` frame."""
         return _robin_build_execute_remote_tools_result_frame(
             name=inv.orig_call_name,
             call_id=inv.wire_call_id,
-            response_dict=self._build_background_handoff_dict(inv),
+            response_dict=self._build_background_handoff_dict(
+                inv, extra_message=extra_message
+            ),
             call_id_present=inv.wire_call_id_present,
         )
 
@@ -61383,6 +61390,7 @@ class _RobinRunState:
     )
     pending_chained_pre_user_messages: list[Any] = field(default_factory=list)
     pending_chained_prompt_context: str = ""
+    pending_spliced_user_notices: list[str] = field(default_factory=list)
     # Set once a Relay invocation appears on this run: PQ tool announcements can no
     # longer be attributed to ERT, so the ERT tool-deficit wakeup is disabled.
     relay_mode: bool = False
@@ -64387,21 +64395,25 @@ class _RobinRunActor:
             )
         ledger = getattr(self.run, "tool_ledger", None)
         reconciled_ids: set[str] = set()
+
+        def _queue_spliced_notice(notice: str) -> None:
+            n_s = notice.strip()
+            if n_s and n_s not in self.run.pending_spliced_user_notices:
+                self.run.pending_spliced_user_notices.append(n_s)
+
+        def _take_spliced_notice(notice: str) -> str:
+            parts: list[str] = []
+            for p in (*self.run.pending_spliced_user_notices, notice):
+                p_s = p.strip()
+                if p_s and p_s not in parts:
+                    parts.append(p_s)
+            self.run.pending_spliced_user_notices.clear()
+            return "\n\n".join(parts)
+
         for out_item in outputs:
             tc_id = str(
                 out_item.get("tool_call_id") or out_item.get("id") or ""
             ).strip()
-            if out_item.get("_synth_absorb_only"):
-                if tc_id:
-                    reconciled_ids.add(tc_id)
-                rec.absorbed_bg = True
-                if str(out_item.get("_source") or "ert") == "relay":
-                    rec.relay_touched = True
-                else:
-                    rec.ert_absorbed_bg = True
-                    rec.ert_touched = True
-                continue
-            out_str = _dsh_stringify_tool_output(out_item.get("output"))
             spliced_notice = str(out_item.get("_spliced_user_notice") or "").strip()
             if spliced_notice and (
                 self.run.pending_chained_followup_texts
@@ -64416,6 +64428,18 @@ class _RobinRunActor:
                     spliced_notice = ""
                     out_item = dict(out_item)
                     out_item.pop("_spliced_user_notice", None)
+            if out_item.get("_synth_absorb_only"):
+                _queue_spliced_notice(spliced_notice)
+                if tc_id:
+                    reconciled_ids.add(tc_id)
+                rec.absorbed_bg = True
+                if str(out_item.get("_source") or "ert") == "relay":
+                    rec.relay_touched = True
+                else:
+                    rec.ert_absorbed_bg = True
+                    rec.ert_touched = True
+                continue
+            out_str = _dsh_stringify_tool_output(out_item.get("output"))
             inv = (
                 ledger.by_public_id.get(tc_id) if ledger is not None and tc_id else None
             )
@@ -64436,6 +64460,7 @@ class _RobinRunActor:
                         not ledger.local_tool_names or "read" in ledger.local_tool_names
                     )
                     if can_reread:
+                        _queue_spliced_notice(spliced_notice)
                         if tc_id:
                             reconciled_ids.add(tc_id)
                         inv.stale_retry_count += 1
@@ -64533,12 +64558,23 @@ class _RobinRunActor:
                         or out_str
                     )
                     if inv.carrier_call_name:
+                        effective_notice = _take_spliced_notice(spliced_notice)
+                        running_extra = (
+                            (
+                                "Command is still running in the background. Use command_status with this "
+                                "command_id to check progress.\n\n--- [Harness Notice] ---\n"
+                                f"{effective_notice}"
+                            )
+                            if effective_notice
+                            else ""
+                        )
                         if is_relay:
                             running_dict = ledger._build_command_status_result_dict(
                                 inv,
                                 call_name=inv.carrier_call_name,
                                 mcp_tool_name=inv.carrier_mcp_tool,
                                 max_output_chars=inv.carrier_output_char_count,
+                                extra_message=running_extra,
                                 done=False,
                             )
                             if tc_id:
@@ -64570,6 +64606,7 @@ class _RobinRunActor:
                                 call_name=inv.carrier_call_name,
                                 mcp_tool_name=inv.carrier_mcp_tool,
                                 max_output_chars=inv.carrier_output_char_count,
+                                extra_message=running_extra,
                                 done=False,
                             )
                             inv.carrier_call_name = ""
@@ -64590,8 +64627,16 @@ class _RobinRunActor:
                             rec.ert_touched = True
                     elif inv.status == "DISPATCHED":
                         inv.status = "BACKGROUNDED"
+                        effective_notice = _take_spliced_notice(spliced_notice)
+                        handoff_extra = (
+                            f"--- [Harness Notice] ---\n{effective_notice}"
+                            if effective_notice
+                            else ""
+                        )
                         if is_relay:
-                            handoff_dict = ledger._build_background_handoff_dict(inv)
+                            handoff_dict = ledger._build_background_handoff_dict(
+                                inv, extra_message=handoff_extra
+                            )
                             if tc_id:
                                 _robin_record_sent_tool_tokens(
                                     tc_id,
@@ -64608,7 +64653,9 @@ class _RobinRunActor:
                             )
                             rec.relay_touched = True
                         else:
-                            bg_frame = ledger._build_background_handoff_frame(inv)
+                            bg_frame = ledger._build_background_handoff_frame(
+                                inv, extra_message=handoff_extra
+                            )
                             inv.background_response_frame = bg_frame
                             rec.frames.append(bg_frame)
                             rec.frame_records.append(
@@ -64616,6 +64663,7 @@ class _RobinRunActor:
                             )
                             rec.ert_touched = True
                     else:
+                        _queue_spliced_notice(spliced_notice)
                         rec.absorbed_bg = True
                         if is_relay:
                             rec.relay_touched = True
@@ -64637,8 +64685,9 @@ class _RobinRunActor:
                 merged_out = _robin_merge_incremental_tool_output(
                     prev_result_str, out_str
                 )
-                if spliced_notice:
-                    notice_block = f"--- [Harness Notice] ---\n{spliced_notice}"
+                effective_notice = _take_spliced_notice(spliced_notice)
+                if effective_notice:
+                    notice_block = f"--- [Harness Notice] ---\n{effective_notice}"
                     merged_out = (
                         f"{merged_out}\n\n{notice_block}"
                         if merged_out
@@ -64701,6 +64750,13 @@ class _RobinRunActor:
             else:
                 prev_status = inv.status if inv is not None else ""
                 prev_result_str = inv.result_str if inv is not None else ""
+                effective_notice = _take_spliced_notice(spliced_notice)
+                if effective_notice != spliced_notice:
+                    out_item = dict(out_item)
+                    if effective_notice:
+                        out_item["_spliced_user_notice"] = effective_notice
+                    else:
+                        out_item.pop("_spliced_user_notice", None)
                 if is_relay:
                     assert inv is not None
                     projected_dict = _robin_project_tool_result_dict(out_item)
@@ -106460,6 +106516,194 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     )
     assert len(steer_delta_outs) == 1
     assert steer_delta_outs[0].get("_spliced_user_notice") == steer_txt
+
+    # Mid-turn steer arriving during a background `still running` poll (`call_jobout_*`),
+    # initial background hand-off (`DISPATCHED` -> `BACKGROUNDED`), and absorbed-only hop
+    # must never be silently dropped:
+    bg_steer_txt = "测试 steer 消息"
+    bg_inv = _RobinToolInvocation(
+        invocation_id="inv_steer_bg_1",
+        run_id="run_steer_01",
+        wire_call_id="wire_bg_1",
+        wire_call_id_present=True,
+        public_tool_call_id="call_jobout_steer01",
+        orig_call_name="run_command",
+        dsh_tool_name="job_output",
+        orig_args={"CommandLine": "sleep 30"},
+        adapted_args={"job_id": "job_steer_01", "wait": True, "timeout_ms": 5000},
+        status="BACKGROUNDED",
+        dsh_job_id="job_steer_01",
+        bg_command_id="CMD_STEER_01",
+        carrier_call_name="command_status",
+        carrier_call_id="wire_status_1",
+        carrier_call_id_present=True,
+    )
+    steer_run.tool_ledger.by_public_id["call_jobout_steer01"] = bg_inv
+    steer_dec.pending_tool_calls = [
+        {
+            "index": 0,
+            "id": "call_jobout_steer01",
+            "wire_call_id": "wire_status_1",
+            "wire_call_id_present": True,
+            "name": "job_output",
+            "_orig_call_name": "command_status",
+            "args": {"job_id": "job_steer_01"},
+        }
+    ]
+    steer_actor.pending_tool_calls = list(steer_dec.pending_tool_calls)
+    bg_poll_msgs: list[dict[str, Any]] = [
+        *inf_t1_init_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_jobout_steer01",
+                    "type": "function",
+                    "function": {
+                        "name": "job_output",
+                        "arguments": '{"job_id":"job_steer_01"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_jobout_steer01",
+            "name": "job_output",
+            "content": "[still running after 5000ms]\nThe command keeps running in the background.",
+        },
+        {"role": "user", "content": bg_steer_txt},
+    ]
+    bg_rec = steer_actor._robin_reconcile_dsh_tool_outputs(bg_poll_msgs)
+    assert bg_rec.status == "ok" and len(bg_rec.frames) == 1
+    assert b"--- [Harness Notice] ---" in bg_rec.frames[0]
+    assert bg_steer_txt.encode("utf-8") in bg_rec.frames[0]
+    assert steer_run.pending_spliced_user_notices == []
+
+    handoff_steer_txt = "只保留核心检查"
+    handoff_inv = _RobinToolInvocation(
+        invocation_id="inv_steer_ho_1",
+        run_id="run_steer_01",
+        wire_call_id="wire_ho_1",
+        wire_call_id_present=True,
+        public_tool_call_id="call_bash_ho01",
+        orig_call_name="run_command",
+        dsh_tool_name="bash",
+        orig_args={"CommandLine": "sleep 60"},
+        adapted_args={"command": "sleep 60"},
+        status="DISPATCHED",
+    )
+    steer_run.tool_ledger.by_public_id["call_bash_ho01"] = handoff_inv
+    steer_dec.pending_tool_calls = [
+        {
+            "index": 0,
+            "id": "call_bash_ho01",
+            "wire_call_id": "wire_ho_1",
+            "wire_call_id_present": True,
+            "name": "bash",
+            "_orig_call_name": "run_command",
+            "args": {"command": "sleep 60"},
+        }
+    ]
+    steer_actor.pending_tool_calls = list(steer_dec.pending_tool_calls)
+    handoff_msgs: list[dict[str, Any]] = [
+        *inf_t1_init_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_bash_ho01",
+                    "type": "function",
+                    "function": {
+                        "name": "bash",
+                        "arguments": '{"command":"sleep 60"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_bash_ho01",
+            "name": "bash",
+            "content": "[still running after 5000ms] Moved to background job_id=job_ho_01.",
+        },
+        {"role": "user", "content": handoff_steer_txt},
+    ]
+    ho_rec = steer_actor._robin_reconcile_dsh_tool_outputs(handoff_msgs)
+    assert ho_rec.status == "ok" and len(ho_rec.frames) == 1
+    assert b"--- [Harness Notice] ---" in ho_rec.frames[0]
+    assert handoff_steer_txt.encode("utf-8") in ho_rec.frames[0]
+    assert steer_run.pending_spliced_user_notices == []
+
+    deferred_steer_txt = "顺便跳过缓存目录"
+    steer_dec.pending_tool_calls = [
+        {
+            "index": 0,
+            "id": "call_reread_steer01",
+            "name": "read",
+            "_source": "ert",
+            "_synth_absorb_only": True,
+            "args": {"file_path": "/w/workspace/sample.txt"},
+        }
+    ]
+    steer_actor.pending_tool_calls = list(steer_dec.pending_tool_calls)
+    absorbed_msgs: list[dict[str, Any]] = [
+        *inf_t1_init_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_reread_steer01",
+                    "type": "function",
+                    "function": {
+                        "name": "read",
+                        "arguments": '{"file_path":"/w/workspace/sample.txt"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_reread_steer01",
+            "name": "read",
+            "content": "1: ok",
+        },
+        {"role": "user", "content": deferred_steer_txt},
+    ]
+    abs_rec = steer_actor._robin_reconcile_dsh_tool_outputs(absorbed_msgs)
+    assert abs_rec.status == "ok" and abs_rec.frames == []
+    assert steer_run.pending_spliced_user_notices == [deferred_steer_txt]
+    steer_dec.pending_tool_calls = [dict(inf_pending_list[0])]
+    steer_actor.pending_tool_calls = list(steer_dec.pending_tool_calls)
+    flush_msgs: list[dict[str, Any]] = [
+        *inf_t1_init_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call_inf_tc_01",
+                    "type": "function",
+                    "function": {"name": "bash", "arguments": '{"command":"ls"}'},
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": "call_inf_tc_01",
+            "name": "bash",
+            "content": "sample.txt\n[exit code: 0]",
+        },
+    ]
+    flush_rec = steer_actor._robin_reconcile_dsh_tool_outputs(flush_msgs)
+    assert flush_rec.status == "ok" and len(flush_rec.frames) == 1
+    assert b"--- [Harness Notice] ---" in flush_rec.frames[0]
+    assert deferred_steer_txt.encode("utf-8") in flush_rec.frames[0]
+    assert steer_run.pending_spliced_user_notices == []
+
     _robin_evict_specific_parked_actor(steer_actor, inf_boot_key)
     _robin_release_parked_stream_sync(steer_actor)
 
