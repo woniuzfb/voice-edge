@@ -364,10 +364,10 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49106
 #    VE_OPENCODE_FREE                       "1"                                          L49144
 #    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71128
-#    VE_GEMINI_API_KEYS                     ""                                           L71132
-#    VE_GEMINI_BACKEND                      "auto"                                       L71151
-#    VE_GEMINI_PROJECT_ID                   ""                                           L71158
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71129
+#    VE_GEMINI_API_KEYS                     ""                                           L71133
+#    VE_GEMINI_BACKEND                      "auto"                                       L71152
+#    VE_GEMINI_PROJECT_ID                   ""                                           L71159
 #    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55511
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72179
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72183
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72187
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72209
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72175
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72165
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72153
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72161
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L72157
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72180
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72184
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72188
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72210
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72176
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72166
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72154
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72162
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L72158
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -57402,10 +57402,11 @@ def _dsh_extract_policy(messages: Sequence[Any]) -> dict[str, str]:
                 workspace_root = os.path.normpath(str(Path(cand).expanduser()))
 
         for m_explicit in re.finditer(
-            r"(?:Current\s+)?[Ww]orking\s+directory\s*:\s*([^\r\n\"'<>]+)",
+            r'(?:Current\s+)?[Ww]orking\s+directory\s*:\s*(?:"([^"\r\n]+)"|\'([^\'\r\n]+)\'|`([^`\r\n]+)`|([^\r\n"\'<>`]+))',
             txt,
         ):
-            cand = m_explicit.group(1).strip().rstrip(".").strip("'\"`")
+            raw_cand = next((g for g in m_explicit.groups() if g is not None), "")
+            cand = raw_cand.strip().rstrip(".").strip("'\"`")
             if cand.startswith(("/", "~")):
                 workspace_root = os.path.normpath(str(Path(cand).expanduser()))
 
@@ -57545,8 +57546,8 @@ def _robin_extract_connected_folders(
             if not text:
                 continue
             for pat in (
-                r"\bcwd\s*[:=]\s*([^\r\n\"'<>]+)",
-                r"\bworkspace(?:\s+root|\s+directory)?\s*[:=]\s*([^\r\n\"'<>]+)",
+                r'\bcwd\s*[:=]\s*["\'`]?([^\r\n"\'<>`]+)',
+                r'\bworkspace(?:\s+root|\s+directory)?\s*[:=]\s*["\'`]?([^\r\n"\'<>`]+)',
                 r"connected\s+the\s+following\s+local\s+folders[^:\n]*:\s*\[([^\]]+)\]",
             ):
                 for m in re.finditer(pat, text, flags=re.IGNORECASE):
@@ -71767,10 +71768,10 @@ def _gemini_base_payload(
         base["_ve_base_context_tokens"] = act_run.base_context_tokens
         extracted_folders = _robin_extract_connected_folders(messages, body)
         if act_run.connected_folders:
-            folders = list(act_run.connected_folders)
-            for ef in extracted_folders:
-                if ef not in folders:
-                    folders.append(ef)
+            folders = list(extracted_folders)
+            for cf in act_run.connected_folders:
+                if cf not in folders:
+                    folders.append(cf)
         else:
             folders = extracted_folders
         base["_ve_robin_connected_folders"] = folders
@@ -71938,10 +71939,10 @@ def _gemini_base_payload(
                 dsh_policy["sandbox_mode"] == "danger-full-access"
                 and cont_state.connected_folders
             ):
-                folders = list(cont_state.connected_folders)
-                for ef in extracted_folders:
-                    if ef not in folders:
-                        folders.append(ef)
+                folders = list(extracted_folders)
+                for cf in cont_state.connected_folders:
+                    if cf not in folders:
+                        folders.append(cf)
             else:
                 folders = extracted_folders or list(cont_state.connected_folders)
         else:
@@ -73369,6 +73370,7 @@ class _VoiceEdgeRelayClient:
     # -- connection --------------------------------------------------------
     async def _run_forever(self) -> None:
         backoff = 1.0
+        conn_failed_logged = False
         url = _relay_url()
         if not url or not _relay_transport_token():
             _llm_log.error(
@@ -73382,6 +73384,7 @@ class _VoiceEdgeRelayClient:
             try:
                 await self._session_once(url)
                 backoff = 1.0
+                conn_failed_logged = False
             except _RelayAuthFailed:
                 self._auth_failed = True
                 _llm_log.error(
@@ -73390,7 +73393,17 @@ class _VoiceEdgeRelayClient:
                 )
                 break
             except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
-                _llm_log.warning("VEH relay connection failed: %s", exc)
+                if self._ready.is_set():
+                    conn_failed_logged = False
+                if not conn_failed_logged:
+                    _llm_log.warning(
+                        "VEH relay connection failed: %s "
+                        "(suppressing repeated failures until reconnected)",
+                        exc,
+                    )
+                    conn_failed_logged = True
+                else:
+                    _llm_log.debug("VEH relay connection failed: %s", exc)
             finally:
                 self._ready.clear()
                 self._ws = None
@@ -94727,6 +94740,28 @@ def test_gemini_model_spec_and_envelopes():
         "approval_policy": "ask",
         "workspace_root": _SELFTEST_WORKSPACE,
     }
+    msgs_quoted_cwd = [
+        {
+            "role": "system",
+            "content": "You are an AI agent powered by VoiceEdge Harness.",
+        },
+        {
+            "role": "user",
+            "content": (
+                "<system-reminder>\n"
+                f'Current working directory: "{_SELFTEST_WORKSPACE}".\n\n'
+                "Current VEH file policy: danger-full-access. The VEH file sandbox does not restrict file modifications by available operations.\n\n"
+                "Approval prompts are disabled in this session.\n"
+                "</system-reminder>"
+            ),
+        },
+    ]
+    assert _dsh_extract_policy(msgs_quoted_cwd) == {
+        "sandbox_mode": "danger-full-access",
+        "approval_policy": "never",
+        "workspace_root": _SELFTEST_WORKSPACE,
+    }
+    assert _robin_extract_connected_folders(msgs_quoted_cwd) == [_SELFTEST_WORKSPACE]
 
     # 3b. Verify DSH first-turn multi-user message separation
     dsh_turn1_msgs = [
