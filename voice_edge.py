@@ -364,10 +364,10 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49106
 #    VE_OPENCODE_FREE                       "1"                                          L49144
 #    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71185
-#    VE_GEMINI_API_KEYS                     ""                                           L71189
-#    VE_GEMINI_BACKEND                      "auto"                                       L71208
-#    VE_GEMINI_PROJECT_ID                   ""                                           L71215
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71293
+#    VE_GEMINI_API_KEYS                     ""                                           L71297
+#    VE_GEMINI_BACKEND                      "auto"                                       L71316
+#    VE_GEMINI_PROJECT_ID                   ""                                           L71323
 #    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55511
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72236
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72240
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72244
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72266
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72232
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72222
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72210
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72218
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L72214
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72344
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72348
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72352
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72374
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72340
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72330
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72318
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72326
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L72322
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -60160,8 +60160,9 @@ class _RobinToolInvocation:
     dispatched_monotonic: float = field(default_factory=time.monotonic)
     bg_command_id: str = ""
     bg_done_delivered: bool = False
-    dsh_job_id: str = ""
+    bg_job_id: str = ""
     bg_job_poll_count: int = 0
+    bg_parent_inv: "_RobinToolInvocation | None" = None
     stale_retry_count: int = 0
     carrier_call_id: str = ""
     carrier_call_id_present: bool = True
@@ -60484,10 +60485,10 @@ class _RobinToolLedger:
         self.by_job_id: dict[str, _RobinToolInvocation] = {}
 
     def register_job_id(self, job_id: str, inv: _RobinToolInvocation) -> str:
-        """Bind a DSH background `<jobId>` to its originating `_RobinToolInvocation`."""
+        """Bind a client background `<jobId>` to its originating `_RobinToolInvocation`."""
         norm = _dsh_record_job_id(job_id)
         if norm:
-            inv.dsh_job_id = norm
+            inv.bg_job_id = norm
             self.by_job_id[norm] = inv
         return norm
 
@@ -60499,9 +60500,25 @@ class _RobinToolLedger:
         if inv is not None:
             return inv
         for cand in reversed(list(self.invocations.values())):
-            if cand.dsh_job_id == norm:
+            if cand.bg_parent_inv is None and cand.bg_job_id == norm:
                 return cand
         return None
+
+    def _adapt_bg_job_call_args(
+        self,
+        tool_name: str,
+        job_id: str,
+        *,
+        wait: bool = False,
+        timeout_ms: int = 500,
+    ) -> dict[str, Any]:
+        """Build `job_output` / `job_kill` arguments matching VEH (snake_case) or Continue (camelCase)."""
+        use_camel = "run_terminal_command" in self.local_tool_names
+        if tool_name == "job_kill":
+            return {"jobId": job_id} if use_camel else {"job_id": job_id}
+        if use_camel:
+            return {"jobId": job_id, "wait": bool(wait), "timeoutMs": int(timeout_ms)}
+        return {"job_id": job_id, "wait": bool(wait), "timeout_ms": int(timeout_ms)}
 
     @property
     def workspace_root(self) -> str:
@@ -60752,7 +60769,9 @@ class _RobinToolLedger:
         self, command_id: str = "", *, source: str = ""
     ) -> _RobinToolInvocation | None:
         """Locate the background invocation for `CommandId`, scoped to one channel."""
-        cands = self._source_candidates(source)
+        cands = [
+            inv for inv in self._source_candidates(source) if inv.bg_parent_inv is None
+        ]
         norm_id = str(command_id or "").strip().upper()
         if norm_id:
             for inv in reversed(cands):
@@ -60790,9 +60809,17 @@ class _RobinToolLedger:
                     or bool(inv.carrier_call_name)
                 )
             )
-            or (bool(inv.bg_command_id) and not inv.bg_done_delivered)
+            or (
+                inv.bg_parent_inv is None
+                and bool(inv.bg_command_id)
+                and not inv.bg_done_delivered
+            )
             for inv in self._source_candidates(source)
         )
+
+    def _client_supports_native_bg_jobs(self) -> bool:
+        """Return True when the client natively promotes long commands and exposes `job_output` (VEH / Continue)."""
+        return "job_output" in self.local_tool_names
 
     def collect_async_keepalive_frames(
         self, now_monotonic: float | None = None
@@ -60800,9 +60827,12 @@ class _RobinToolLedger:
         """Emit proactive `status='background'` or `command_status` keepalive frames before server timeout."""
         now = time.monotonic() if now_monotonic is None else float(now_monotonic)
         frames: list[bytes] = []
+        skip_proactive_handoff = self._client_supports_native_bg_jobs()
         for inv in self._source_candidates("ert"):
             if (
-                inv.status == "DISPATCHED"
+                not skip_proactive_handoff
+                and inv.bg_parent_inv is None
+                and inv.status == "DISPATCHED"
                 and self._is_backgroundable_invocation(inv)
                 and GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS > 0
                 and (now - inv.dispatched_monotonic)
@@ -60813,9 +60843,10 @@ class _RobinToolLedger:
                 inv.background_response_frame = bg_frame
                 frames.append(bg_frame)
             elif (
-                inv.status == "BACKGROUNDED"
+                inv.bg_parent_inv is None
+                and inv.status == "BACKGROUNDED"
                 and inv.carrier_call_name
-                and not inv.dsh_job_id
+                and not inv.bg_job_id
                 and GEMINI_ROBIN_COMMAND_STATUS_HEARTBEAT_SECONDS > 0
             ):
                 effective_hb_sec = GEMINI_ROBIN_COMMAND_STATUS_HEARTBEAT_SECONDS
@@ -60981,6 +61012,59 @@ class _RobinToolLedger:
             except (TypeError, ValueError):
                 wait_sec = 10.0
             bg_inv.status = "BACKGROUNDED"
+            if bg_inv.bg_job_id:
+                if target_name == "send_command_input" and term_req:
+                    pub_id = f"call_jobkill_{uuid.uuid4().hex[:12]}"
+                    dsh_poll_name = "job_kill"
+                    poll_args = self._adapt_bg_job_call_args(
+                        "job_kill", bg_inv.bg_job_id
+                    )
+                else:
+                    wait_ms = (
+                        min(
+                            max(500, int(wait_sec * 1000.0)),
+                            GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS,
+                        )
+                        if wait_sec > 0.0
+                        else 500
+                    )
+                    pub_id = f"call_jobout_{uuid.uuid4().hex[:12]}"
+                    dsh_poll_name = "job_output"
+                    poll_args = self._adapt_bg_job_call_args(
+                        "job_output",
+                        bg_inv.bg_job_id,
+                        wait=bool(wait_sec > 0.0),
+                        timeout_ms=wait_ms,
+                    )
+                poll_inv = _RobinToolInvocation(
+                    invocation_id=f"inv_{uuid.uuid4().hex[:12]}",
+                    run_id=self.run_id,
+                    wire_call_id=wire_id,
+                    wire_call_id_present=wire_id_present,
+                    public_tool_call_id=pub_id,
+                    orig_call_name=orig_name,
+                    dsh_tool_name=dsh_poll_name,
+                    orig_args=dict(raw_args),
+                    adapted_args=poll_args,
+                    mcp_server=mcp_server,
+                    mcp_tool=target_name,
+                    status="DISPATCHED",
+                    bg_command_id=bg_inv.bg_command_id,
+                    bg_job_id=bg_inv.bg_job_id,
+                    carrier_call_id=wire_id,
+                    carrier_call_id_present=wire_id_present,
+                    carrier_call_name=orig_name,
+                    carrier_mcp_tool=target_name,
+                    carrier_output_char_count=req_out_chars
+                    or bg_inv.carrier_output_char_count,
+                    carrier_dispatched_monotonic=time.monotonic(),
+                    carrier_wait_duration_seconds=wait_sec,
+                    bg_parent_inv=bg_inv,
+                    source="ert",
+                )
+                self.invocations[poll_inv.invocation_id] = poll_inv
+                self.by_public_id[pub_id] = poll_inv
+                return poll_inv, None
             is_new_carrier = (
                 not bg_inv.carrier_call_name or bg_inv.carrier_call_id != wire_id
             )
@@ -60991,32 +61075,6 @@ class _RobinToolLedger:
             bg_inv.carrier_wait_duration_seconds = wait_sec
             if is_new_carrier or bg_inv.carrier_dispatched_monotonic <= 0.0:
                 bg_inv.carrier_dispatched_monotonic = time.monotonic()
-            if bg_inv.dsh_job_id:
-                if target_name == "send_command_input" and term_req:
-                    pub_id = f"call_jobkill_{uuid.uuid4().hex[:12]}"
-                    bg_inv.public_tool_call_id = pub_id
-                    bg_inv.dsh_tool_name = "job_kill"
-                    bg_inv.adapted_args = {"job_id": bg_inv.dsh_job_id}
-                    self.by_public_id[pub_id] = bg_inv
-                    return bg_inv, None
-                wait_ms = (
-                    min(
-                        max(500, int(wait_sec * 1000.0)),
-                        GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS,
-                    )
-                    if wait_sec > 0.0
-                    else 500
-                )
-                pub_id = f"call_jobout_{uuid.uuid4().hex[:12]}"
-                bg_inv.public_tool_call_id = pub_id
-                bg_inv.dsh_tool_name = "job_output"
-                bg_inv.adapted_args = {
-                    "job_id": bg_inv.dsh_job_id,
-                    "wait": bool(wait_sec > 0.0),
-                    "timeout_ms": wait_ms,
-                }
-                self.by_public_id[pub_id] = bg_inv
-                return bg_inv, None
             if wait_sec <= 0.0:
                 running_frame = self._build_command_status_frame(
                     bg_inv,
@@ -64535,23 +64593,26 @@ class _RobinRunActor:
                             rec.ert_touched = True
                         continue
                 moved_job_id = _dsh_extract_moved_bg_job_id(out_str)
+                bg_state_inv = (
+                    inv.bg_parent_inv if inv.bg_parent_inv is not None else inv
+                )
                 if moved_job_id:
-                    ledger.register_job_id(moved_job_id, inv)
-                    if not inv.bg_command_id:
-                        inv.bg_command_id = moved_job_id
-                active_job_id = moved_job_id or inv.dsh_job_id
+                    ledger.register_job_id(moved_job_id, bg_state_inv)
+                    if not bg_state_inv.bg_command_id:
+                        bg_state_inv.bg_command_id = moved_job_id
+                active_job_id = moved_job_id or bg_state_inv.bg_job_id
                 if active_job_id and _dsh_is_bg_job_still_running_output(out_str):
                     if tc_id:
                         reconciled_ids.add(tc_id)
                     prev_status = inv.status
-                    prev_result_str = inv.result_str
+                    prev_result_str = bg_state_inv.result_str
                     cleaned_out = re.sub(
                         r"\n?\[still running after\b[^\n]*\]\n?(?:The command keeps running in the background\.?)?",
                         "",
                         out_str,
                         flags=re.IGNORECASE,
                     ).strip()
-                    inv.result_str = (
+                    bg_state_inv.result_str = (
                         _robin_merge_incremental_tool_output(
                             prev_result_str, cleaned_out
                         )
@@ -64570,7 +64631,7 @@ class _RobinRunActor:
                         )
                         if is_relay:
                             running_dict = ledger._build_command_status_result_dict(
-                                inv,
+                                bg_state_inv,
                                 call_name=inv.carrier_call_name,
                                 mcp_tool_name=inv.carrier_mcp_tool,
                                 max_output_chars=inv.carrier_output_char_count,
@@ -64597,10 +64658,13 @@ class _RobinRunActor:
                             inv.carrier_call_id = ""
                             inv.carrier_dispatched_monotonic = 0.0
                             inv.carrier_wait_duration_seconds = 0.0
+                            if inv.bg_parent_inv is not None:
+                                inv.status = "REPORTED"
+                                inv.bg_done_delivered = True
                             rec.relay_touched = True
                         else:
                             running_frame = ledger._build_command_status_frame(
-                                inv,
+                                bg_state_inv,
                                 call_id=inv.carrier_call_id,
                                 call_id_present=inv.carrier_call_id_present,
                                 call_name=inv.carrier_call_name,
@@ -64614,6 +64678,9 @@ class _RobinRunActor:
                             inv.carrier_call_id = ""
                             inv.carrier_dispatched_monotonic = 0.0
                             inv.carrier_wait_duration_seconds = 0.0
+                            if inv.bg_parent_inv is not None:
+                                inv.status = "REPORTED"
+                                inv.bg_done_delivered = True
                             rec.frames.append(running_frame)
                             rec.frame_records.append(
                                 (
@@ -64671,7 +64738,9 @@ class _RobinRunActor:
                             rec.ert_absorbed_bg = True
                             rec.ert_touched = True
                     continue
-            if inv is not None and inv.status == "BACKGROUNDED":
+            if inv is not None and (
+                inv.status == "BACKGROUNDED" or inv.bg_parent_inv is not None
+            ):
                 if tc_id:
                     reconciled_ids.add(tc_id)
                 rec.absorbed_bg = True
@@ -64680,8 +64749,11 @@ class _RobinRunActor:
                 else:
                     rec.ert_absorbed_bg = True
                     rec.ert_touched = True
+                bg_state_inv = (
+                    inv.bg_parent_inv if inv.bg_parent_inv is not None else inv
+                )
                 prev_status = inv.status
-                prev_result_str = inv.result_str
+                prev_result_str = bg_state_inv.result_str
                 merged_out = _robin_merge_incremental_tool_output(
                     prev_result_str, out_str
                 )
@@ -64693,11 +64765,13 @@ class _RobinRunActor:
                         if merged_out
                         else notice_block
                     )
-                inv.result_str = merged_out
+                bg_state_inv.result_str = merged_out
+                if inv is not bg_state_inv:
+                    inv.result_str = merged_out
                 if inv.carrier_call_name and ledger is not None:
                     if is_relay:
                         done_dict = ledger._build_command_status_result_dict(
-                            inv,
+                            bg_state_inv,
                             call_name=inv.carrier_call_name,
                             mcp_tool_name=inv.carrier_mcp_tool,
                             max_output_chars=inv.carrier_output_char_count,
@@ -64715,10 +64789,11 @@ class _RobinRunActor:
                             _RobinRelayDelivery(
                                 inv=inv,
                                 result_dict=done_dict,
-                                is_error=_dsh_is_tool_error(inv.result_str),
+                                is_error=_dsh_is_tool_error(bg_state_inv.result_str),
                                 carrier=True,
                             )
                         )
+                        bg_state_inv.bg_done_delivered = True
                         inv.bg_done_delivered = True
                         inv.carrier_call_name = ""
                         inv.carrier_mcp_tool = ""
@@ -64727,7 +64802,7 @@ class _RobinRunActor:
                         inv.carrier_wait_duration_seconds = 0.0
                     else:
                         done_frame = ledger._build_command_status_frame(
-                            inv,
+                            bg_state_inv,
                             call_id=inv.carrier_call_id,
                             call_id_present=inv.carrier_call_id_present,
                             call_name=inv.carrier_call_name,
@@ -64735,7 +64810,9 @@ class _RobinRunActor:
                             max_output_chars=inv.carrier_output_char_count,
                             done=True,
                         )
+                        bg_state_inv.last_response_frame = done_frame
                         inv.last_response_frame = done_frame
+                        bg_state_inv.bg_done_delivered = True
                         inv.bg_done_delivered = True
                         inv.carrier_call_name = ""
                         inv.carrier_mcp_tool = ""
@@ -64747,6 +64824,7 @@ class _RobinRunActor:
                             (tc_id, inv, prev_status, prev_result_str, done_frame)
                         )
                 inv.status = "REPORTED"
+                bg_state_inv.status = "REPORTED"
             else:
                 prev_status = inv.status if inv is not None else ""
                 prev_result_str = inv.result_str if inv is not None else ""
@@ -65159,6 +65237,57 @@ class _RobinRunActor:
             )
             bg_inv.bg_done_delivered = True
             return done_dict, "done"
+        if bg_inv.bg_job_id:
+            bg_inv.status = "BACKGROUNDED"
+            wait_ms = (
+                min(
+                    max(500, int(wait_sec * 1000.0)),
+                    GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS,
+                )
+                if wait_sec > 0.0
+                else 500
+            )
+            pub_id = f"call_jobout_{uuid.uuid4().hex[:12]}"
+            poll_inv = _RobinToolInvocation(
+                invocation_id=f"inv_{uuid.uuid4().hex[:12]}",
+                run_id=ledger.run_id,
+                wire_call_id="",
+                wire_call_id_present=True,
+                public_tool_call_id=pub_id,
+                orig_call_name="command_status",
+                dsh_tool_name="job_output",
+                orig_args=dict(tool_args),
+                adapted_args=ledger._adapt_bg_job_call_args(
+                    "job_output",
+                    bg_inv.bg_job_id,
+                    wait=bool(wait_sec > 0.0),
+                    timeout_ms=wait_ms,
+                ),
+                mcp_server=bg_inv.mcp_server,
+                mcp_tool="command_status",
+                status="DISPATCHED",
+                bg_command_id=bg_inv.bg_command_id,
+                bg_job_id=bg_inv.bg_job_id,
+                carrier_call_id="",
+                carrier_call_id_present=True,
+                carrier_call_name="command_status",
+                carrier_mcp_tool="command_status",
+                carrier_output_char_count=out_chars or bg_inv.carrier_output_char_count,
+                carrier_dispatched_monotonic=time.monotonic(),
+                carrier_wait_duration_seconds=wait_sec,
+                bg_parent_inv=bg_inv,
+                source="relay",
+                relay_carrier_ctx=dict(ctx),
+            )
+            ledger.invocations[poll_inv.invocation_id] = poll_inv
+            ledger.by_public_id[pub_id] = poll_inv
+            if not str(bg_inv.relay_ctx.get("relay_wire_call_id") or "").strip():
+                self.run.relay_mode = True
+            chunks = self.decoder._robin_ingest_dsh_tool_calls([poll_inv])
+            self.pending_tool_calls = list(self.decoder.pending_tool_calls)
+            if chunks:
+                await self.mux_queue.put(("ert_chunks", chunks))
+            return None, "dispatched"
         if bg_inv.relay_carrier_ctx:
             return (
                 {
@@ -65181,7 +65310,7 @@ class _RobinRunActor:
         bg_inv.carrier_dispatched_monotonic = time.monotonic()
         if out_chars > 0:
             bg_inv.carrier_output_char_count = out_chars
-        if wait_sec <= 0.0 and not bg_inv.dsh_job_id:
+        if wait_sec <= 0.0 and not bg_inv.bg_job_id:
             running_dict = ledger._build_command_status_result_dict(
                 bg_inv,
                 call_name="command_status",
@@ -65200,32 +65329,7 @@ class _RobinRunActor:
             bg_inv.carrier_call_name = ""
             bg_inv.carrier_mcp_tool = ""
             return running_dict, "running"
-        if bg_inv.dsh_job_id:
-            wait_ms = (
-                min(
-                    max(500, int(wait_sec * 1000.0)),
-                    GEMINI_ROBIN_DSH_BASH_MAX_TIMEOUT_MS,
-                )
-                if wait_sec > 0.0
-                else 500
-            )
-            pub_id = f"call_jobout_{uuid.uuid4().hex[:12]}"
-            bg_inv.public_tool_call_id = pub_id
-            bg_inv.dsh_tool_name = "job_output"
-            bg_inv.adapted_args = {
-                "job_id": bg_inv.dsh_job_id,
-                "wait": bool(wait_sec > 0.0),
-                "timeout_ms": wait_ms,
-            }
-            ledger.by_public_id[pub_id] = bg_inv
-            if not str(bg_inv.relay_ctx.get("relay_wire_call_id") or "").strip():
-                self.run.relay_mode = True
-            chunks = self.decoder._robin_ingest_dsh_tool_calls([bg_inv])
-            self.pending_tool_calls = list(self.decoder.pending_tool_calls)
-            if chunks:
-                await self.mux_queue.put(("ert_chunks", chunks))
-            return None, "dispatched"
-        # No DSH job id yet: wait up to `wait_sec` for the original call's `role:tool`.
+        # No background job id yet: wait up to `wait_sec` for the original call's `role:tool`.
         return None, "carrier"
 
     async def _relay_release_carrier(
@@ -65245,18 +65349,22 @@ class _RobinRunActor:
             inv.carrier_call_id = ""
             inv.carrier_dispatched_monotonic = 0.0
             inv.carrier_wait_duration_seconds = 0.0
+            if inv.bg_parent_inv is not None:
+                inv.status = "REPORTED"
+                inv.bg_done_delivered = True
             if not build_snapshot:
                 return None
-            done = inv.status == "REPORTED"
+            snap_inv = inv.bg_parent_inv or inv
+            done = snap_inv.status == "REPORTED"
             result_dict = ledger._build_command_status_result_dict(
-                inv,
+                snap_inv,
                 call_name="command_status",
                 mcp_tool_name="command_status",
                 max_output_chars=max_chars,
                 done=done,
             )
             if done:
-                inv.bg_done_delivered = True
+                snap_inv.bg_done_delivered = True
             _robin_record_sent_tool_tokens(
                 job_id,
                 _robin_estimate_ert_tool_output_tokens(
@@ -73094,7 +73202,11 @@ async def _relay_mcp_tools_call(
         _relay_drop_waiter(job_id)
         return _relay_jsonrpc_error(rpc_id, -32603, "tool dispatch failed")
     handoff_timeout: float | None = None
-    if GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS > 0:
+    ledger_r = getattr(actor.run, "tool_ledger", None)
+    client_native_bg = bool(
+        ledger_r is not None and ledger_r._client_supports_native_bg_jobs()
+    )
+    if GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS > 0 and not client_native_bg:
         elapsed = time.monotonic() - inv.dispatched_monotonic
         handoff_timeout = max(0.0, GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS - elapsed)
     state, payload = await _relay_wait_with_abort(fut, abort_evt, handoff_timeout)
@@ -96400,7 +96512,7 @@ def test_robin_background_output_accumulates_across_polls():
             )
         )
         assert status == "ok"
-        assert inv.dsh_job_id == job_id
+        assert inv.bg_job_id == job_id
         assert "start-task" in inv.result_str
         assert "still running" not in inv.result_str
         return inv.public_tool_call_id
@@ -97452,12 +97564,12 @@ def test_relay_catalog_handoff_and_veh_injection():
             assert decoder.step_unmatched_pq_tool_monotonic == 0.0
             assert run.relay_mode is False
 
-            # Issue 2 & 3: `command_status` without `dsh_job_id`:
+            # Issue 2 & 3: `command_status` without `bg_job_id`:
             # - Honours positive `WaitDurationSeconds` and returns `status == "running"` on expiry.
             # - Releases `relay_carrier_ctx` on HTTP abort so the next poll is not blocked as busy.
             inv_w.status = "BACKGROUNDED"
             inv_w.bg_command_id = "BG-WIRE-0001"
-            inv_w.dsh_job_id = ""
+            inv_w.bg_job_id = ""
             inv_w.result_str = "partial-bg-line\n"
             t_poll = time.monotonic()
             st_cs_wait, _, body_cs_wait = await _relay_mcp_tools_call(
@@ -97960,7 +98072,7 @@ def test_robin_long_running_tool_background_and_command_status():
             )
         )
         assert len(ert.sent) == 1
-        assert bg_cut_inv.dsh_job_id == "bash-180"
+        assert bg_cut_inv.bg_job_id == "bash-180"
         assert bg_cut_inv.bg_command_id == "bash-180"
         assert bg_cut_inv.status == "BACKGROUNDED"
         bg_h_name, bg_h_id, bg_h_struct = _decode_ert_result(ert.sent[0])
@@ -97970,7 +98082,7 @@ def test_robin_long_running_tool_background_and_command_status():
             and bg_h_struct["command_id"] == "bash-180"
         )
         ert.sent.clear()
-        # Model calls command_status -> mapped to DSH job_output
+        # Model calls command_status -> mapped to independent job_output invocation
         mapped_inv, mapped_frame = ledger.register_ert_call(
             {
                 "name": "client:command_status",
@@ -97979,14 +98091,15 @@ def test_robin_long_running_tool_background_and_command_status():
                 "args": {"CommandId": "bash-180", "WaitDurationSeconds": 10},
             }
         )
-        assert mapped_frame is None and mapped_inv is bg_cut_inv
-        assert bg_cut_inv.dsh_tool_name == "job_output"
-        assert bg_cut_inv.adapted_args == {
+        assert mapped_frame is None and mapped_inv is not None
+        assert mapped_inv is not bg_cut_inv and mapped_inv.bg_parent_inv is bg_cut_inv
+        assert mapped_inv.dsh_tool_name == "job_output"
+        assert mapped_inv.adapted_args == {
             "job_id": "bash-180",
             "wait": True,
             "timeout_ms": 10000,
         }
-        jobout_pub_id = bg_cut_inv.public_tool_call_id
+        jobout_pub_id = mapped_inv.public_tool_call_id
         decoder.pending_tool_calls = [
             {
                 "id": jobout_pub_id,
@@ -97994,11 +98107,11 @@ def test_robin_long_running_tool_background_and_command_status():
                 "_orig_call_name": "command_status",
                 "wire_call_id": "call_cs_180",
                 "wire_call_id_present": True,
-                "args": bg_cut_inv.adapted_args,
+                "args": mapped_inv.adapted_args,
             }
         ]
         actor.pending_tool_calls = list(decoder.pending_tool_calls)
-        # Verify send_command_input(Terminate=True) maps to job_kill
+        # Verify send_command_input(Terminate=True) maps to independent job_kill without clobbering mapped_inv
         kill_inv, kill_frame = ledger.register_ert_call(
             {
                 "name": "client:send_command_input",
@@ -98007,14 +98120,12 @@ def test_robin_long_running_tool_background_and_command_status():
                 "args": {"CommandId": "bash-180", "Terminate": True, "WaitMs": 2000},
             }
         )
-        assert kill_frame is None and kill_inv is bg_cut_inv
-        assert bg_cut_inv.dsh_tool_name == "job_kill"
-        assert bg_cut_inv.adapted_args == {"job_id": "bash-180"}
-        # Restore carrier to command_status for completion check
-        bg_cut_inv.carrier_call_id = "call_cs_180"
-        bg_cut_inv.carrier_call_id_present = True
-        bg_cut_inv.carrier_call_name = "command_status"
-        bg_cut_inv.carrier_mcp_tool = "command_status"
+        assert kill_frame is None and kill_inv is not None
+        assert kill_inv is not bg_cut_inv and kill_inv is not mapped_inv
+        assert kill_inv.bg_parent_inv is bg_cut_inv
+        assert kill_inv.dsh_tool_name == "job_kill"
+        assert kill_inv.adapted_args == {"job_id": "bash-180"}
+        assert mapped_inv.carrier_call_id == "call_cs_180"
         # 2) Subsequent job_output completion delivers the final ERT command_status done frame
         run.state_tape.entries.extend(
             [
@@ -102949,7 +103060,7 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         adapted_args={"command": "uv run main --self-test"},
         status="REPORTED",
         bg_command_id="bash-1",
-        dsh_job_id="bash-1",
+        bg_job_id="bash-1",
         result_str=("PASS_LINE_0123456789\n" * 600)
         + "Traceback (most recent call last):\nAssertionError: self-test failed\n[status: completed, exit code: 1]",
     )
@@ -106532,7 +106643,7 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         orig_args={"CommandLine": "sleep 30"},
         adapted_args={"job_id": "job_steer_01", "wait": True, "timeout_ms": 5000},
         status="BACKGROUNDED",
-        dsh_job_id="job_steer_01",
+        bg_job_id="job_steer_01",
         bg_command_id="CMD_STEER_01",
         carrier_call_name="command_status",
         carrier_call_id="wire_status_1",
@@ -106703,6 +106814,212 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     assert b"--- [Harness Notice] ---" in flush_rec.frames[0]
     assert deferred_steer_txt.encode("utf-8") in flush_rec.frames[0]
     assert steer_run.pending_spliced_user_notices == []
+
+    # Multiple ERT `command_status` polls for the same `CommandId` (e.g. concurrent polls or
+    # timeout-retry during mid-turn compaction) must each own an independent `_RobinToolInvocation`
+    # with its own `wire_call_id` and `status`, so completing poll #1 never overwrites `wire_id_1`,
+    # never pollutes poll #2 to `REPORTED`, and never triggers a false 409 when poll #2 returns
+    # alongside a compacted transcript and a mid-turn spliced user steer message:
+    dup_bg_inv = _RobinToolInvocation(
+        invocation_id="inv_dup_poll_1",
+        run_id="run_steer_01",
+        wire_call_id="wire_dup_bash_1",
+        wire_call_id_present=True,
+        public_tool_call_id="call_dup_bash_1",
+        orig_call_name="run_command",
+        dsh_tool_name="bash",
+        orig_args={"CommandLine": "sleep 30"},
+        adapted_args={"command": "sleep 30"},
+        status="BACKGROUNDED",
+        bg_job_id="job_dup_poll_01",
+        bg_command_id="CMD_DUP_POLL_01",
+    )
+    steer_run.tool_ledger.invocations["inv_dup_poll_1"] = dup_bg_inv
+    steer_run.tool_ledger.by_public_id["call_dup_bash_1"] = dup_bg_inv
+    steer_dec.pending_tool_calls = []
+    steer_actor.pending_tool_calls = []
+    poll1_chunks = steer_dec._ingest_raw_tool_calls(
+        [
+            {
+                "id": "wire_dup_poll_1",
+                "name": "client:command_status",
+                "args": {
+                    "CommandId": "CMD_DUP_POLL_01",
+                    "WaitDurationSeconds": 5,
+                    "OutputCharacterCount": 1000,
+                },
+                "id_present": True,
+            }
+        ]
+    )
+    poll2_chunks = steer_dec._ingest_raw_tool_calls(
+        [
+            {
+                "id": "wire_dup_poll_2",
+                "name": "client:command_status",
+                "args": {
+                    "CommandId": "CMD_DUP_POLL_01",
+                    "WaitDurationSeconds": 5,
+                    "OutputCharacterCount": 2000,
+                },
+                "id_present": True,
+            }
+        ]
+    )
+    assert len(poll1_chunks) >= 1 and len(poll2_chunks) >= 1
+    assert len(steer_dec.pending_tool_calls) == 2
+    poll1_pub_id = str(steer_dec.pending_tool_calls[0]["id"])
+    poll2_pub_id = str(steer_dec.pending_tool_calls[1]["id"])
+    assert poll1_pub_id != poll2_pub_id
+    poll1_inv = steer_run.tool_ledger.by_public_id[poll1_pub_id]
+    poll2_inv = steer_run.tool_ledger.by_public_id[poll2_pub_id]
+    assert poll1_inv is not poll2_inv
+    assert poll1_inv.bg_parent_inv is dup_bg_inv
+    assert poll2_inv.bg_parent_inv is dup_bg_inv
+    assert poll1_inv.carrier_call_id == "wire_dup_poll_1"
+    assert poll2_inv.carrier_call_id == "wire_dup_poll_2"
+    steer_actor.pending_tool_calls = list(steer_dec.pending_tool_calls)
+
+    dup_done_msgs_1: list[dict[str, Any]] = [
+        *inf_t1_init_msgs,
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": poll1_pub_id,
+                    "type": "function",
+                    "function": {
+                        "name": "job_output",
+                        "arguments": '{"job_id":"job_dup_poll_01"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": poll1_pub_id,
+            "name": "job_output",
+            "content": "all tests passed\n[exit code: 0]",
+        },
+    ]
+    dup_done_rec_1 = steer_actor._robin_reconcile_dsh_tool_outputs(dup_done_msgs_1)
+    assert dup_done_rec_1.status == "ok" and len(dup_done_rec_1.frames) == 1
+    assert b"wire_dup_poll_1" in dup_done_rec_1.frames[0]
+    assert poll1_inv.status == "REPORTED"
+    assert dup_bg_inv.status == "REPORTED"
+    assert poll2_inv.status == "DISPATCHED"
+    assert len(steer_dec.pending_tool_calls) == 1
+    assert str(steer_dec.pending_tool_calls[0]["id"]) == poll2_pub_id
+
+    dup_done_msgs_2: list[dict[str, Any]] = [
+        {
+            "role": "user",
+            "content": "This is an automatically generated checkpoint.\n\n<compacted-summary>Compacted mid-turn.</compacted-summary>",
+        },
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": poll2_pub_id,
+                    "type": "function",
+                    "function": {
+                        "name": "job_output",
+                        "arguments": '{"job_id":"job_dup_poll_01"}',
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": poll2_pub_id,
+            "name": "job_output",
+            "content": "[status: completed, exit code: 0]",
+        },
+        {"role": "user", "content": "继续下一步"},
+    ]
+    dup_tv_2 = _gemini_parse_transcript(dup_done_msgs_2)
+    resolved_act_2, resolved_kind_2, _ = _robin_resolve_parked_actor_for_turn(
+        dup_tv_2,
+        session_id="full_compacted_mismatch",
+        session_key="full_compacted_mismatch",
+        boot_key="boot_compacted_mismatch",
+        full_key="full_compacted_mismatch",
+        pop_matched=False,
+    )
+    assert resolved_act_2 is steer_actor
+    assert resolved_kind_2 == "IN_FLIGHT_TOOL_CONTINUATION"
+    dup_done_rec_2 = steer_actor._robin_reconcile_dsh_tool_outputs(dup_done_msgs_2)
+    assert dup_done_rec_2.status == "ok" and len(dup_done_rec_2.frames) == 1
+    assert b"wire_dup_poll_2" in dup_done_rec_2.frames[0]
+    assert b"all tests passed" in dup_done_rec_2.frames[0]
+    assert poll2_inv.status == "REPORTED"
+    assert steer_dec.pending_tool_calls == []
+    assert steer_actor.pending_tool_calls == []
+
+    # Verify Continue camelCase adaptation (`jobId` / `timeoutMs`) on `command_status` -> `job_output`:
+    cont_bg_ledger = _RobinToolLedger(
+        "run_cont_bg_01",
+        dsh_tools=[
+            {"type": "function", "function": {"name": "run_terminal_command"}},
+            {"type": "function", "function": {"name": "job_output"}},
+            {"type": "function", "function": {"name": "job_kill"}},
+        ],
+    )
+    cont_bg_inv = _RobinToolInvocation(
+        invocation_id="inv_cont_bg_1",
+        run_id="run_cont_bg_01",
+        wire_call_id="wire_cont_cmd_1",
+        wire_call_id_present=True,
+        public_tool_call_id="call_cont_cmd_1",
+        orig_call_name="run_command",
+        dsh_tool_name="run_terminal_command",
+        orig_args={"CommandLine": "sleep 30"},
+        adapted_args={"command": "sleep 30"},
+        status="BACKGROUNDED",
+        bg_job_id="job_cont_1",
+        bg_command_id="CMD_CONT_1",
+    )
+    cont_bg_ledger.invocations["inv_cont_bg_1"] = cont_bg_inv
+    cont_poll_inv, cont_poll_frame = cont_bg_ledger.register_ert_call(
+        {
+            "id": "wire_cont_poll_1",
+            "name": "client:command_status",
+            "args": {"CommandId": "CMD_CONT_1", "WaitDurationSeconds": 5},
+            "id_present": True,
+        }
+    )
+    assert cont_poll_frame is None and cont_poll_inv is not None
+    assert cont_poll_inv.bg_parent_inv is cont_bg_inv
+    assert cont_poll_inv.adapted_args == {
+        "jobId": "job_cont_1",
+        "wait": True,
+        "timeoutMs": 5000,
+    }
+    # Clients exposing `job_output` (VEH / Continue) must NOT trigger proactive 10s async handoff:
+    cont_dispatched_inv = _RobinToolInvocation(
+        invocation_id="inv_cont_disp_1",
+        run_id="run_cont_bg_01",
+        wire_call_id="wire_cont_disp_1",
+        wire_call_id_present=True,
+        public_tool_call_id="call_cont_disp_1",
+        orig_call_name="run_command",
+        dsh_tool_name="run_terminal_command",
+        orig_args={"CommandLine": "sleep 30"},
+        adapted_args={"command": "sleep 30"},
+        status="DISPATCHED",
+    )
+    cont_bg_ledger.invocations["inv_cont_disp_1"] = cont_dispatched_inv
+    assert (
+        cont_bg_ledger.collect_async_keepalive_frames(
+            now_monotonic=cont_dispatched_inv.dispatched_monotonic
+            + GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS
+            + 5.0
+        )
+        == []
+    )
+    assert cont_dispatched_inv.status == "DISPATCHED"
 
     _robin_evict_specific_parked_actor(steer_actor, inf_boot_key)
     _robin_release_parked_stream_sync(steer_actor)
