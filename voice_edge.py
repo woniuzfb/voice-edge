@@ -364,10 +364,10 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49106
 #    VE_OPENCODE_FREE                       "1"                                          L49144
 #    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71293
-#    VE_GEMINI_API_KEYS                     ""                                           L71297
-#    VE_GEMINI_BACKEND                      "auto"                                       L71316
-#    VE_GEMINI_PROJECT_ID                   ""                                           L71323
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71300
+#    VE_GEMINI_API_KEYS                     ""                                           L71304
+#    VE_GEMINI_BACKEND                      "auto"                                       L71323
+#    VE_GEMINI_PROJECT_ID                   ""                                           L71330
 #    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55511
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72344
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72348
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72352
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72374
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72340
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72330
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72318
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72326
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L72322
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72351
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72355
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72359
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72381
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72347
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72337
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72325
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72333
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L72329
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -63040,6 +63040,13 @@ def _robin_lookup_continuation(
             if parent_state is not None and parent_state.conversation_id:
                 if _cand_matches_interrupted_turn(parent_state):
                     _promote_interrupted_turn(parent_state)
+                eff_parent_req_id = parent_state.parent_request_id
+                eff_parent_resp_id = parent_state.parent_response_id
+                eff_binding_state = parent_state.binding_state
+                if parent_state.interrupted_req_id and parent_state.interrupted_resp_id:
+                    eff_parent_req_id = parent_state.interrupted_req_id
+                    eff_parent_resp_id = parent_state.interrupted_resp_id
+                    eff_binding_state = "committed"
                 if (
                     0 < prior_cnt <= parent_state.synced_turn_count
                     or parent_state.synced_turn_count <= 0
@@ -63064,9 +63071,9 @@ def _robin_lookup_continuation(
                     boot_key=boot_key or parent_state.boot_key,
                     full_key=full_key or parent_state.full_key,
                     conversation_id=parent_state.conversation_id,
-                    parent_request_id=parent_state.parent_request_id,
-                    parent_response_id=parent_state.parent_response_id,
-                    binding_state=parent_state.binding_state,
+                    parent_request_id=eff_parent_req_id,
+                    parent_response_id=eff_parent_resp_id,
+                    binding_state=eff_binding_state,
                     title=parent_state.title,
                     dsh_sandbox_mode=parent_state.dsh_sandbox_mode,
                     dsh_approval_policy=parent_state.dsh_approval_policy,
@@ -109535,6 +109542,106 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
     assert base_turn_d.get("_ve_robin_parent_req_id") == "r_selftest_turn_C"
     assert base_turn_d.get("_ve_robin_parent_resp_id") == "rc_selftest_turn_C"
     assert base_turn_d.get("_ve_query_text") == chain_int_u_d
+
+    # Regression: Forking from Turn 1 (`prior_cnt == 2`) of a compacted session whose latest remote
+    # turn (`interrupted_req_id` / `interrupted_resp_id`, `interrupted_turn_count == 11`) was
+    # interrupted, and choosing `continue` ("继续原远端会话"), MUST inherit the interrupted tip
+    # `(interrupted_req_id, interrupted_resp_id)` rather than falling back to the older
+    # `(parent_req_id, parent_resp_id)` and overwriting the interrupted turn slot.
+    fork_int_u1 = "首轮任务：初始化项目架构"
+    fork_int_a1 = "首轮已完成架构初始化。"
+    fork_int_msgs_t1: list[dict[str, Any]] = [
+        {"role": "user", "content": fork_int_u1},
+        {"role": "assistant", "content": fork_int_a1},
+    ]
+    fork_int_sid, fork_int_bk, fork_int_fk = _dsh_conversation_keys(
+        fake_cred_a.credential_id, fork_int_msgs_t1
+    )
+    fork_int_root = _RobinSessionState(
+        session_key=fork_int_fk,
+        client_session_id=fork_int_sid,
+        principal_id=fake_cred_a.credential_id,
+        boot_key=fork_int_bk,
+        full_key=fork_int_fk,
+        conversation_id="c_selftest_fork_int_01",
+        parent_request_id="r_selftest_turn_56",
+        parent_response_id="rc_selftest_turn_56",
+        binding_state="committed",
+        synced_turn_count=56,
+        synced_turns_hash="hash_turn_56",
+        interrupted_req_id="r_selftest_turn_57_int",
+        interrupted_resp_id="rc_selftest_turn_57_int",
+        interrupted_turn_count=11,
+        interrupted_turns_hash="hash_turn_57_compacted",
+        compacted=True,
+    )
+    _robin_bind_session_in_cache(fork_int_root)
+    _GEMINI_DSH_STORE.upsert_session(
+        session_key=fork_int_root.session_key,
+        client_session_id=fork_int_root.client_session_id,
+        principal_id=fork_int_root.principal_id,
+        boot_key=fork_int_root.boot_key,
+        full_key=fork_int_root.full_key,
+        conversation_id=fork_int_root.conversation_id,
+        parent_req_id=fork_int_root.parent_request_id,
+        parent_resp_id=fork_int_root.parent_response_id,
+        binding_state="committed",
+        synced_turn_count=56,
+        synced_turns_hash="hash_turn_56",
+        interrupted_req_id="r_selftest_turn_57_int",
+        interrupted_resp_id="rc_selftest_turn_57_int",
+        interrupted_turn_count=11,
+        interrupted_turns_hash="hash_turn_57_compacted",
+        compacted=True,
+    )
+    fork_int_call_id = f"{_VE_FORK_CALL_ID_PREFIX}int01"
+    fork_int_continue_msgs: list[dict[str, Any]] = [
+        *fork_int_msgs_t1,
+        {"role": "user", "content": "刚才中断了，继续完成"},
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": fork_int_call_id,
+                    "type": "function",
+                    "function": {
+                        "name": "ask_user_question",
+                        "arguments": json.dumps(
+                            {"questions": [{"id": _VE_FORK_QUESTION_ID}]},
+                            ensure_ascii=False,
+                        ),
+                    },
+                }
+            ],
+        },
+        {
+            "role": "tool",
+            "tool_call_id": fork_int_call_id,
+            "name": "ask_user_question",
+            "content": json.dumps(
+                {
+                    "answers": [
+                        {
+                            "id": _VE_FORK_QUESTION_ID,
+                            "selected": [_VE_FORK_OPTION_CONTINUE],
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+        },
+    ]
+    base_fork_int = _gemini_base_payload(
+        spec,
+        {"model": spec.public_id, "stream": True},
+        fork_int_continue_msgs,
+        credential_id=fake_cred_a.credential_id,
+    )
+    assert base_fork_int.get("_ve_robin_conv_id") == "c_selftest_fork_int_01"
+    assert base_fork_int.get("_ve_robin_parent_req_id") == "r_selftest_turn_57_int"
+    assert base_fork_int.get("_ve_robin_parent_resp_id") == "rc_selftest_turn_57_int"
+    assert fork_int_root.interrupted_req_id == "r_selftest_turn_57_int"
 
 
 async def _selftest_consume_sse_chunks(
