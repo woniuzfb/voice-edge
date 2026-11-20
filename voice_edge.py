@@ -364,11 +364,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49106
 #    VE_OPENCODE_FREE                       "1"                                          L49144
 #    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71300
-#    VE_GEMINI_API_KEYS                     ""                                           L71304
-#    VE_GEMINI_BACKEND                      "auto"                                       L71323
-#    VE_GEMINI_PROJECT_ID                   ""                                           L71330
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55511
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71307
+#    VE_GEMINI_API_KEYS                     ""                                           L71311
+#    VE_GEMINI_BACKEND                      "auto"                                       L71330
+#    VE_GEMINI_PROJECT_ID                   ""                                           L71337
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55518
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1535
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72351
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72355
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72359
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72381
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72347
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72337
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72325
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72333
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L72329
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72358
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72362
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72366
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72388
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72354
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72344
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72332
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72340
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L72336
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -51774,7 +51774,14 @@ GEMINI_ROBIN_MCP_SERVER_DESCRIPTION = (
     'concurrent multi-tool step returning `{error: ""}` while sibling tools succeed is an '
     "upstream ERT single-tool timeout, not a client disconnect—simply retry that tool or continue; "
     "(c) if `<crash_recovery_context>` is present in `<workspace_instructions>`, the previous turn "
-    "was interrupted by a local VEH harness crash/restart (e.g. out-of-memory), not a remote drop."
+    "was interrupted by a local VEH harness crash/restart (e.g. out-of-memory), not a remote drop. "
+    "(3) NEVER call Robin's server-side `invoke_subagent` (even if `<subagent_delegation>` "
+    "instructs delegating subtasks): Robin server-side subagents cannot access local files or "
+    "VEH `client:*` tools, and their asynchronous server-side wakeup turns run headlessly without "
+    "ERT (losing all `client:*` tools) and are invisible to the VEH client. To delegate to "
+    "subagents, ALWAYS use VEH's own `subagent` / `subagent_fork` / `workflow` tools via "
+    '`client:execute_mcp(ServerName="veh", ToolName="subagent", ..., destructiveHint=False)` '
+    "(or the expanded `custom_mcp__*:subagent` tool), or run parallel `client:*` tool calls directly."
 )
 GEMINI_ROBIN_PRESENCE_INTERVAL_SECONDS = 30.0
 GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS = 10.0
@@ -94981,6 +94988,7 @@ def test_gemini_model_spec_and_envelopes():
     assert "<workspace_instructions>" in mcp_desc
     assert "Current DSH file policy: workspace-write" in mcp_desc
     assert "read-only" in mcp_desc and "danger-full-access" in mcp_desc
+    assert "invoke_subagent" in mcp_desc and 'ToolName="subagent"' in mcp_desc
 
     # 3c. Verify DSH session title request detection and boot_key correlation with Turn 1
     dsh_title_msgs = [
