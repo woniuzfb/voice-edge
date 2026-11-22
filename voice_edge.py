@@ -150,7 +150,7 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2710
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2791
 #    VE_VLM_KV_BITS                         3.5                                          L514
 #    VE_VLM_KV_GROUP_SIZE                   None                                         L519
 #    VE_VLM_QUANTIZED_KV_START              "0"                                          L524
@@ -162,16 +162,16 @@ if sys.version_info < (3, 11):
 #    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2310
 #    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2318
 #    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2377
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2828
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L42954
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43603
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43615
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19553
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19550
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19516
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19531
-#    AUTH_SYNC_ENABLED                      "1"                                          L19504
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19505
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2910
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L43032
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43681
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43693
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19633
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19630
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19596
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19611
+#    AUTH_SYNC_ENABLED                      "1"                                          L19584
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19585
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
 #    VE_APP_LOG_DEBUG                           "0"                                      L403
@@ -202,173 +202,173 @@ if sys.version_info < (3, 11):
 #    VE_XIAOAI_LOG_DEBUG                        "0"                                      L440
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42840
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42863
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42890
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L42949
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43492
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43495
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43503
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43515
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43517
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43526
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43532
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43538
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43554
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43559
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43566
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43573
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43582
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43589
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43637
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45406
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45407
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45408
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42918
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42941
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42968
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L43027
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43570
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43573
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43581
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43593
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43595
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43604
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43610
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43616
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43632
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43637
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43644
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43651
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43660
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43667
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43715
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45484
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45485
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45486
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15059
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15061
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L15062
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15068
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15070
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15073
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15081
-#    QWEN_COOKIE_HEADER                     ""                                           L15085
-#    QWEN_TOKENS                            ""                                           L15093
-#    QWEN_TOKEN                             ""                                           L15094
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15139
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15141
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L15142
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15148
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15150
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15153
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15161
+#    QWEN_COOKIE_HEADER                     ""                                           L15165
+#    QWEN_TOKENS                            ""                                           L15173
+#    QWEN_TOKEN                             ""                                           L15174
 #
 #  【DeepSeek】
 #    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1890
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16728
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16729
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16731
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16733
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16735
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16738
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16741
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16744
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16865
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16868
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16808
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16809
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16811
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16813
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16815
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16818
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16821
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16824
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16945
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16948
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19414
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19415
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19421
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19422
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19430
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19432
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19435
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19437
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19439
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19443
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19470
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19473
-#    DOUBAO_WEB_AID                         "497858"                                     L19475
-#    DOUBAO_WEB_REGION                      "CN"                                         L19476
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19477
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19478
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19480
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19529
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19521
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19831
-#    DOUBAO_SESSION_IDS                     ""                                           L19873
-#    DOUBAO_SESSION_ID                      ""                                           L19877
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20388
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20397
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20579
-#    DOUBAO_SID_TT                          ""                                           L20582
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19494
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19495
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19501
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19502
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19510
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19512
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19515
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19517
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19519
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19523
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19550
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19553
+#    DOUBAO_WEB_AID                         "497858"                                     L19555
+#    DOUBAO_WEB_REGION                      "CN"                                         L19556
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19557
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19558
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19560
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19609
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19601
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19911
+#    DOUBAO_SESSION_IDS                     ""                                           L19953
+#    DOUBAO_SESSION_ID                      ""                                           L19957
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20468
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20477
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20659
+#    DOUBAO_SID_TT                          ""                                           L20662
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L24975
-#    SHAREPOINT_HOME_URL                    ""                                           L24976
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L24977
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L24978
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L25005
-#    M365_BRIDGE_PORT                       "5003"                                       L25006
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L25007
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L25008
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L25010
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L25013
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L25016
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25024
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L25026
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25046
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25053
-#    M365_CONV_MAP_MAX                      "1024"                                       L25222
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25871
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25889
+#    M365_ENTRY_URL                         ""                                           L25055
+#    SHAREPOINT_HOME_URL                    ""                                           L25056
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L25057
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L25058
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L25085
+#    M365_BRIDGE_PORT                       "5003"                                       L25086
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L25087
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L25088
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L25090
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L25093
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L25096
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25104
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L25106
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25126
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25133
+#    M365_CONV_MAP_MAX                      "1024"                                       L25302
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25951
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25969
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38178
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38388
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38450
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38472
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38479
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38574
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38576
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38580
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39773
-#    MI_USER                                ""                                           L39499
-#    MI_PASS                                ""                                           L39525
-#    XIAOAI_HARDWARE                        "LX06"                                       L39527
-#    MI_DID                                 ""                                           L39529
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39532
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39536
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39539
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39542
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39548
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39559
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39564
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39545
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39555
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39575
-#    XIAOAI_VOICE                           "zh"                                         L39577
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39579
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39582
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39585
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39588
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39592
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39596
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39601
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39606
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39611
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39616
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39621
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39629
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39634
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39639
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39644
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39649
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39654
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39659
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39662
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39666
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39670
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39674
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39679
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39684
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39688
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39691
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39694
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39697
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39700
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39703
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39706
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39709
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39716
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39722
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39726
+#    XIAOAI_ENABLED                         "0"                                          L38258
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38468
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38530
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38552
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38559
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38654
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38656
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38660
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39853
+#    MI_USER                                ""                                           L39579
+#    MI_PASS                                ""                                           L39605
+#    XIAOAI_HARDWARE                        "LX06"                                       L39607
+#    MI_DID                                 ""                                           L39609
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39612
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39616
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39619
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39622
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39628
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39639
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39644
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39625
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39635
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39655
+#    XIAOAI_VOICE                           "zh"                                         L39657
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39659
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39662
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39665
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39668
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39672
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39676
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39681
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39686
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39691
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39696
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39701
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39709
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39714
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39719
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39724
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39729
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39734
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39739
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39742
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39746
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39750
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39754
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39759
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39764
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39768
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39771
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39774
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39777
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39780
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39783
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39786
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39789
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39796
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39802
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39806
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48168
-#    VE_OPENCODE_API_KEYS                   ""                                           L49106
-#    VE_OPENCODE_FREE                       "1"                                          L49144
-#    VE_OPENCODE_GO                         "0"                                          L49149
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71307
-#    VE_GEMINI_API_KEYS                     ""                                           L71311
-#    VE_GEMINI_BACKEND                      "auto"                                       L71330
-#    VE_GEMINI_PROJECT_ID                   ""                                           L71337
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55518
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48246
+#    VE_OPENCODE_API_KEYS                   ""                                           L49184
+#    VE_OPENCODE_FREE                       "1"                                          L49222
+#    VE_OPENCODE_GO                         "0"                                          L49227
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71411
+#    VE_GEMINI_API_KEYS                     ""                                           L71415
+#    VE_GEMINI_BACKEND                      "auto"                                       L71434
+#    VE_GEMINI_PROJECT_ID                   ""                                           L71441
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55596
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1535
@@ -381,15 +381,15 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72358
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72362
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72366
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72388
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72354
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72344
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72332
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72340
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L72336
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72462
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72466
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72470
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72492
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72458
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72448
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72436
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72444
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L72440
 # 合计 221 个唯一环境变量。
 # ============================================================================
 
@@ -2642,7 +2642,88 @@ TAVILY_MAX_CHARS_PER_RESULT = 1_500
 TAVILY_MAX_TOTAL_CHARS = 5_000
 
 
-FFMPEG_BIN = os.path.realpath(os.path.expanduser("/opt/homebrew/bin/ffmpeg"))
+FFMPEG_BIN = os.path.expanduser("/opt/homebrew/bin/ffmpeg")
+
+
+_FFMPEG_FALLBACK_CANDIDATES: tuple[str, ...] = (
+    "/opt/homebrew/bin/ffmpeg",
+    "/usr/local/bin/ffmpeg",
+    "/usr/bin/ffmpeg",
+)
+
+
+def _resolve_ffmpeg_bin() -> str:
+    """Resolve the live executable ffmpeg path dynamically at call time.
+
+    Avoids pinning a versioned Homebrew Cellar path via `os.path.realpath` at
+    startup so upgrading ffmpeg while Voice Edge is running does not break
+    subsequent invocations with ENOENT.
+    """
+    configured = os.path.expanduser(FFMPEG_BIN)
+    if configured and os.path.isfile(configured) and os.access(configured, os.X_OK):
+        return configured
+    which_path = shutil.which("ffmpeg")
+    if which_path and os.path.isfile(which_path) and os.access(which_path, os.X_OK):
+        return which_path
+    for candidate in _FFMPEG_FALLBACK_CANDIDATES:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return configured
+
+
+def _run_ffmpeg_sync(
+    args: Sequence[str],
+    *,
+    retries: int = 2,
+    retry_delay: float = 0.05,
+    **kwargs: Any,
+) -> subprocess.CompletedProcess[Any]:
+    """Run ffmpeg synchronously, re-resolving on transient FileNotFoundError (e.g. Homebrew symlink swap)."""
+    for attempt in range(retries + 1):
+        try:
+            return subprocess.run([_resolve_ffmpeg_bin(), *args], **kwargs)
+        except FileNotFoundError:
+            if attempt >= retries:
+                raise
+            time.sleep(retry_delay)
+    raise FileNotFoundError(_resolve_ffmpeg_bin())  # pragma: no cover
+
+
+def _popen_ffmpeg_sync(
+    args: Sequence[str],
+    *,
+    retries: int = 2,
+    retry_delay: float = 0.05,
+    **kwargs: Any,
+) -> subprocess.Popen[Any]:
+    """Spawn ffmpeg via Popen, re-resolving on transient FileNotFoundError."""
+    for attempt in range(retries + 1):
+        try:
+            return subprocess.Popen([_resolve_ffmpeg_bin(), *args], **kwargs)
+        except FileNotFoundError:
+            if attempt >= retries:
+                raise
+            time.sleep(retry_delay)
+    raise FileNotFoundError(_resolve_ffmpeg_bin())  # pragma: no cover
+
+
+async def _create_ffmpeg_subprocess_async(
+    *args: str,
+    retries: int = 2,
+    retry_delay: float = 0.05,
+    **kwargs: Any,
+) -> asyncio.subprocess.Process:
+    """Spawn ffmpeg asynchronously, re-resolving on transient FileNotFoundError."""
+    for attempt in range(retries + 1):
+        try:
+            return await asyncio.create_subprocess_exec(
+                _resolve_ffmpeg_bin(), *args, **kwargs
+            )
+        except FileNotFoundError:
+            if attempt >= retries:
+                raise
+            await asyncio.sleep(retry_delay)
+    raise FileNotFoundError(_resolve_ffmpeg_bin())  # pragma: no cover
 
 
 # 🌟 Voice Aliases Mapping
@@ -2753,10 +2834,11 @@ def _initialize_sounddevice() -> None:
 
 
 def _validate_ffmpeg_runtime() -> None:
-    if not (os.path.isfile(FFMPEG_BIN) and os.access(FFMPEG_BIN, os.X_OK)):
+    ffmpeg_bin = _resolve_ffmpeg_bin()
+    if not (os.path.isfile(ffmpeg_bin) and os.access(ffmpeg_bin, os.X_OK)):
         raise RuntimeError(
             "ffmpeg was not found or is not executable: "
-            f"{FFMPEG_BIN}. Update FFMPEG_BIN in the configuration section "
+            f"{ffmpeg_bin}. Update FFMPEG_BIN in the configuration section "
             "to the correct executable path."
         )
 
@@ -11436,9 +11518,8 @@ def transcribe_file_sync(file_path: str, language: Optional[str] = "zh") -> Dict
         fd, temp_file = tempfile.mkstemp(suffix=".wav")
         os.close(fd)  # 关闭文件描述符，让 ffmpeg 使用路径写入
         try:
-            subprocess.run(
+            _run_ffmpeg_sync(
                 [
-                    FFMPEG_BIN,
                     "-i",
                     file_path,
                     "-acodec",
@@ -12536,9 +12617,8 @@ def speak_edge_tts_stream(
         )
 
         try:
-            process = subprocess.Popen(
+            process = _popen_ffmpeg_sync(
                 [
-                    FFMPEG_BIN,
                     "-loglevel",
                     "quiet",
                     "-i",
@@ -40132,8 +40212,7 @@ class XiaoAIContinuousMP3Encoder:
         return self.pcm_bytes_written / 48000.0
 
     async def start(self):
-        self.encoder = await asyncio.create_subprocess_exec(
-            FFMPEG_BIN,
+        self.encoder = await _create_ffmpeg_subprocess_async(
             "-hide_banner",
             "-loglevel",
             "error",
@@ -40187,8 +40266,7 @@ class XiaoAIContinuousMP3Encoder:
     async def write_edge_segment(self, text: str, *, voice: str, rate: str, is_current):
         if self.aborted or not is_current():
             return False
-        decoder = await asyncio.create_subprocess_exec(
-            FFMPEG_BIN,
+        decoder = await _create_ffmpeg_subprocess_async(
             "-hide_banner",
             "-loglevel",
             "error",
@@ -67658,6 +67736,7 @@ class _RobinStreamDecoder:
         prompt_tokens: int = 0,
         cached_tokens: int = 0,
         report_usage: bool = True,
+        prior_stream_reasoning: bool = False,
     ) -> None:
         self.completion_id = completion_id
         self.created = created
@@ -67712,6 +67791,7 @@ class _RobinStreamDecoder:
         self.action_card_filter = _RobinActionCardFilter()
         self.model_attribution_emitted = False
         self.fallback_attribution = ""
+        self._prior_stream_reasoning = bool(prior_stream_reasoning)
 
     def _resolve_server_model_banner(self) -> str:
         """Return the standalone authoritative server model attribution text from `f30` (never guessed from `model_id`)."""
@@ -67727,8 +67807,32 @@ class _RobinStreamDecoder:
         if not banner:
             return []
         self.model_attribution_emitted = True
-        prefix = "\n\n" if leading_newline else ""
+        if self._prior_stream_reasoning:
+            self._prior_stream_reasoning = False
+            prefix = "\n\n---\n\n"
+        else:
+            prefix = "\n\n" if leading_newline else ""
         return [self._make_chunk({"reasoning_content": f"{prefix}{banner}\n\n"})]
+
+    def _emit_thought_with_attribution(
+        self, thought_delta: str, *, had_block_rows: bool
+    ) -> list[dict[str, Any]]:
+        """Emit attribution banner (if pending) and thought delta with chained separator handling."""
+        out: list[dict[str, Any]] = []
+        attr_chunks = self._maybe_emit_model_attribution_chunk(
+            leading_newline=had_block_rows
+        )
+        if attr_chunks and had_block_rows:
+            thought_delta = thought_delta.lstrip(" \n")
+        out.extend(attr_chunks)
+        if thought_delta:
+            if self._prior_stream_reasoning:
+                self._prior_stream_reasoning = False
+                thought_delta = f"\n\n---\n\n{thought_delta.lstrip()}"
+            self.emitted_reasoning_chars += len(thought_delta)
+            self.emitted_reasoning_text += thought_delta
+            out.append(self._make_chunk({"reasoning_content": thought_delta}))
+        return out
 
     def _make_chunk(
         self,
@@ -67876,6 +67980,13 @@ class _RobinStreamDecoder:
                             self.announced_client_tool_ids.add(cid)
                             if cid not in self.ert_seen_wire_call_ids:
                                 self.step_announced_count += 1
+                                # A brand-new unmatched client tool announced in
+                                # ProcessQuery after a prior wakeup (when that prior
+                                # wakeup did not yield a tool result to reset the flag)
+                                # must re-arm the ERT wakeup watchdog; the 2.0s cooldown
+                                # on `last_ert_wakeup_monotonic` prevents thrashing.
+                                if self.step_ert_wakeup_done:
+                                    self.step_ert_wakeup_done = False
                                 if (
                                     self.step_announced_count
                                     > self.step_ert_received_count
@@ -67933,16 +68044,11 @@ class _RobinStreamDecoder:
             else self.run.thought_projector.consume_delta()
         )
         if thought_delta:
-            attr_chunks = self._maybe_emit_model_attribution_chunk(
-                leading_newline=had_block_rows
+            out.extend(
+                self._emit_thought_with_attribution(
+                    thought_delta, had_block_rows=had_block_rows
+                )
             )
-            if attr_chunks and had_block_rows:
-                thought_delta = thought_delta.lstrip(" \n")
-            out.extend(attr_chunks)
-            if thought_delta:
-                self.emitted_reasoning_chars += len(thought_delta)
-                self.emitted_reasoning_text += thought_delta
-                out.append(self._make_chunk({"reasoning_content": thought_delta}))
         elif (
             parsed["answer_text"] or self.run.attribution
         ) and not self.model_attribution_emitted:
@@ -68104,16 +68210,11 @@ class _RobinStreamDecoder:
             )
             pending_thought = self.run.thought_projector.consume_delta()
             if pending_thought:
-                attr_chunks = self._maybe_emit_model_attribution_chunk(
-                    leading_newline=had_block_rows
+                out.extend(
+                    self._emit_thought_with_attribution(
+                        pending_thought, had_block_rows=had_block_rows
+                    )
                 )
-                if attr_chunks and had_block_rows:
-                    pending_thought = pending_thought.lstrip(" \n")
-                out.extend(attr_chunks)
-                if pending_thought:
-                    self.emitted_reasoning_chars += len(pending_thought)
-                    self.emitted_reasoning_text += pending_thought
-                    out.append(self._make_chunk({"reasoning_content": pending_thought}))
             elif self.run.attribution and not self.model_attribution_emitted:
                 out.extend(
                     self._maybe_emit_model_attribution_chunk(
@@ -70206,12 +70307,15 @@ async def _robin_reconcile_via_list_turns(
                 matched["history_states_raw"],
                 response_id=decoder.response_id,
             )
+            had_block_rows = (
+                decoder.run.thought_projector.current_block_has_delivered_rows()
+            )
             thought_delta = decoder.run.thought_projector.consume_delta()
             if thought_delta:
-                out_chunks.extend(decoder._maybe_emit_model_attribution_chunk())
-                decoder.emitted_reasoning_chars += len(thought_delta)
-                out_chunks.append(
-                    decoder._make_chunk({"reasoning_content": thought_delta})
+                out_chunks.extend(
+                    decoder._emit_thought_with_attribution(
+                        thought_delta, had_block_rows=had_block_rows
+                    )
                 )
         if matched.get("answer_text"):
             # Terminal snapshot: strip any ActionCard marker before projecting, then fall
@@ -75874,6 +75978,7 @@ class GeminiHTTPClient:
                 0.05, float(GEMINI_FIRST_EVENT_TIMEOUT_SECONDS or 120.0)
             )
             poll_wait_timeout = min(1.0, idle_reminder_interval, pre_identity_timeout)
+            stream_emitted_reasoning = False
             while cur_attempt is not None:
                 attempt = cur_attempt
                 cur_attempt = None
@@ -75892,10 +75997,12 @@ class GeminiHTTPClient:
                     chunk_dict: dict[str, Any],
                     _att: _RobinAttemptContext = attempt,
                 ) -> None:
+                    nonlocal stream_emitted_reasoning
                     for choice in chunk_dict.get("choices") or []:
-                        for tool_call in (choice.get("delta") or {}).get(
-                            "tool_calls"
-                        ) or []:
+                        delta_obj = choice.get("delta") or {}
+                        if delta_obj.get("reasoning_content"):
+                            stream_emitted_reasoning = True
+                        for tool_call in delta_obj.get("tool_calls") or []:
                             tc_id_str = str(tool_call.get("id") or "")
                             if tc_id_str:
                                 if tc_id_str not in _att.sse_tool_index_by_id:
@@ -76138,7 +76245,12 @@ class GeminiHTTPClient:
                         return False
                     delta = choices[0].get("delta") or {}
                     r_txt = str(delta.get("reasoning_content") or "")
-                    return bool(r_txt and _GEMINI_ATTRIBUTION_BANNER_RE.match(r_txt))
+                    if not r_txt:
+                        return False
+                    r_check = r_txt.lstrip()
+                    if r_check.startswith("---"):
+                        r_check = r_check[3:].lstrip()
+                    return bool(_GEMINI_ATTRIBUTION_BANNER_RE.match(r_check))
 
                 def _order_attribution_before_reminders(
                     pre_chunks: list[dict[str, Any]],
@@ -76808,6 +76920,7 @@ class GeminiHTTPClient:
                                     server_token=actor.server_token,
                                 )
                                 for chunk_dict in rec_chunks:
+                                    _record_delivered(chunk_dict)
                                     last_sse_yield_monotonic = time.monotonic()
                                     last_visible_progress_monotonic = (
                                         last_sse_yield_monotonic
@@ -76827,6 +76940,7 @@ class GeminiHTTPClient:
                                         server_token=actor.server_token,
                                     )
                                     for chunk_dict in rec_chunks2:
+                                        _record_delivered(chunk_dict)
                                         last_sse_yield_monotonic = time.monotonic()
                                         last_visible_progress_monotonic = (
                                             last_sse_yield_monotonic
@@ -76888,6 +77002,7 @@ class GeminiHTTPClient:
                                     server_token=actor.server_token,
                                 )
                                 for chunk_dict in rec_chunks:
+                                    _record_delivered(chunk_dict)
                                     last_sse_yield_monotonic = time.monotonic()
                                     last_visible_progress_monotonic = (
                                         last_sse_yield_monotonic
@@ -76912,6 +77027,7 @@ class GeminiHTTPClient:
                                         server_token=actor.server_token,
                                     )
                                     for chunk_dict in rec_chunks2:
+                                        _record_delivered(chunk_dict)
                                         last_sse_yield_monotonic = time.monotonic()
                                         last_visible_progress_monotonic = (
                                             last_sse_yield_monotonic
@@ -77577,6 +77693,7 @@ class GeminiHTTPClient:
                                         prompt_tokens=followup_prompt_tokens,
                                         cached_tokens=flushed_ctx_tokens,
                                         report_usage=not is_compaction_req,
+                                        prior_stream_reasoning=stream_emitted_reasoning,
                                     )
                                     next_actor = _RobinRunActor(
                                         session_id=flushed_client_sid,
@@ -98418,12 +98535,283 @@ def test_robin_long_running_tool_background_and_command_status():
             except asyncio.CancelledError:
                 pass
 
+    # Regression: if an earlier `ert_wakeup_reconnect` reconnected ERT without delivering
+    # a tool result (so `_finalize_ert_tool_submit` never ran and `step_ert_wakeup_done`
+    # remained True), a subsequent brand-new client tool announced in `ProcessQuery` must
+    # reset `step_ert_wakeup_done` and re-arm the wakeup watchdog so ERT reconnects again
+    # instead of starving until the 240s rollover and hitting `Mac did not connect within 30s`.
+    async def _verify_ert_wakeup_rearms_after_unanswered_wakeup() -> None:
+        class _RearmDummyMux:
+            conn = None
+
+            def __init__(self) -> None:
+                self.released_streams: list[int] = []
+
+            async def release_stream(
+                self, stream_id: int, *, reset: bool = False
+            ) -> None:
+                self.released_streams.append(stream_id)
+
+        rm_mux = _RearmDummyMux()
+
+        def _make_ert_resp(
+            sid: int,
+        ) -> tuple[_RobinHTTP2StreamState, _RobinMuxResponse]:
+            st = _RobinHTTP2StreamState(
+                stream_id=sid,
+                status=200,
+                headers={":status": "200"},
+                queue=asyncio.Queue(),
+                headers_ready=asyncio.get_running_loop().create_future(),
+                ended_event=asyncio.Event(),
+            )
+            resp = _RobinMuxResponse(cast(Any, rm_mux), st)
+            resp.keep_open = True
+            return st, resp
+
+        _, st0_resp = _make_ert_resp(101)
+        st0_iter = st0_resp.content.iter_any()
+        _, st1_resp = _make_ert_resp(
+            103
+        )  # First wakeup connects here, delivers no tool
+        st2, st2_resp = _make_ert_resp(
+            105
+        )  # Second wakeup connects here, delivers tool #2
+
+        arg_entry_2 = _pb_bytes_field(1, b"AbsolutePath") + _pb_bytes_field(
+            2, _pb_bytes_field(3, f"{_SELFTEST_WORKSPACE}/sample2.py".encode("utf-8"))
+        )
+        fc_pb_2 = (
+            _pb_bytes_field(1, b"client:view_file")
+            + _pb_bytes_field(2, b"call_wakeup_rearm_2")
+            + _pb_bytes_field(3, _pb_bytes_field(1, arg_entry_2))
+        )
+        st2.queue.put_nowait(
+            _robin_pack_grpc_frames([_pb_bytes_field(2, _pb_bytes_field(1, fc_pb_2))])
+        )
+
+        rm_run = _RobinRunState(
+            run_id="run_wk_rearm",
+            session_key="wk_rearm_key",
+            client_session_id="wk_rearm_key",
+            principal_id="p",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            conversation_id="c_wk_rearm",
+            request_id="r_wk_rearm",
+        )
+        rm_run.tool_ledger = _RobinToolLedger(
+            "run_wk_rearm", tools, connected_folders=[_SELFTEST_WORKSPACE]
+        )
+        rm_dec = _RobinStreamDecoder(
+            "chatcmpl-wkrearm", 0, "gemini:gemini-4-argon", run=rm_run
+        )
+
+        def _build_pq_tool_announce(cid: bytes) -> bytes:
+            t_ns = _pb_bytes_field(1, b"client") + _pb_bytes_field(2, b"execute_mcp")
+            t_item = (
+                _pb_bytes_field(1, b"Reading file")
+                + _pb_varint_field(4, 1)
+                + _pb_bytes_field(8, _pb_bytes_field(1, t_ns))
+                + _pb_bytes_field(10, cid)
+            )
+            ls_pb = _pb_bytes_field(13, _pb_bytes_field(1, t_item))
+            inner = (
+                _pb_bytes_field(
+                    2,
+                    _pb_bytes_field(1, b"c_wk_rearm")
+                    + _pb_bytes_field(2, b"r_wk_rearm"),
+                )
+                + _pb_bytes_field(4, _pb_bytes_field(1, b"rc_wk_rearm"))
+                + _pb_bytes_field(6, ls_pb)
+            )
+            return _pb_bytes_field(1003, _pb_bytes_field(1, inner))
+
+        rm_dec.feed_pq_frame(_build_pq_tool_announce(b"call_wakeup_rearm_1"))
+        rm_dec.step_unmatched_pq_tool_monotonic = time.monotonic() - 2.1
+
+        connect_events: list[asyncio.Event] = [asyncio.Event(), asyncio.Event()]
+
+        class _RearmSession:
+            closed = False
+
+            def __init__(self) -> None:
+                self.ert_connect_calls = 0
+
+            async def post(
+                self, url: str, data: Any = None, headers: Any = None, **kw: Any
+            ) -> Any:
+                if url == GEMINI_ROBIN_EXECUTE_REMOTE_TOOLS_URL:
+                    self.ert_connect_calls += 1
+                    idx = self.ert_connect_calls - 1
+                    if idx < len(connect_events):
+                        connect_events[idx].set()
+                    return st1_resp if self.ert_connect_calls == 1 else st2_resp
+                dummy_resp = type(
+                    "DummyResp",
+                    (),
+                    {"status": 200, "release": lambda self: None},
+                )
+                return dummy_resp()
+
+        rm_sess = _RearmSession()
+        rm_actor = _RobinRunActor(
+            session_id="wk_rearm_key",
+            session_key="wk_rearm_key",
+            boot_key="wk_rearm_key",
+            full_key="",
+            http_session=cast(Any, rm_sess),
+            response=st0_resp,
+            iterator=None,
+            decoder=rm_dec,
+            run=rm_run,
+            conversation_id="c_wk_rearm",
+            access_token="tok_wk_rearm",
+            ert_response=st0_resp,
+            ert_iterator=st0_iter,
+        )
+        rm_actor.ert_opened_monotonic = time.monotonic() - 2.5
+        rm_task = asyncio.create_task(rm_actor._ert_driver_loop(st0_iter))
+        try:
+            # 1) First wakeup connects to st1_resp (which never sends a tool call)
+            await asyncio.wait_for(connect_events[0].wait(), timeout=1.5)
+            await asyncio.sleep(0.05)
+            assert rm_sess.ert_connect_calls == 1
+            assert rm_dec.step_ert_wakeup_done is True
+
+            # 2) New client tool #2 is announced in ProcessQuery -> must reset
+            #    step_ert_wakeup_done, but MUST respect the 2.0s cooldown before reconnecting.
+            rm_dec.feed_pq_frame(_build_pq_tool_announce(b"call_wakeup_rearm_2"))
+            assert rm_dec.step_ert_wakeup_done is False
+            assert rm_dec.step_unmatched_pq_tool_monotonic > 0.0
+            await asyncio.sleep(0.15)
+            assert rm_sess.ert_connect_calls == 1
+
+            # 3) Once the 2.0s cooldown elapses, the second wakeup reconnect triggers.
+            rm_dec.step_unmatched_pq_tool_monotonic = time.monotonic() - 2.1
+            rm_actor.ert_opened_monotonic = time.monotonic() - 2.5
+            rm_actor.last_ert_wakeup_monotonic = time.monotonic() - 2.5
+
+            q_item_2 = await asyncio.wait_for(rm_actor.mux_queue.get(), timeout=1.5)
+            assert q_item_2[0] == "ert_chunks"
+            assert rm_sess.ert_connect_calls == 2
+            assert 101 in rm_mux.released_streams
+            assert 103 in rm_mux.released_streams
+            assert len(rm_dec.pending_tool_calls) == 1
+            assert rm_dec.pending_tool_calls[0]["name"] == "read"
+
+            # 4) Replaying the exact same PQ tool announcement (`call_wakeup_rearm_2`)
+            #    must NOT reset `step_ert_wakeup_done` or trigger a 3rd reconnect.
+            assert rm_dec.step_ert_wakeup_done is True
+            rm_dec.pending_tool_calls.clear()
+            rm_dec.feed_pq_frame(_build_pq_tool_announce(b"call_wakeup_rearm_2"))
+            assert rm_dec.step_ert_wakeup_done is True
+            rm_actor.ert_opened_monotonic = time.monotonic() - 2.5
+            rm_actor.last_ert_wakeup_monotonic = time.monotonic() - 2.5
+            await asyncio.sleep(0.15)
+            assert rm_sess.ert_connect_calls == 2
+        finally:
+            rm_run.execution_state = "TERMINAL"
+            rm_task.cancel()
+            try:
+                await rm_task
+            except asyncio.CancelledError:
+                pass
+
     orig_save_wk = _GEMINI_DSH_STORE.save_run
     cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
     try:
         asyncio.run(_verify_ert_wakeup_reconnect_on_pq_tool_deficit())
+        asyncio.run(_verify_ert_wakeup_rearms_after_unanswered_wakeup())
     finally:
         cast(Any, _GEMINI_DSH_STORE).save_run = orig_save_wk
+
+    # Production ffmpeg dynamic-resolution & transient symlink-swap retry regression:
+    # 1) Module-level `FFMPEG_BIN` must NOT be pinned to a versioned Homebrew `/Cellar/` path.
+    # 2) Drive real production `XiaoAIContinuousMP3Encoder.start()` after swapping a symlink
+    #    from `v1/ffmpeg` to `v2/ffmpeg` and deleting `v1/ffmpeg` -> verifies the spawned
+    #    subprocess actually executes `v2/ffmpeg` and delivers its output to `playback`.
+    # 3) Drive transient `FileNotFoundError` during Homebrew symlink replacement and verify
+    #    `_create_ffmpeg_subprocess_async` retries after re-resolving to `v2/ffmpeg`.
+    assert "/Cellar/" not in FFMPEG_BIN
+    with tempfile.TemporaryDirectory() as _ff_tmp:
+        _ff_v1 = os.path.join(_ff_tmp, "v1", "ffmpeg")
+        _ff_v2 = os.path.join(_ff_tmp, "v2", "ffmpeg")
+        _ff_link = os.path.join(_ff_tmp, "bin", "ffmpeg")
+        os.makedirs(os.path.dirname(_ff_v1), exist_ok=True)
+        os.makedirs(os.path.dirname(_ff_v2), exist_ok=True)
+        os.makedirs(os.path.dirname(_ff_link), exist_ok=True)
+        with open(_ff_v1, "w", encoding="utf-8") as _fh:
+            _fh.write("#!/bin/sh\nprintf 'FFMPEG_V1'\n")
+        with open(_ff_v2, "w", encoding="utf-8") as _fh:
+            _fh.write("#!/bin/sh\nprintf 'FFMPEG_V2'\n")
+        os.chmod(_ff_v1, 0o755)
+        os.chmod(_ff_v2, 0o755)
+        os.symlink(_ff_v1, _ff_link)
+
+        async def _verify_ffmpeg_production_upgrade_and_retry() -> None:
+            class _FakeXiaoAIPlayback:
+                def __init__(self) -> None:
+                    self.chunks: list[bytes] = []
+
+                async def put_audio(self, chunk: bytes) -> bool:
+                    self.chunks.append(chunk)
+                    return True
+
+            _orig_ff = globals()["FFMPEG_BIN"]
+            try:
+                globals()["FFMPEG_BIN"] = _ff_link
+                # Upgrade symlink from v1 -> v2 and remove v1 while process is running
+                os.unlink(_ff_link)
+                os.symlink(_ff_v2, _ff_link)
+                os.unlink(_ff_v1)
+
+                pb = _FakeXiaoAIPlayback()
+                enc = XiaoAIContinuousMP3Encoder(
+                    cast(Any, pb),
+                    cast(Any, type("_FakeCfg", (), {"mp3_bitrate": "64k"})()),
+                )
+                await enc.start()
+                assert enc.encoder is not None and enc.stdout_task is not None
+                if enc.encoder.stdin is not None:
+                    enc.encoder.stdin.close()
+                await asyncio.wait_for(enc.stdout_task, timeout=5.0)
+                await asyncio.wait_for(enc.encoder.wait(), timeout=5.0)
+                assert b"".join(pb.chunks) == b"FFMPEG_V2"
+
+                # Transient unlink window during symlink swap: unlink before call,
+                # disable host fallback candidates so `_resolve_ffmpeg_bin()` hits
+                # real `FileNotFoundError`, recreate symlink after 20ms while
+                # `_create_ffmpeg_subprocess_async` retries, and verify `v2` runs.
+                os.unlink(_ff_link)
+                _orig_which = shutil.which
+                _orig_cands = globals()["_FFMPEG_FALLBACK_CANDIDATES"]
+
+                async def _recreate_link() -> None:
+                    await asyncio.sleep(0.02)
+                    os.symlink(_ff_v2, _ff_link)
+
+                recreate_task = asyncio.create_task(_recreate_link())
+                try:
+                    shutil.which = cast(Any, lambda _cmd: None)
+                    globals()["_FFMPEG_FALLBACK_CANDIDATES"] = ()
+                    proc = await _create_ffmpeg_subprocess_async(
+                        "-version",
+                        retries=3,
+                        retry_delay=0.03,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                    )
+                    out_b, _ = await asyncio.wait_for(proc.communicate(), timeout=5.0)
+                    assert out_b == b"FFMPEG_V2"
+                finally:
+                    shutil.which = _orig_which
+                    globals()["_FFMPEG_FALLBACK_CANDIDATES"] = _orig_cands
+                    await recreate_task
+            finally:
+                globals()["FFMPEG_BIN"] = _orig_ff
+
+        asyncio.run(_verify_ffmpeg_production_upgrade_and_retry())
 
     # 3) Layer 3: DSH background job notices (including summaries with nested `)`) never
     # pollute first-turn boot_key, while a human question mentioning a known jobId is preserved.
@@ -110935,12 +111323,27 @@ def test_gemini_multi_client_refactor_and_stream_driver():
                                 "index": 0,
                                 "delta": {
                                     "role": "assistant",
+                                    "reasoning_content": "第一轮中断前缓存的思考，末尾无换行。",
+                                },
+                                "finish_reason": None,
+                            }
+                        ],
+                    },
+                    {
+                        "id": "chatcmpl-crashdrv01",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": spec.public_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {
                                     "content": "【崩溃恢复缓存的首轮完整答复】",
                                 },
                                 "finish_reason": None,
                             }
                         ],
-                    }
+                    },
                 ],
             )
         )
@@ -110967,11 +111370,19 @@ def test_gemini_multi_client_refactor_and_stream_driver():
                         )
                         + _pb_varint_field(19, 2)
                     )
-                    inner_1003_c = _pb_bytes_field(
-                        2,
-                        _pb_bytes_field(1, "c_crash_01")
-                        + _pb_bytes_field(2, "r_crash_02"),
-                    ) + _pb_bytes_field(1, inner_cand_c)
+                    live_thought_c = _pb_bytes_field(
+                        13, _pb_bytes_field(4, "第二轮串联追问的思考。".encode("utf-8"))
+                    )
+                    inner_1003_c = (
+                        _pb_bytes_field(
+                            2,
+                            _pb_bytes_field(1, "c_crash_01")
+                            + _pb_bytes_field(2, "r_crash_02"),
+                        )
+                        + _pb_bytes_field(1, inner_cand_c)
+                        + _pb_bytes_field(6, live_thought_c)
+                        + _pb_bytes_field(30, _pb_bytes_field(1, b"Used 4 Neon model"))
+                    )
                     return _robin_pack_grpc_frames(
                         [
                             _pb_bytes_field(1003, _pb_bytes_field(1, inner_1003_c)),
@@ -111037,6 +111448,361 @@ def test_gemini_multi_client_refactor_and_stream_driver():
         )
         assert "【崩溃恢复缓存的首轮完整答复】" in res_crash["assistant"]["content"]
         assert "【串联的第二轮新答复】" in res_crash["assistant"]["content"]
+        crash_reasoning = str(res_crash["assistant"].get("reasoning_content") or "")
+        assert "\n\n---\n\nUsed 4 Neon model\n\n" in crash_reasoning
+        assert "末尾无换行。Used 4 Neon model" not in crash_reasoning
+        assert _GEMINI_ANY_ATTRIBUTION_BANNER_RE.search(crash_reasoning) is not None
+        assert "第二轮串联追问的思考。" in crash_reasoning
+
+        # 4.4b `CRASH_RECOVERY_FLUSH_AND_CHAIN` where Turn 1's cached reasoning+answer
+        #      arrive via `ListConversationTurns` reconciliation (`pq_eof` -> `rec_chunks`),
+        #      verifying `_record_delivered` updates `stream_emitted_reasoning` so chained
+        #      Turn 2 still inserts `\n\n---\n\n` before `Used 4 Neon model`.
+        # 4.4c `CRASH_RECOVERY_FLUSH_AND_CHAIN` where chained Turn 2's thoughts+answer
+        #      arrive via `ListConversationTurns` reconciliation (`pq_eof` -> `_robin_reconcile_via_list_turns`),
+        #      verifying `_robin_reconcile_via_list_turns` uses `_emit_thought_with_attribution`
+        #      to separate Turn 2's reconciled reasoning from Turn 1's reasoning.
+        def _build_list_turns_resp(
+            conv_id: str,
+            req_id: str,
+            resp_id: str,
+            thought_txt: str,
+            answer_txt: str,
+        ) -> bytes:
+            step_pb = _pb_bytes_field(
+                13, _pb_bytes_field(4, thought_txt.encode("utf-8"))
+            )
+            m_resp = (
+                _pb_bytes_field(1, resp_id)
+                + _pb_bytes_field(2, _pb_bytes_field(1, answer_txt.encode("utf-8")))
+                + _pb_varint_field(19, 2)
+            )
+            m_turn = _pb_bytes_field(1, m_resp) + _pb_bytes_field(5, step_pb)
+            t_entry = _pb_bytes_field(
+                1, _pb_bytes_field(1, conv_id) + _pb_bytes_field(2, req_id)
+            ) + _pb_bytes_field(4, m_turn)
+            return _robin_pack_grpc_frames([_pb_bytes_field(1, t_entry)])
+
+        class _ListTurnsFakeResp:
+            def __init__(self, body: bytes, *, status: int = 200) -> None:
+                self.status = status
+                self._body = body
+
+                async def _empty_iter() -> AsyncGenerator[bytes, None]:
+                    if False:
+                        yield b""
+
+                self.content = type(
+                    "_FakeContent", (), {"iter_any": staticmethod(_empty_iter)}
+                )()
+
+            async def __aenter__(self) -> "_ListTurnsFakeResp":
+                return self
+
+            async def __aexit__(self, *_a: Any) -> None:
+                return None
+
+            async def read(self) -> bytes:
+                return self._body
+
+            def release(self) -> None:
+                return None
+
+        class _ListTurnsFakeSession(_DrvFakeSession):
+            def __init__(self, body: bytes) -> None:
+                super().__init__()
+                self._body = body
+                self.list_turns_calls = 0
+
+            async def post(
+                self, url: str, data: Any = None, headers: Any = None, **kw: Any
+            ) -> _ListTurnsFakeResp:
+                if url == GEMINI_ROBIN_LIST_TURNS_URL:
+                    self.list_turns_calls += 1
+                    return _ListTurnsFakeResp(self._body, status=200)
+                return _ListTurnsFakeResp(b"", status=500)
+
+        # --- 4.4b: Turn 1 recovered via ListConversationTurns -> chains Turn 2 ---
+        rec_t1_msgs: list[dict[str, Any]] = [
+            {"role": "system", "content": sys_cont},
+            {"role": "user", "content": "补偿恢复第一问"},
+        ]
+        rec_bk_1 = _dsh_boot_key(fake_cred.credential_id, "补偿恢复第一问")
+        rec_t1_sess = _ListTurnsFakeSession(
+            _build_list_turns_resp(
+                "c_rec_t1",
+                "r_rec_t1",
+                "rc_rec_t1",
+                "第一轮通过ListTurns补偿的思考，末尾无换行。",
+                "【第一轮ListTurns补偿答复】",
+            )
+        )
+        rec_t1_run = _RobinRunState(
+            run_id="run_rec_t1_01",
+            session_key=rec_bk_1,
+            client_session_id=rec_bk_1,
+            principal_id=fake_cred.credential_id,
+            boot_key=rec_bk_1,
+            full_key="",
+            conversation_id="c_rec_t1",
+            request_id="r_rec_t1",
+            response_id="rc_rec_t1",
+            query_text="补偿恢复第一问",
+            initial_messages=list(rec_t1_msgs),
+            execution_state="WAITING_TOOLS",
+            attachment_state="TOOL_HANDOFF",
+            ert_transport_state="ENDED",
+        )
+        rec_t1_dec = _RobinStreamDecoder(
+            "chatcmpl-rect1", 0, spec.public_id, run=rec_t1_run, dsh_tools=[]
+        )
+        rec_t1_dec.conversation_id = "c_rec_t1"
+        rec_t1_dec.request_id = "r_rec_t1"
+        rec_t1_dec.response_id = "rc_rec_t1"
+        rec_t1_dec.ert_session_complete = True
+        rec_t1_dec.is_completed = False
+        rec_t1_actor = _RobinRunActor(
+            session_id=rec_bk_1,
+            session_key=rec_bk_1,
+            boot_key=rec_bk_1,
+            full_key="",
+            http_session=cast(Any, rec_t1_sess),
+            response=_DrvDummyResp(),
+            iterator=cast(Any, iter(())),
+            decoder=rec_t1_dec,
+            run=rec_t1_run,
+            conversation_id="c_rec_t1",
+            request_id="r_rec_t1",
+            response_id="rc_rec_t1",
+            credential_id=fake_cred.credential_id,
+            access_token="ya29.mc_tok",
+            device_id="DEV-MC-1",
+        )
+        rec_t1_actor.mux_queue.put_nowait(("pq_eof", b""))
+        _robin_park_stream(rec_bk_1, rec_t1_actor, is_auxiliary=False)
+
+        rec_t1_chain_msgs: list[dict[str, Any]] = [
+            *rec_t1_msgs,
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call_rec_t1_tc_1",
+                        "type": "function",
+                        "function": {
+                            "name": "read_file",
+                            "arguments": '{"filepath":"src/a.ts"}',
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "call_rec_t1_tc_1",
+                "name": "read_file",
+                "content": "Error: tool execution interrupted because the client crashed",
+            },
+            {"role": "user", "content": "第一轮补偿后串联第二问"},
+        ]
+        res_rec_t1 = await _selftest_drive_turn(
+            client,
+            spec,
+            {"model": spec.public_id, "tools": continue_tools},
+            rec_t1_chain_msgs,
+            credential_id=fake_cred.credential_id,
+            append_assistant=True,
+        )
+        assert rec_t1_sess.list_turns_calls >= 1
+        assert res_rec_t1["status_code"] == 200
+        assert "【第一轮ListTurns补偿答复】" in res_rec_t1["assistant"]["content"]
+        assert "【串联的第二轮新答复】" in res_rec_t1["assistant"]["content"]
+        rec_t1_reasoning = str(res_rec_t1["assistant"].get("reasoning_content") or "")
+        assert "第一轮通过ListTurns补偿的思考，末尾无换行。" in rec_t1_reasoning
+        assert "\n\n---\n\nUsed 4 Neon model\n\n" in rec_t1_reasoning
+        assert "末尾无换行。Used 4 Neon model" not in rec_t1_reasoning
+
+        # --- 4.4c: Chained Turn 2 recovered via ListConversationTurns ---
+        rec_t2_msgs: list[dict[str, Any]] = [
+            {"role": "system", "content": sys_cont},
+            {"role": "user", "content": "次轮补偿第一问"},
+        ]
+        rec_bk_2 = _dsh_boot_key(fake_cred.credential_id, "次轮补偿第一问")
+        rec_t2_run = _RobinRunState(
+            run_id="run_rec_t2_01",
+            session_key=rec_bk_2,
+            client_session_id=rec_bk_2,
+            principal_id=fake_cred.credential_id,
+            boot_key=rec_bk_2,
+            full_key="",
+            conversation_id="c_rec_t2",
+            request_id="r_rec_t2_1",
+            response_id="rc_rec_t2_1",
+            query_text="次轮补偿第一问",
+            initial_messages=list(rec_t2_msgs),
+            execution_state="WAITING_TOOLS",
+            attachment_state="TOOL_HANDOFF",
+            ert_transport_state="ENDED",
+        )
+        rec_t2_run.answer_projector.committed_text = "【首轮缓存答复_44c】"
+        rec_t2_dec = _RobinStreamDecoder(
+            "chatcmpl-rect2", 0, spec.public_id, run=rec_t2_run, dsh_tools=[]
+        )
+        rec_t2_dec.conversation_id = "c_rec_t2"
+        rec_t2_dec.request_id = "r_rec_t2_1"
+        rec_t2_dec.response_id = "rc_rec_t2_1"
+        rec_t2_dec.ert_session_complete = True
+        rec_t2_dec.is_completed = True
+        rec_t2_dec.eod = True
+        rec_t2_dec.emitted_answer_text = "【首轮缓存答复_44c】"
+        rec_t2_actor = _RobinRunActor(
+            session_id=rec_bk_2,
+            session_key=rec_bk_2,
+            boot_key=rec_bk_2,
+            full_key="",
+            http_session=cast(Any, _DrvFakeSession()),
+            response=_DrvDummyResp(),
+            iterator=cast(Any, iter(())),
+            decoder=rec_t2_dec,
+            run=rec_t2_run,
+            conversation_id="c_rec_t2",
+            request_id="r_rec_t2_1",
+            response_id="rc_rec_t2_1",
+            credential_id=fake_cred.credential_id,
+            access_token="ya29.mc_tok",
+            device_id="DEV-MC-1",
+        )
+        rec_t2_actor.mux_queue.put_nowait(
+            (
+                "ert_chunks",
+                [
+                    {
+                        "id": "chatcmpl-rect2",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": spec.public_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {
+                                    "role": "assistant",
+                                    "reasoning_content": "首轮缓存思考_44c，无换行。",
+                                },
+                                "finish_reason": None,
+                            }
+                        ],
+                    },
+                    {
+                        "id": "chatcmpl-rect2",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": spec.public_id,
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"content": "【首轮缓存答复_44c】"},
+                                "finish_reason": None,
+                            }
+                        ],
+                    },
+                ],
+            )
+        )
+        rec_t2_actor.mux_queue.put_nowait(("pq_eof", b""))
+        _robin_park_stream(rec_bk_2, rec_t2_actor, is_auxiliary=False)
+
+        rec_t2_followup_sess = _ListTurnsFakeSession(
+            _build_list_turns_resp(
+                "c_rec_t2",
+                "r_rec_t2_2",
+                "rc_rec_t2_2",
+                "第二轮通过ListTurns补偿的思考。",
+                "【第二轮ListTurns补偿答复】",
+            )
+        )
+
+        class _RecT2EofIter:
+            def __init__(self) -> None:
+                self.step = 0
+
+            def __aiter__(self) -> "_RecT2EofIter":
+                return self
+
+            async def __anext__(self) -> bytes:
+                self.step += 1
+                if self.step == 1:
+                    # Emit identity + f30 attribution only, then EOF before thoughts/answer
+                    inner_id_only = _pb_bytes_field(
+                        2,
+                        _pb_bytes_field(1, "c_rec_t2")
+                        + _pb_bytes_field(2, "r_rec_t2_2"),
+                    )
+                    return _robin_pack_grpc_frames(
+                        [_pb_bytes_field(1003, _pb_bytes_field(1, inner_id_only))]
+                    )
+                raise StopAsyncIteration
+
+        async def _fake_open_stream_rec_t2(
+            _spec: GeminiModelSpec, _payload: dict[str, Any]
+        ) -> tuple[_GeminiOpenedStream | None, Response | None]:
+            return (
+                _GeminiOpenedStream(
+                    session=cast(Any, rec_t2_followup_sess),
+                    response=_DrvDummyResp(),
+                    backend=GEMINI_BACKEND_ROBIN,
+                    prefetched_chunks=[],
+                    iterator=_RecT2EofIter(),
+                    credential_id=fake_cred.credential_id,
+                    access_token="ya29.mc_tok",
+                    device_id="DEV-MC-1",
+                ),
+                None,
+            )
+
+        client._open_stream = _fake_open_stream_rec_t2  # type: ignore[method-assign]
+        rec_t2_chain_msgs: list[dict[str, Any]] = [
+            *rec_t2_msgs,
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "call_rec_t2_tc_1",
+                        "type": "function",
+                        "function": {
+                            "name": "read_file",
+                            "arguments": '{"filepath":"src/b.ts"}',
+                        },
+                    }
+                ],
+            },
+            {
+                "role": "tool",
+                "tool_call_id": "call_rec_t2_tc_1",
+                "name": "read_file",
+                "content": "Error: tool execution interrupted because the client crashed",
+            },
+            {"role": "user", "content": "次轮走ListTurns补偿的追问"},
+        ]
+        res_rec_t2 = await _selftest_drive_turn(
+            client,
+            spec,
+            {"model": spec.public_id, "tools": continue_tools},
+            rec_t2_chain_msgs,
+            credential_id=fake_cred.credential_id,
+            append_assistant=True,
+        )
+        assert rec_t2_followup_sess.list_turns_calls >= 1
+        assert res_rec_t2["status_code"] == 200
+        assert "【首轮缓存答复_44c】" in res_rec_t2["assistant"]["content"]
+        assert "【第二轮ListTurns补偿答复】" in res_rec_t2["assistant"]["content"]
+        rec_t2_reasoning = str(res_rec_t2["assistant"].get("reasoning_content") or "")
+        assert (
+            "首轮缓存思考_44c，无换行。\n\n---\n\n第二轮通过ListTurns补偿的思考。"
+            in rec_t2_reasoning
+        )
+        assert "无换行。第二轮通过ListTurns补偿的思考。" not in rec_t2_reasoning
+        client._open_stream = _fake_open_stream_crash  # type: ignore[method-assign]
 
         # 4.5 `SHORT_CIRCUIT_POST_NOTICE` (including when a `CRASH_RECOVERY_FLUSH_AND_CHAIN` actor is simultaneously parked!):
         #     Both `_gemini_base_payload` (`pop_matched=False`) and `chat_stream` (`pop_matched=True`) MUST classify as `SHORT_CIRCUIT_POST_NOTICE`
