@@ -150,247 +150,251 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2791
-#    VE_VLM_KV_BITS                         3.5                                          L514
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L519
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L524
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L525
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2289
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2294
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2297
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2301
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2310
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2318
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2377
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2910
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L43032
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43681
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43693
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19633
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19630
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19596
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19611
-#    AUTH_SYNC_ENABLED                      "1"                                          L19584
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19585
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2806
+#    VE_VLM_KV_BITS                         3.5                                          L518
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L523
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L528
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L529
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2304
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2309
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2312
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2316
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2325
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2333
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2392
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2925
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L43047
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43696
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43708
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19648
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19645
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19611
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19626
+#    AUTH_SYNC_ENABLED                      "1"                                          L19599
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19600
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L403
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L404
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L405
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L406
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L407
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L411
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L415
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L416
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L417
-#    VE_GEMINI_LOG_DEBUG                        "0"                                      L418
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L419
-#    VE_HUD_LOG_DEBUG                           "0"                                      L420
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L421
-#    VE_KWS_LOG_DEBUG                           "0"                                      L422
-#    VE_LLM_LOG_DEBUG                           "0"                                      L423
-#    VE_M365_LOG_DEBUG                          "0"                                      L424
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L425
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L429
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L433
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L434
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L435
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L436
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L437
-#    VE_TTS_LOG_DEBUG                           "0"                                      L438
-#    VE_VLM_LOG_DEBUG                           "0"                                      L439
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L440
+#    VE_APP_LOG_DEBUG                           "0"                                      L407
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L408
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L409
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L410
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L411
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L415
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L419
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L420
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L421
+#    VE_GEMINI_LOG_DEBUG                        "0"                                      L422
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L423
+#    VE_HUD_LOG_DEBUG                           "0"                                      L424
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L425
+#    VE_KWS_LOG_DEBUG                           "0"                                      L426
+#    VE_LLM_LOG_DEBUG                           "0"                                      L427
+#    VE_M365_LOG_DEBUG                          "0"                                      L428
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L429
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L433
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L437
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L438
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L439
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L440
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L441
+#    VE_TTS_LOG_DEBUG                           "0"                                      L442
+#    VE_VLM_LOG_DEBUG                           "0"                                      L443
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L444
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42918
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42941
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42968
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L43027
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43570
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43573
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43581
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43593
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43595
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43604
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43610
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43616
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43632
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43637
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43644
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43651
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43660
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43667
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43715
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45484
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45485
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45486
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42933
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42956
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42983
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L43042
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43585
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43588
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43596
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43608
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43610
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43619
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43625
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43631
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43647
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43652
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43659
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43666
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43675
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43682
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43730
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45499
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45500
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45501
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15139
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15141
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L15142
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15148
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15150
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15153
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15161
-#    QWEN_COOKIE_HEADER                     ""                                           L15165
-#    QWEN_TOKENS                            ""                                           L15173
-#    QWEN_TOKEN                             ""                                           L15174
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15154
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15156
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L15157
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15163
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15165
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15168
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15176
+#    QWEN_COOKIE_HEADER                     ""                                           L15180
+#    QWEN_TOKENS                            ""                                           L15188
+#    QWEN_TOKEN                             ""                                           L15189
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1890
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16808
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16809
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16811
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16813
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16815
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16818
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16821
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16824
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16945
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16948
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1905
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16823
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16824
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16826
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16828
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16830
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16833
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16836
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16839
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16960
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16963
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19494
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19495
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19501
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19502
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19510
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19512
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19515
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19517
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19519
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19523
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19550
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19553
-#    DOUBAO_WEB_AID                         "497858"                                     L19555
-#    DOUBAO_WEB_REGION                      "CN"                                         L19556
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19557
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19558
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19560
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19609
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19601
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19911
-#    DOUBAO_SESSION_IDS                     ""                                           L19953
-#    DOUBAO_SESSION_ID                      ""                                           L19957
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20468
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20477
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20659
-#    DOUBAO_SID_TT                          ""                                           L20662
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19509
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19510
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19516
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19517
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19525
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19527
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19530
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19532
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19534
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19538
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19565
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19568
+#    DOUBAO_WEB_AID                         "497858"                                     L19570
+#    DOUBAO_WEB_REGION                      "CN"                                         L19571
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19572
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19573
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19575
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19624
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19616
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19926
+#    DOUBAO_SESSION_IDS                     ""                                           L19968
+#    DOUBAO_SESSION_ID                      ""                                           L19972
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20483
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20492
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20674
+#    DOUBAO_SID_TT                          ""                                           L20677
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L25055
-#    SHAREPOINT_HOME_URL                    ""                                           L25056
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L25057
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L25058
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L25085
-#    M365_BRIDGE_PORT                       "5003"                                       L25086
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L25087
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L25088
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L25090
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L25093
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L25096
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25104
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L25106
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25126
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25133
-#    M365_CONV_MAP_MAX                      "1024"                                       L25302
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25951
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25969
+#    M365_ENTRY_URL                         ""                                           L25070
+#    SHAREPOINT_HOME_URL                    ""                                           L25071
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L25072
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L25073
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L25100
+#    M365_BRIDGE_PORT                       "5003"                                       L25101
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L25102
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L25103
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L25105
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L25108
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L25111
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25119
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L25121
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25141
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25148
+#    M365_CONV_MAP_MAX                      "1024"                                       L25317
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25966
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25984
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38258
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38468
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38530
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38552
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38559
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38654
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38656
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38660
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39853
-#    MI_USER                                ""                                           L39579
-#    MI_PASS                                ""                                           L39605
-#    XIAOAI_HARDWARE                        "LX06"                                       L39607
-#    MI_DID                                 ""                                           L39609
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39612
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39616
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39619
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39622
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39628
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39639
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39644
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39625
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39635
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39655
-#    XIAOAI_VOICE                           "zh"                                         L39657
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39659
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39662
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39665
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39668
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39672
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39676
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39681
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39686
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39691
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39696
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39701
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39709
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39714
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39719
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39724
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39729
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39734
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39739
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39742
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39746
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39750
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39754
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39759
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39764
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39768
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39771
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39774
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39777
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39780
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39783
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39786
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39789
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39796
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39802
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39806
+#    XIAOAI_ENABLED                         "0"                                          L38273
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38483
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38545
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38567
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38574
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38669
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38671
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38675
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39868
+#    MI_USER                                ""                                           L39594
+#    MI_PASS                                ""                                           L39620
+#    XIAOAI_HARDWARE                        "LX06"                                       L39622
+#    MI_DID                                 ""                                           L39624
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39627
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39631
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39634
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39637
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39643
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39654
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39659
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39640
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39650
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39670
+#    XIAOAI_VOICE                           "zh"                                         L39672
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39674
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39677
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39680
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39683
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39687
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39691
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39696
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39701
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39706
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39711
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39716
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39724
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39729
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39734
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39739
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39744
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39749
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39754
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39757
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39761
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39765
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39769
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39774
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39779
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39783
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39786
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39789
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39792
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39795
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39798
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39801
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39804
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39811
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39817
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39821
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48246
-#    VE_OPENCODE_API_KEYS                   ""                                           L49184
-#    VE_OPENCODE_FREE                       "1"                                          L49222
-#    VE_OPENCODE_GO                         "0"                                          L49227
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L71671
-#    VE_GEMINI_API_KEYS                     ""                                           L71675
-#    VE_GEMINI_BACKEND                      "auto"                                       L71694
-#    VE_GEMINI_PROJECT_ID                   ""                                           L71701
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55669
-#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1533
-#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1534
-#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1535
-#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1536
-#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1537
-#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1538
-#    VE_GEMINI_APP_BINARY                   ""                                           L1558
-#    VE_GEMINI_AGY_BINARY                   ""                                           L1573
-#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1591
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48261
+#    VE_OPENCODE_API_KEYS                   ""                                           L49199
+#    VE_OPENCODE_FREE                       "1"                                          L49237
+#    VE_OPENCODE_GO                         "0"                                          L49242
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L72850
+#    VE_GEMINI_API_KEYS                     ""                                           L72854
+#    VE_GEMINI_BACKEND                      "auto"                                       L72873
+#    VE_GEMINI_PROJECT_ID                   ""                                           L72880
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55684
+#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1537
+#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1538
+#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1539
+#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1540
+#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1541
+#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1542
+#    VE_GEMINI_APP_BINARY                   ""                                           L1562
+#    VE_GEMINI_AGY_BINARY                   ""                                           L1577
+#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1595
+#    GEMINI_PQ_RECOVERY_BUDGET_SECONDS      "45.0"                                       L1783
+#    GEMINI_PQ_WAITING_TOOLS_PROBE_SECONDS  "30.0"                                       L1786
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L72722
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L72726
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L72730
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L72752
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L72718
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L72708
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L72696
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L72704
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L72700
-# 合计 221 个唯一环境变量。
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L73909
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L73913
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L73917
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L73939
+#    VE_RELAY_PQ_WAIT_SECONDS               "1.5"                                        L74292
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L73905
+#    VE_RELAY_TOOL_WAIT_MAX_SECONDS         "180.0"                                      L74294
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L73895
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L73883
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L73891
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L73887
+# 合计 225 个唯一环境变量。
 # ============================================================================
 
 
@@ -1775,6 +1779,17 @@ GEMINI_RETRY_BASE_SECONDS = 0.35
 GEMINI_CREDENTIAL_CACHE_TTL_SECONDS = 30.0
 GEMINI_ERT_ROLLOVER_SECONDS = 240.0
 GEMINI_PQ_ROLLOVER_SECONDS = 270.0
+GEMINI_PQ_RECOVERY_BUDGET_SECONDS = max(
+    1.0, float(os.getenv("GEMINI_PQ_RECOVERY_BUDGET_SECONDS", "45.0"))
+)
+GEMINI_PQ_WAITING_TOOLS_PROBE_SECONDS = max(
+    1.0, float(os.getenv("GEMINI_PQ_WAITING_TOOLS_PROBE_SECONDS", "30.0"))
+)
+_ROBIN_PRE_ROLLOVER_RECONCILE_TIMEOUT_SECONDS = 5.0
+_ROBIN_RECONCILE_TIMEOUT_SECONDS = 8.0
+_ROBIN_PQ_RESUME_TIMEOUT_SECONDS = 15.0
+_ROBIN_HTTP2_OPEN_TIMEOUT_SECONDS = 15.0
+_ROBIN_ERT_IO_TIMEOUT_SECONDS = 10.0
 GEMINI_WEB_ERT_COALESCE_WINDOW_MS = int(
     os.environ.get("GEMINI_WEB_ERT_COALESCE_WINDOW_MS", "60")
 )
@@ -64315,39 +64330,417 @@ async def _robin_cleanup_anext_future(fut: asyncio.Future[Any] | None) -> None:
             pass
 
 
-def _robin_is_transient_pq_stream_error(err_text: str) -> bool:
-    """Return True when `err_text` is a transient upstream ProcessQuery RPC or transport failure eligible for `resumeTurn` rollover."""
-    err_low = str(err_text or "").lower()
-    if not err_low:
-        return False
-    if (
-        "no longer in progress" in err_low
-        or "requested turn to resume" in err_low
-        or "quota" in err_low
-        or "exhausted" in err_low
-        or "downgraded by server" in err_low
-        or "unauthenticated" in err_low
-        or "permission_denied" in err_low
-        or "invalid_argument" in err_low
-    ):
-        return False
-    return any(
-        kw in err_low
-        for kw in (
-            "dependency rpc failed",
-            "createinteractionbidistream",
-            "interactionservice",
-            "deadline_exceeded",
-            "stalled waiting for channel",
-            "rpcstreamexception",
-            "rpcclientflowexception",
-            "robinservice stream timed out",
-            "robinservice http/2",
-            "robinservice grpc error (grpc-status=14)",
-            "robinservice grpc error (grpc-status=4)",
-            "robinservice grpc error (grpc-status=13)",
-            "unavailable",
+@dataclass(frozen=True)
+class _RobinPqFault:
+    """Structured ProcessQuery stream fault emitted by the classification layer."""
+
+    kind: str
+    grpc_status: int | None
+    old_status: str
+    service_method: str
+    raw_message: str
+    rule_id: str
+
+
+@dataclass(frozen=True)
+class _RobinPqFaultFacts:
+    """Normalized transport and text facts extracted before priority-table classification."""
+
+    exc_type_name: str
+    is_transport_exc: bool
+    is_trailer_grpc_error: bool
+    grpc_status: int | None
+    http_status: int | None
+    service_method: str
+    old_status: str
+    raw_message: str
+
+
+@dataclass(frozen=True)
+class _RobinPqRunContext:
+    """Immutable run-phase and budget context consumed by the pure PQ recovery policy."""
+
+    is_cancelled: bool
+    has_remote_identity: bool
+    run_phase: Literal[
+        "PRE_IDENTITY",
+        "RUNNING_NO_ANSWER",
+        "WAITING_TOOLS",
+        "PARTIAL_ANSWER",
+        "MAYBE_TERMINAL",
+    ]
+    has_committed_answer: bool
+    has_pending_tools: bool
+    ert_session_complete: bool
+    is_h2_resumable: bool
+    attempt: int = 0
+    elapsed_recovery_s: float = 0.0
+    max_attempts: int = 3
+    budget_s: float = 45.0
+    reconcile_timeout_s: float = 5.0
+    terminal_reconcile_timeout_s: float = 8.0
+    resume_timeout_s: float = 15.0
+    backoff_base_s: float = 0.5
+
+
+@dataclass(frozen=True)
+class _RobinPqRecoveryPlan:
+    """Pure policy decision describing the bounded recovery action for a PQ fault."""
+
+    action: Literal[
+        "FAIL",
+        "RECONCILE_THEN_FAIL",
+        "RESUME_WITH_BACKOFF",
+        "RECONCILE_THEN_RESUME",
+        "FINISH_FROM_REMOTE",
+    ]
+    reconcile_timeout_s: float
+    resume_timeout_s: float
+    backoff_s: float
+    max_attempts: int
+    reason_code: str
+
+
+_ROBIN_PQ_GRPC_STATUS_RE = re.compile(r"grpc-status\s*=\s*(\d+)", re.IGNORECASE)
+_ROBIN_PQ_EYE3_METHOD_RE = re.compile(r"<eye3\s+title=['\"]([^,'\"]+)", re.IGNORECASE)
+_ROBIN_PQ_OLD_STATUS_RE = re.compile(r"old\s+status\s*:\s*([^)\r\n]+)", re.IGNORECASE)
+
+_ROBIN_PQ_TRANSIENT_OLD_STATUS_KEYWORDS: tuple[str, ...] = (
+    "rpc::stream_broken",
+    "transport has been closed",
+    "unavailable",
+    "deadline_exceeded",
+    "cancelled",
+)
+_ROBIN_PQ_TRANSIENT_RPC_KEYWORDS: tuple[str, ...] = (
+    "dependency rpc failed",
+    "createinteractionbidistream",
+    "interactionservice",
+    "deadline_exceeded",
+    "stalled waiting for channel",
+    "rpcstreamexception",
+    "rpcclientflowexception",
+    "robinservice stream timed out",
+    "robinservice http/2",
+    "robinservice grpc error (grpc-status=14)",
+    "robinservice grpc error (grpc-status=4)",
+    "robinservice grpc error (grpc-status=13)",
+    "rpc::stream_broken",
+    "transport has been closed",
+    "unavailable",
+)
+
+
+def _robin_extract_pq_fault_facts(
+    exc_or_msg: Any,
+    *,
+    grpc_status: int | None = None,
+    http_status: int | None = None,
+    is_trailer_grpc_error: bool = False,
+) -> _RobinPqFaultFacts:
+    """Extract transport metadata and structured text markers from a PQ exception or message."""
+    if isinstance(exc_or_msg, _RobinPqFault):
+        return _RobinPqFaultFacts(
+            exc_type_name="_RobinPqFault",
+            is_transport_exc=False,
+            is_trailer_grpc_error=is_trailer_grpc_error
+            or "robinservice grpc error (grpc-status="
+            in exc_or_msg.raw_message.lower(),
+            grpc_status=grpc_status
+            if grpc_status is not None
+            else exc_or_msg.grpc_status,
+            http_status=http_status,
+            service_method=exc_or_msg.service_method,
+            old_status=exc_or_msg.old_status,
+            raw_message=exc_or_msg.raw_message,
         )
+    exc_type_name = (
+        type(exc_or_msg).__name__ if isinstance(exc_or_msg, BaseException) else "str"
+    )
+    is_transport_exc = isinstance(exc_or_msg, (H2Error, OSError, asyncio.TimeoutError))
+    raw_message = str(exc_or_msg or "")
+    msg_low = raw_message.lower()
+
+    resolved_grpc = grpc_status
+    if resolved_grpc is None and isinstance(exc_or_msg, BaseException):
+        attr_grpc = getattr(exc_or_msg, "grpc_status", None)
+        if attr_grpc is not None:
+            try:
+                resolved_grpc = int(attr_grpc)
+            except (TypeError, ValueError):
+                resolved_grpc = None
+    if resolved_grpc is None:
+        m_grpc = _ROBIN_PQ_GRPC_STATUS_RE.search(raw_message)
+        if m_grpc is not None:
+            try:
+                resolved_grpc = int(m_grpc.group(1))
+            except (TypeError, ValueError):
+                resolved_grpc = None
+
+    resolved_http = http_status
+    if resolved_http is None and isinstance(exc_or_msg, BaseException):
+        attr_http = getattr(exc_or_msg, "http_status", None) or getattr(
+            exc_or_msg, "status", None
+        )
+        if attr_http is not None:
+            try:
+                resolved_http = int(attr_http)
+            except (TypeError, ValueError):
+                resolved_http = None
+
+    m_method = _ROBIN_PQ_EYE3_METHOD_RE.search(raw_message)
+    service_method = m_method.group(1).strip() if m_method is not None else ""
+    m_old = _ROBIN_PQ_OLD_STATUS_RE.search(raw_message)
+    old_status = m_old.group(1).strip() if m_old is not None else ""
+    trailer_err = bool(
+        is_trailer_grpc_error or "robinservice grpc error (grpc-status=" in msg_low
+    )
+    return _RobinPqFaultFacts(
+        exc_type_name=exc_type_name,
+        is_transport_exc=is_transport_exc,
+        is_trailer_grpc_error=trailer_err,
+        grpc_status=resolved_grpc,
+        http_status=resolved_http,
+        service_method=service_method,
+        old_status=old_status,
+        raw_message=raw_message,
+    )
+
+
+def _robin_classify_pq_fault(
+    exc_or_msg: Any,
+    *,
+    grpc_status: int | None = None,
+    http_status: int | None = None,
+    is_trailer_grpc_error: bool = False,
+) -> _RobinPqFault:
+    """Classify a ProcessQuery stream error using an explicit priority-ordered rule table."""
+    if isinstance(exc_or_msg, _RobinPqFaultError):
+        return exc_or_msg.fault
+    if isinstance(exc_or_msg, _RobinPqFault):
+        return exc_or_msg
+    facts = _robin_extract_pq_fault_facts(
+        exc_or_msg,
+        grpc_status=grpc_status,
+        http_status=http_status,
+        is_trailer_grpc_error=is_trailer_grpc_error,
+    )
+    msg_low = facts.raw_message.lower()
+    old_low = facts.old_status.lower()
+
+    def _emit(kind: str, rule_id: str) -> _RobinPqFault:
+        return _RobinPqFault(
+            kind=kind,
+            grpc_status=facts.grpc_status,
+            old_status=facts.old_status,
+            service_method=facts.service_method,
+            raw_message=facts.raw_message,
+            rule_id=rule_id,
+        )
+
+    # Priority 1: remote turn is already finished and must not be resumed.
+    if "no longer in progress" in msg_low or "requested turn to resume" in msg_low:
+        return _emit("TURN_ALREADY_FINISHED", "p1_turn_already_finished")
+
+    # Priority 2: quota exhaustion or server-side model downgrade.
+    if (
+        "quota" in msg_low
+        or "exhausted" in msg_low
+        or "downgraded by server" in msg_low
+        or "resource_exhausted" in msg_low
+    ):
+        return _emit("QUOTA_OR_DOWNGRADE", "p2_quota_or_downgrade")
+
+    # Priority 3: authentication, authorization, or invalid client request.
+    if (
+        facts.grpc_status in (3, 5, 7, 16)
+        or facts.http_status in (400, 401, 403)
+        or "unauthenticated" in msg_low
+        or "permission_denied" in msg_low
+        or "invalid_argument" in msg_low
+    ):
+        return _emit("AUTH_OR_CLIENT_ERROR", "p3_auth_or_client_error")
+
+    # Priority 4: Extensible Stubs retry exhaustion caused by a confirmed transient old status.
+    if "extensible_stubs::unable_to_retry" in msg_low:
+        if old_low and any(
+            kw in old_low for kw in _ROBIN_PQ_TRANSIENT_OLD_STATUS_KEYWORDS
+        ):
+            return _emit(
+                "STUB_RETRY_EXHAUSTED_TRANSIENT",
+                "p4_stub_retry_exhausted_transient",
+            )
+        # Priority 5: Extensible Stubs retry exhaustion without a transient old status.
+        return _emit(
+            "STUB_RETRY_EXHAUSTED_UNKNOWN",
+            "p5_stub_retry_exhausted_unknown",
+        )
+
+    # Priority 6: confirmed transport or transient RPC failure.
+    # Plain inline INTERNAL (grpc_status=13 without trailer transport error) is excluded
+    # and falls through to Priority 7 UNKNOWN.
+    if (
+        facts.is_transport_exc
+        or facts.grpc_status in (4, 14)
+        or (facts.is_trailer_grpc_error and facts.grpc_status == 13)
+        or any(kw in msg_low for kw in _ROBIN_PQ_TRANSIENT_RPC_KEYWORDS)
+    ):
+        return _emit("TRANSPORT_OR_RPC_TRANSIENT", "p6_transport_or_rpc_transient")
+
+    # Priority 7: unknown / unclassified error (never optimistically retried).
+    return _emit("UNKNOWN", "p7_unknown")
+
+
+def _robin_plan_pq_recovery(
+    fault: _RobinPqFault, ctx: _RobinPqRunContext
+) -> _RobinPqRecoveryPlan:
+    """Compute a pure, bounded recovery plan from the classified PQ fault and run context."""
+    rec_t = max(0.05, float(ctx.reconcile_timeout_s))
+    term_rec_t = max(0.05, float(ctx.terminal_reconcile_timeout_s))
+    res_t = max(0.05, float(ctx.resume_timeout_s))
+    max_att = max(0, int(ctx.max_attempts))
+    backoff = max(0.0, float(ctx.backoff_base_s)) * (2 ** max(0, int(ctx.attempt)))
+
+    # Highest-priority invariant: never recover a locally cancelled run.
+    if ctx.is_cancelled:
+        return _RobinPqRecoveryPlan(
+            action="FAIL",
+            reconcile_timeout_s=0.0,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code="run_cancelled",
+        )
+
+    if fault.kind == "QUOTA_OR_DOWNGRADE":
+        return _RobinPqRecoveryPlan(
+            action="FAIL",
+            reconcile_timeout_s=0.0,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code="quota_or_downgrade",
+        )
+
+    if fault.kind == "AUTH_OR_CLIENT_ERROR":
+        return _RobinPqRecoveryPlan(
+            action="FAIL",
+            reconcile_timeout_s=0.0,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code="auth_or_client_error",
+        )
+
+    if ctx.run_phase == "PRE_IDENTITY" or not ctx.has_remote_identity:
+        reason = (
+            "unknown_pre_identity" if fault.kind == "UNKNOWN" else "no_remote_identity"
+        )
+        return _RobinPqRecoveryPlan(
+            action="FAIL",
+            reconcile_timeout_s=0.0,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code=reason,
+        )
+
+    if fault.kind == "TURN_ALREADY_FINISHED":
+        return _RobinPqRecoveryPlan(
+            action="RECONCILE_THEN_FAIL",
+            reconcile_timeout_s=term_rec_t,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code="turn_already_finished",
+        )
+
+    if fault.kind == "STUB_RETRY_EXHAUSTED_UNKNOWN":
+        return _RobinPqRecoveryPlan(
+            action="RECONCILE_THEN_FAIL",
+            reconcile_timeout_s=term_rec_t,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code="stub_retry_exhausted_unknown",
+        )
+
+    if fault.kind == "UNKNOWN":
+        return _RobinPqRecoveryPlan(
+            action="RECONCILE_THEN_FAIL",
+            reconcile_timeout_s=term_rec_t,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code="unknown_fault",
+        )
+
+    # Transient faults: STUB_RETRY_EXHAUSTED_TRANSIENT / TRANSPORT_OR_RPC_TRANSIENT.
+    if (
+        not ctx.is_h2_resumable
+        or ctx.attempt >= max_att
+        or ctx.elapsed_recovery_s >= float(ctx.budget_s)
+    ):
+        degrade_reason = (
+            "not_h2_resumable"
+            if not ctx.is_h2_resumable
+            else "recovery_budget_exhausted"
+        )
+        return _RobinPqRecoveryPlan(
+            action="RECONCILE_THEN_FAIL",
+            reconcile_timeout_s=term_rec_t,
+            resume_timeout_s=0.0,
+            backoff_s=0.0,
+            max_attempts=0,
+            reason_code=degrade_reason,
+        )
+
+    if ctx.run_phase == "RUNNING_NO_ANSWER":
+        return _RobinPqRecoveryPlan(
+            action="RESUME_WITH_BACKOFF",
+            reconcile_timeout_s=term_rec_t,
+            resume_timeout_s=res_t,
+            backoff_s=backoff,
+            max_attempts=max_att,
+            reason_code=f"{fault.kind.lower()}_running_no_answer",
+        )
+
+    if ctx.run_phase == "WAITING_TOOLS":
+        if ctx.ert_session_complete:
+            return _RobinPqRecoveryPlan(
+                action="RECONCILE_THEN_RESUME",
+                reconcile_timeout_s=rec_t,
+                resume_timeout_s=res_t,
+                backoff_s=backoff,
+                max_attempts=max_att,
+                reason_code=f"{fault.kind.lower()}_waiting_tools_ert_ended",
+            )
+        return _RobinPqRecoveryPlan(
+            action="RESUME_WITH_BACKOFF",
+            reconcile_timeout_s=rec_t,
+            resume_timeout_s=res_t,
+            backoff_s=backoff,
+            max_attempts=max_att,
+            reason_code=f"{fault.kind.lower()}_waiting_tools",
+        )
+
+    # PARTIAL_ANSWER or MAYBE_TERMINAL: reconcile first, then resume if still in progress.
+    return _RobinPqRecoveryPlan(
+        action="RECONCILE_THEN_RESUME",
+        reconcile_timeout_s=rec_t,
+        resume_timeout_s=res_t,
+        backoff_s=backoff,
+        max_attempts=max_att,
+        reason_code=f"{fault.kind.lower()}_{ctx.run_phase.lower()}",
+    )
+
+
+def _robin_is_transient_pq_stream_error(err_text: str) -> bool:
+    """Compatibility wrapper: True when `_robin_classify_pq_fault` marks the error as transient."""
+    fault = _robin_classify_pq_fault(err_text)
+    return fault.kind in (
+        "STUB_RETRY_EXHAUSTED_TRANSIENT",
+        "TRANSPORT_OR_RPC_TRANSIENT",
     )
 
 
@@ -64401,6 +64794,20 @@ class _RobinRunActor:
     created_at: float = field(default_factory=time.monotonic)
     # Loop that owns `mux_queue` and the driver tasks; Relay ingress hops onto it.
     loop: Any = None
+    recovery_epoch: int = 0
+    pending_recovery_fault: _RobinPqFault | None = None
+    pending_recovery_epoch: int = -1
+    recovery_event: Any = None
+    _pq_recovery_budget_seconds: float | None = None
+    _pq_waiting_tools_probe_seconds: float | None = None
+    _pq_waiting_tools_total_seconds: float | None = None
+    _pq_resume_timeout_seconds: float | None = None
+    _reconcile_timeout_seconds: float | None = None
+    _ert_io_timeout_seconds: float | None = None
+    _pq_recovery_backoff_base_seconds: float = 0.5
+    _relay_tool_wait_max_seconds: float | None = None
+    _non_watchdog_idle_timeout_seconds: float | None = None
+    _token_refresh_timeout_seconds: float | None = None
 
     def __post_init__(self) -> None:
         if self.mux_queue is None:
@@ -64418,6 +64825,186 @@ class _RobinRunActor:
                 self.tools_resumed_event.set()
             except RuntimeError:
                 pass
+        if self.recovery_event is None:
+            try:
+                self.recovery_event = asyncio.Event()
+            except RuntimeError:
+                pass
+
+    def _effective_pq_recovery_budget(self) -> float:
+        if self._pq_recovery_budget_seconds is not None:
+            return max(0.05, float(self._pq_recovery_budget_seconds))
+        return GEMINI_PQ_RECOVERY_BUDGET_SECONDS
+
+    def _effective_waiting_tools_probe_interval(self) -> float:
+        if self._pq_waiting_tools_probe_seconds is not None:
+            return max(0.01, float(self._pq_waiting_tools_probe_seconds))
+        return GEMINI_PQ_WAITING_TOOLS_PROBE_SECONDS
+
+    def _effective_waiting_tools_total_budget(self) -> float:
+        if self._pq_waiting_tools_total_seconds is not None:
+            return max(0.02, float(self._pq_waiting_tools_total_seconds))
+        return max(0.01, float(GEMINI_TOTAL_TIMEOUT_SECONDS))
+
+    def _effective_non_watchdog_idle_cap(self) -> float:
+        if self._non_watchdog_idle_timeout_seconds is not None:
+            return max(0.02, float(self._non_watchdog_idle_timeout_seconds))
+        return max(1.0, float(GEMINI_TOTAL_TIMEOUT_SECONDS))
+
+    def _effective_reconcile_timeout(self, *, pre_rollover: bool = False) -> float:
+        if pre_rollover:
+            override = getattr(self, "_pre_rollover_reconcile_timeout_seconds", None)
+            if override is not None:
+                return max(0.02, float(override))
+            if self._reconcile_timeout_seconds is not None:
+                return max(0.02, float(self._reconcile_timeout_seconds))
+            return _ROBIN_PRE_ROLLOVER_RECONCILE_TIMEOUT_SECONDS
+        if self._reconcile_timeout_seconds is not None:
+            return max(0.02, float(self._reconcile_timeout_seconds))
+        return _ROBIN_RECONCILE_TIMEOUT_SECONDS
+
+    def _effective_pq_resume_timeout(self) -> float:
+        if self._pq_resume_timeout_seconds is not None:
+            return max(0.02, float(self._pq_resume_timeout_seconds))
+        return _ROBIN_PQ_RESUME_TIMEOUT_SECONDS
+
+    def _effective_ert_io_timeout(self) -> float:
+        if self._ert_io_timeout_seconds is not None:
+            return max(0.02, float(self._ert_io_timeout_seconds))
+        return _ROBIN_ERT_IO_TIMEOUT_SECONDS
+
+    def _build_pq_run_context(
+        self,
+        *,
+        attempt: int = 0,
+        elapsed_recovery_s: float = 0.0,
+        max_attempts: int = 3,
+    ) -> _RobinPqRunContext:
+        has_remote_id = bool(
+            (self.decoder.conversation_id or self.run.conversation_id)
+            and (self.decoder.request_id or self.run.request_id)
+        )
+        has_committed_answer = bool(
+            (self.run.answer_projector.committed_text or "").strip()
+        )
+        has_pending_tools = bool(
+            self.run.execution_state == "WAITING_TOOLS"
+            or self.decoder.pending_tool_calls
+            or self.pending_tool_calls
+        )
+        ert_complete = bool(
+            getattr(self.decoder, "ert_session_complete", False)
+            or self.run.ert_transport_state == "ENDED"
+        )
+        if not has_remote_id:
+            phase: Literal[
+                "PRE_IDENTITY",
+                "RUNNING_NO_ANSWER",
+                "WAITING_TOOLS",
+                "PARTIAL_ANSWER",
+                "MAYBE_TERMINAL",
+            ] = "PRE_IDENTITY"
+        elif has_pending_tools:
+            phase = "WAITING_TOOLS"
+        elif self.resume_turn_already_finished or (
+            ert_complete and not self.awaiting_post_tool_progress
+        ):
+            phase = "MAYBE_TERMINAL"
+        elif has_committed_answer:
+            phase = "PARTIAL_ANSWER"
+        else:
+            phase = "RUNNING_NO_ANSWER"
+        return _RobinPqRunContext(
+            is_cancelled=(self.run.cancellation_state != "NONE"),
+            has_remote_identity=has_remote_id,
+            run_phase=phase,
+            has_committed_answer=has_committed_answer,
+            has_pending_tools=has_pending_tools,
+            ert_session_complete=ert_complete,
+            is_h2_resumable=isinstance(
+                self.response, (_RobinHTTP2Response, _RobinMuxResponse)
+            ),
+            attempt=attempt,
+            elapsed_recovery_s=elapsed_recovery_s,
+            max_attempts=max_attempts,
+            budget_s=self._effective_pq_recovery_budget(),
+            reconcile_timeout_s=self._effective_reconcile_timeout(pre_rollover=True),
+            terminal_reconcile_timeout_s=self._effective_reconcile_timeout(
+                pre_rollover=False
+            ),
+            resume_timeout_s=self._effective_pq_resume_timeout(),
+            backoff_base_s=max(0.0, float(self._pq_recovery_backoff_base_seconds)),
+        )
+
+    def _log_pq_recovery_decision(
+        self,
+        fault: _RobinPqFault,
+        ctx: _RobinPqRunContext,
+        plan: _RobinPqRecoveryPlan,
+        *,
+        outcome: str,
+        reconcile_ms: float = 0.0,
+    ) -> None:
+        budget_rem = max(0.0, float(ctx.budget_s) - float(ctx.elapsed_recovery_s))
+        _gemini_debug_log_event(
+            self.session_id,
+            "pq_recovery_decision",
+            {
+                "run_id": self.run.run_id,
+                "conversation_id": self.decoder.conversation_id
+                or self.run.conversation_id,
+                "request_id": self.decoder.request_id or self.run.request_id,
+                "fault_kind": fault.kind,
+                "rule_id": fault.rule_id,
+                "run_phase": ctx.run_phase,
+                "action": plan.action,
+                "attempt": ctx.attempt,
+                "reason": plan.reason_code,
+                "budget_remaining_s": round(budget_rem, 3),
+                "reconcile_ms": round(float(reconcile_ms), 1),
+                "outcome": outcome,
+            },
+        )
+
+    def request_pq_recovery(self, fault: _RobinPqFault) -> bool:
+        """Signal `_pq_driver_loop` to execute bounded recovery; return False if driver is already done."""
+        if self.pq_pump_task is None or self.pq_pump_task.done():
+            self.pending_recovery_fault = fault
+            self.pending_recovery_epoch = self.recovery_epoch
+            return False
+        self.pending_recovery_fault = fault
+        self.pending_recovery_epoch = self.recovery_epoch
+        if self.recovery_event is None:
+            self.recovery_event = asyncio.Event()
+        self.recovery_event.set()
+        return True
+
+    def _finalize_parked_or_terminal_from_driver(
+        self, *, outcome: Literal["SUCCEEDED", "FAILED"], reason: str
+    ) -> None:
+        """Two-phase terminal closure from driver: release blockers now, keep parked buffer if TOOL_HANDOFF."""
+        self._relay_cancel_pending(reason=reason)
+        _relay_clear_active_run(self.run)
+        self.decoder.pending_tool_calls.clear()
+        self.pending_tool_calls.clear()
+        self.decoder.finish_reason = None
+        if outcome == "SUCCEEDED":
+            self.decoder.is_completed = True
+            self.decoder.eod = True
+        self.run.execution_state = "TERMINAL"
+        self.run.outcome_state = outcome
+        self.run.finalization_state = "CLOSED"
+        if self.run.attachment_state != "TOOL_HANDOFF":
+            self.run.attachment_state = "CLOSED"
+        _GEMINI_DSH_STORE.save_run(self.run)
+        cur_task = None
+        try:
+            cur_task = asyncio.current_task()
+        except RuntimeError:
+            cur_task = None
+        for bg_task in (self.ert_pump_task, self.presence_task):
+            if bg_task is not None and not bg_task.done() and bg_task is not cur_task:
+                bg_task.cancel()
 
     async def _ensure_fresh_access_token(self, *, force: bool = False) -> str:
         """Refresh `self.access_token` when expired, near expiry, or forced after an upstream 401."""
@@ -64434,8 +65021,16 @@ class _RobinRunActor:
         if not needs_refresh and self.access_token:
             return self.access_token
         old_token = self.access_token
+        refresh_timeout = (
+            max(0.02, float(self._token_refresh_timeout_seconds))
+            if self._token_refresh_timeout_seconds is not None
+            else 15.0
+        )
         try:
-            refreshed = await refresher(self.http_session, cred, force_refresh=force)
+            refreshed = await asyncio.wait_for(
+                refresher(self.http_session, cred, force_refresh=force),
+                timeout=refresh_timeout,
+            )
             if refreshed:
                 self.access_token = str(refreshed)
                 _robin_migrate_account_caches(
@@ -64546,16 +65141,26 @@ class _RobinRunActor:
                             self.ert_iterator = None
                         await self._ensure_fresh_access_token()
                         shared_mux = getattr(self.response, "_mux", None)
-                        (
-                            ert_resp,
-                            ert_iter,
-                        ) = await _robin_open_execute_remote_tools_stream(
-                            self.http_session,
-                            self.access_token,
-                            self.decoder.conversation_id,
-                            server_token=self.server_token,
-                            mux=shared_mux,
-                        )
+                        ert_io_timeout = self._effective_ert_io_timeout()
+                        try:
+                            (
+                                ert_resp,
+                                ert_iter,
+                            ) = await asyncio.wait_for(
+                                _robin_open_execute_remote_tools_stream(
+                                    self.http_session,
+                                    self.access_token,
+                                    self.decoder.conversation_id,
+                                    server_token=self.server_token,
+                                    mux=shared_mux,
+                                ),
+                                timeout=ert_io_timeout,
+                            )
+                        except asyncio.TimeoutError:
+                            last_err = (
+                                f"ert stream open timed out after {ert_io_timeout:.1f}s"
+                            )
+                            ert_resp, ert_iter = None, None
                         if ert_resp is not None and ert_iter is not None:
                             self.ert_response = ert_resp
                             self.ert_iterator = ert_iter
@@ -64571,12 +65176,18 @@ class _RobinRunActor:
                     if self.ert_response is not None and hasattr(
                         self.ert_response, "send_grpc_frames"
                     ):
+                        ert_send_timeout = self._effective_ert_io_timeout()
                         try:
-                            await self.ert_response.send_grpc_frames(
-                                [frame_to_send], end_stream=False
+                            await asyncio.wait_for(
+                                self.ert_response.send_grpc_frames(
+                                    [frame_to_send], end_stream=False
+                                ),
+                                timeout=ert_send_timeout,
                             )
                             sent_ok = True
                             break
+                        except asyncio.TimeoutError:
+                            last_err = f"ert send_grpc_frames timed out after {ert_send_timeout:.1f}s"
                         except Exception as exc:
                             last_err = str(exc)
                     elif self.ert_response is not None:
@@ -64681,6 +65292,14 @@ class _RobinRunActor:
                 ledger.by_public_id.get(tc_id) if ledger is not None and tc_id else None
             )
             is_relay = inv is not None and inv.source == "relay"
+            if is_relay and inv is not None and inv.status == "REPORTED":
+                # Idempotently absorb late `role:tool` arriving after a Relay timeout/abort.
+                _queue_spliced_notice(spliced_notice)
+                if tc_id:
+                    reconciled_ids.add(tc_id)
+                rec.absorbed_bg = True
+                rec.relay_touched = True
+                continue
             moved_job_id = ""
             if inv is not None and ledger is not None:
                 if (
@@ -65532,6 +66151,39 @@ class _RobinRunActor:
             if inv.bg_parent_inv is not None:
                 inv.status = "REPORTED"
                 inv.bg_done_delivered = True
+                poll_pub_id = str(inv.public_tool_call_id or "").strip()
+                if poll_pub_id:
+                    before_len = len(self.decoder.pending_tool_calls)
+                    remaining_dec = [
+                        tc
+                        for tc in self.decoder.pending_tool_calls
+                        if str(tc.get("id") or "").strip() != poll_pub_id
+                    ]
+                    if len(remaining_dec) != before_len:
+                        for idx_r, tc_r in enumerate(remaining_dec):
+                            tc_r["index"] = idx_r
+                        self.decoder.pending_tool_calls = remaining_dec
+                        self.pending_tool_calls = [
+                            tc
+                            for tc in self.pending_tool_calls
+                            if str(tc.get("id") or "").strip() != poll_pub_id
+                        ]
+                        for idx_a, tc_a in enumerate(self.pending_tool_calls):
+                            tc_a["index"] = idx_a
+                        self.decoder.finish_reason = (
+                            "tool_calls" if remaining_dec else None
+                        )
+                        if not remaining_dec:
+                            if self.run.execution_state != "TERMINAL":
+                                self.run.execution_state = "RUNNING"
+                            if self.run.attachment_state not in (
+                                "TOOL_HANDOFF",
+                                "CLOSED",
+                            ):
+                                self.run.attachment_state = "STREAMING"
+                            if self.tools_resumed_event is not None:
+                                self.tools_resumed_event.set()
+                        _GEMINI_DSH_STORE.save_run(self.run)
             if not build_snapshot:
                 return None
             snap_inv = inv.bg_parent_inv or inv
@@ -65599,8 +66251,10 @@ class _RobinRunActor:
             self.pending_tool_calls = list(remaining)
             self.decoder.finish_reason = "tool_calls" if remaining else None
             if not remaining:
-                self.run.execution_state = "RUNNING"
-                self.run.attachment_state = "STREAMING"
+                if self.run.execution_state != "TERMINAL":
+                    self.run.execution_state = "RUNNING"
+                if self.run.attachment_state not in ("TOOL_HANDOFF", "CLOSED"):
+                    self.run.attachment_state = "STREAMING"
                 if self.tools_resumed_event is not None:
                     self.tools_resumed_event.set()
             else:
@@ -65628,7 +66282,7 @@ class _RobinRunActor:
                 is_error=True,
             )
 
-    async def _rollover_ert_stream(self) -> bool:
+    async def _rollover_ert_stream(self, *, timeout_s: float | None = None) -> bool:
         """Close the current ERT stream and immediately open a fresh ERT stream on the shared HTTP/2 connection."""
         if not self.decoder.conversation_id or self.run.execution_state == "TERMINAL":
             return False
@@ -65654,15 +66308,33 @@ class _RobinRunActor:
             self.ert_iterator = None
         self.decoder.on_ert_stream_rollover()
         self.run.ert_transport_state = "ROLLING_OVER"
-        await self._ensure_fresh_access_token()
-        shared_mux = getattr(self.response, "_mux", None)
-        ert_resp, ert_iter = await _robin_open_execute_remote_tools_stream(
-            self.http_session,
-            self.access_token,
-            self.decoder.conversation_id,
-            server_token=self.server_token,
-            mux=shared_mux,
+        eff_timeout = (
+            max(0.02, float(timeout_s))
+            if timeout_s is not None
+            else self._effective_pq_resume_timeout()
         )
+        try:
+            await asyncio.wait_for(
+                self._ensure_fresh_access_token(), timeout=eff_timeout
+            )
+            shared_mux = getattr(self.response, "_mux", None)
+            ert_resp, ert_iter = await asyncio.wait_for(
+                _robin_open_execute_remote_tools_stream(
+                    self.http_session,
+                    self.access_token,
+                    self.decoder.conversation_id,
+                    server_token=self.server_token,
+                    mux=shared_mux,
+                ),
+                timeout=eff_timeout,
+            )
+        except asyncio.TimeoutError:
+            _llm_log.warning(
+                "Robin ERT rollover stream open timed out after %.1fs (run=%s)",
+                eff_timeout,
+                self.run.run_id,
+            )
+            return False
         if ert_resp is None or ert_iter is None:
             return False
         self.ert_response = ert_resp
@@ -65679,7 +66351,7 @@ class _RobinRunActor:
         return True
 
     async def _pq_driver_loop(self) -> None:
-        """Background ProcessQuery stream driver with undeferred `resumeTurn` rollover and progress-gated reconnect."""
+        """Background ProcessQuery stream driver with policy-driven recovery and segmented WAITING_TOOLS probing."""
         cur_iter = self.iterator
         self.pq_opened_monotonic = time.monotonic()
         next_rollover_deadline = self.pq_opened_monotonic + GEMINI_PQ_ROLLOVER_SECONDS
@@ -65692,6 +66364,9 @@ class _RobinRunActor:
             len(self.run.answer_projector.committed_text),
         )
         live_max_at_stream_open: int = self.run.state_tape.max_stream_live_states
+        recovery_wait_task: asyncio.Task[bool] | None = None
+        if self.recovery_event is None:
+            self.recovery_event = asyncio.Event()
         try:
             while (
                 self.run.execution_state != "TERMINAL"
@@ -65701,18 +66376,52 @@ class _RobinRunActor:
                     self.response, (_RobinHTTP2Response, _RobinMuxResponse)
                 )
                 next_pq_task: asyncio.Task[bytes] | None = None
+                active_recovery_fault: _RobinPqFault | None = None
                 try:
                     while True:
                         if next_pq_task is None:
                             next_pq_task = _robin_start_anext_future(cur_iter)
+                        if (
+                            recovery_wait_task is None
+                            and self.recovery_event is not None
+                        ):
+                            recovery_wait_task = asyncio.create_task(
+                                self.recovery_event.wait()
+                            )
                         pq_task: asyncio.Task[bytes] = next_pq_task
+                        wait_set: set[asyncio.Task[Any]] = {pq_task}
+                        if recovery_wait_task is not None:
+                            wait_set.add(recovery_wait_task)
                         if use_rollover_watchdog:
                             remaining = max(
                                 0.5, next_rollover_deadline - time.monotonic()
                             )
-                            done, _ = await asyncio.wait({pq_task}, timeout=remaining)
+                            done, _ = await asyncio.wait(
+                                wait_set,
+                                timeout=remaining,
+                                return_when=asyncio.FIRST_COMPLETED,
+                            )
+                            if (
+                                recovery_wait_task is not None
+                                and recovery_wait_task in done
+                            ):
+                                recovery_wait_task = None
+                                if self.recovery_event is not None:
+                                    self.recovery_event.clear()
+                                req_fault = self.pending_recovery_fault
+                                req_epoch = self.pending_recovery_epoch
+                                self.pending_recovery_fault = None
+                                if (
+                                    req_fault is not None
+                                    and req_epoch == self.recovery_epoch
+                                ):
+                                    active_recovery_fault = req_fault
+                                    await _robin_cleanup_anext_future(pq_task)
+                                    next_pq_task = None
+                                    raise StopAsyncIteration
+                                continue
                             if not done:
-                                # §2.3 / §11: Planned rollover is NEVER deferred by WAITING_TOOLS
+                                # Planned rollover is never deferred by WAITING_TOOLS.
                                 if (
                                     self.run.execution_state != "TERMINAL"
                                     and self.decoder.conversation_id
@@ -65758,17 +66467,69 @@ class _RobinRunActor:
                                 next_rollover_deadline = time.monotonic() + 5.0
                                 continue
                         else:
-                            await asyncio.wait({pq_task})
+                            idle_cap = self._effective_non_watchdog_idle_cap()
+                            done, _ = await asyncio.wait(
+                                wait_set,
+                                timeout=idle_cap,
+                                return_when=asyncio.FIRST_COMPLETED,
+                            )
+                            if (
+                                recovery_wait_task is not None
+                                and recovery_wait_task in done
+                            ):
+                                recovery_wait_task = None
+                                if self.recovery_event is not None:
+                                    self.recovery_event.clear()
+                                req_fault = self.pending_recovery_fault
+                                req_epoch = self.pending_recovery_epoch
+                                self.pending_recovery_fault = None
+                                if (
+                                    req_fault is not None
+                                    and req_epoch == self.recovery_epoch
+                                ):
+                                    active_recovery_fault = req_fault
+                                    await _robin_cleanup_anext_future(pq_task)
+                                    next_pq_task = None
+                                    raise StopAsyncIteration
+                                continue
+                            if not done:
+                                await _robin_cleanup_anext_future(pq_task)
+                                next_pq_task = None
+                                raise asyncio.TimeoutError(
+                                    f"ProcessQuery idle timeout after {idle_cap:.1f}s"
+                                )
                         next_pq_task = None
                         try:
                             raw_bytes = pq_task.result()
-                        except (GeminiStreamError, H2Error, OSError) as pq_exc:
-                            err_low = str(pq_exc).lower()
-                            if (
-                                "no longer in progress" in err_low
-                                or "requested turn to resume" in err_low
-                            ):
+                        except (
+                            GeminiStreamError,
+                            H2Error,
+                            OSError,
+                            asyncio.TimeoutError,
+                        ) as pq_exc:
+                            resp_hdrs = getattr(self.response, "headers", None) or {}
+                            raw_gs = resp_hdrs.get("grpc-status")
+                            resp_gs: int | None = None
+                            if raw_gs is not None and str(raw_gs).strip():
+                                try:
+                                    resp_gs = int(str(raw_gs).strip())
+                                except (TypeError, ValueError):
+                                    resp_gs = None
+                            fault = _robin_classify_pq_fault(
+                                pq_exc, grpc_status=resp_gs
+                            )
+                            ctx = self._build_pq_run_context(
+                                attempt=0, elapsed_recovery_s=0.0
+                            )
+                            plan = _robin_plan_pq_recovery(fault, ctx)
+                            if fault.kind == "TURN_ALREADY_FINISHED":
                                 self.resume_turn_already_finished = True
+                                self._log_pq_recovery_decision(
+                                    fault,
+                                    ctx,
+                                    plan,
+                                    outcome="turn_already_finished",
+                                )
                                 _gemini_debug_log_event(
                                     self.session_id,
                                     "pq_resume_turn_already_finished",
@@ -65781,20 +66542,17 @@ class _RobinRunActor:
                                 )
                                 break
                             if (
-                                use_rollover_watchdog
+                                plan.action
+                                in ("RESUME_WITH_BACKOFF", "RECONCILE_THEN_RESUME")
                                 and not self.decoder.is_completed
                                 and self.run.execution_state != "TERMINAL"
-                                and self.run.cancellation_state == "NONE"
-                                and (
-                                    self.decoder.conversation_id
-                                    or self.run.conversation_id
-                                )
-                                and (self.decoder.request_id or self.run.request_id)
-                                and (
-                                    isinstance(pq_exc, (H2Error, OSError))
-                                    or _robin_is_transient_pq_stream_error(str(pq_exc))
-                                )
                             ):
+                                self._log_pq_recovery_decision(
+                                    fault,
+                                    ctx,
+                                    plan,
+                                    outcome="entering_recovery",
+                                )
                                 _gemini_debug_log_event(
                                     self.session_id,
                                     "pq_transient_stream_error",
@@ -65804,11 +66562,22 @@ class _RobinRunActor:
                                         or self.run.conversation_id,
                                         "request_id": self.decoder.request_id
                                         or self.run.request_id,
+                                        "fault_kind": fault.kind,
+                                        "rule_id": fault.rule_id,
                                         "error": str(pq_exc),
                                     },
                                 )
+                                active_recovery_fault = fault
                                 raise StopAsyncIteration from pq_exc
-                            raise
+                            self._log_pq_recovery_decision(
+                                fault,
+                                ctx,
+                                plan,
+                                outcome="propagated_to_pq_err",
+                            )
+                            raise _RobinPqFaultError(
+                                str(pq_exc), fault=fault
+                            ) from pq_exc
                         if raw_bytes:
                             if not (self.run.conversation_id and self.run.request_id):
                                 id_scan_buf.extend(raw_bytes)
@@ -65846,8 +66615,21 @@ class _RobinRunActor:
                 except StopAsyncIteration:
                     await _robin_cleanup_anext_future(next_pq_task)
                     next_pq_task = None
+                    self.recovery_epoch += 1
+                    if (
+                        active_recovery_fault is None
+                        and self.pending_recovery_fault is not None
+                    ):
+                        active_recovery_fault = self.pending_recovery_fault
+                        self.pending_recovery_fault = None
+                        if self.recovery_event is not None:
+                            self.recovery_event.clear()
                     self._record_pq_close_diagnostics(
-                        "unplanned_eof",
+                        (
+                            f"recovery_{active_recovery_fault.kind.lower()}"
+                            if active_recovery_fault is not None
+                            else "unplanned_eof"
+                        ),
                         seg_start_states=progress_at_stream_open[0],
                     )
                     # Allow the consumer loop to drain any queued PQ frames before checking progress
@@ -65871,61 +66653,14 @@ class _RobinRunActor:
                         and self.tools_resumed_event is not None
                     ):
                         waited_on_tools = True
-                        while (
-                            (
-                                self.run.execution_state == "WAITING_TOOLS"
-                                or bool(self.decoder.pending_tool_calls)
-                            )
-                            and not self.decoder.is_completed
-                            and self.run.execution_state != "TERMINAL"
-                            and self.run.cancellation_state == "NONE"
-                        ):
-                            self.tools_resumed_event.clear()
-                            if not (
-                                self.run.execution_state == "WAITING_TOOLS"
-                                or bool(self.decoder.pending_tool_calls)
-                            ):
-                                tool_wait_timeouts = 0
-                                break
-                            try:
-                                await asyncio.wait_for(
-                                    self.tools_resumed_event.wait(),
-                                    timeout=GEMINI_TOTAL_TIMEOUT_SECONDS,
-                                )
-                                tool_wait_timeouts = 0
-                                break
-                            except asyncio.TimeoutError:
-                                tool_wait_timeouts += 1
-                                _gemini_debug_log_event(
-                                    self.session_id,
-                                    "pq_waiting_tools_timeout",
-                                    {
-                                        "run_id": self.run.run_id,
-                                        "conversation_id": self.decoder.conversation_id,
-                                        "request_id": self.decoder.request_id,
-                                        "tool_wait_timeouts": tool_wait_timeouts,
-                                    },
-                                )
-                                await self.mux_queue.put(
-                                    (
-                                        "pq_progress_notice",
-                                        {
-                                            "reason": "waiting_tools_timeout",
-                                            "tool_wait_timeouts": tool_wait_timeouts,
-                                            "elapsed_s": max(
-                                                1,
-                                                int(
-                                                    round(
-                                                        time.monotonic()
-                                                        - self.created_at
-                                                    )
-                                                ),
-                                            ),
-                                        },
-                                    )
-                                )
-                                if tool_wait_timeouts >= 2:
-                                    break
+                        tool_wait_timeouts = await self._pq_wait_for_tools_or_probe(
+                            tool_wait_timeouts
+                        )
+                    if (
+                        self.run.execution_state == "TERMINAL"
+                        or self.decoder.is_completed
+                    ):
+                        break
                     tools_active = (
                         waited_on_tools
                         or self.run.execution_state == "WAITING_TOOLS"
@@ -65961,12 +66696,6 @@ class _RobinRunActor:
                         and self.decoder.conversation_id
                         and self.decoder.request_id
                     ):
-                        # When an unplanned EOF occurs after answer text was already streamed,
-                        # or after ERT signaled `RemoteToolSessionComplete` with no active tools,
-                        # no pending post-tool progress, and no unmatched PQ tool announcements,
-                        # check `ListConversationTurns` first (bounded by a short timeout) so we
-                        # do not call `resumeTurn` on a turn that has already finished on the server
-                        # while avoiding 30s+ stalls during mid-turn rollovers.
                         has_unmatched_pq_tools = not self.run.relay_mode and (
                             self.decoder.step_announced_count
                             > self.decoder.step_ert_received_count
@@ -65983,17 +66712,26 @@ class _RobinRunActor:
                             and not self.awaiting_post_tool_progress
                             and not has_unmatched_pq_tools
                         )
-                        if not tools_active and (
-                            has_committed_answer or can_reconcile_on_ert_complete
-                        ):
-                            await self._ensure_fresh_access_token()
-                            reconcile_timeout = float(
-                                getattr(
-                                    self,
-                                    "_pre_rollover_reconcile_timeout_seconds",
-                                    5.0,
-                                )
+                        policy_wants_pre_reconcile = False
+                        if active_recovery_fault is not None:
+                            pre_ctx = self._build_pq_run_context(
+                                attempt=0, elapsed_recovery_s=0.0
                             )
+                            pre_plan = _robin_plan_pq_recovery(
+                                active_recovery_fault, pre_ctx
+                            )
+                            policy_wants_pre_reconcile = (
+                                pre_plan.action == "RECONCILE_THEN_RESUME"
+                            )
+                        if (
+                            not tools_active
+                            and (has_committed_answer or can_reconcile_on_ert_complete)
+                        ) or policy_wants_pre_reconcile:
+                            await self._ensure_fresh_access_token()
+                            reconcile_timeout = self._effective_reconcile_timeout(
+                                pre_rollover=True
+                            )
+                            t_rec0 = time.monotonic()
                             try:
                                 rec_chunks = await asyncio.wait_for(
                                     _robin_reconcile_via_list_turns(
@@ -66004,6 +66742,7 @@ class _RobinRunActor:
                                         self.decoder,
                                         device_id=self.device_id,
                                         server_token=self.server_token,
+                                        timeout_s=reconcile_timeout,
                                     ),
                                     timeout=reconcile_timeout,
                                 )
@@ -66019,9 +66758,24 @@ class _RobinRunActor:
                                         "timeout_s": reconcile_timeout,
                                     },
                                 )
+                            rec_elapsed_ms = (time.monotonic() - t_rec0) * 1000.0
                             if rec_chunks:
                                 await self.mux_queue.put(("ert_chunks", rec_chunks))
                             if self.decoder.is_completed:
+                                if active_recovery_fault is not None:
+                                    fin_ctx = self._build_pq_run_context(
+                                        attempt=0, elapsed_recovery_s=0.0
+                                    )
+                                    fin_plan = _robin_plan_pq_recovery(
+                                        active_recovery_fault, fin_ctx
+                                    )
+                                    self._log_pq_recovery_decision(
+                                        active_recovery_fault,
+                                        fin_ctx,
+                                        fin_plan,
+                                        outcome="finish_from_remote",
+                                        reconcile_ms=rec_elapsed_ms,
+                                    )
                                 _gemini_debug_log_event(
                                     self.session_id,
                                     "pq_reconciled_on_unplanned_eof",
@@ -66075,36 +66829,14 @@ class _RobinRunActor:
                                     },
                                 )
                             )
-                        rolled_ok = False
-                        for roll_attempt in range(3):
-                            await asyncio.sleep(0.5 * (2**roll_attempt))
-                            if (
-                                self.run.execution_state == "TERMINAL"
-                                or self.run.cancellation_state != "NONE"
-                                or self.resume_turn_already_finished
-                                or self.decoder.is_completed
-                            ):
-                                break
-                            if await self._rollover_pq_stream():
-                                rolled_ok = True
-                                break
-                            if self.resume_turn_already_finished:
-                                break
-                            await self._ensure_fresh_access_token()
-                            rec_after_fail = await _robin_reconcile_via_list_turns(
-                                self.http_session,
-                                self.access_token,
-                                self.decoder.conversation_id,
-                                self.decoder.request_id,
-                                self.decoder,
-                                device_id=self.device_id,
-                                server_token=self.server_token,
-                            )
-                            if rec_after_fail:
-                                await self.mux_queue.put(("ert_chunks", rec_after_fail))
-                            if self.decoder.is_completed:
-                                break
+                        (
+                            rolled_ok,
+                            recovery_elapsed_s,
+                        ) = await self._pq_run_recovery_rollover_loop(
+                            active_recovery_fault
+                        )
                         if rolled_ok:
+                            active_recovery_fault = None
                             next_rollover_deadline = (
                                 self.pq_opened_monotonic + GEMINI_PQ_ROLLOVER_SECONDS
                             )
@@ -66129,6 +66861,30 @@ class _RobinRunActor:
                             await self.mux_queue.put(("pq_rollover", None))
                             cur_iter = self.iterator
                             continue
+                        if (
+                            active_recovery_fault is not None
+                            and not self.decoder.is_completed
+                            and not self.resume_turn_already_finished
+                            and self.run.execution_state != "TERMINAL"
+                        ):
+                            ex_ctx = self._build_pq_run_context(
+                                attempt=3,
+                                elapsed_recovery_s=recovery_elapsed_s,
+                            )
+                            ex_plan = _robin_plan_pq_recovery(
+                                active_recovery_fault, ex_ctx
+                            )
+                            self._log_pq_recovery_decision(
+                                active_recovery_fault,
+                                ex_ctx,
+                                ex_plan,
+                                outcome="recovery_exhausted",
+                            )
+                            raise _RobinPqFaultError(
+                                active_recovery_fault.raw_message
+                                or "PQ recovery exhausted",
+                                fault=active_recovery_fault,
+                            ) from None
                     break
                 except BaseException:
                     await _robin_cleanup_anext_future(next_pq_task)
@@ -66137,110 +66893,484 @@ class _RobinRunActor:
         except BaseException as exc:
             await self.mux_queue.put(("pq_err", exc))
         finally:
+            if recovery_wait_task is not None:
+                if not recovery_wait_task.done():
+                    recovery_wait_task.cancel()
+                try:
+                    await recovery_wait_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+                recovery_wait_task = None
             await self.mux_queue.put(("pq_eof", None))
 
-    async def _rollover_pq_stream(self) -> bool:
-        """Execute 270s proactive `resumeTurn` ProcessQuery rollover on the shared HTTP/2 connection."""
+    async def _pq_wait_for_tools_or_probe(self, tool_wait_timeouts: int) -> int:
+        """Wait for tool resumption in bounded probe slices, reconciling or failing on budget expiry."""
+        probe_interval = self._effective_waiting_tools_probe_interval()
+        total_wait_budget = self._effective_waiting_tools_total_budget()
+        wait_started = time.monotonic()
+        while (
+            (
+                self.run.execution_state == "WAITING_TOOLS"
+                or bool(self.decoder.pending_tool_calls)
+            )
+            and not self.decoder.is_completed
+            and self.run.execution_state != "TERMINAL"
+            and self.run.cancellation_state == "NONE"
+            and self.tools_resumed_event is not None
+        ):
+            self.tools_resumed_event.clear()
+            if not (
+                self.run.execution_state == "WAITING_TOOLS"
+                or bool(self.decoder.pending_tool_calls)
+            ):
+                return 0
+            rem_total = total_wait_budget - (time.monotonic() - wait_started)
+            if rem_total <= 0.0:
+                _gemini_debug_log_event(
+                    self.session_id,
+                    "pq_waiting_tools_budget_exhausted",
+                    {
+                        "run_id": self.run.run_id,
+                        "conversation_id": self.decoder.conversation_id,
+                        "request_id": self.decoder.request_id,
+                        "tool_wait_timeouts": tool_wait_timeouts,
+                        "budget_s": total_wait_budget,
+                    },
+                )
+                self._finalize_parked_or_terminal_from_driver(
+                    outcome="FAILED",
+                    reason="waiting_tools_timeout",
+                )
+                return tool_wait_timeouts
+            step_wait = min(probe_interval, rem_total)
+            try:
+                await asyncio.wait_for(
+                    self.tools_resumed_event.wait(),
+                    timeout=step_wait,
+                )
+                return 0
+            except asyncio.TimeoutError:
+                tool_wait_timeouts += 1
+                _gemini_debug_log_event(
+                    self.session_id,
+                    "pq_waiting_tools_timeout",
+                    {
+                        "run_id": self.run.run_id,
+                        "conversation_id": self.decoder.conversation_id,
+                        "request_id": self.decoder.request_id,
+                        "tool_wait_timeouts": tool_wait_timeouts,
+                    },
+                )
+                await self.mux_queue.put(
+                    (
+                        "pq_progress_notice",
+                        {
+                            "reason": "waiting_tools_timeout",
+                            "tool_wait_timeouts": tool_wait_timeouts,
+                            "elapsed_s": max(
+                                1,
+                                int(round(time.monotonic() - self.created_at)),
+                            ),
+                        },
+                    )
+                )
+                if self.decoder.conversation_id and self.decoder.request_id:
+                    await self._ensure_fresh_access_token()
+                    probe_rec_timeout = self._effective_reconcile_timeout(
+                        pre_rollover=True
+                    )
+                    rec_probe = await _robin_reconcile_via_list_turns(
+                        self.http_session,
+                        self.access_token,
+                        self.decoder.conversation_id,
+                        self.decoder.request_id,
+                        self.decoder,
+                        device_id=self.device_id,
+                        server_token=self.server_token,
+                        timeout_s=probe_rec_timeout,
+                    )
+                    if rec_probe:
+                        await self.mux_queue.put(("ert_chunks", rec_probe))
+                    if self.decoder.is_completed:
+                        _gemini_debug_log_event(
+                            self.session_id,
+                            "pq_reconciled_during_waiting_tools",
+                            {
+                                "run_id": self.run.run_id,
+                                "conversation_id": self.decoder.conversation_id,
+                                "request_id": self.decoder.request_id,
+                                "tool_wait_timeouts": tool_wait_timeouts,
+                            },
+                        )
+                        self._finalize_parked_or_terminal_from_driver(
+                            outcome="SUCCEEDED",
+                            reason="turn_completed",
+                        )
+                        return tool_wait_timeouts
+                if (time.monotonic() - wait_started) >= total_wait_budget:
+                    _gemini_debug_log_event(
+                        self.session_id,
+                        "pq_waiting_tools_budget_exhausted",
+                        {
+                            "run_id": self.run.run_id,
+                            "conversation_id": self.decoder.conversation_id,
+                            "request_id": self.decoder.request_id,
+                            "tool_wait_timeouts": tool_wait_timeouts,
+                            "budget_s": total_wait_budget,
+                        },
+                    )
+                    if (
+                        self.run.attachment_state == "TOOL_HANDOFF"
+                        or self.run.ert_transport_state == "ENDED"
+                        or bool(self.decoder._relay_pending_tool_calls())
+                    ):
+                        self._finalize_parked_or_terminal_from_driver(
+                            outcome="FAILED",
+                            reason="waiting_tools_timeout",
+                        )
+                    return tool_wait_timeouts
+        return tool_wait_timeouts
+
+    async def _pq_run_recovery_rollover_loop(
+        self, active_recovery_fault: _RobinPqFault | None
+    ) -> tuple[bool, float]:
+        """Run bounded 3-attempt PQ rollover + post-failure reconcile within total recovery budget."""
+        recovery_started = time.monotonic()
+        budget_s = self._effective_pq_recovery_budget()
+        resume_timeout = self._effective_pq_resume_timeout()
+        rec_timeout = self._effective_reconcile_timeout(pre_rollover=False)
+        backoff_base = max(0.0, float(self._pq_recovery_backoff_base_seconds))
+        for roll_attempt in range(3):
+            rem_budget = budget_s - (time.monotonic() - recovery_started)
+            if rem_budget <= 0.0:
+                break
+            sleep_s = min(backoff_base * (2**roll_attempt), rem_budget)
+            if sleep_s > 0.0:
+                await asyncio.sleep(sleep_s)
+            if (
+                self.run.execution_state == "TERMINAL"
+                or self.run.cancellation_state != "NONE"
+                or self.resume_turn_already_finished
+                or self.decoder.is_completed
+            ):
+                break
+            rem_budget = budget_s - (time.monotonic() - recovery_started)
+            if rem_budget <= 0.0:
+                break
+            step_resume_t = min(resume_timeout, max(0.05, rem_budget))
+            prev_resume_t = self._pq_resume_timeout_seconds
+            self._pq_resume_timeout_seconds = step_resume_t
+            try:
+                rolled_step = await self._rollover_pq_stream()
+            finally:
+                self._pq_resume_timeout_seconds = prev_resume_t
+            if rolled_step:
+                if active_recovery_fault is not None:
+                    ok_ctx = self._build_pq_run_context(
+                        attempt=roll_attempt,
+                        elapsed_recovery_s=time.monotonic() - recovery_started,
+                    )
+                    ok_plan = _robin_plan_pq_recovery(active_recovery_fault, ok_ctx)
+                    self._log_pq_recovery_decision(
+                        active_recovery_fault,
+                        ok_ctx,
+                        ok_plan,
+                        outcome="resumed",
+                    )
+                return True, time.monotonic() - recovery_started
+            if self.resume_turn_already_finished:
+                break
+            rem_budget = budget_s - (time.monotonic() - recovery_started)
+            if rem_budget <= 0.0:
+                break
+            await self._ensure_fresh_access_token()
+            step_rec_t = min(rec_timeout, max(0.05, rem_budget))
+            t_rec_fail = time.monotonic()
+            rec_after_fail = await _robin_reconcile_via_list_turns(
+                self.http_session,
+                self.access_token,
+                self.decoder.conversation_id,
+                self.decoder.request_id,
+                self.decoder,
+                device_id=self.device_id,
+                server_token=self.server_token,
+                timeout_s=step_rec_t,
+            )
+            rec_fail_ms = (time.monotonic() - t_rec_fail) * 1000.0
+            if rec_after_fail:
+                await self.mux_queue.put(("ert_chunks", rec_after_fail))
+            if self.decoder.is_completed:
+                if active_recovery_fault is not None:
+                    ok_ctx = self._build_pq_run_context(
+                        attempt=roll_attempt,
+                        elapsed_recovery_s=time.monotonic() - recovery_started,
+                    )
+                    ok_plan = _robin_plan_pq_recovery(active_recovery_fault, ok_ctx)
+                    self._log_pq_recovery_decision(
+                        active_recovery_fault,
+                        ok_ctx,
+                        ok_plan,
+                        outcome="finish_from_remote",
+                        reconcile_ms=rec_fail_ms,
+                    )
+                break
+        return False, time.monotonic() - recovery_started
+
+    async def _rollover_pq_stream(self, *, timeout_s: float | None = None) -> bool:
+        """Execute bounded `resumeTurn` ProcessQuery rollover on the shared HTTP/2 connection."""
         conv_id = self.decoder.conversation_id
         req_id = self.decoder.request_id
         if not (conv_id and req_id):
             return False
-        await self._ensure_fresh_access_token()
-        shared_mux = getattr(self.response, "_mux", None)
-        account_mode_id = self.bard_mode_id or _robin_account_bard_mode_id(
-            self.access_token, category=self.mode_category
+        eff_timeout = (
+            max(0.02, float(timeout_s))
+            if timeout_s is not None
+            else self._effective_pq_resume_timeout()
         )
-        if not account_mode_id and self.device_id:
-            account_mode_id = await _robin_resolve_bard_mode_id(
-                self.http_session,
-                self.access_token,
-                self.device_id,
-                server_token=self.server_token,
-                session_id=self.session_id,
-                category=self.mode_category,
+        deadline = time.monotonic() + eff_timeout
+        new_resp: Any = None
+        try:
+            rem = max(0.02, deadline - time.monotonic())
+            await asyncio.wait_for(self._ensure_fresh_access_token(), timeout=rem)
+            shared_mux = getattr(self.response, "_mux", None)
+            account_mode_id = self.bard_mode_id or _robin_account_bard_mode_id(
+                self.access_token, category=self.mode_category
             )
-        resume_frames = _robin_build_resume_turn_frames(
-            conversation_id=conv_id,
-            request_id=req_id,
-            device_id=self.device_id,
-            bard_mode_id=account_mode_id,
-        )
-        payload = _robin_pack_grpc_frames(resume_frames)
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/grpc",
-            "TE": "trailers",
-            "grpc-accept-encoding": "identity,deflate,gzip",
-            "accept-encoding": "identity,gzip",
-            "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
-            "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-            "accept-language": "en",
-        }
-        if self.server_token:
-            headers["X-Server-Token"] = self.server_token
-        self.run.pq_transport_state = "ROLLING_OVER"
-        new_resp = await _robin_post_http2_grpc(
-            GEMINI_ROBIN_PROD_URL,
-            headers,
-            payload,
-            end_stream=True,
-            mux=shared_mux,
-        )
-        if (
-            new_resp.status == 401
-            and self.credential is not None
-            and self.token_refresher is not None
-        ):
-            new_resp.release()
-            refreshed = await self._ensure_fresh_access_token(force=True)
-            if refreshed:
-                headers = dict(headers)
-                headers["Authorization"] = f"Bearer {self.access_token}"
-                new_resp = await _robin_post_http2_grpc(
+            if not account_mode_id and self.device_id:
+                rem = max(0.02, deadline - time.monotonic())
+                account_mode_id = await asyncio.wait_for(
+                    _robin_resolve_bard_mode_id(
+                        self.http_session,
+                        self.access_token,
+                        self.device_id,
+                        server_token=self.server_token,
+                        session_id=self.session_id,
+                        category=self.mode_category,
+                    ),
+                    timeout=rem,
+                )
+            resume_frames = _robin_build_resume_turn_frames(
+                conversation_id=conv_id,
+                request_id=req_id,
+                device_id=self.device_id,
+                bard_mode_id=account_mode_id,
+            )
+            payload = _robin_pack_grpc_frames(resume_frames)
+            headers = {
+                "Authorization": f"Bearer {self.access_token}",
+                "Content-Type": "application/grpc",
+                "TE": "trailers",
+                "grpc-accept-encoding": "identity,deflate,gzip",
+                "accept-encoding": "identity,gzip",
+                "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
+                "x-ios-bundle-identifier": "com.google.GeminiMacOS",
+                "accept-language": "en",
+            }
+            if self.server_token:
+                headers["X-Server-Token"] = self.server_token
+            self.run.pq_transport_state = "ROLLING_OVER"
+            rem = max(0.02, deadline - time.monotonic())
+            new_resp = await asyncio.wait_for(
+                _robin_post_http2_grpc(
                     GEMINI_ROBIN_PROD_URL,
                     headers,
                     payload,
                     end_stream=True,
                     mux=shared_mux,
-                )
-        if new_resp.status >= 400:
-            err_detail = urllib.parse.unquote(
-                str(new_resp.headers.get("grpc-message") or "")
+                    timeout_s=rem,
+                ),
+                timeout=rem,
             )
-            if not err_detail and getattr(new_resp, "_pending", None):
-                try:
-                    err_detail = b"".join(new_resp._pending).decode("utf-8", "replace")
-                except Exception:
-                    err_detail = ""
-            err_detail_low = err_detail.lower()
             if (
-                "no longer in progress" in err_detail_low
-                or "requested turn to resume" in err_detail_low
+                new_resp.status == 401
+                and self.credential is not None
+                and self.token_refresher is not None
             ):
-                self.resume_turn_already_finished = True
-            new_resp.release()
-            return False
-        try:
-            self.response.keep_open = False
-            self.response.release()
-        except Exception:
-            pass
-        new_resp.keep_open = True
-        self.response = new_resp
-        self.iterator = new_resp.content.iter_any()
-        self.pq_opened_monotonic = time.monotonic()
-        self.run.pq_transport_state = "OPEN"
-        if (
-            self.has_robin_tools
-            and conv_id
-            and self.ert_response is None
-            and not self.decoder._ert_pending_tool_calls()
-            and not self.run.tool_ledger.has_active_background_or_dispatched(
-                source="ert"
+                new_resp.release()
+                new_resp = None
+                rem = max(0.02, deadline - time.monotonic())
+                refreshed = await asyncio.wait_for(
+                    self._ensure_fresh_access_token(force=True), timeout=rem
+                )
+                if refreshed:
+                    headers = dict(headers)
+                    headers["Authorization"] = f"Bearer {self.access_token}"
+                    rem = max(0.02, deadline - time.monotonic())
+                    new_resp = await asyncio.wait_for(
+                        _robin_post_http2_grpc(
+                            GEMINI_ROBIN_PROD_URL,
+                            headers,
+                            payload,
+                            end_stream=True,
+                            mux=shared_mux,
+                            timeout_s=rem,
+                        ),
+                        timeout=rem,
+                    )
+            if new_resp is None:
+                return False
+            if new_resp.status >= 400:
+                err_detail = urllib.parse.unquote(
+                    str(new_resp.headers.get("grpc-message") or "")
+                )
+                if not err_detail and getattr(new_resp, "_pending", None):
+                    try:
+                        err_detail = b"".join(new_resp._pending).decode(
+                            "utf-8", "replace"
+                        )
+                    except Exception:
+                        err_detail = ""
+                err_detail_low = err_detail.lower()
+                if (
+                    "no longer in progress" in err_detail_low
+                    or "requested turn to resume" in err_detail_low
+                ):
+                    self.resume_turn_already_finished = True
+                new_resp.release()
+                new_resp = None
+                return False
+            try:
+                self.response.keep_open = False
+                self.response.release()
+            except Exception:
+                pass
+            new_resp.keep_open = True
+            self.response = new_resp
+            self.iterator = new_resp.content.iter_any()
+            new_resp = None
+            self.pq_opened_monotonic = time.monotonic()
+            self.run.pq_transport_state = "OPEN"
+            if (
+                self.has_robin_tools
+                and conv_id
+                and self.ert_response is None
+                and not self.decoder._ert_pending_tool_calls()
+                and not self.run.tool_ledger.has_active_background_or_dispatched(
+                    source="ert"
+                )
+            ):
+                await self._rollover_ert_stream(
+                    timeout_s=max(0.02, deadline - time.monotonic())
+                )
+            return True
+        except asyncio.TimeoutError:
+            _llm_log.warning(
+                "Robin PQ resumeTurn rollover timed out after %.1fs (run=%s)",
+                eff_timeout,
+                self.run.run_id,
             )
-        ):
-            await self._rollover_ert_stream()
-        return True
+            if new_resp is not None:
+                try:
+                    new_resp.release()
+                except Exception:
+                    pass
+            return False
+
+    def _handle_ert_session_complete_wakeup(self) -> None:
+        """Clear only ERT-sourced pending calls and chunks on RemoteToolSessionComplete."""
+        all_pending = self.decoder.pending_tool_calls or self.pending_tool_calls or []
+        dropped_ert_tc_ids = {
+            str(tc.get("id") or "")
+            for tc in all_pending
+            if isinstance(tc, dict)
+            and tc.get("id")
+            and str(tc.get("_source") or "ert") == "ert"
+        }
+        retained_dec_pending = [
+            tc
+            for tc in self.decoder.pending_tool_calls
+            if not (isinstance(tc, dict) and str(tc.get("_source") or "ert") == "ert")
+        ]
+        for idx_p, tc_p in enumerate(retained_dec_pending):
+            if isinstance(tc_p, dict):
+                tc_p["index"] = idx_p
+        self.decoder.pending_tool_calls = retained_dec_pending
+        retained_actor_pending = [
+            tc
+            for tc in self.pending_tool_calls
+            if not (isinstance(tc, dict) and str(tc.get("_source") or "ert") == "ert")
+        ]
+        for idx_p, tc_p in enumerate(retained_actor_pending):
+            if isinstance(tc_p, dict):
+                tc_p["index"] = idx_p
+        self.pending_tool_calls = retained_actor_pending
+        retained_q: list[tuple[str, Any]] = []
+        while not self.mux_queue.empty():
+            try:
+                q_k, q_v = self.mux_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            if q_k == "ert_chunks" and isinstance(q_v, list) and dropped_ert_tc_ids:
+                filtered_chunks: list[dict[str, Any]] = []
+                for c_d in q_v:
+                    if not isinstance(c_d, dict):
+                        filtered_chunks.append(c_d)
+                        continue
+                    choices = c_d.get("choices") or []
+                    has_tc = any(
+                        (ch.get("delta") or {}).get("tool_calls")
+                        for ch in choices
+                        if isinstance(ch, dict)
+                    )
+                    if not has_tc:
+                        filtered_chunks.append(c_d)
+                        continue
+                    new_choices: list[dict[str, Any]] = []
+                    kept_any_tc = False
+                    for ch in choices:
+                        if not isinstance(ch, dict):
+                            continue
+                        delta = ch.get("delta") or {}
+                        tcs = delta.get("tool_calls")
+                        if not isinstance(tcs, list):
+                            new_choices.append(ch)
+                            continue
+                        kept_tcs = [
+                            tc_item
+                            for tc_item in tcs
+                            if str(
+                                (tc_item.get("id") if isinstance(tc_item, dict) else "")
+                                or ""
+                            )
+                            not in dropped_ert_tc_ids
+                        ]
+                        if kept_tcs:
+                            kept_any_tc = True
+                            ch_copy = dict(ch)
+                            delta_copy = dict(delta)
+                            delta_copy["tool_calls"] = kept_tcs
+                            ch_copy["delta"] = delta_copy
+                            new_choices.append(ch_copy)
+                    if kept_any_tc and new_choices:
+                        cd_copy = dict(c_d)
+                        cd_copy["choices"] = new_choices
+                        filtered_chunks.append(cd_copy)
+                q_v = filtered_chunks
+                if not q_v:
+                    continue
+            retained_q.append((q_k, q_v))
+        for r_item in retained_q:
+            self.mux_queue.put_nowait(r_item)
+        self.run.ert_transport_state = "ENDED"
+        if not self.decoder.pending_tool_calls:
+            self.decoder.finish_reason = None
+            if self.run.execution_state == "WAITING_TOOLS":
+                self.run.execution_state = "RUNNING"
+                if self.run.attachment_state != "TOOL_HANDOFF":
+                    self.run.attachment_state = "STREAMING"
+            if self.tools_resumed_event is not None:
+                self.tools_resumed_event.set()
+        _gemini_debug_log_event(
+            self.session_id,
+            "ert_session_complete_wakeup",
+            {
+                "run_id": self.run.run_id,
+                "conversation_id": self.decoder.conversation_id,
+                "request_id": self.decoder.request_id,
+                "dropped_tool_calls": sorted(dropped_ert_tc_ids),
+                "retained_relay_pending": len(self.decoder._relay_pending_tool_calls()),
+            },
+        )
 
     async def _ert_driver_loop(self, initial_iter: Any = None) -> None:
         """Background ERT bidirectional stream driver with in-place `list_mcp`, wake-up watchdog, and 240s rollover."""
@@ -66261,13 +67391,25 @@ class _RobinRunActor:
                         force=(ert_connect_failures > 0)
                     )
                     shared_mux = getattr(self.response, "_mux", None)
-                    ert_resp, ert_iter = await _robin_open_execute_remote_tools_stream(
-                        self.http_session,
-                        self.access_token,
-                        self.decoder.conversation_id,
-                        server_token=self.server_token,
-                        mux=shared_mux,
-                    )
+                    ert_open_timeout = self._effective_pq_resume_timeout()
+                    try:
+                        ert_resp, ert_iter = await asyncio.wait_for(
+                            _robin_open_execute_remote_tools_stream(
+                                self.http_session,
+                                self.access_token,
+                                self.decoder.conversation_id,
+                                server_token=self.server_token,
+                                mux=shared_mux,
+                            ),
+                            timeout=ert_open_timeout,
+                        )
+                    except asyncio.TimeoutError:
+                        _llm_log.warning(
+                            "Robin ERT driver stream open timed out after %.1fs (run=%s)",
+                            ert_open_timeout,
+                            self.run.run_id,
+                        )
+                        ert_resp, ert_iter = None, None
                     if ert_resp is None or ert_iter is None:
                         ert_connect_failures += 1
                         if ert_connect_failures >= 5:
@@ -66422,7 +67564,12 @@ class _RobinRunActor:
                             if not done:
                                 continue
                         else:
-                            await asyncio.wait({ert_task})
+                            idle_cap = self._effective_non_watchdog_idle_cap()
+                            done, _ = await asyncio.wait({ert_task}, timeout=idle_cap)
+                            if not done:
+                                await _robin_cleanup_anext_future(ert_task)
+                                next_ert_task = None
+                                break
                         next_ert_task = None
                         raw_bytes = ert_task.result()
 
@@ -66458,54 +67605,8 @@ class _RobinRunActor:
                             or bool(self.decoder.pending_tool_calls)
                             or bool(self.pending_tool_calls)
                         ):
-                            dropped_tc_ids = [
-                                str(tc.get("id") or "")
-                                for tc in (
-                                    self.decoder.pending_tool_calls
-                                    or self.pending_tool_calls
-                                    or []
-                                )
-                                if isinstance(tc, dict) and tc.get("id")
-                            ]
                             ert_chunks = []
-                            self.decoder.pending_tool_calls.clear()
-                            self.pending_tool_calls.clear()
-                            retained_q: list[tuple[str, Any]] = []
-                            while not self.mux_queue.empty():
-                                try:
-                                    q_k, q_v = self.mux_queue.get_nowait()
-                                except asyncio.QueueEmpty:
-                                    break
-                                if q_k == "ert_chunks" and isinstance(q_v, list):
-                                    q_v = [
-                                        c_d
-                                        for c_d in q_v
-                                        if not any(
-                                            (ch.get("delta") or {}).get("tool_calls")
-                                            for ch in (c_d.get("choices") or [])
-                                        )
-                                    ]
-                                    if not q_v:
-                                        continue
-                                retained_q.append((q_k, q_v))
-                            for r_item in retained_q:
-                                self.mux_queue.put_nowait(r_item)
-                            self.run.ert_transport_state = "ENDED"
-                            if self.run.execution_state == "WAITING_TOOLS":
-                                self.run.execution_state = "RUNNING"
-                                self.run.attachment_state = "STREAMING"
-                            if self.tools_resumed_event is not None:
-                                self.tools_resumed_event.set()
-                            _gemini_debug_log_event(
-                                self.session_id,
-                                "ert_session_complete_wakeup",
-                                {
-                                    "run_id": self.run.run_id,
-                                    "conversation_id": self.decoder.conversation_id,
-                                    "request_id": self.decoder.request_id,
-                                    "dropped_tool_calls": dropped_tc_ids,
-                                },
-                            )
+                            self._handle_ert_session_complete_wakeup()
                         _gemini_debug_log_event(
                             self.session_id,
                             "ert_inbound",
@@ -66635,6 +67736,7 @@ class _RobinRunActor:
             or getattr(self, "resume_turn_already_finished", False)
             or self.run.ert_transport_state == "ENDED"
         )
+        ert_io_timeout = self._effective_ert_io_timeout()
         if (
             self.has_robin_tools
             and not turn_remotely_ended
@@ -66642,13 +67744,24 @@ class _RobinRunActor:
         ):
             if self.ert_response is None:
                 shared_mux = getattr(self.response, "_mux", None)
-                ert_resp, ert_iter = await _robin_open_execute_remote_tools_stream(
-                    self.http_session,
-                    self.access_token,
-                    conv_id,
-                    server_token=self.server_token,
-                    mux=shared_mux,
-                )
+                try:
+                    ert_resp, ert_iter = await asyncio.wait_for(
+                        _robin_open_execute_remote_tools_stream(
+                            self.http_session,
+                            self.access_token,
+                            conv_id,
+                            server_token=self.server_token,
+                            mux=shared_mux,
+                        ),
+                        timeout=ert_io_timeout,
+                    )
+                except asyncio.TimeoutError:
+                    _llm_log.warning(
+                        "Robin ERT stream open timed out after %.1fs (run=%s)",
+                        ert_io_timeout,
+                        self.run.run_id,
+                    )
+                    ert_resp, ert_iter = None, None
                 if ert_resp is not None and ert_iter is not None:
                     self.ert_response = ert_resp
                     self.ert_iterator = ert_iter
@@ -66661,16 +67774,26 @@ class _RobinRunActor:
                 )
 
         if self.presence_task is None and not turn_remotely_ended:
-            await _robin_send_report_presence(
-                self.http_session,
-                self.access_token,
-                conv_id,
-                device_id=self.device_id,
-                bard_mode_id=self.bard_mode_id or None,
-                server_token=self.server_token,
-                mux=getattr(self.response, "_mux", None),
-                is_active=True,
-            )
+            try:
+                await asyncio.wait_for(
+                    _robin_send_report_presence(
+                        self.http_session,
+                        self.access_token,
+                        conv_id,
+                        device_id=self.device_id,
+                        bard_mode_id=self.bard_mode_id or None,
+                        server_token=self.server_token,
+                        mux=getattr(self.response, "_mux", None),
+                        is_active=True,
+                    ),
+                    timeout=ert_io_timeout,
+                )
+            except asyncio.TimeoutError:
+                _llm_log.warning(
+                    "Robin initial presence timed out after %.1fs (run=%s)",
+                    ert_io_timeout,
+                    self.run.run_id,
+                )
             self.presence_task = asyncio.create_task(
                 self._presence_driver_loop(conv_id)
             )
@@ -68131,12 +69254,10 @@ class _RobinStreamDecoder:
 
         # 1. Append live status entries L = .1003.1.6 to StateTape and track announced client tool items
         for live_raw in parsed["live_states_raw"]:
-            prev_entries_len = len(self.run.state_tape.entries)
             entry = self.run.state_tape.append_live(
                 live_raw, response_id=self.response_id
             )
             if entry is not None:
-                is_new_entry = entry.state_seq >= prev_entries_len
                 disp = _robin_parse_display_state(live_raw)
                 for item_idx, it in enumerate(disp.tool_items):
                     if (
@@ -68191,9 +69312,7 @@ class _RobinStreamDecoder:
                             if it.call_id
                             else f"seq:{entry.state_seq}:{item_idx}"
                         )
-                        if ann_key not in self.relay_pq_announced_keys and (
-                            is_new_entry or bool(it.call_id)
-                        ):
+                        if ann_key not in self.relay_pq_announced_keys:
                             self.relay_pq_announced_keys.add(ann_key)
                             _relay_record_pq_announcement(
                                 self.run.run_id,
@@ -69499,16 +70618,30 @@ async def _robin_post_http2_grpc(
     *,
     end_stream: bool = True,
     mux: _RobinHTTP2Mux | None = None,
+    timeout_s: float = _ROBIN_HTTP2_OPEN_TIMEOUT_SECONDS,
 ) -> _RobinHTTP2Response:
     parsed = urllib.parse.urlsplit(url)
     host = parsed.hostname or ""
     path = parsed.path or "/"
     if parsed.query:
         path = f"{path}?{parsed.query}"
+    eff_timeout = max(0.02, float(timeout_s))
+    deadline = time.monotonic() + eff_timeout
     try:
         if mux is None or mux.closed:
-            mux = await _robin_get_http2_mux(host, headers)
-        return await mux.open_stream(path, headers, payload, end_stream=end_stream)
+            rem = max(0.02, deadline - time.monotonic())
+            mux = await asyncio.wait_for(
+                _robin_get_http2_mux(host, headers), timeout=rem
+            )
+        rem = max(0.02, deadline - time.monotonic())
+        return await asyncio.wait_for(
+            mux.open_stream(path, headers, payload, end_stream=end_stream),
+            timeout=rem,
+        )
+    except asyncio.TimeoutError:
+        return _robin_synthetic_response(
+            504, f"RobinService HTTP/2 timed out after {eff_timeout:.1f}s"
+        )
     except (OSError, H2Error, GeminiStreamError) as exc:
         return _robin_synthetic_response(502, f"RobinService HTTP/2 error: {exc}")
 
@@ -70504,10 +71637,13 @@ async def _robin_reconcile_via_list_turns(
     *,
     device_id: str = "",
     server_token: str = "",
+    timeout_s: float = _ROBIN_RECONCILE_TIMEOUT_SECONDS,
 ) -> list[dict[str, Any]]:
-    """Reconcile an abnormally interrupted PQ stream against `ListConversationTurns` by exact `(conversation_id, request_id)`."""
+    """Reconcile an abnormally interrupted PQ stream against bounded `ListConversationTurns`."""
     if not (access_token and conversation_id and request_id):
         return []
+    eff_timeout = max(0.02, float(timeout_s))
+    deadline = time.monotonic() + eff_timeout
     account_mode_id = _robin_account_bard_mode_id(access_token)
     req_pb = _robin_build_list_turns_frame(
         conversation_id=conversation_id,
@@ -70530,23 +71666,38 @@ async def _robin_reconcile_via_list_turns(
         raw = b""
         if session is not None:
             if _robin_session_post_is_custom(session):
-                resp = await session.post(
-                    GEMINI_ROBIN_LIST_TURNS_URL, data=payload, headers=headers
+                rem = max(0.02, deadline - time.monotonic())
+                resp = await asyncio.wait_for(
+                    session.post(
+                        GEMINI_ROBIN_LIST_TURNS_URL, data=payload, headers=headers
+                    ),
+                    timeout=rem,
                 )
                 try:
-                    raw = await resp.read() if hasattr(resp, "read") else b""
+                    rem = max(0.02, deadline - time.monotonic())
+                    raw = (
+                        await asyncio.wait_for(resp.read(), timeout=rem)
+                        if hasattr(resp, "read")
+                        else b""
+                    )
                 finally:
                     if hasattr(resp, "release"):
                         resp.release()
             else:
-                resp = await _robin_post_http2_grpc(
-                    GEMINI_ROBIN_LIST_TURNS_URL,
-                    headers,
-                    payload,
-                    end_stream=True,
+                rem = max(0.02, deadline - time.monotonic())
+                resp = await asyncio.wait_for(
+                    _robin_post_http2_grpc(
+                        GEMINI_ROBIN_LIST_TURNS_URL,
+                        headers,
+                        payload,
+                        end_stream=True,
+                        timeout_s=rem,
+                    ),
+                    timeout=rem,
                 )
                 try:
-                    raw = await resp.read()
+                    rem = max(0.02, deadline - time.monotonic())
+                    raw = await asyncio.wait_for(resp.read(), timeout=rem)
                 finally:
                     resp.release()
         if not raw:
@@ -70605,6 +71756,11 @@ async def _robin_reconcile_via_list_turns(
             decoder.run.outcome_state = "SUCCEEDED"
             decoder.run.finalization_state = "CLOSED"
         return out_chunks
+    except asyncio.TimeoutError:
+        _llm_log.debug(
+            "ListConversationTurns reconciliation timed out after %.1fs", eff_timeout
+        )
+        return []
     except Exception as exc:
         _llm_log.debug("ListConversationTurns reconciliation failed: %s", exc)
         return []
@@ -70618,10 +71774,13 @@ async def _robin_resolve_response_id_via_list_turns(
     *,
     device_id: str = "",
     server_token: str = "",
+    timeout_s: float = _ROBIN_RECONCILE_TIMEOUT_SECONDS,
 ) -> str:
-    """Resolve `response_id` (`rc_...`) via `ListConversationTurns` when a turn is aborted before `rc_` arrived on the PQ stream."""
+    """Resolve `response_id` (`rc_...`) via bounded `ListConversationTurns` when aborted before `rc_` arrived."""
     if not (access_token and conversation_id and request_id):
         return ""
+    eff_timeout = max(0.02, float(timeout_s))
+    deadline = time.monotonic() + eff_timeout
     account_mode_id = _robin_account_bard_mode_id(access_token)
     req_pb = _robin_build_list_turns_frame(
         conversation_id=conversation_id,
@@ -70644,23 +71803,38 @@ async def _robin_resolve_response_id_via_list_turns(
         raw = b""
         if session is not None:
             if _robin_session_post_is_custom(session):
-                resp = await session.post(
-                    GEMINI_ROBIN_LIST_TURNS_URL, data=payload, headers=headers
+                rem = max(0.02, deadline - time.monotonic())
+                resp = await asyncio.wait_for(
+                    session.post(
+                        GEMINI_ROBIN_LIST_TURNS_URL, data=payload, headers=headers
+                    ),
+                    timeout=rem,
                 )
                 try:
-                    raw = await resp.read() if hasattr(resp, "read") else b""
+                    rem = max(0.02, deadline - time.monotonic())
+                    raw = (
+                        await asyncio.wait_for(resp.read(), timeout=rem)
+                        if hasattr(resp, "read")
+                        else b""
+                    )
                 finally:
                     if hasattr(resp, "release"):
                         resp.release()
             else:
-                resp = await _robin_post_http2_grpc(
-                    GEMINI_ROBIN_LIST_TURNS_URL,
-                    headers,
-                    payload,
-                    end_stream=True,
+                rem = max(0.02, deadline - time.monotonic())
+                resp = await asyncio.wait_for(
+                    _robin_post_http2_grpc(
+                        GEMINI_ROBIN_LIST_TURNS_URL,
+                        headers,
+                        payload,
+                        end_stream=True,
+                        timeout_s=rem,
+                    ),
+                    timeout=rem,
                 )
                 try:
-                    raw = await resp.read()
+                    rem = max(0.02, deadline - time.monotonic())
+                    raw = await asyncio.wait_for(resp.read(), timeout=rem)
                 finally:
                     resp.release()
         if not raw:
@@ -70672,6 +71846,11 @@ async def _robin_resolve_response_id_via_list_turns(
         )
         if matched is not None and matched.get("response_id"):
             return str(matched["response_id"]).strip()
+    except asyncio.TimeoutError:
+        _llm_log.debug(
+            "ListConversationTurns response_id lookup timed out after %.1fs",
+            eff_timeout,
+        )
     except Exception as exc:
         _llm_log.debug("ListConversationTurns response_id lookup failed: %s", exc)
     return ""
@@ -71849,6 +73028,14 @@ def _gemini_has_credentials() -> bool:
 
 class GeminiStreamError(RuntimeError):
     """Raised when an upstream Gemini stream reports an error."""
+
+
+class _RobinPqFaultError(GeminiStreamError):
+    """Stream error carrying a pre-classified `_RobinPqFault` across queue boundaries."""
+
+    def __init__(self, message: str, *, fault: _RobinPqFault) -> None:
+        super().__init__(message)
+        self.fault = fault
 
 
 class _GeminiStreamConverter(_OpenCodeGoogleConverter):
@@ -73102,7 +74289,12 @@ class _RelayPqAnnouncement:
 
 
 _RELAY_PQ_ANNOUNCE_TTL_SECONDS = 15.0
-_RELAY_PQ_WAIT_SECONDS = 0.5
+_RELAY_PQ_WAIT_SECONDS = max(0.05, float(os.getenv("VE_RELAY_PQ_WAIT_SECONDS", "1.5")))
+VE_RELAY_TOOL_WAIT_MAX_SECONDS = max(
+    1.0, float(os.getenv("VE_RELAY_TOOL_WAIT_MAX_SECONDS", "180.0"))
+)
+_RELAY_ACTOR_CALL_TIMEOUT_SECONDS = 15.0
+_RELAY_ACTOR_CLEANUP_TIMEOUT_SECONDS = 5.0
 
 
 def _relay_is_run_live(run: _RobinRunState | None) -> bool:
@@ -73111,6 +74303,10 @@ def _relay_is_run_live(run: _RobinRunState | None) -> bool:
     if _ROBIN_ACTIVE_RUNS.get(run.run_id) is not run:
         return False
     if run.execution_state == "TERMINAL":
+        return False
+    if run.cancellation_state != "NONE":
+        return False
+    if run.finalization_state == "CLOSED":
         return False
     if not run.dsh_tools:
         return False
@@ -73194,6 +74390,7 @@ def _relay_bind_active_run(
 
 def _relay_clear_active_run(run: _RobinRunState | None = None) -> None:
     global _RELAY_ACTIVE_RUN_ID, _RELAY_ACTIVE_ACTOR
+    waiters_snapshot: list[tuple[asyncio.AbstractEventLoop, asyncio.Event]]
     with _RELAY_REGISTRY_LOCK:
         if run is None:
             _RELAY_ACTIVE_RUNS.clear()
@@ -73201,30 +74398,36 @@ def _relay_clear_active_run(run: _RobinRunState | None = None) -> None:
             _RELAY_PQ_ANNOUNCEMENTS.clear()
             _RELAY_ACTIVE_RUN_ID = ""
             _RELAY_ACTIVE_ACTOR = None
-            return
-        rid = run.run_id
-        _RELAY_ACTIVE_RUNS.pop(rid, None)
-        _RELAY_ACTIVE_ACTORS.pop(rid, None)
-        _RELAY_PQ_ANNOUNCEMENTS[:] = [
-            ann for ann in _RELAY_PQ_ANNOUNCEMENTS if ann.run_id != rid
-        ]
-        if rid != _RELAY_ACTIVE_RUN_ID:
-            return
-        _RELAY_ACTIVE_RUN_ID = ""
-        _RELAY_ACTIVE_ACTOR = None
-        for rem_id in reversed(list(_RELAY_ACTIVE_RUNS.keys())):
-            rem_run = _RELAY_ACTIVE_RUNS.get(rem_id)
-            if _relay_is_run_live(rem_run):
-                _RELAY_ACTIVE_RUN_ID = rem_id
-                rem_actor = _RELAY_ACTIVE_ACTORS.get(rem_id)
-                _RELAY_ACTIVE_ACTOR = (
-                    rem_actor
-                    if rem_actor is not None and rem_actor.run is rem_run
-                    else None
-                )
-                break
-            _RELAY_ACTIVE_RUNS.pop(rem_id, None)
-            _RELAY_ACTIVE_ACTORS.pop(rem_id, None)
+        else:
+            rid = run.run_id
+            _RELAY_ACTIVE_RUNS.pop(rid, None)
+            _RELAY_ACTIVE_ACTORS.pop(rid, None)
+            _RELAY_PQ_ANNOUNCEMENTS[:] = [
+                ann for ann in _RELAY_PQ_ANNOUNCEMENTS if ann.run_id != rid
+            ]
+            if rid == _RELAY_ACTIVE_RUN_ID:
+                _RELAY_ACTIVE_RUN_ID = ""
+                _RELAY_ACTIVE_ACTOR = None
+                for rem_id in reversed(list(_RELAY_ACTIVE_RUNS.keys())):
+                    rem_run = _RELAY_ACTIVE_RUNS.get(rem_id)
+                    if _relay_is_run_live(rem_run):
+                        _RELAY_ACTIVE_RUN_ID = rem_id
+                        rem_actor = _RELAY_ACTIVE_ACTORS.get(rem_id)
+                        _RELAY_ACTIVE_ACTOR = (
+                            rem_actor
+                            if rem_actor is not None and rem_actor.run is rem_run
+                            else None
+                        )
+                        break
+                    _RELAY_ACTIVE_RUNS.pop(rem_id, None)
+                    _RELAY_ACTIVE_ACTORS.pop(rem_id, None)
+        waiters_snapshot = list(_RELAY_PQ_NOTIFY_WAITERS)
+    for loop, evt in waiters_snapshot:
+        try:
+            if not loop.is_closed():
+                loop.call_soon_threadsafe(evt.set)
+        except RuntimeError:
+            pass
 
 
 def _relay_record_pq_announcement(
@@ -73387,6 +74590,7 @@ async def _relay_resolve_target(
     ]
     if len(candidates) == 1:
         return candidates[0][0], candidates[0][1], "unique_tool_owner"
+    had_named_owner = bool(candidates)
     if not candidates:
         candidates = live
     by_id = {r.run_id: (r, a) for r, a in candidates}
@@ -73444,8 +74648,33 @@ async def _relay_resolve_target(
     try:
         deadline = time.monotonic() + _RELAY_PQ_WAIT_SECONDS
         while True:
+            notify_evt.clear()
             if abort_evt is not None and abort_evt.is_set():
                 return None, None, "aborted"
+            live_now = _relay_live_actors()
+            if not live_now:
+                return None, None, "none"
+            cands_now = [
+                (r, a)
+                for r, a in live_now
+                if tool_name in ("command_status", "list_mcp")
+                or tool_name in r.tool_ledger.local_tool_names
+            ]
+            if not cands_now:
+                if had_named_owner:
+                    return None, None, "none"
+                cands_now = live_now
+            by_id = {r.run_id: (r, a) for r, a in cands_now}
+            if not wire_call_id:
+                if len(live_now) == 1 and live_now[0][0].run_id in by_id:
+                    return live_now[0][0], live_now[0][1], "single_active"
+                if len(cands_now) == 1:
+                    return cands_now[0][0], cands_now[0][1], "unique_tool_owner"
+            else:
+                for r, a in reversed(cands_now):
+                    if wire_call_id in a.decoder.announced_client_tool_ids:
+                        return r, a, "wire_call_id"
+            cand_ids = set(by_id.keys())
             claimed = _relay_claim_pq_announcement(tool_name, wire_call_id, cand_ids)
             if claimed is not None:
                 matched_rid, reason = claimed
@@ -73457,7 +74686,6 @@ async def _relay_resolve_target(
             remaining = deadline - time.monotonic()
             if remaining <= 0.0:
                 break
-            notify_evt.clear()
             wait_tasks: list[asyncio.Task[Any]] = [
                 asyncio.create_task(notify_evt.wait())
             ]
@@ -73778,17 +75006,40 @@ async def _relay_wait_with_abort(
     return "timeout", None
 
 
-async def _relay_call_on_actor(actor: _RobinRunActor, coro: Any) -> Any:
-    """Run one coroutine on the actor's loop, whatever loop the relay client uses."""
+async def _relay_call_on_actor(
+    actor: _RobinRunActor,
+    coro: Any,
+    *,
+    timeout_s: float | None = _RELAY_ACTOR_CALL_TIMEOUT_SECONDS,
+) -> Any:
+    """Run one coroutine on the actor's loop with a bounded timeout, canceling on expiry."""
+    eff_timeout = (
+        max(0.01, float(timeout_s))
+        if timeout_s is not None
+        else _RELAY_ACTOR_CALL_TIMEOUT_SECONDS
+    )
     loop = getattr(actor, "loop", None)
     try:
         current = asyncio.get_running_loop()
     except RuntimeError:
         current = None
     if loop is None or loop is current:
-        return await coro
-    future = asyncio.run_coroutine_threadsafe(coro, loop)
-    return await asyncio.wrap_future(future)
+        return await asyncio.wait_for(coro, timeout=eff_timeout)
+    if loop.is_closed():
+        if hasattr(coro, "close"):
+            coro.close()
+        raise asyncio.TimeoutError("actor loop closed")
+    try:
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+    except RuntimeError as exc:
+        if hasattr(coro, "close"):
+            coro.close()
+        raise asyncio.TimeoutError("actor loop closed") from exc
+    try:
+        return await asyncio.wait_for(asyncio.wrap_future(future), timeout=eff_timeout)
+    except asyncio.TimeoutError:
+        future.cancel()
+        raise
 
 
 async def _relay_mcp_tools_call(
@@ -73820,6 +75071,11 @@ async def _relay_mcp_tools_call(
         peek_wire_id,
         abort_evt,
     )
+    if route_meta is not None:
+        route_meta["routed_by"] = str(routed_by or "")
+        route_meta["tool"] = str(tool_name or "")
+        if run is None or actor is None:
+            route_meta["active_run_count"] = str(len(_relay_live_actors()))
     if routed_by == "aborted" or (abort_evt is not None and abort_evt.is_set()):
         return _relay_jsonrpc_result(
             rpc_id,
@@ -73917,36 +75173,76 @@ async def _relay_mcp_tools_call(
     fut = _relay_open_waiter(job_id)
     if fut is None:
         return _relay_jsonrpc_error(rpc_id, -32603, "relay waiter registration failed")
+
+    actor_dispatch_timeout = float(
+        getattr(actor, "_relay_actor_call_timeout_seconds", None)
+        or _RELAY_ACTOR_CALL_TIMEOUT_SECONDS
+    )
+    actor_cleanup_timeout = float(
+        getattr(actor, "_relay_actor_cleanup_timeout_seconds", None)
+        or _RELAY_ACTOR_CLEANUP_TIMEOUT_SECONDS
+    )
+    max_tool_wait = float(
+        getattr(actor, "_relay_tool_wait_max_seconds", None)
+        or VE_RELAY_TOOL_WAIT_MAX_SECONDS
+    )
+
     if tool_name == "command_status":
-        immediate, state = await _relay_call_on_actor(
-            actor, actor._relay_dispatch_command_status(tool_args, job_id, ctx)
-        )
+        try:
+            immediate, state = await _relay_call_on_actor(
+                actor,
+                actor._relay_dispatch_command_status(tool_args, job_id, ctx),
+                timeout_s=actor_dispatch_timeout,
+            )
+        except asyncio.TimeoutError:
+            _relay_drop_waiter(job_id)
+            return _relay_jsonrpc_result(
+                rpc_id,
+                _relay_mcp_tool_result(
+                    {
+                        "status": "timeout",
+                        "error": f"command_status dispatch timed out after {actor_dispatch_timeout:.1f}s.",
+                    },
+                    is_error=True,
+                ),
+            )
         if state in ("done", "running", "error"):
             _relay_drop_waiter(job_id)
             return _relay_jsonrpc_result(
                 rpc_id,
                 _relay_mcp_tool_result(immediate or {}, is_error=(state == "error")),
             )
-        carrier_wait: float | None = None
+        raw_wait = (
+            tool_args.get("WaitDurationSeconds")
+            if "WaitDurationSeconds" in tool_args
+            else tool_args.get("wait_duration_seconds")
+        )
+        try:
+            parsed_wait = max(0.0, float(raw_wait) if raw_wait is not None else 10.0)
+        except (TypeError, ValueError):
+            parsed_wait = 10.0
         if state == "carrier":
-            raw_wait = (
-                tool_args.get("WaitDurationSeconds")
-                if "WaitDurationSeconds" in tool_args
-                else tool_args.get("wait_duration_seconds")
-            )
-            try:
-                carrier_wait = max(
-                    0.0, float(raw_wait) if raw_wait is not None else 10.0
-                )
-            except (TypeError, ValueError):
-                carrier_wait = 10.0
+            carrier_wait = min(parsed_wait, max_tool_wait)
+        else:
+            # Dispatched `job_output` poll: bounded above by `max_tool_wait` using WaitDurationSeconds.
+            carrier_wait = min(max(parsed_wait + 15.0, 45.0), max_tool_wait)
         payload_state, payload = await _relay_wait_with_abort(
             fut, abort_evt, carrier_wait
         )
         if payload_state == "timeout":
-            timeout_dict = await _relay_call_on_actor(
-                actor, actor._relay_release_carrier(job_id, build_snapshot=True)
-            )
+            release_timed_out = False
+            try:
+                timeout_dict = await _relay_call_on_actor(
+                    actor,
+                    actor._relay_release_carrier(job_id, build_snapshot=True),
+                    timeout_s=actor_cleanup_timeout,
+                )
+            except asyncio.TimeoutError:
+                release_timed_out = True
+                timeout_dict = {
+                    "status": "timeout",
+                    "error": f"command_status release timed out after {actor_cleanup_timeout:.1f}s.",
+                }
             if fut.done():
                 payload = fut.result()
                 return _relay_jsonrpc_result(
@@ -73959,12 +75255,17 @@ async def _relay_mcp_tools_call(
             _relay_drop_waiter(job_id)
             return _relay_jsonrpc_result(
                 rpc_id,
-                _relay_mcp_tool_result(timeout_dict or {}, is_error=False),
+                _relay_mcp_tool_result(timeout_dict or {}, is_error=release_timed_out),
             )
         if payload_state != "result" or payload is None:
-            await _relay_call_on_actor(
-                actor, actor._relay_release_carrier(job_id, build_snapshot=False)
-            )
+            try:
+                await _relay_call_on_actor(
+                    actor,
+                    actor._relay_release_carrier(job_id, build_snapshot=False),
+                    timeout_s=actor_cleanup_timeout,
+                )
+            except asyncio.TimeoutError:
+                pass
             _relay_drop_waiter(job_id)
             return _relay_jsonrpc_result(
                 rpc_id,
@@ -73979,9 +75280,25 @@ async def _relay_mcp_tools_call(
                 payload.get("result") or {}, is_error=bool(payload.get("is_error"))
             ),
         )
-    inv, local = await _relay_call_on_actor(
-        actor, actor._relay_dispatch_tool_call(tool_name, tool_args, job_id, ctx)
-    )
+
+    try:
+        inv, local = await _relay_call_on_actor(
+            actor,
+            actor._relay_dispatch_tool_call(tool_name, tool_args, job_id, ctx),
+            timeout_s=actor_dispatch_timeout,
+        )
+    except asyncio.TimeoutError:
+        _relay_drop_waiter(job_id)
+        return _relay_jsonrpc_result(
+            rpc_id,
+            _relay_mcp_tool_result(
+                {
+                    "status": "timeout",
+                    "error": f"tool dispatch timed out after {actor_dispatch_timeout:.1f}s.",
+                },
+                is_error=True,
+            ),
+        )
     if local is not None:
         _relay_drop_waiter(job_id)
         is_error = bool(
@@ -73995,50 +75312,97 @@ async def _relay_mcp_tools_call(
     if inv is None:
         _relay_drop_waiter(job_id)
         return _relay_jsonrpc_error(rpc_id, -32603, "tool dispatch failed")
-    handoff_timeout: float | None = None
+
+    wait_started = time.monotonic()
+    overall_deadline = wait_started + max(0.01, max_tool_wait)
     ledger_r = getattr(actor.run, "tool_ledger", None)
     client_native_bg = bool(
         ledger_r is not None and ledger_r._client_supports_native_bg_jobs()
     )
     if GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS > 0 and not client_native_bg:
         elapsed = time.monotonic() - inv.dispatched_monotonic
-        handoff_timeout = max(0.0, GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS - elapsed)
-    state, payload = await _relay_wait_with_abort(fut, abort_evt, handoff_timeout)
-    if state == "result" and payload is not None:
-        return _relay_jsonrpc_result(
-            rpc_id,
-            _relay_mcp_tool_result(
-                payload.get("result") or {}, is_error=bool(payload.get("is_error"))
-            ),
-        )
-    if state == "abort":
-        await _relay_call_on_actor(actor, actor._relay_abort_tool_call(job_id))
-        _relay_drop_waiter(job_id)
-        return _relay_jsonrpc_result(
-            rpc_id,
-            _relay_mcp_tool_result(
-                {"status": "cancelled", "error": "http request aborted"}, is_error=True
-            ),
-        )
-    handoff = await _relay_call_on_actor(actor, actor._relay_try_background(inv))
-    if fut.done():
-        payload = fut.result()
-        return _relay_jsonrpc_result(
-            rpc_id,
-            _relay_mcp_tool_result(
-                payload.get("result") or {}, is_error=bool(payload.get("is_error"))
-            ),
-        )
-    if handoff is not None:
-        _relay_drop_waiter(job_id)
-        return _relay_jsonrpc_result(
-            rpc_id, _relay_mcp_tool_result(handoff, is_error=False)
-        )
-    # Not backgroundable: this request owns the call until DSH answers.
-    state, payload = await _relay_wait_with_abort(fut, abort_evt, None)
+        handoff_rem = max(0.0, GEMINI_ROBIN_TOOL_ASYNC_HANDOFF_SECONDS - elapsed)
+        first_wait = min(handoff_rem, max(0.0, overall_deadline - time.monotonic()))
+        state, payload = await _relay_wait_with_abort(fut, abort_evt, first_wait)
+        if state == "result" and payload is not None:
+            return _relay_jsonrpc_result(
+                rpc_id,
+                _relay_mcp_tool_result(
+                    payload.get("result") or {}, is_error=bool(payload.get("is_error"))
+                ),
+            )
+        if state == "abort":
+            try:
+                await _relay_call_on_actor(
+                    actor,
+                    actor._relay_abort_tool_call(job_id),
+                    timeout_s=actor_cleanup_timeout,
+                )
+            except asyncio.TimeoutError:
+                pass
+            _relay_drop_waiter(job_id)
+            return _relay_jsonrpc_result(
+                rpc_id,
+                _relay_mcp_tool_result(
+                    {"status": "cancelled", "error": "http request aborted"},
+                    is_error=True,
+                ),
+            )
+        if time.monotonic() < overall_deadline:
+            try:
+                handoff = await _relay_call_on_actor(
+                    actor,
+                    actor._relay_try_background(inv),
+                    timeout_s=actor_cleanup_timeout,
+                )
+            except asyncio.TimeoutError:
+                handoff = None
+            if fut.done():
+                payload = fut.result()
+                return _relay_jsonrpc_result(
+                    rpc_id,
+                    _relay_mcp_tool_result(
+                        payload.get("result") or {},
+                        is_error=bool(payload.get("is_error")),
+                    ),
+                )
+            if handoff is not None:
+                _relay_drop_waiter(job_id)
+                return _relay_jsonrpc_result(
+                    rpc_id, _relay_mcp_tool_result(handoff, is_error=False)
+                )
+        # Not backgroundable: wait only until the absolute `overall_deadline`.
+        rem_overall = max(0.0, overall_deadline - time.monotonic())
+        state, payload = await _relay_wait_with_abort(fut, abort_evt, rem_overall)
+    else:
+        # Native background client or auto-handoff disabled: single bounded wait up to `overall_deadline`.
+        rem_overall = max(0.0, overall_deadline - time.monotonic())
+        state, payload = await _relay_wait_with_abort(fut, abort_evt, rem_overall)
+
     if state != "result" or payload is None:
-        await _relay_call_on_actor(actor, actor._relay_abort_tool_call(job_id))
+        try:
+            await _relay_call_on_actor(
+                actor,
+                actor._relay_abort_tool_call(job_id),
+                timeout_s=actor_cleanup_timeout,
+            )
+        except asyncio.TimeoutError:
+            pass
         _relay_drop_waiter(job_id)
+        if state == "timeout":
+            return _relay_jsonrpc_result(
+                rpc_id,
+                _relay_mcp_tool_result(
+                    {
+                        "status": "timeout",
+                        "error": (
+                            f"Tool call {tool_name!r} timed out after "
+                            f"{max_tool_wait:.1f}s waiting for client result."
+                        ),
+                    },
+                    is_error=True,
+                ),
+            )
         return _relay_jsonrpc_result(
             rpc_id,
             _relay_mcp_tool_result(
@@ -74510,15 +75874,7 @@ class _VoiceEdgeRelayClient:
             if http_id:
                 self._aborts.pop(http_id, None)
         routed_sid = str(route_meta.get("session_id") or "").strip()
-        if routed_sid:
-            log_sid = routed_sid
-        else:
-            active_run = _relay_active_run()
-            log_sid = (
-                (active_run.client_session_id or active_run.session_key)
-                if active_run is not None
-                else ""
-            ) or "relay"
+        log_sid = routed_sid or "relay"
         ws = self._ws
         if (
             abort_evt.is_set()
@@ -74549,16 +75905,20 @@ class _VoiceEdgeRelayClient:
             )
         except (ConnectionError, OSError) as exc:
             _llm_log.info("VEH relay response write failed: %s", exc)
+        relay_http_payload: dict[str, Any] = {
+            "http_id": http_id,
+            "path": str(request.get("path") or ""),
+            "method": str(request.get("method") or ""),
+            "status": int(status),
+            "ms": round((time.monotonic() - started) * 1000.0, 1),
+        }
+        for meta_k in ("routed_by", "tool", "active_run_count"):
+            if meta_k in route_meta and route_meta[meta_k] != "":
+                relay_http_payload[meta_k] = route_meta[meta_k]
         _gemini_debug_log_event(
             log_sid,
             "relay_http",
-            {
-                "http_id": http_id,
-                "path": str(request.get("path") or ""),
-                "method": str(request.get("method") or ""),
-                "status": int(status),
-                "ms": round((time.monotonic() - started) * 1000.0, 1),
-            },
+            relay_http_payload,
         )
 
 
@@ -77014,6 +78374,127 @@ class GeminiHTTPClient:
                     _run.finalization_state = "CLOSED"
                     _GEMINI_DSH_STORE.save_run(_run)
 
+                async def _handle_pq_decode_error(
+                    pq_exc: GeminiStreamError,
+                    _actor: _RobinRunActor = actor,
+                    _decoder: _RobinStreamDecoder = decoder,
+                    _run: _RobinRunState = run,
+                    _att: Any = attempt,
+                ) -> tuple[str, list[dict[str, Any]]]:
+                    fault_d = _robin_classify_pq_fault(pq_exc)
+                    ctx_d = _actor._build_pq_run_context(
+                        attempt=0, elapsed_recovery_s=0.0
+                    )
+                    plan_d = _robin_plan_pq_recovery(fault_d, ctx_d)
+                    if plan_d.action in (
+                        "RESUME_WITH_BACKOFF",
+                        "RECONCILE_THEN_RESUME",
+                    ):
+                        if _actor.request_pq_recovery(fault_d):
+                            _actor._log_pq_recovery_decision(
+                                fault_d,
+                                ctx_d,
+                                plan_d,
+                                outcome="requested_driver_recovery",
+                            )
+                            return "continue", []
+                        # Driver already done: degrade in-place to bounded reconcile-then-fail.
+                        t_r0 = time.monotonic()
+                        rec_d: list[dict[str, Any]] = []
+                        if _decoder.conversation_id and _decoder.request_id:
+                            await _actor._ensure_fresh_access_token()
+                            rec_d = await _robin_reconcile_via_list_turns(
+                                _actor.http_session,
+                                _actor.access_token,
+                                _decoder.conversation_id,
+                                _decoder.request_id,
+                                _decoder,
+                                device_id=_actor.device_id,
+                                server_token=_actor.server_token,
+                                timeout_s=plan_d.reconcile_timeout_s,
+                            )
+                        rec_ms = (time.monotonic() - t_r0) * 1000.0
+                        if _decoder.is_completed:
+                            _actor._log_pq_recovery_decision(
+                                fault_d,
+                                ctx_d,
+                                plan_d,
+                                outcome="inplace_reconciled",
+                                reconcile_ms=rec_ms,
+                            )
+                            return "completed", rec_d
+                        _actor._log_pq_recovery_decision(
+                            fault_d,
+                            ctx_d,
+                            plan_d,
+                            outcome="inplace_failed",
+                            reconcile_ms=rec_ms,
+                        )
+                        _att.upstream_failed = True
+                        _att.upstream_error_msg = str(pq_exc) or "Gemini stream error"
+                        _run.execution_state = "TERMINAL"
+                        _run.outcome_state = "FAILED"
+                        _run.attachment_state = "CLOSED"
+                        _run.finalization_state = "CLOSED"
+                        _GEMINI_DSH_STORE.save_run(_run)
+                        return "fail", rec_d
+                    if (
+                        plan_d.action == "RECONCILE_THEN_FAIL"
+                        and _decoder.conversation_id
+                        and _decoder.request_id
+                    ):
+                        t_r0 = time.monotonic()
+                        await _actor._ensure_fresh_access_token()
+                        rec_d = await _robin_reconcile_via_list_turns(
+                            _actor.http_session,
+                            _actor.access_token,
+                            _decoder.conversation_id,
+                            _decoder.request_id,
+                            _decoder,
+                            device_id=_actor.device_id,
+                            server_token=_actor.server_token,
+                            timeout_s=plan_d.reconcile_timeout_s,
+                        )
+                        rec_ms = (time.monotonic() - t_r0) * 1000.0
+                        if _decoder.is_completed:
+                            _actor._log_pq_recovery_decision(
+                                fault_d,
+                                ctx_d,
+                                plan_d,
+                                outcome="finish_from_remote",
+                                reconcile_ms=rec_ms,
+                            )
+                            return "completed", rec_d
+                        _actor._log_pq_recovery_decision(
+                            fault_d,
+                            ctx_d,
+                            plan_d,
+                            outcome="failed_after_reconcile",
+                            reconcile_ms=rec_ms,
+                        )
+                        _att.upstream_failed = True
+                        _att.upstream_error_msg = str(pq_exc) or "Gemini stream error"
+                        _run.execution_state = "TERMINAL"
+                        _run.outcome_state = "FAILED"
+                        _run.attachment_state = "CLOSED"
+                        _run.finalization_state = "CLOSED"
+                        _GEMINI_DSH_STORE.save_run(_run)
+                        return "fail", rec_d
+                    _actor._log_pq_recovery_decision(
+                        fault_d,
+                        ctx_d,
+                        plan_d,
+                        outcome="terminal_fail",
+                    )
+                    _att.upstream_failed = True
+                    _att.upstream_error_msg = str(pq_exc) or "Gemini stream error"
+                    _run.execution_state = "TERMINAL"
+                    _run.outcome_state = "FAILED"
+                    _run.attachment_state = "CLOSED"
+                    _run.finalization_state = "CLOSED"
+                    _GEMINI_DSH_STORE.save_run(_run)
+                    return "fail", []
+
                 try:
                     if flush_cached_actor_only and (
                         actor.pq_pump_task is None or actor.pq_pump_task.done()
@@ -77141,26 +78622,23 @@ class GeminiHTTPClient:
                             try:
                                 chunks = decoder.feed_bytes(item)
                             except GeminiStreamError as pq_decode_exc:
-                                if (
-                                    _attempt_has_remote_id()
-                                    and isinstance(
-                                        actor.response,
-                                        (_RobinHTTP2Response, _RobinMuxResponse),
+                                (
+                                    dec_action,
+                                    dec_rec_chunks,
+                                ) = await _handle_pq_decode_error(pq_decode_exc)
+                                for chunk_dict in dec_rec_chunks:
+                                    _record_delivered(chunk_dict)
+                                    last_sse_yield_monotonic = time.monotonic()
+                                    last_visible_progress_monotonic = (
+                                        last_sse_yield_monotonic
                                     )
-                                    and _robin_is_transient_pq_stream_error(
-                                        str(pq_decode_exc)
+                                    yield f"data: {json.dumps(chunk_dict, ensure_ascii=False)}\n\n".encode(
+                                        "utf-8"
                                     )
-                                ):
+                                if dec_action == "continue":
                                     continue
-                                attempt.upstream_failed = True
-                                attempt.upstream_error_msg = (
-                                    str(pq_decode_exc) or "Gemini stream error"
-                                )
-                                run.execution_state = "TERMINAL"
-                                run.outcome_state = "FAILED"
-                                run.attachment_state = "CLOSED"
-                                run.finalization_state = "CLOSED"
-                                _GEMINI_DSH_STORE.save_run(run)
+                                if dec_action == "completed":
+                                    attempt.normal_completion_or_handoff = True
                                 break
                             actor.conversation_id = decoder.conversation_id
                             actor.request_id = decoder.request_id
@@ -77417,30 +78895,29 @@ class GeminiHTTPClient:
                                         try:
                                             nxt_chunks = decoder.feed_bytes(nxt_item)
                                         except GeminiStreamError as pq_decode_exc2:
-                                            if (
-                                                _attempt_has_remote_id()
-                                                and isinstance(
-                                                    actor.response,
-                                                    (
-                                                        _RobinHTTP2Response,
-                                                        _RobinMuxResponse,
-                                                    ),
-                                                )
-                                                and _robin_is_transient_pq_stream_error(
-                                                    str(pq_decode_exc2)
-                                                )
-                                            ):
-                                                continue
-                                            attempt.upstream_failed = True
-                                            attempt.upstream_error_msg = (
-                                                str(pq_decode_exc2)
-                                                or "Gemini stream error"
+                                            (
+                                                dec_action2,
+                                                dec_rec_chunks2,
+                                            ) = await _handle_pq_decode_error(
+                                                pq_decode_exc2
                                             )
-                                            run.execution_state = "TERMINAL"
-                                            run.outcome_state = "FAILED"
-                                            run.attachment_state = "CLOSED"
-                                            run.finalization_state = "CLOSED"
-                                            _GEMINI_DSH_STORE.save_run(run)
+                                            for chunk_dict in dec_rec_chunks2:
+                                                _record_delivered(chunk_dict)
+                                                last_sse_yield_monotonic = (
+                                                    time.monotonic()
+                                                )
+                                                last_visible_progress_monotonic = (
+                                                    last_sse_yield_monotonic
+                                                )
+                                                yield f"data: {json.dumps(chunk_dict, ensure_ascii=False)}\n\n".encode(
+                                                    "utf-8"
+                                                )
+                                            if dec_action2 == "continue":
+                                                continue
+                                            if dec_action2 == "completed":
+                                                attempt.normal_completion_or_handoff = (
+                                                    True
+                                                )
                                             break
                                         actor.conversation_id = decoder.conversation_id
                                         actor.request_id = decoder.request_id
@@ -77560,7 +79037,10 @@ class GeminiHTTPClient:
                                     else:
                                         mux_q.put_nowait((nxt_kind, nxt_item))
                                         break
-                                if attempt.upstream_failed:
+                                if (
+                                    attempt.upstream_failed
+                                    or attempt.normal_completion_or_handoff
+                                ):
                                     break
                             if _handoff_ready():
                                 attempt.normal_completion_or_handoff = True
@@ -77574,19 +79054,30 @@ class GeminiHTTPClient:
                                 attempt.normal_completion_or_handoff = True
                                 break
                         elif kind == "pq_err":
-                            err_low = str(item).lower()
+                            fault_err = (
+                                item.fault
+                                if isinstance(item, _RobinPqFaultError)
+                                else _robin_classify_pq_fault(item)
+                            )
+                            ctx_err = actor._build_pq_run_context(
+                                attempt=0, elapsed_recovery_s=0.0
+                            )
+                            plan_err = _robin_plan_pq_recovery(fault_err, ctx_err)
                             is_resume_finished_err = (
-                                "no longer in progress" in err_low
-                                or "requested turn to resume" in err_low
+                                fault_err.kind == "TURN_ALREADY_FINISHED"
                                 or getattr(actor, "resume_turn_already_finished", False)
                             )
-                            is_terminal_quota_or_downgrade = (
-                                "quota" in err_low
-                                or "exhausted" in err_low
-                                or "downgraded by server" in err_low
+                            is_terminal_no_reconcile = plan_err.action == "FAIL"
+                            rec_err_timeout = (
+                                plan_err.reconcile_timeout_s
+                                if plan_err.reconcile_timeout_s > 0.0
+                                else actor._effective_reconcile_timeout(
+                                    pre_rollover=False
+                                )
                             )
+                            t_rec_err = time.monotonic()
                             if (
-                                not is_terminal_quota_or_downgrade
+                                not is_terminal_no_reconcile
                                 and not decoder.is_completed
                                 and decoder.conversation_id
                                 and decoder.request_id
@@ -77600,6 +79091,7 @@ class GeminiHTTPClient:
                                     decoder,
                                     device_id=actor.device_id,
                                     server_token=actor.server_token,
+                                    timeout_s=rec_err_timeout,
                                 )
                                 for chunk_dict in rec_chunks:
                                     _record_delivered(chunk_dict)
@@ -77620,6 +79112,7 @@ class GeminiHTTPClient:
                                         decoder,
                                         device_id=actor.device_id,
                                         server_token=actor.server_token,
+                                        timeout_s=rec_err_timeout,
                                     )
                                     for chunk_dict in rec_chunks2:
                                         _record_delivered(chunk_dict)
@@ -77646,10 +79139,25 @@ class GeminiHTTPClient:
                                         run.outcome_state = "SUCCEEDED"
                                         run.finalization_state = "CLOSED"
                                 if decoder.is_completed:
+                                    actor._log_pq_recovery_decision(
+                                        fault_err,
+                                        ctx_err,
+                                        plan_err,
+                                        outcome="finish_from_remote",
+                                        reconcile_ms=(time.monotonic() - t_rec_err)
+                                        * 1000.0,
+                                    )
                                     attempt.normal_completion_or_handoff = True
                                     break
+                            actor._log_pq_recovery_decision(
+                                fault_err,
+                                ctx_err,
+                                plan_err,
+                                outcome="terminal_fail",
+                                reconcile_ms=(time.monotonic() - t_rec_err) * 1000.0,
+                            )
                             if (
-                                not is_terminal_quota_or_downgrade
+                                not is_terminal_no_reconcile
                                 and decoder.pending_tool_calls
                                 and not _handoff_ready()
                             ):
@@ -77666,6 +79174,11 @@ class GeminiHTTPClient:
                             _GEMINI_DSH_STORE.save_run(run)
                             break
                         elif kind == "pq_eof":
+                            pending_eof_fault = actor.pending_recovery_fault
+                            actor.pending_recovery_fault = None
+                            rec_eof_timeout = actor._effective_reconcile_timeout(
+                                pre_rollover=False
+                            )
                             if (
                                 not actor.unplanned_no_progress_failed
                                 and not decoder.is_completed
@@ -77682,6 +79195,7 @@ class GeminiHTTPClient:
                                     decoder,
                                     device_id=actor.device_id,
                                     server_token=actor.server_token,
+                                    timeout_s=rec_eof_timeout,
                                 )
                                 for chunk_dict in rec_chunks:
                                     _record_delivered(chunk_dict)
@@ -77707,6 +79221,7 @@ class GeminiHTTPClient:
                                         decoder,
                                         device_id=actor.device_id,
                                         server_token=actor.server_token,
+                                        timeout_s=rec_eof_timeout,
                                     )
                                     for chunk_dict in rec_chunks2:
                                         _record_delivered(chunk_dict)
@@ -77735,6 +79250,33 @@ class GeminiHTTPClient:
                                         run.execution_state = "TERMINAL"
                                         run.outcome_state = "SUCCEEDED"
                                         run.finalization_state = "CLOSED"
+                            if (
+                                pending_eof_fault is not None
+                                and not decoder.is_completed
+                            ):
+                                eof_ctx = actor._build_pq_run_context(
+                                    attempt=0, elapsed_recovery_s=0.0
+                                )
+                                eof_plan = _robin_plan_pq_recovery(
+                                    pending_eof_fault, eof_ctx
+                                )
+                                actor._log_pq_recovery_decision(
+                                    pending_eof_fault,
+                                    eof_ctx,
+                                    eof_plan,
+                                    outcome="pq_eof_pending_fault_failed",
+                                )
+                                attempt.upstream_failed = True
+                                attempt.upstream_error_msg = (
+                                    pending_eof_fault.raw_message
+                                    or "Gemini stream error"
+                                )
+                                run.execution_state = "TERMINAL"
+                                run.outcome_state = "FAILED"
+                                run.attachment_state = "CLOSED"
+                                run.finalization_state = "CLOSED"
+                                _GEMINI_DSH_STORE.save_run(run)
+                                break
                             if actor.unplanned_no_progress_failed:
                                 attempt.incomplete_remote_turn = True
                                 break
@@ -100012,6 +101554,36 @@ def test_robin_long_running_tool_background_and_command_status():
             def __init__(self) -> None:
                 super().__init__(200, {"grpc-status": "0"}, None, None, None, 1, [])
 
+        class _FrameIter:
+            def __init__(self, frames: list[bytes]) -> None:
+                self._frames = list(frames)
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self) -> bytes:
+                if self._frames:
+                    return self._frames.pop(0)
+                raise StopAsyncIteration
+
+        async def _drive_and_decode(
+            actor_obj: _RobinRunActor, dec_obj: _RobinStreamDecoder
+        ) -> None:
+            driver_task = asyncio.create_task(actor_obj._pq_driver_loop())
+            try:
+                while True:
+                    qk, qv = await asyncio.wait_for(
+                        actor_obj.mux_queue.get(), timeout=2.0
+                    )
+                    if qk == "pq" and isinstance(qv, bytes):
+                        dec_obj.feed_bytes(qv)
+                    elif qk == "pq_rollover":
+                        dec_obj.on_pq_stream_rollover()
+                    elif qk == "pq_eof":
+                        break
+            finally:
+                await asyncio.wait_for(driver_task, timeout=2.0)
+
         # Case 1: awaiting_post_tool_progress=True + empty committed_text -> skip ListConversationTurns
         run1 = _RobinRunState(
             run_id="run_pq_gate_1",
@@ -100043,21 +101615,34 @@ def test_robin_long_running_tool_background_and_command_status():
             conversation_id="c_pq_gate_1",
             request_id="r_pq_gate_1",
             access_token="tok_pq_gate_1",
+            _pq_recovery_backoff_base_seconds=0.01,
         )
         actor1.awaiting_post_tool_progress = True
         actor1.progress_at_tool_submit = (0, 0)
         actor1.state_updates_at_tool_submit = 0
         rollover_calls_1 = 0
 
-        async def _fake_rollover_1() -> bool:
+        async def _fake_rollover_1(*, timeout_s: float | None = None) -> bool:
             nonlocal rollover_calls_1
+            _ = timeout_s
             rollover_calls_1 += 1
-            dec1.is_completed = True
-            actor1.iterator = _EofIter()
+            actor1.iterator = _FrameIter(
+                [
+                    _selftest_mk_pq_frame(
+                        "c_pq_gate_1",
+                        "r_pq_gate_1",
+                        "rc_pq_gate_1",
+                        answer="ok1",
+                        completed=True,
+                        eod=True,
+                    )
+                ]
+            )
             return True
 
         cast(Any, actor1)._rollover_pq_stream = _fake_rollover_1
-        await asyncio.wait_for(actor1._pq_driver_loop(), timeout=2.0)
+        await _drive_and_decode(actor1, dec1)
+        assert dec1.is_completed is True
         assert sess1.list_turns_calls == 0
         assert rollover_calls_1 == 1
 
@@ -100106,20 +101691,36 @@ def test_robin_long_running_tool_background_and_command_status():
                 conversation_id=f"c_pq_gate_{mode_label}",
                 request_id=f"r_pq_gate_{mode_label}",
                 access_token=f"tok_pq_gate_{mode_label}",
+                _pq_recovery_backoff_base_seconds=0.01,
             )
             rollover_calls_1b = 0
 
             async def _fake_rollover_1b(
-                _dec: _RobinStreamDecoder = dec1b, _actor: _RobinRunActor = actor1b
+                _actor: _RobinRunActor = actor1b,
+                _label: str = mode_label,
+                *,
+                timeout_s: float | None = None,
             ) -> bool:
                 nonlocal rollover_calls_1b
+                _ = timeout_s
                 rollover_calls_1b += 1
-                _dec.is_completed = True
-                _actor.iterator = _EofIter()
+                _actor.iterator = _FrameIter(
+                    [
+                        _selftest_mk_pq_frame(
+                            f"c_pq_gate_{_label}",
+                            f"r_pq_gate_{_label}",
+                            f"rc_pq_gate_{_label}",
+                            answer="ok1b",
+                            completed=True,
+                            eod=True,
+                        )
+                    ]
+                )
                 return True
 
             cast(Any, actor1b)._rollover_pq_stream = _fake_rollover_1b
-            await asyncio.wait_for(actor1b._pq_driver_loop(), timeout=2.0)
+            await _drive_and_decode(actor1b, dec1b)
+            assert dec1b.is_completed is True, mode_label
             assert sess1b.list_turns_calls == 0, mode_label
             assert rollover_calls_1b == 1, mode_label
 
@@ -100155,19 +101756,32 @@ def test_robin_long_running_tool_background_and_command_status():
             conversation_id="c_pq_gate_2",
             request_id="r_pq_gate_2",
             access_token="tok_pq_gate_2",
+            _pq_recovery_backoff_base_seconds=0.01,
         )
         cast(Any, actor2)._pre_rollover_reconcile_timeout_seconds = 0.05
         rollover_calls_2 = 0
 
-        async def _fake_rollover_2() -> bool:
+        async def _fake_rollover_2(*, timeout_s: float | None = None) -> bool:
             nonlocal rollover_calls_2
+            _ = timeout_s
             rollover_calls_2 += 1
-            dec2.is_completed = True
-            actor2.iterator = _EofIter()
+            actor2.iterator = _FrameIter(
+                [
+                    _selftest_mk_pq_frame(
+                        "c_pq_gate_2",
+                        "r_pq_gate_2",
+                        "rc_pq_gate_2",
+                        answer="ok2",
+                        completed=True,
+                        eod=True,
+                    )
+                ]
+            )
             return True
 
         cast(Any, actor2)._rollover_pq_stream = _fake_rollover_2
-        await asyncio.wait_for(actor2._pq_driver_loop(), timeout=2.0)
+        await _drive_and_decode(actor2, dec2)
+        assert dec2.is_completed is True
         assert sess2.list_turns_calls == 1
         assert sess2.released_responses == [True]
         assert rollover_calls_2 == 1
@@ -105992,30 +107606,55 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             f"Unexpected cleaned_rc for {banner_line!r}: {cleaned_rc!r}"
         )
 
-    # Verify transient upstream `BardStatusException: Dependency RPC failed ... DEADLINE_EXCEEDED`
-    # is classified as resumable (`_robin_is_transient_pq_stream_error == True`), while quota /
-    # already-finished errors remain non-transient (`False`), and verify Turn-1 interrupted boundary
-    # detection works even when `time-context` / `<system-reminder>` is absent on Turn 2:
+    # Verify structured PQ fault classification and recovery planning across transient,
+    # quota, and already-finished errors, plus Turn-1 interrupted boundary detection:
     sample_dep_rpc_err = (
         "com.google.assistant.boq.bard.application.utils.BardStatusException: Dependency RPC failed "
         "Caused by: com.google.net.rpc3.util.RpcFutureStream$RpcStreamException: "
         "<eye3 title='/InteractionService.CreateInteractionBidiStream, DEADLINE_EXCEEDED'/> "
-        "generic::DEADLINE_EXCEEDED: stalled waiting for channel to become reachable: "
-        "/bns/pw/borg/pw/bns/geminiapp-go-actor-host/prod-geminiapp.geminiapp-go-actor-host/54"
+        "generic::DEADLINE_EXCEEDED: stalled waiting for channel to become reachable"
     )
+    f_dep_rpc = _robin_classify_pq_fault(sample_dep_rpc_err)
+    assert f_dep_rpc.kind == "TRANSPORT_OR_RPC_TRANSIENT"
     assert _robin_is_transient_pq_stream_error(sample_dep_rpc_err) is True
-    assert (
-        _robin_is_transient_pq_stream_error(
-            "com.google.assistant.boq.bard.application.utils.BardStatusException: Remy quota exhausted"
-        )
-        is False
+    p_dep_rpc = _robin_plan_pq_recovery(
+        f_dep_rpc,
+        _RobinPqRunContext(
+            is_cancelled=False,
+            has_remote_identity=True,
+            run_phase="RUNNING_NO_ANSWER",
+            has_committed_answer=False,
+            has_pending_tools=False,
+            ert_session_complete=False,
+            is_h2_resumable=True,
+        ),
     )
-    assert (
-        _robin_is_transient_pq_stream_error(
-            "Requested turn to resume (r_wire_99) is no longer in progress."
-        )
-        is False
+    assert p_dep_rpc.action == "RESUME_WITH_BACKOFF"
+    f_quota_err = _robin_classify_pq_fault(
+        "com.google.assistant.boq.bard.application.utils.BardStatusException: Remy quota exhausted"
     )
+    assert f_quota_err.kind == "QUOTA_OR_DOWNGRADE"
+    assert _robin_is_transient_pq_stream_error(f_quota_err.raw_message) is False
+    assert (
+        _robin_plan_pq_recovery(
+            f_quota_err,
+            _RobinPqRunContext(
+                is_cancelled=False,
+                has_remote_identity=True,
+                run_phase="RUNNING_NO_ANSWER",
+                has_committed_answer=False,
+                has_pending_tools=False,
+                ert_session_complete=False,
+                is_h2_resumable=True,
+            ),
+        ).action
+        == "FAIL"
+    )
+    f_turn_done = _robin_classify_pq_fault(
+        "Requested turn to resume (r_wire_99) is no longer in progress."
+    )
+    assert f_turn_done.kind == "TURN_ALREADY_FINISHED"
+    assert _robin_is_transient_pq_stream_error(f_turn_done.raw_message) is False
     t1_int_no_time_ctx_msgs = [
         *t1_interrupted_comp_msgs[:3],
         {
@@ -114621,6 +116260,1656 @@ def test_gemini_multi_client_refactor_and_stream_driver():
         _ais_reset_sessions_for_tests()
 
 
+def _selftest_mk_pq_frame(
+    conv_id: str,
+    req_id: str,
+    resp_id: str,
+    *,
+    answer: str = "",
+    thought: str = "",
+    completed: bool = False,
+    eod: bool = False,
+    error_code: int = 0,
+    error_msg: str = "",
+) -> bytes:
+    """Build a genuine gRPC-framed ProcessQueryResponse protobuf payload for self-tests."""
+    if error_msg:
+        err_body = _pb_varint_field(1, error_code or 13) + _pb_bytes_field(2, error_msg)
+        return _robin_pack_grpc_frames([_pb_bytes_field(1005, err_body)])
+    cand = _pb_bytes_field(1, resp_id)
+    if answer:
+        cand += _pb_bytes_field(2, _pb_bytes_field(1, answer))
+    if thought:
+        cand += _pb_bytes_field(12, _pb_bytes_field(1, thought))
+    if completed:
+        cand += _pb_varint_field(19, 2)
+    ids_msg = _pb_bytes_field(1, conv_id) + _pb_bytes_field(2, req_id)
+    inner = _pb_bytes_field(1, cand) + _pb_bytes_field(2, ids_msg)
+    outer = _pb_bytes_field(1, inner)
+    if eod:
+        outer += _pb_varint_field(2, 1)
+    return _robin_pack_grpc_frames([_pb_bytes_field(1003, outer)])
+
+
+def _selftest_mk_list_turns_payload(
+    conv_id: str,
+    req_id: str,
+    resp_id: str,
+    *,
+    answer: str = "",
+    completed: bool = True,
+) -> bytes:
+    """Build a genuine gRPC-framed ListConversationTurnsResponse protobuf payload."""
+    turn_id = _pb_bytes_field(1, conv_id) + _pb_bytes_field(2, req_id)
+    resp_msg = _pb_bytes_field(1, resp_id)
+    if answer:
+        resp_msg += _pb_bytes_field(2, _pb_bytes_field(1, answer))
+    if completed:
+        resp_msg += _pb_varint_field(19, 2)
+    turn_msg = _pb_bytes_field(1, turn_id) + _pb_bytes_field(
+        4, _pb_bytes_field(1, resp_msg)
+    )
+    return _robin_pack_grpc_frames([_pb_bytes_field(1, turn_msg)])
+
+
+def test_pq_recovery_contract():
+    """PQ Recovery Contract: Groups 1 (fault table), 2 (7x5 policy matrix), and 3A/3B (real state machine)."""
+    # ---- Group 1: Structured fault classification table & priority boundaries ----
+    f_stub_transient = _robin_classify_pq_fault(
+        "<eye3 title='/BardAnswerService.StreamGenerateAnswer, INTERNAL'/> "
+        "extensible_stubs::UNABLE_TO_RETRY: A retriable error could not be retried "
+        "due to Extensible Stubs memory limits for streams "
+        "(old status: RPC::STREAM_BROKEN: Transport has been closed)"
+    )
+    assert f_stub_transient.kind == "STUB_RETRY_EXHAUSTED_TRANSIENT"
+    assert f_stub_transient.rule_id == "p4_stub_retry_exhausted_transient"
+    assert "STREAM_BROKEN" in f_stub_transient.old_status
+    assert f_stub_transient.service_method == "/BardAnswerService.StreamGenerateAnswer"
+    assert _robin_is_transient_pq_stream_error(f_stub_transient.raw_message) is True
+
+    # Multiline and uppercase `OLD STATUS:` variant must also classify as transient.
+    f_stub_multiline = _robin_classify_pq_fault(
+        "extensible_stubs::UNABLE_TO_RETRY: stream memory limit "
+        "(OLD STATUS:\n  RPC::STREAM_BROKEN: Transport has been closed)"
+    )
+    assert f_stub_multiline.kind == "STUB_RETRY_EXHAUSTED_TRANSIENT"
+    assert _robin_is_transient_pq_stream_error(f_stub_multiline.raw_message) is True
+
+    # Missing `old status:` must NOT be treated as transient.
+    f_stub_no_old = _robin_classify_pq_fault(
+        "<eye3 title='/BardAnswerService.StreamGenerateAnswer, INTERNAL'/> "
+        "extensible_stubs::UNABLE_TO_RETRY: A retriable error could not be retried"
+    )
+    assert f_stub_no_old.kind == "STUB_RETRY_EXHAUSTED_UNKNOWN"
+    assert f_stub_no_old.rule_id == "p5_stub_retry_exhausted_unknown"
+    assert _robin_is_transient_pq_stream_error(f_stub_no_old.raw_message) is False
+
+    # Non-transient `old status:` must also classify as STUB_RETRY_EXHAUSTED_UNKNOWN.
+    f_stub_non_transient_old = _robin_classify_pq_fault(
+        "extensible_stubs::UNABLE_TO_RETRY: memory limit (old status: DATA_LOSS: checksum mismatch)"
+    )
+    assert f_stub_non_transient_old.kind == "STUB_RETRY_EXHAUSTED_UNKNOWN"
+
+    # Priority 3 exclusion: PERMISSION_DENIED inside UNABLE_TO_RETRY must classify as AUTH_OR_CLIENT_ERROR.
+    f_stub_perm = _robin_classify_pq_fault(
+        "extensible_stubs::UNABLE_TO_RETRY: retry blocked (old status: PERMISSION_DENIED: forbidden)"
+    )
+    assert f_stub_perm.kind == "AUTH_OR_CLIENT_ERROR"
+    assert f_stub_perm.rule_id == "p3_auth_or_client_error"
+
+    # Priority 1: TURN_ALREADY_FINISHED
+    f_finished = _robin_classify_pq_fault(
+        "Requested turn to resume (r_selftest_0001) is no longer in progress."
+    )
+    assert f_finished.kind == "TURN_ALREADY_FINISHED"
+    assert f_finished.rule_id == "p1_turn_already_finished"
+
+    # Priority 2: QUOTA_OR_DOWNGRADE
+    for q_msg in (
+        "BardStatusException: quota exhausted",
+        "Request was downgraded by server",
+        "RESOURCE_EXHAUSTED: rate limit",
+    ):
+        f_q = _robin_classify_pq_fault(q_msg)
+        assert f_q.kind == "QUOTA_OR_DOWNGRADE", q_msg
+
+    # Priority 3: transport grpc_status in (3, 5, 7, 16)
+    for gs in (3, 5, 7, 16):
+        f_auth = _robin_classify_pq_fault("opaque error", grpc_status=gs)
+        assert f_auth.kind == "AUTH_OR_CLIENT_ERROR", gs
+
+    # Priority 6: H2Error / OSError / grpc-status=4,14 / trailer grpc-status=13 / DEADLINE_EXCEEDED
+    assert (
+        _robin_classify_pq_fault(OSError("connection reset")).kind
+        == "TRANSPORT_OR_RPC_TRANSIENT"
+    )
+    assert (
+        _robin_classify_pq_fault(H2Error("protocol error")).kind
+        == "TRANSPORT_OR_RPC_TRANSIENT"
+    )
+    assert (
+        _robin_classify_pq_fault("opaque rpc error", grpc_status=14).kind
+        == "TRANSPORT_OR_RPC_TRANSIENT"
+    )
+    assert (
+        _robin_classify_pq_fault("opaque rpc error", grpc_status=4).kind
+        == "TRANSPORT_OR_RPC_TRANSIENT"
+    )
+    assert (
+        _robin_classify_pq_fault(
+            "RobinService gRPC error (grpc-status=13): RST_STREAM"
+        ).kind
+        == "TRANSPORT_OR_RPC_TRANSIENT"
+    )
+    assert (
+        _robin_classify_pq_fault("Dependency RPC failed: DEADLINE_EXCEEDED").kind
+        == "TRANSPORT_OR_RPC_TRANSIENT"
+    )
+
+    # Priority 7: plain inline INTERNAL (grpc_status=13 without trailer transport error) & unknown errors -> UNKNOWN
+    f_plain_internal = _robin_classify_pq_fault(
+        "BardStatusException: INTERNAL: unexpected server state",
+        grpc_status=13,
+        is_trailer_grpc_error=False,
+    )
+    assert f_plain_internal.kind == "UNKNOWN"
+    assert f_plain_internal.rule_id == "p7_unknown"
+    assert (
+        _robin_classify_pq_fault("some completely unrecognized error").kind == "UNKNOWN"
+    )
+
+    # ---- Group 2: Exhaustive 7x5 recovery decision matrix ----
+    all_kinds = (
+        "TURN_ALREADY_FINISHED",
+        "QUOTA_OR_DOWNGRADE",
+        "AUTH_OR_CLIENT_ERROR",
+        "STUB_RETRY_EXHAUSTED_TRANSIENT",
+        "STUB_RETRY_EXHAUSTED_UNKNOWN",
+        "TRANSPORT_OR_RPC_TRANSIENT",
+        "UNKNOWN",
+    )
+    all_phases: tuple[
+        Literal[
+            "PRE_IDENTITY",
+            "RUNNING_NO_ANSWER",
+            "WAITING_TOOLS",
+            "PARTIAL_ANSWER",
+            "MAYBE_TERMINAL",
+        ],
+        ...,
+    ] = (
+        "PRE_IDENTITY",
+        "RUNNING_NO_ANSWER",
+        "WAITING_TOOLS",
+        "PARTIAL_ANSWER",
+        "MAYBE_TERMINAL",
+    )
+    for kind in all_kinds:
+        fault_obj = _RobinPqFault(
+            kind=kind,
+            grpc_status=None,
+            old_status="",
+            service_method="",
+            raw_message=f"synthetic {kind}",
+            rule_id=f"test_{kind.lower()}",
+        )
+        for phase in all_phases:
+            has_id = phase != "PRE_IDENTITY"
+            # Cancelled run invariant: ALWAYS FAIL regardless of fault_kind or phase.
+            ctx_cancel = _RobinPqRunContext(
+                is_cancelled=True,
+                has_remote_identity=has_id,
+                run_phase=phase,
+                has_committed_answer=(phase == "PARTIAL_ANSWER"),
+                has_pending_tools=(phase == "WAITING_TOOLS"),
+                ert_session_complete=(phase == "MAYBE_TERMINAL"),
+                is_h2_resumable=True,
+                attempt=0,
+                elapsed_recovery_s=0.0,
+                max_attempts=3,
+                budget_s=45.0,
+            )
+            plan_cancel = _robin_plan_pq_recovery(fault_obj, ctx_cancel)
+            assert plan_cancel.action == "FAIL", (kind, phase, plan_cancel)
+            assert plan_cancel.reason_code == "run_cancelled"
+
+            # Budget available, not cancelled:
+            ctx_ok = _RobinPqRunContext(
+                is_cancelled=False,
+                has_remote_identity=has_id,
+                run_phase=phase,
+                has_committed_answer=(phase == "PARTIAL_ANSWER"),
+                has_pending_tools=(phase == "WAITING_TOOLS"),
+                ert_session_complete=(phase == "MAYBE_TERMINAL"),
+                is_h2_resumable=True,
+                attempt=0,
+                elapsed_recovery_s=0.0,
+                max_attempts=3,
+                budget_s=45.0,
+            )
+            plan_ok = _robin_plan_pq_recovery(fault_obj, ctx_ok)
+            assert plan_ok.reason_code, (kind, phase)
+            if (
+                kind in ("QUOTA_OR_DOWNGRADE", "AUTH_OR_CLIENT_ERROR")
+                or phase == "PRE_IDENTITY"
+            ):
+                assert plan_ok.action == "FAIL", (kind, phase, plan_ok)
+            elif kind in (
+                "TURN_ALREADY_FINISHED",
+                "STUB_RETRY_EXHAUSTED_UNKNOWN",
+                "UNKNOWN",
+            ):
+                assert plan_ok.action == "RECONCILE_THEN_FAIL", (kind, phase, plan_ok)
+                assert plan_ok.reconcile_timeout_s > 0.0
+            else:
+                if phase in ("RUNNING_NO_ANSWER", "WAITING_TOOLS"):
+                    assert plan_ok.action == "RESUME_WITH_BACKOFF", (
+                        kind,
+                        phase,
+                        plan_ok,
+                    )
+                else:
+                    assert plan_ok.action == "RECONCILE_THEN_RESUME", (
+                        kind,
+                        phase,
+                        plan_ok,
+                    )
+                assert plan_ok.max_attempts == 3
+                assert plan_ok.resume_timeout_s > 0.0
+
+            # UNKNOWN must NEVER produce RESUME_WITH_BACKOFF or RECONCILE_THEN_RESUME.
+            if kind == "UNKNOWN":
+                assert plan_ok.action not in (
+                    "RESUME_WITH_BACKOFF",
+                    "RECONCILE_THEN_RESUME",
+                )
+
+            # Budget exhausted must degrade transient faults to RECONCILE_THEN_FAIL (or FAIL if PRE_IDENTITY).
+            ctx_exhausted = _RobinPqRunContext(
+                is_cancelled=False,
+                has_remote_identity=has_id,
+                run_phase=phase,
+                has_committed_answer=(phase == "PARTIAL_ANSWER"),
+                has_pending_tools=(phase == "WAITING_TOOLS"),
+                ert_session_complete=(phase == "MAYBE_TERMINAL"),
+                is_h2_resumable=True,
+                attempt=3,
+                elapsed_recovery_s=50.0,
+                max_attempts=3,
+                budget_s=45.0,
+            )
+            plan_ex = _robin_plan_pq_recovery(fault_obj, ctx_exhausted)
+            assert plan_ex.action in ("FAIL", "RECONCILE_THEN_FAIL"), (
+                kind,
+                phase,
+                plan_ex,
+            )
+
+    # WAITING_TOOLS + ert_session_complete upgrades transient fault to RECONCILE_THEN_RESUME.
+    plan_wt_ert = _robin_plan_pq_recovery(
+        f_stub_transient,
+        _RobinPqRunContext(
+            is_cancelled=False,
+            has_remote_identity=True,
+            run_phase="WAITING_TOOLS",
+            has_committed_answer=False,
+            has_pending_tools=True,
+            ert_session_complete=True,
+            is_h2_resumable=True,
+        ),
+    )
+    assert plan_wt_ert.action == "RECONCILE_THEN_RESUME"
+
+    # ---- Group 3A & 3B: Real state machine fault injection (zero global timeout mutation) ----
+    async def _run_group_3a_and_3b() -> None:
+        class _StubH2Resp(_RobinHTTP2Response):
+            def __init__(self) -> None:
+                super().__init__(200, {"grpc-status": "0"}, None, None, None, 1, [])
+
+        class _ChunkIter:
+            def __init__(
+                self, frames: list[bytes], *, hang_after: bool = False
+            ) -> None:
+                self._frames = list(frames)
+                self._hang_after = hang_after
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self) -> bytes:
+                if self._frames:
+                    return self._frames.pop(0)
+                if self._hang_after:
+                    await asyncio.Event().wait()
+                raise StopAsyncIteration
+
+        class _SpyListTurnsSession:
+            def __init__(self, payloads: list[bytes]) -> None:
+                self._payloads = list(payloads)
+                self.calls = 0
+                self.released: list[bool] = []
+
+            async def post(
+                self, url: str, data: Any = None, headers: Any = None
+            ) -> Any:
+                self.calls += 1
+                body = self._payloads.pop(0) if self._payloads else b""
+                parent = self
+
+                class _Resp:
+                    status = 200
+
+                    def __init__(self) -> None:
+                        self.headers: dict[str, str] = {}
+
+                    async def read(self) -> bytes:
+                        return body
+
+                    def release(self) -> None:
+                        parent.released.append(True)
+
+                return _Resp()
+
+        # --- Case 3A: UNABLE_TO_RETRY (old status: RPC::STREAM_BROKEN) mid-stream recovery ---
+        run_3a = _RobinRunState(
+            run_id="run_selftest_pq_3a",
+            session_key="boot_selftest_pq_3a",
+            client_session_id="boot_selftest_pq_3a",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            conversation_id="c_selftest_0001",
+            request_id="r_selftest_0001",
+            response_id="rc_selftest_0001",
+        )
+        dec_3a = _RobinStreamDecoder(
+            "chatcmpl-selftest-3a", 0, "gemini:gemini-4-argon", run=run_3a
+        )
+        f_thought = _selftest_mk_pq_frame(
+            "c_selftest_0001",
+            "r_selftest_0001",
+            "rc_selftest_0001",
+            thought="Checking test.pdf",
+        )
+        f_err = _selftest_mk_pq_frame(
+            "c_selftest_0001",
+            "r_selftest_0001",
+            "rc_selftest_0001",
+            error_msg=(
+                "<eye3 title='/BardAnswerService.StreamGenerateAnswer, INTERNAL'/> "
+                "extensible_stubs::UNABLE_TO_RETRY: memory limit "
+                "(old status: RPC::STREAM_BROKEN: Transport has been closed)"
+            ),
+        )
+        f_terminal = _selftest_mk_pq_frame(
+            "c_selftest_0001",
+            "r_selftest_0001",
+            "rc_selftest_0001",
+            answer="Recovered answer for test.pdf.",
+            completed=True,
+            eod=True,
+        )
+        # First stream hangs after sending thought + error frame, proving `request_pq_recovery`
+        # actively wakes `_pq_driver_loop` instead of silently stalling on a half-open stream.
+        actor_3a = _RobinRunActor(
+            session_id="s_selftest_pq_3a",
+            session_key="boot_selftest_pq_3a",
+            boot_key="boot_selftest_pq_3a",
+            full_key="",
+            http_session=cast(Any, _SpyListTurnsSession([])),
+            response=_StubH2Resp(),
+            iterator=_ChunkIter([f_thought, f_err], hang_after=True),
+            decoder=dec_3a,
+            run=run_3a,
+            conversation_id="c_selftest_0001",
+            request_id="r_selftest_0001",
+            response_id="rc_selftest_0001",
+            access_token="tok_selftest_3a",
+            _pq_recovery_budget_seconds=5.0,
+            _pq_recovery_backoff_base_seconds=0.01,
+        )
+        rollover_3a_calls = 0
+
+        async def _rollover_3a(*, timeout_s: float | None = None) -> bool:
+            nonlocal rollover_3a_calls
+            _ = timeout_s
+            rollover_3a_calls += 1
+            actor_3a.iterator = _ChunkIter([f_terminal])
+            return True
+
+        cast(Any, actor_3a)._rollover_pq_stream = _rollover_3a
+        captured_decisions: list[dict[str, Any]] = []
+        orig_log_decision = actor_3a._log_pq_recovery_decision
+
+        def _spy_log_decision(
+            fault: _RobinPqFault,
+            ctx: _RobinPqRunContext,
+            plan: _RobinPqRecoveryPlan,
+            *,
+            outcome: str,
+            reconcile_ms: float = 0.0,
+        ) -> None:
+            captured_decisions.append(
+                {
+                    "fault_kind": fault.kind,
+                    "run_phase": ctx.run_phase,
+                    "action": plan.action,
+                    "attempt": ctx.attempt,
+                    "reason": plan.reason_code,
+                    "outcome": outcome,
+                }
+            )
+            orig_log_decision(
+                fault, ctx, plan, outcome=outcome, reconcile_ms=reconcile_ms
+            )
+
+        cast(Any, actor_3a)._log_pq_recovery_decision = _spy_log_decision
+        actor_3a.start_pq_driver()
+        emitted_answers: list[str] = []
+        rollover_buf_cleared = False
+        while True:
+            kind, item = await asyncio.wait_for(actor_3a.mux_queue.get(), timeout=2.0)
+            if kind == "pq":
+                try:
+                    chunks = dec_3a.feed_bytes(item)
+                except GeminiStreamError as exc_3a:
+                    fault_3a = _robin_classify_pq_fault(exc_3a)
+                    assert fault_3a.kind == "STUB_RETRY_EXHAUSTED_TRANSIENT"
+                    # Plant residual garbage in decoder._buf to verify `pq_rollover` clears it.
+                    dec_3a._buf.extend(b"\x00\x00\x00\x00\x05abc")
+                    assert actor_3a.request_pq_recovery(fault_3a) is True
+                    continue
+                for ch in chunks:
+                    c_txt = str(
+                        ((ch.get("choices") or [{}])[0].get("delta") or {}).get(
+                            "content"
+                        )
+                        or ""
+                    )
+                    if c_txt:
+                        emitted_answers.append(c_txt)
+            elif kind == "pq_rollover":
+                dec_3a.on_pq_stream_rollover()
+                assert len(dec_3a._buf) == 0
+                rollover_buf_cleared = True
+            elif kind == "pq_eof":
+                break
+        await asyncio.wait_for(actor_3a.pq_pump_task, timeout=2.0)
+        assert rollover_3a_calls == 1
+        assert rollover_buf_cleared is True
+        assert "".join(emitted_answers) == "Recovered answer for test.pdf."
+        assert dec_3a.is_completed is True
+        assert any(
+            d["fault_kind"] == "STUB_RETRY_EXHAUSTED_TRANSIENT"
+            and d["outcome"] == "resumed"
+            for d in captured_decisions
+        )
+        # Driver already done -> request_pq_recovery must return False (in-place degrade path).
+        assert actor_3a.request_pq_recovery(f_stub_transient) is False
+
+        # --- Case 3B-1: Parked WAITING_TOOLS + ERT ENDED -> segmented probe hits terminal -> two-phase closure ---
+        run_3b = _RobinRunState(
+            run_id="run_selftest_pq_3b",
+            session_key="boot_selftest_pq_3b",
+            client_session_id="boot_selftest_pq_3b",
+            principal_id="p_selftest",
+            execution_state="WAITING_TOOLS",
+            attachment_state="TOOL_HANDOFF",
+            ert_transport_state="ENDED",
+            conversation_id="c_selftest_0002",
+            request_id="r_selftest_0002",
+            dsh_tools=[{"type": "function", "function": {"name": "send_message"}}],
+        )
+        dec_3b = _RobinStreamDecoder(
+            "chatcmpl-selftest-3b", 0, "gemini:gemini-4-argon", run=run_3b
+        )
+        dec_3b.conversation_id = "c_selftest_0002"
+        dec_3b.request_id = "r_selftest_0002"
+        dec_3b.ert_session_complete = True
+        dec_3b.pending_tool_calls = [
+            {"id": "call_selftest_wt_1", "name": "send_message", "_source": "relay"},
+            {"id": "call_selftest_wt_2", "name": "send_message", "_source": "relay"},
+        ]
+        inv_wt1 = _RobinToolInvocation(
+            invocation_id="inv_selftest_wt_1",
+            run_id=run_3b.run_id,
+            public_tool_call_id="call_selftest_wt_1",
+            wire_call_id="",
+            wire_call_id_present=False,
+            orig_call_name="send_message",
+            dsh_tool_name="send_message",
+            orig_args={},
+            adapted_args={},
+            source="relay",
+            status="DISPATCHED",
+            relay_ctx={"relay_job_id": "call_selftest_wt_1"},
+        )
+        inv_wt2 = _RobinToolInvocation(
+            invocation_id="inv_selftest_wt_2",
+            run_id=run_3b.run_id,
+            public_tool_call_id="call_selftest_wt_2",
+            wire_call_id="",
+            wire_call_id_present=False,
+            orig_call_name="send_message",
+            dsh_tool_name="send_message",
+            orig_args={},
+            adapted_args={},
+            source="relay",
+            status="DISPATCHED",
+            relay_ctx={"relay_job_id": "call_selftest_wt_2"},
+        )
+        run_3b.tool_ledger.invocations[inv_wt1.invocation_id] = inv_wt1
+        run_3b.tool_ledger.invocations[inv_wt2.invocation_id] = inv_wt2
+        run_3b.tool_ledger.by_public_id["call_selftest_wt_1"] = inv_wt1
+        run_3b.tool_ledger.by_public_id["call_selftest_wt_2"] = inv_wt2
+        fut_wt1 = _relay_open_waiter("call_selftest_wt_1")
+        fut_wt2 = _relay_open_waiter("call_selftest_wt_2")
+        assert fut_wt1 is not None and fut_wt2 is not None
+        lt_payload = _selftest_mk_list_turns_payload(
+            "c_selftest_0002",
+            "r_selftest_0002",
+            "rc_selftest_0002",
+            answer="Final answer reconciled while parked.",
+            completed=True,
+        )
+        sess_3b = _SpyListTurnsSession([lt_payload])
+        actor_3b = _RobinRunActor(
+            session_id="s_selftest_pq_3b",
+            session_key="boot_selftest_pq_3b",
+            boot_key="boot_selftest_pq_3b",
+            full_key="",
+            http_session=cast(Any, sess_3b),
+            response=_StubH2Resp(),
+            iterator=_ChunkIter([]),
+            decoder=dec_3b,
+            run=run_3b,
+            conversation_id="c_selftest_0002",
+            request_id="r_selftest_0002",
+            access_token="tok_selftest_3b",
+            _pq_waiting_tools_probe_seconds=0.03,
+            _pq_waiting_tools_total_seconds=0.5,
+            _reconcile_timeout_seconds=0.5,
+        )
+        _ROBIN_ACTIVE_RUNS[run_3b.run_id] = run_3b
+        _relay_bind_active_run(run_3b, actor_3b)
+        try:
+            await asyncio.wait_for(actor_3b._pq_driver_loop(), timeout=2.0)
+            await asyncio.sleep(0)
+            # Phase 1: waiters settled, routing slot cleared, terminal state persisted.
+            assert fut_wt1.done() and fut_wt2.done()
+            assert all(r.run_id != run_3b.run_id for r, _ in _relay_live_actors())
+            assert run_3b.execution_state == "TERMINAL"
+            assert run_3b.outcome_state == "SUCCEEDED"
+            # Phase 2: parked attachment_state preserved and reconciled answer retained in mux_queue.
+            assert run_3b.attachment_state == "TOOL_HANDOFF"
+            assert dec_3b.is_completed is True
+            drained_text = ""
+            while not actor_3b.mux_queue.empty():
+                qk, qv = actor_3b.mux_queue.get_nowait()
+                if qk == "ert_chunks" and isinstance(qv, list):
+                    for cd in qv:
+                        drained_text += str(
+                            ((cd.get("choices") or [{}])[0].get("delta") or {}).get(
+                                "content"
+                            )
+                            or ""
+                        )
+            assert drained_text == "Final answer reconciled while parked."
+        finally:
+            _relay_clear_active_run(run_3b)
+            _ROBIN_ACTIVE_RUNS.pop(run_3b.run_id, None)
+            _relay_drop_waiter("call_selftest_wt_1")
+            _relay_drop_waiter("call_selftest_wt_2")
+
+        # --- Case 3B-2: WAITING_TOOLS total budget exhausted -> forced TERMINAL / FAILED ---
+        run_3b2 = _RobinRunState(
+            run_id="run_selftest_pq_3b2",
+            session_key="boot_selftest_pq_3b2",
+            client_session_id="boot_selftest_pq_3b2",
+            principal_id="p_selftest",
+            execution_state="WAITING_TOOLS",
+            attachment_state="TOOL_HANDOFF",
+            ert_transport_state="ENDED",
+            conversation_id="c_selftest_0003",
+            request_id="r_selftest_0003",
+        )
+        dec_3b2 = _RobinStreamDecoder(
+            "chatcmpl-selftest-3b2", 0, "gemini:gemini-4-argon", run=run_3b2
+        )
+        dec_3b2.conversation_id = "c_selftest_0003"
+        dec_3b2.request_id = "r_selftest_0003"
+        dec_3b2.pending_tool_calls = [
+            {"id": "call_selftest_wt_3", "name": "send_message", "_source": "relay"}
+        ]
+        inv_wt3 = _RobinToolInvocation(
+            invocation_id="inv_selftest_wt_3",
+            run_id=run_3b2.run_id,
+            public_tool_call_id="call_selftest_wt_3",
+            wire_call_id="",
+            wire_call_id_present=False,
+            orig_call_name="send_message",
+            dsh_tool_name="send_message",
+            orig_args={},
+            adapted_args={},
+            source="relay",
+            status="DISPATCHED",
+            relay_ctx={"relay_job_id": "call_selftest_wt_3"},
+        )
+        run_3b2.tool_ledger.invocations[inv_wt3.invocation_id] = inv_wt3
+        run_3b2.tool_ledger.by_public_id["call_selftest_wt_3"] = inv_wt3
+        fut_wt3 = _relay_open_waiter("call_selftest_wt_3")
+        assert fut_wt3 is not None
+        actor_3b2 = _RobinRunActor(
+            session_id="s_selftest_pq_3b2",
+            session_key="boot_selftest_pq_3b2",
+            boot_key="boot_selftest_pq_3b2",
+            full_key="",
+            http_session=cast(Any, _SpyListTurnsSession([])),
+            response=_StubH2Resp(),
+            iterator=_ChunkIter([]),
+            decoder=dec_3b2,
+            run=run_3b2,
+            conversation_id="c_selftest_0003",
+            request_id="r_selftest_0003",
+            access_token="tok_selftest_3b2",
+            _pq_waiting_tools_probe_seconds=0.03,
+            _pq_waiting_tools_total_seconds=0.08,
+            _reconcile_timeout_seconds=0.05,
+        )
+        try:
+            await asyncio.wait_for(actor_3b2._pq_driver_loop(), timeout=2.0)
+            await asyncio.sleep(0)
+            assert run_3b2.execution_state == "TERMINAL"
+            assert run_3b2.outcome_state == "FAILED"
+            assert fut_wt3.done()
+        finally:
+            _relay_drop_waiter("call_selftest_wt_3")
+
+    asyncio.run(_run_group_3a_and_3b())
+
+
+def test_relay_liveness_contract():
+    """Relay Liveness Contract: Groups 3C (ERT/Relay isolation & multi-session routing) and 4 (bounded timeouts)."""
+
+    async def _run_group_3c_and_4() -> None:
+        class _StubH2Resp(_RobinHTTP2Response):
+            def __init__(self) -> None:
+                super().__init__(200, {"grpc-status": "0"}, None, None, None, 1, [])
+
+        # ---- Group 3C-1: ERT RemoteToolSessionComplete must NOT touch Relay pending or Relay mux_queue ----
+        run_3c = _RobinRunState(
+            run_id="run_selftest_3c_iso",
+            session_key="boot_selftest_3c_iso",
+            client_session_id="boot_selftest_3c_iso",
+            principal_id="p_selftest",
+            execution_state="WAITING_TOOLS",
+            attachment_state="TOOL_HANDOFF",
+            conversation_id="c_selftest_3c",
+            request_id="r_selftest_3c",
+        )
+        dec_3c = _RobinStreamDecoder(
+            "chatcmpl-selftest-3c", 0, "gemini:gemini-4-argon", run=run_3c
+        )
+        dec_3c.conversation_id = "c_selftest_3c"
+        dec_3c.request_id = "r_selftest_3c"
+        dec_3c.pending_tool_calls = [
+            {
+                "index": 0,
+                "id": "call_selftest_relay_01",
+                "name": "read",
+                "_source": "relay",
+            },
+            {
+                "index": 1,
+                "id": "call_selftest_ert_01",
+                "name": "list_dir",
+                "_source": "ert",
+            },
+        ]
+        list_turns_called_in_ert = 0
+
+        class _NoListTurnsSession:
+            async def post(
+                self, url: str, data: Any = None, headers: Any = None
+            ) -> Any:
+                nonlocal list_turns_called_in_ert
+                list_turns_called_in_ert += 1
+                raise AssertionError(
+                    "_ert_driver_loop must never call ListConversationTurns"
+                )
+
+        # Build a genuine ERT RemoteToolSessionComplete frame (field 3 = empty/message).
+        ert_complete_frame = _robin_pack_grpc_frames(
+            [_pb_bytes_field(3, _pb_varint_field(1, 1))]
+        )
+
+        class _ErtOneFrameIter:
+            def __init__(self, frame: bytes) -> None:
+                self._frames = [frame]
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self) -> bytes:
+                if self._frames:
+                    return self._frames.pop(0)
+                raise StopAsyncIteration
+
+        actor_3c = _RobinRunActor(
+            session_id="s_selftest_3c",
+            session_key="boot_selftest_3c_iso",
+            boot_key="boot_selftest_3c_iso",
+            full_key="",
+            http_session=cast(Any, _NoListTurnsSession()),
+            response=_StubH2Resp(),
+            iterator=_ErtOneFrameIter(b""),
+            decoder=dec_3c,
+            run=run_3c,
+            ert_response=_StubH2Resp(),
+            ert_iterator=_ErtOneFrameIter(ert_complete_frame),
+            has_robin_tools=True,
+            access_token="tok_selftest_3c",
+        )
+        actor_3c.pending_tool_calls = list(dec_3c.pending_tool_calls)
+        actor_3c.mux_queue.put_nowait(
+            (
+                "ert_chunks",
+                [
+                    {
+                        "choices": [
+                            {
+                                "delta": {
+                                    "tool_calls": [
+                                        {
+                                            "id": "call_selftest_relay_01",
+                                            "type": "function",
+                                            "function": {
+                                                "name": "read",
+                                                "arguments": "{}",
+                                            },
+                                        },
+                                        {
+                                            "id": "call_selftest_ert_01",
+                                            "type": "function",
+                                            "function": {
+                                                "name": "list_dir",
+                                                "arguments": "{}",
+                                            },
+                                        },
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ],
+            )
+        )
+        await asyncio.wait_for(
+            actor_3c._ert_driver_loop(actor_3c.ert_iterator), timeout=2.0
+        )
+        assert list_turns_called_in_ert == 0
+        assert run_3c.ert_transport_state == "ENDED"
+        assert [tc["id"] for tc in dec_3c.pending_tool_calls] == [
+            "call_selftest_relay_01"
+        ]
+        assert [tc["id"] for tc in actor_3c.pending_tool_calls] == [
+            "call_selftest_relay_01"
+        ]
+        assert run_3c.execution_state == "WAITING_TOOLS"
+        assert run_3c.attachment_state == "TOOL_HANDOFF"
+        remaining_q_ids: list[str] = []
+        while not actor_3c.mux_queue.empty():
+            qk, qv = actor_3c.mux_queue.get_nowait()
+            if qk == "ert_chunks" and isinstance(qv, list):
+                for cd in qv:
+                    for ch in cd.get("choices") or []:
+                        for tc in (ch.get("delta") or {}).get("tool_calls") or []:
+                            remaining_q_ids.append(str(tc.get("id") or ""))
+        assert remaining_q_ids == ["call_selftest_relay_01"]
+
+        # ---- Group 3C-2: Multi-session concurrent routing (0.65s delayed PQ announcement hits within 1.5s; dual race fails closed) ----
+        shared_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "read",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"file_path": {"type": "string"}},
+                    },
+                },
+            }
+        ]
+        run_r1 = _RobinRunState(
+            run_id="run_selftest_route_1",
+            session_key="boot_selftest_r1",
+            client_session_id="boot_selftest_r1",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=shared_tools,
+        )
+        run_r2 = _RobinRunState(
+            run_id="run_selftest_route_2",
+            session_key="boot_selftest_r2",
+            client_session_id="boot_selftest_r2",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=shared_tools,
+        )
+        actor_r1 = _RobinRunActor(
+            session_id="s_r1",
+            session_key="boot_selftest_r1",
+            boot_key="boot_selftest_r1",
+            full_key="",
+            http_session=cast(Any, None),
+            response=_StubH2Resp(),
+            iterator=_ErtOneFrameIter(b""),
+            decoder=_RobinStreamDecoder(
+                "cmpl-r1", 0, "gemini:gemini-4-argon", run=run_r1
+            ),
+            run=run_r1,
+        )
+        actor_r2 = _RobinRunActor(
+            session_id="s_r2",
+            session_key="boot_selftest_r2",
+            boot_key="boot_selftest_r2",
+            full_key="",
+            http_session=cast(Any, None),
+            response=_StubH2Resp(),
+            iterator=_ErtOneFrameIter(b""),
+            decoder=_RobinStreamDecoder(
+                "cmpl-r2", 0, "gemini:gemini-4-argon", run=run_r2
+            ),
+            run=run_r2,
+        )
+        _ROBIN_ACTIVE_RUNS[run_r1.run_id] = run_r1
+        _ROBIN_ACTIVE_RUNS[run_r2.run_id] = run_r2
+        _relay_bind_active_run(run_r1, actor_r1)
+        _relay_bind_active_run(run_r2, actor_r2)
+        try:
+            assert _RELAY_PQ_WAIT_SECONDS >= 1.0
+
+            async def _delayed_announce() -> None:
+                await asyncio.sleep(0.65)
+                _relay_record_pq_announcement(run_r1.run_id, tool_name="read")
+
+            ann_task = asyncio.create_task(_delayed_announce())
+            try:
+                hit_run, hit_actor, routed_by = await _relay_resolve_target(
+                    "read", {"file_path": "test.pdf"}, "", None
+                )
+            finally:
+                await ann_task
+            assert hit_run is run_r1 and hit_actor is actor_r1
+            assert routed_by == "pq_tool_name"
+
+            # Dual concurrent announcement on both sessions must fail closed as `ambiguous`.
+            _relay_record_pq_announcement(run_r1.run_id, tool_name="read")
+            _relay_record_pq_announcement(run_r2.run_id, tool_name="read")
+            amb_run, amb_actor, amb_reason = await _relay_resolve_target(
+                "read", {"file_path": "test.pdf"}, "", None
+            )
+            assert amb_run is None and amb_actor is None
+            assert amb_reason == "ambiguous"
+        finally:
+            _relay_clear_active_run(run_r1)
+            _relay_clear_active_run(run_r2)
+            _ROBIN_ACTIVE_RUNS.pop(run_r1.run_id, None)
+            _ROBIN_ACTIVE_RUNS.pop(run_r2.run_id, None)
+
+        # ---- Group 4: Bounded production timeouts & release guarantees (zero global mutation) ----
+        class _HangSession:
+            def __init__(self) -> None:
+                self.released: list[bool] = []
+
+            async def post(
+                self, url: str, data: Any = None, headers: Any = None
+            ) -> Any:
+                parent = self
+
+                class _HangResp:
+                    status = 200
+
+                    def __init__(self) -> None:
+                        self.headers: dict[str, str] = {}
+
+                    async def read(self) -> bytes:
+                        await asyncio.Event().wait()
+                        return b""
+
+                    def release(self) -> None:
+                        parent.released.append(True)
+
+                return _HangResp()
+
+        # 4.1: `_robin_reconcile_via_list_turns` & `_robin_resolve_response_id_via_list_turns`
+        hang_sess = _HangSession()
+        run_4 = _RobinRunState(
+            run_id="run_selftest_4_bounds",
+            session_key="boot_selftest_4",
+            client_session_id="boot_selftest_4",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            conversation_id="c_selftest_4",
+            request_id="r_selftest_4",
+        )
+        dec_4 = _RobinStreamDecoder("cmpl-4", 0, "gemini:gemini-4-argon", run=run_4)
+        t0 = time.monotonic()
+        rec_4 = await _robin_reconcile_via_list_turns(
+            cast(Any, hang_sess),
+            "tok_4",
+            "c_selftest_4",
+            "r_selftest_4",
+            dec_4,
+            timeout_s=0.05,
+        )
+        assert rec_4 == []
+        assert (time.monotonic() - t0) < 0.8
+        assert len(hang_sess.released) == 1
+
+        t1 = time.monotonic()
+        rc_4 = await _robin_resolve_response_id_via_list_turns(
+            cast(Any, hang_sess),
+            "tok_4",
+            "c_selftest_4",
+            "r_selftest_4",
+            timeout_s=0.05,
+        )
+        assert rc_4 == ""
+        assert (time.monotonic() - t1) < 0.8
+        assert len(hang_sess.released) == 2
+
+        # 4.2: `_robin_post_http2_grpc` with hanging mux.open_stream -> synthetic 504 within timeout
+        class _HangMux:
+            closed = False
+
+            async def open_stream(
+                self,
+                path: str,
+                headers: Any,
+                payload: bytes,
+                *,
+                end_stream: bool = True,
+            ) -> Any:
+                await asyncio.Event().wait()
+
+        t2 = time.monotonic()
+        h2_resp = await _robin_post_http2_grpc(
+            "https://example.invalid/v1/test",
+            {},
+            b"",
+            mux=cast(Any, _HangMux()),
+            timeout_s=0.05,
+        )
+        assert h2_resp.status == 504
+        assert (time.monotonic() - t2) < 0.8
+
+        # 4.3: `_rollover_pq_stream` & `_rollover_ert_stream` bounded timeout
+        actor_4 = _RobinRunActor(
+            session_id="s_selftest_4",
+            session_key="boot_selftest_4",
+            boot_key="boot_selftest_4",
+            full_key="",
+            http_session=cast(Any, hang_sess),
+            response=_StubH2Resp(),
+            iterator=_ErtOneFrameIter(b""),
+            decoder=dec_4,
+            run=run_4,
+            conversation_id="c_selftest_4",
+            request_id="r_selftest_4",
+            access_token="tok_4",
+        )
+        dec_4.conversation_id = "c_selftest_4"
+        dec_4.request_id = "r_selftest_4"
+        cast(Any, actor_4.response)._mux = _HangMux()
+        t3 = time.monotonic()
+        assert await actor_4._rollover_pq_stream(timeout_s=0.05) is False
+        assert (time.monotonic() - t3) < 0.8
+
+        t4 = time.monotonic()
+        actor_4.http_session = cast(Any, object())
+        assert await actor_4._rollover_ert_stream(timeout_s=0.05) is False
+        assert (time.monotonic() - t4) < 0.8
+
+        # 4.4: `_relay_call_on_actor` bounded timeout (same-loop)
+        async def _hang_coro() -> None:
+            await asyncio.Event().wait()
+
+        timed_out_actor_call = False
+        t5 = time.monotonic()
+        try:
+            await _relay_call_on_actor(actor_4, _hang_coro(), timeout_s=0.05)
+        except asyncio.TimeoutError:
+            timed_out_actor_call = True
+        assert timed_out_actor_call is True
+        assert (time.monotonic() - t5) < 0.8
+
+        # 4.5: `_relay_mcp_tools_call` with `client_native_bg=True` + parked actor:
+        # single bounded wait, NO `_relay_try_background`, `attachment_state` stays `TOOL_HANDOFF`,
+        # waiter dropped, and late `role:tool` is idempotently absorbed.
+        native_bg_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "bash",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"command": {"type": "string"}},
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "job_output",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"job_id": {"type": "string"}},
+                    },
+                },
+            },
+        ]
+        run_4b = _RobinRunState(
+            run_id="run_selftest_4b_parked",
+            session_key="boot_selftest_4b",
+            client_session_id="boot_selftest_4b",
+            principal_id="p_selftest",
+            execution_state="WAITING_TOOLS",
+            attachment_state="TOOL_HANDOFF",
+            dsh_tools=native_bg_tools,
+        )
+        dec_4b = _RobinStreamDecoder("cmpl-4b", 0, "gemini:gemini-4-argon", run=run_4b)
+        actor_4b = _RobinRunActor(
+            session_id="s_selftest_4b",
+            session_key="boot_selftest_4b",
+            boot_key="boot_selftest_4b",
+            full_key="",
+            http_session=cast(Any, None),
+            response=_StubH2Resp(),
+            iterator=_ErtOneFrameIter(b""),
+            decoder=dec_4b,
+            run=run_4b,
+            _relay_tool_wait_max_seconds=0.08,
+        )
+        try_bg_called = False
+
+        async def _spy_try_bg(inv: _RobinToolInvocation) -> dict[str, Any] | None:
+            nonlocal try_bg_called
+            _ = inv
+            try_bg_called = True
+            return None
+
+        cast(Any, actor_4b)._relay_try_background = _spy_try_bg
+        _ROBIN_ACTIVE_RUNS[run_4b.run_id] = run_4b
+        _relay_bind_active_run(run_4b, actor_4b)
+        try:
+            t6 = time.monotonic()
+            st_4b, _, body_4b = await _relay_mcp_tools_call(
+                "bash",
+                {"command": "sleep 1"},
+                "rpc_selftest_4b",
+                http_id="h_selftest_4b",
+                connection_id="ws_selftest_4b",
+                abort_evt=None,
+            )
+            elapsed_4b = time.monotonic() - t6
+            assert st_4b == 200
+            assert elapsed_4b < 0.8
+            assert try_bg_called is False
+            parsed_4b = json.loads(body_4b.decode("utf-8"))
+            assert parsed_4b["result"]["isError"] is True
+            inner_4b = json.loads(parsed_4b["result"]["content"][0]["text"])
+            assert inner_4b["status"] == "timeout"
+            # Parked attachment_state must NOT be forced to STREAMING.
+            assert run_4b.attachment_state == "TOOL_HANDOFF"
+            # Late `role:tool` for the timed-out job_id must be idempotently absorbed.
+            timed_out_ids = list(run_4b.tool_ledger.by_public_id.keys())
+            assert len(timed_out_ids) == 1
+            late_status = await actor_4b.submit_tool_results(
+                [
+                    {
+                        "role": "tool",
+                        "tool_call_id": timed_out_ids[0],
+                        "name": "bash",
+                        "content": "late output after timeout",
+                    }
+                ]
+            )
+            assert late_status == "ok"
+
+            # 4.6: `command_status` `dispatched` branch bounded by WaitDurationSeconds / max_tool_wait
+            bg_inv = _RobinToolInvocation(
+                invocation_id="inv_selftest_bg_4c",
+                run_id=run_4b.run_id,
+                public_tool_call_id="call_selftest_bg_4c",
+                wire_call_id="",
+                wire_call_id_present=False,
+                orig_call_name="bash",
+                dsh_tool_name="bash",
+                orig_args={"command": "sleep 1"},
+                adapted_args={"command": "sleep 1"},
+                source="relay",
+                status="BACKGROUNDED",
+                bg_command_id="CMD_SELFTEST_4C",
+                bg_job_id="job_selftest_4c",
+            )
+            run_4b.tool_ledger.invocations[bg_inv.invocation_id] = bg_inv
+            run_4b.tool_ledger.by_public_id["call_selftest_bg_4c"] = bg_inv
+            t7 = time.monotonic()
+            st_4c, _, body_4c = await _relay_mcp_tools_call(
+                "command_status",
+                {"CommandId": "CMD_SELFTEST_4C", "WaitDurationSeconds": 0},
+                "rpc_selftest_4c",
+                http_id="h_selftest_4c",
+                connection_id="ws_selftest_4c",
+                abort_evt=None,
+            )
+            assert st_4c == 200
+            assert (time.monotonic() - t7) < 0.8
+            parsed_4c = json.loads(body_4c.decode("utf-8"))
+            assert "result" in parsed_4c
+            # Timed-out dispatched `command_status` poll must clear pending_tool_calls
+            # without overwriting parked `TOOL_HANDOFF`.
+            assert dec_4b.pending_tool_calls == []
+            assert actor_4b.pending_tool_calls == []
+            assert run_4b.attachment_state == "TOOL_HANDOFF"
+
+            # When `_relay_release_carrier` itself times out, MCP result must set isError=True.
+            orig_release_carrier = actor_4b._relay_release_carrier
+
+            async def _hang_release_carrier(
+                job_id: str, *, build_snapshot: bool = False
+            ) -> dict[str, Any] | None:
+                _ = (job_id, build_snapshot)
+                await asyncio.Event().wait()
+                return None
+
+            cast(Any, actor_4b)._relay_release_carrier = _hang_release_carrier
+            cast(Any, actor_4b)._relay_actor_cleanup_timeout_seconds = 0.05
+            try:
+                t7b = time.monotonic()
+                st_4d, _, body_4d = await _relay_mcp_tools_call(
+                    "command_status",
+                    {"CommandId": "CMD_SELFTEST_4C", "WaitDurationSeconds": 0},
+                    "rpc_selftest_4d",
+                    http_id="h_selftest_4d",
+                    connection_id="ws_selftest_4d",
+                    abort_evt=None,
+                )
+                assert st_4d == 200
+                assert (time.monotonic() - t7b) < 0.8
+                parsed_4d = json.loads(body_4d.decode("utf-8"))
+                assert parsed_4d["result"]["isError"] is True
+                inner_4d = json.loads(parsed_4d["result"]["content"][0]["text"])
+                assert inner_4d["status"] == "timeout"
+            finally:
+                cast(Any, actor_4b)._relay_release_carrier = orig_release_carrier
+                cast(Any, actor_4b)._relay_actor_cleanup_timeout_seconds = None
+        finally:
+            _relay_clear_active_run(run_4b)
+            _ROBIN_ACTIVE_RUNS.pop(run_4b.run_id, None)
+
+        # 4.7: Non-watchdog `idle_cap` must exit cleanly (not loop forever) for both PQ & ERT drivers.
+        class _HangAsyncIter:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self) -> bytes:
+                await asyncio.Event().wait()
+                return b""
+
+        run_4nw = _RobinRunState(
+            run_id="run_selftest_4_non_watchdog",
+            session_key="boot_selftest_4nw",
+            client_session_id="boot_selftest_4nw",
+            principal_id="p_selftest",
+            execution_state="WAITING_TOOLS",
+            attachment_state="STREAMING",
+            conversation_id="c_selftest_4nw",
+            request_id="r_selftest_4nw",
+        )
+        dec_4nw = _RobinStreamDecoder(
+            "cmpl-4nw", 0, "gemini:gemini-4-argon", run=run_4nw
+        )
+        actor_4nw = _RobinRunActor(
+            session_id="s_selftest_4nw",
+            session_key="boot_selftest_4nw",
+            boot_key="boot_selftest_4nw",
+            full_key="",
+            http_session=cast(Any, None),
+            response=object(),
+            iterator=_HangAsyncIter(),
+            decoder=dec_4nw,
+            run=run_4nw,
+            ert_response=object(),
+            ert_iterator=_HangAsyncIter(),
+            _non_watchdog_idle_timeout_seconds=0.05,
+        )
+        t8 = time.monotonic()
+        await asyncio.wait_for(actor_4nw._pq_driver_loop(), timeout=1.0)
+        assert (time.monotonic() - t8) < 0.8
+        pq_ev_kinds: list[tuple[str, Any]] = []
+        while not actor_4nw.mux_queue.empty():
+            pq_ev_kinds.append(actor_4nw.mux_queue.get_nowait())
+        assert any(
+            k == "pq_err" and isinstance(v, asyncio.TimeoutError)
+            for k, v in pq_ev_kinds
+        )
+        assert any(k == "pq_eof" for k, _ in pq_ev_kinds)
+
+        t9 = time.monotonic()
+        await asyncio.wait_for(
+            actor_4nw._ert_driver_loop(actor_4nw.ert_iterator), timeout=1.0
+        )
+        assert (time.monotonic() - t9) < 0.8
+
+        # 4.8: `_relay_is_run_live` must reject zombie runs (`cancellation_state != NONE` or `finalization_state == CLOSED`).
+        fuse_dsh_tools = [
+            {
+                "type": "function",
+                "function": {"name": "read", "parameters": {"type": "object"}},
+            },
+            {
+                "type": "function",
+                "function": {"name": "bash", "parameters": {"type": "object"}},
+            },
+        ]
+        run_4z = _RobinRunState(
+            run_id="run_selftest_4_zombie",
+            session_key="boot_selftest_4z",
+            client_session_id="boot_selftest_4z",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=fuse_dsh_tools,
+        )
+        _ROBIN_ACTIVE_RUNS[run_4z.run_id] = run_4z
+        try:
+            assert _relay_is_run_live(run_4z) is True
+            run_4z.cancellation_state = "REQUESTED"
+            assert _relay_is_run_live(run_4z) is False
+            run_4z.cancellation_state = "NONE"
+            run_4z.finalization_state = "CLOSED"
+            assert _relay_is_run_live(run_4z) is False
+            run_4z.finalization_state = "OPEN"
+            assert _relay_is_run_live(run_4z) is True
+        finally:
+            _ROBIN_ACTIVE_RUNS.pop(run_4z.run_id, None)
+
+        # 4.9: `_relay_clear_active_run` must wake `_relay_resolve_target` wait loop and converge to `single_active`.
+        run_4w1 = _RobinRunState(
+            run_id="run_selftest_4_wake_1",
+            session_key="boot_selftest_4w1",
+            client_session_id="boot_selftest_4w1",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=fuse_dsh_tools,
+        )
+        run_4w2 = _RobinRunState(
+            run_id="run_selftest_4_wake_2",
+            session_key="boot_selftest_4w2",
+            client_session_id="boot_selftest_4w2",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=fuse_dsh_tools,
+        )
+        dec_4w1 = _RobinStreamDecoder(
+            "cmpl-4w1", 0, "gemini:gemini-4-argon", run=run_4w1
+        )
+        dec_4w2 = _RobinStreamDecoder(
+            "cmpl-4w2", 0, "gemini:gemini-4-argon", run=run_4w2
+        )
+        actor_4w1 = _RobinRunActor(
+            session_id="s_4w1",
+            session_key="boot_selftest_4w1",
+            boot_key="boot_selftest_4w1",
+            full_key="",
+            http_session=cast(Any, None),
+            response=object(),
+            iterator=None,
+            decoder=dec_4w1,
+            run=run_4w1,
+        )
+        actor_4w2 = _RobinRunActor(
+            session_id="s_4w2",
+            session_key="boot_selftest_4w2",
+            boot_key="boot_selftest_4w2",
+            full_key="",
+            http_session=cast(Any, None),
+            response=object(),
+            iterator=None,
+            decoder=dec_4w2,
+            run=run_4w2,
+        )
+        _ROBIN_ACTIVE_RUNS[run_4w1.run_id] = run_4w1
+        _ROBIN_ACTIVE_RUNS[run_4w2.run_id] = run_4w2
+        _relay_bind_active_run(run_4w1, actor_4w1)
+        _relay_bind_active_run(run_4w2, actor_4w2)
+        try:
+
+            async def _drop_second_run() -> None:
+                await asyncio.sleep(0.05)
+                _relay_clear_active_run(run_4w2)
+
+            t10 = time.monotonic()
+            drop_task = asyncio.create_task(_drop_second_run())
+            got_r, got_a, got_by = await _relay_resolve_target("read", {}, "", None)
+            await drop_task
+            assert got_r is run_4w1
+            assert got_a is actor_4w1
+            assert got_by == "single_active"
+            assert (time.monotonic() - t10) < 0.5
+
+            # 4.9b: when `had_named_owner=True` and all named owners exit leaving only an unrelated run,
+            # wait loop must return `none` instead of mis-routing via `single_active`.
+            run_4w3 = _RobinRunState(
+                run_id="run_selftest_4_wake_3",
+                session_key="boot_selftest_4w3",
+                client_session_id="boot_selftest_4w3",
+                principal_id="p_selftest",
+                execution_state="RUNNING",
+                attachment_state="STREAMING",
+                dsh_tools=[
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "write",
+                            "description": "write file",
+                            "parameters": {"type": "object", "properties": {}},
+                        },
+                    }
+                ],
+            )
+            dec_4w3 = _RobinStreamDecoder(
+                "cmpl-4w3", 0, "gemini:gemini-4-argon", run=run_4w3
+            )
+            actor_4w3 = _RobinRunActor(
+                session_id="s_4w3",
+                session_key="boot_selftest_4w3",
+                boot_key="boot_selftest_4w3",
+                full_key="",
+                http_session=cast(Any, None),
+                response=object(),
+                iterator=None,
+                decoder=dec_4w3,
+                run=run_4w3,
+            )
+            _ROBIN_ACTIVE_RUNS[run_4w2.run_id] = run_4w2
+            _ROBIN_ACTIVE_RUNS[run_4w3.run_id] = run_4w3
+            _relay_bind_active_run(run_4w2, actor_4w2)
+            _relay_bind_active_run(run_4w3, actor_4w3)
+            try:
+
+                async def _drop_named_owners() -> None:
+                    await asyncio.sleep(0.03)
+                    _relay_clear_active_run(run_4w1)
+                    _relay_clear_active_run(run_4w2)
+
+                t_no = time.monotonic()
+                drop_named_task = asyncio.create_task(_drop_named_owners())
+                nr, na, nby = await _relay_resolve_target("read", {}, "", None)
+                await drop_named_task
+                assert nr is None and na is None and nby == "none"
+                assert (time.monotonic() - t_no) < 0.5
+            finally:
+                _relay_clear_active_run(run_4w3)
+                _ROBIN_ACTIVE_RUNS.pop(run_4w3.run_id, None)
+
+            # 4.9c: explicit `wire_call_id` must never downgrade to `single_active` / `unique_tool_owner`
+            # inside the wait loop when another run exits.
+            _ROBIN_ACTIVE_RUNS[run_4w1.run_id] = run_4w1
+            _ROBIN_ACTIVE_RUNS[run_4w2.run_id] = run_4w2
+            _relay_bind_active_run(run_4w1, actor_4w1)
+            _relay_bind_active_run(run_4w2, actor_4w2)
+            wire_abort_evt = asyncio.Event()
+
+            async def _drop_then_abort() -> None:
+                await asyncio.sleep(0.03)
+                _relay_clear_active_run(run_4w2)
+                await asyncio.sleep(0.05)
+                wire_abort_evt.set()
+
+            wire_task = asyncio.create_task(_drop_then_abort())
+            wr, wa, wby = await _relay_resolve_target(
+                "read", {}, "call_wire_exited_run", wire_abort_evt
+            )
+            await wire_task
+            assert wr is None and wa is None and wby == "aborted"
+        finally:
+            _relay_clear_active_run(run_4w1)
+            _relay_clear_active_run(run_4w2)
+            _ROBIN_ACTIVE_RUNS.pop(run_4w1.run_id, None)
+            _ROBIN_ACTIVE_RUNS.pop(run_4w2.run_id, None)
+
+        # 4.10: `_relay_call_on_actor` on a closed loop (or TOCTOU closing race) must raise `TimeoutError`,
+        # close coro, and leak no waiters.
+        closed_loop = asyncio.new_event_loop()
+        closed_loop.close()
+        run_4cl = _RobinRunState(
+            run_id="run_selftest_4_closed_loop",
+            session_key="boot_selftest_4cl",
+            client_session_id="boot_selftest_4cl",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=fuse_dsh_tools,
+        )
+        dec_4cl = _RobinStreamDecoder(
+            "cmpl-4cl", 0, "gemini:gemini-4-argon", run=run_4cl
+        )
+        actor_4cl = _RobinRunActor(
+            session_id="s_4cl",
+            session_key="boot_selftest_4cl",
+            boot_key="boot_selftest_4cl",
+            full_key="",
+            http_session=cast(Any, None),
+            response=object(),
+            iterator=None,
+            decoder=dec_4cl,
+            run=run_4cl,
+            loop=closed_loop,
+        )
+
+        async def _never_run() -> str:
+            return "unreachable"
+
+        raised_closed_timeout = False
+        try:
+            await _relay_call_on_actor(actor_4cl, _never_run(), timeout_s=0.1)
+        except asyncio.TimeoutError:
+            raised_closed_timeout = True
+        assert raised_closed_timeout is True
+
+        class _ClosingRaceLoop:
+            def is_closed(self) -> bool:
+                return False
+
+            def call_soon_threadsafe(self, *_args: Any, **_kwargs: Any) -> Any:
+                raise RuntimeError("Event loop is closed")
+
+        actor_4cl.loop = cast(Any, _ClosingRaceLoop())
+        race_coro = _never_run()
+        raised_race_timeout = False
+        try:
+            await _relay_call_on_actor(actor_4cl, race_coro, timeout_s=0.1)
+        except asyncio.TimeoutError:
+            raised_race_timeout = True
+        assert raised_race_timeout is True
+        assert race_coro.cr_frame is None
+
+        _ROBIN_ACTIVE_RUNS[run_4cl.run_id] = run_4cl
+        _relay_bind_active_run(run_4cl, actor_4cl)
+        try:
+            st_4cl, _, body_4cl = await _relay_mcp_tools_call(
+                "read",
+                {"file_path": "/w/workspace/test.txt"},
+                "rpc_selftest_4cl",
+                http_id="h_selftest_4cl",
+                connection_id="ws_selftest_4cl",
+                abort_evt=None,
+            )
+            assert st_4cl == 200
+            parsed_4cl = json.loads(body_4cl.decode("utf-8"))
+            assert parsed_4cl["result"]["isError"] is True
+            assert not _RELAY_HTTP_WAITERS
+        finally:
+            _relay_clear_active_run(run_4cl)
+            _ROBIN_ACTIVE_RUNS.pop(run_4cl.run_id, None)
+
+        # 4.11: `feed_pq_frame` must announce new MCP tool items appended on subsequent frames of the same `state_seq`.
+        run_4pq = _RobinRunState(
+            run_id="run_selftest_4_same_seq",
+            session_key="boot_selftest_4pq",
+            client_session_id="boot_selftest_4pq",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=fuse_dsh_tools,
+        )
+        dec_4pq = _RobinStreamDecoder(
+            "cmpl-4pq", 0, "gemini:gemini-4-argon", run=run_4pq
+        )
+
+        def _make_live_tool_frame(tools_spec: list[tuple[str, str]]) -> bytes:
+            item_chunks = []
+            for ns, tname in tools_spec:
+                name_msg = _pb_bytes_field(1, ns.encode("utf-8")) + _pb_bytes_field(
+                    2, tname.encode("utf-8")
+                )
+                d_msg = _pb_bytes_field(1, name_msg)
+                t_msg = (
+                    _pb_bytes_field(1, f"Calling {tname}".encode("utf-8"))
+                    + _pb_varint_field(4, 1)
+                    + _pb_bytes_field(8, d_msg)
+                )
+                item_chunks.append(_pb_bytes_field(1, t_msg))
+            s13 = b"".join(item_chunks)
+            live_s = _pb_varint_field(1, 1) + _pb_bytes_field(13, s13)
+            f1003_1 = _pb_bytes_field(6, live_s)
+            f1003 = _pb_bytes_field(1, f1003_1)
+            return _pb_bytes_field(1003, f1003)
+
+        try:
+            dec_4pq.feed_pq_frame(
+                _make_live_tool_frame([("custom_mcp__selftest", "read")])
+            )
+            claimed_1 = _relay_claim_pq_announcement("read", "", {run_4pq.run_id})
+            assert claimed_1 == (run_4pq.run_id, "pq_tool_name")
+            dec_4pq.feed_pq_frame(
+                _make_live_tool_frame(
+                    [
+                        ("custom_mcp__selftest", "read"),
+                        ("custom_mcp__selftest", "bash"),
+                    ]
+                )
+            )
+            claimed_2 = _relay_claim_pq_announcement("bash", "", {run_4pq.run_id})
+            assert claimed_2 == (run_4pq.run_id, "pq_tool_name")
+        finally:
+            _relay_clear_active_run(run_4pq)
+
+        # 4.12: `_serve_http_request` must attribute unrouted logs to "relay", not an unrelated live session.
+        run_4log = _RobinRunState(
+            run_id="run_selftest_4_log_iso",
+            session_key="boot_selftest_4log",
+            client_session_id="boot_selftest_4log",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+            dsh_tools=fuse_dsh_tools,
+        )
+        dec_4log = _RobinStreamDecoder(
+            "cmpl-4log", 0, "gemini:gemini-4-argon", run=run_4log
+        )
+        actor_4log = _RobinRunActor(
+            session_id="s_4log",
+            session_key="boot_selftest_4log",
+            boot_key="boot_selftest_4log",
+            full_key="",
+            http_session=cast(Any, None),
+            response=object(),
+            iterator=None,
+            decoder=dec_4log,
+            run=run_4log,
+        )
+        _ROBIN_ACTIVE_RUNS[run_4log.run_id] = run_4log
+        _relay_bind_active_run(run_4log, actor_4log)
+        captured_log_sids: list[str] = []
+        orig_debug_log = globals()["_gemini_debug_log_event"]
+
+        def _capture_debug_log(
+            sid: str, event: str, payload: dict[str, Any] | None = None
+        ) -> None:
+            if event == "relay_http_aborted":
+                captured_log_sids.append(sid)
+            return orig_debug_log(sid, event, payload)
+
+        globals()["_gemini_debug_log_event"] = _capture_debug_log
+        try:
+            relay_client_4log = _VoiceEdgeRelayClient()
+            await relay_client_4log._serve_http_request(
+                {
+                    "http_id": "h_selftest_4log",
+                    "method": "GET",
+                    "path": "/mcp",
+                    "headers": {},
+                    "body_b64": "",
+                },
+                origin_ws=None,
+            )
+            assert captured_log_sids == ["relay"]
+        finally:
+            globals()["_gemini_debug_log_event"] = orig_debug_log
+            _relay_clear_active_run(run_4log)
+            _ROBIN_ACTIVE_RUNS.pop(run_4log.run_id, None)
+
+        # 4.13: `_ensure_fresh_access_token` must degrade within its built-in timeout when refresher hangs.
+        async def _hang_refresher(
+            http_session: Any, cred: Any, *, force_refresh: bool = False
+        ) -> str:
+            _ = (http_session, cred, force_refresh)
+            await asyncio.Event().wait()
+            return "never"
+
+        run_4tok = _RobinRunState(
+            run_id="run_selftest_4_tok_timeout",
+            session_key="boot_selftest_4tok",
+            client_session_id="boot_selftest_4tok",
+            principal_id="p_selftest",
+            execution_state="RUNNING",
+            attachment_state="STREAMING",
+        )
+        dec_4tok = _RobinStreamDecoder(
+            "cmpl-4tok", 0, "gemini:gemini-4-argon", run=run_4tok
+        )
+        actor_4tok = _RobinRunActor(
+            session_id="s_4tok",
+            session_key="boot_selftest_4tok",
+            boot_key="boot_selftest_4tok",
+            full_key="",
+            http_session=cast(Any, None),
+            response=object(),
+            iterator=None,
+            decoder=dec_4tok,
+            run=run_4tok,
+            access_token="tok_selftest_initial",
+            credential=object(),
+            token_refresher=_hang_refresher,
+            _token_refresh_timeout_seconds=0.05,
+        )
+        t11 = time.monotonic()
+        got_tok = await actor_4tok._ensure_fresh_access_token(force=True)
+        assert got_tok == "tok_selftest_initial"
+        assert (time.monotonic() - t11) < 0.5
+
+    asyncio.run(_run_group_3c_and_4())
+
+
 def run_self_tests():
     """Run built-in self-tests to verify core functionality."""
     tests = [
@@ -114768,6 +118057,8 @@ def run_self_tests():
         test_aistudio_playground_protocol_and_routing,
         test_robin_unplanned_eof_resume_fork_account_and_cache_usage,
         test_gemini_multi_client_refactor_and_stream_driver,
+        test_pq_recovery_contract,
+        test_relay_liveness_contract,
     ]
 
     passed = 0
