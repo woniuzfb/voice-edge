@@ -150,251 +150,252 @@ if sys.version_info < (3, 11):
 #   布尔类日志开关(VE_*_LOG_DEBUG)已在下方【提前】解析为模块级常量。
 #
 #  【核心/音频 (VE_ 通用 / AUDIO / APPLE_SPEECH / VE_PA / VE_SOUNDDEVICE)】
-#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2806
-#    VE_VLM_KV_BITS                         3.5                                          L518
-#    VE_VLM_KV_GROUP_SIZE                   None                                         L523
-#    VE_VLM_QUANTIZED_KV_START              "0"                                          L528
-#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L529
-#    VE_TTS_PREBUFFER_MS                    "0"                                          L2304
-#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2309
-#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2312
-#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2316
-#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2325
-#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2333
-#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2392
-#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2925
-#    SPEECH_HELPER_ON_DEVICE                "0"                                          L43047
-#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43696
-#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43708
-#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19648
-#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19645
-#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19611
-#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19626
-#    AUTH_SYNC_ENABLED                      "1"                                          L19599
-#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19600
+#    VE_SOUNDDEVICE_IMPORT_TIMEOUT          "25"                                         L2807
+#    VE_VLM_KV_BITS                         3.5                                          L519
+#    VE_VLM_KV_GROUP_SIZE                   None                                         L524
+#    VE_VLM_QUANTIZED_KV_START              "0"                                          L529
+#    VE_VLM_KV_QUANT_SCHEME                 "turboquant"                                 L530
+#    VE_TTS_PREBUFFER_MS                    "0"                                          L2305
+#    VE_TTS_OUTPUT_PRIME_MS                 "280"                                        L2310
+#    VE_TTS_OUTPUT_PRIME_AMPLITUDE          "0.012"                                      L2313
+#    VE_TTS_OUTPUT_PRIME_TIMEOUT            "3.0"                                        L2317
+#    VE_TTS_DUMP_FIRST_PCM                  ""                                           L2326
+#    AUDIO_SHUTDOWN_CALL_TIMEOUT            "3.0"                                        L2334
+#    APPLE_SPEECH_SILENCE_STOP_SECONDS      "2.5"                                        L2393
+#    VE_PA_CLOSE_TIMEOUT                    "2.0"                                        L2926
+#    SPEECH_HELPER_ON_DEVICE                "0"                                          L43048
+#    VE_TTS_PREWARM_BEFORE_ANSWER           "1"                                          L43697
+#    VE_TTS_KWS_PREEMPT_PREWARM             "1"                                          L43709
+#    CHROME_AUTH_SYNC_EXTENSION_ID          "lbhjpomjdikihplfkgdmdkgjdjnklmak"           L19649
+#    CHROME_AUTH_SYNC_BOOTSTRAP_ENABLED     "1"                                          L19646
+#    FIREFOX_AUTH_SYNC_BOOTSTRAP_ENABLED    "1"                                          L19612
+#    FIREFOX_AUTH_SYNC_EXTENSION_ID         "voice-edge-auth-sync@local"                 L19627
+#    AUTH_SYNC_ENABLED                      "1"                                          L19600
+#    AUTH_SYNC_NATIVE_HOST_NAME             "com.voice_edge.auth_bridge"                 L19601
 #
 #  【日志开关 (VE_*_LOG_DEBUG)】
-#    VE_APP_LOG_DEBUG                           "0"                                      L407
-#    VE_AUTH_LOG_DEBUG                          "0"                                      L408
-#    VE_AUDIO_LOG_DEBUG                         "0"                                      L409
-#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L410
-#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L411
-#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L415
-#    VE_DICTATION_LOG_DEBUG                     "0"                                      L419
-#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L420
-#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L421
-#    VE_GEMINI_LOG_DEBUG                        "0"                                      L422
-#    VE_HTTP_LOG_DEBUG                          "0"                                      L423
-#    VE_HUD_LOG_DEBUG                           "0"                                      L424
-#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L425
-#    VE_KWS_LOG_DEBUG                           "0"                                      L426
-#    VE_LLM_LOG_DEBUG                           "0"                                      L427
-#    VE_M365_LOG_DEBUG                          "0"                                      L428
-#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L429
-#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L433
-#    VE_MEMORY_LOG_DEBUG                        "0"                                      L437
-#    VE_QWEN_LOG_DEBUG                          "0"                                      L438
-#    VE_RERANK_LOG_DEBUG                        "0"                                      L439
-#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L440
-#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L441
-#    VE_TTS_LOG_DEBUG                           "0"                                      L442
-#    VE_VLM_LOG_DEBUG                           "0"                                      L443
-#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L444
+#    VE_APP_LOG_DEBUG                           "0"                                      L408
+#    VE_AUTH_LOG_DEBUG                          "0"                                      L409
+#    VE_AUDIO_LOG_DEBUG                         "0"                                      L410
+#    VE_DEEPSEEK_LOG_DEBUG                      "0"                                      L411
+#    VE_DEEPSEEK_LOG_STREAM_CHUNKS              inherits VE_DEEPSEEK_LOG_DEBUG           L412
+#    VE_DEEPSEEK_LOG_PAGE_CONSOLE               inherits VE_DEEPSEEK_LOG_DEBUG           L416
+#    VE_DICTATION_LOG_DEBUG                     "0"                                      L420
+#    VE_DOUBAO_LOG_DEBUG                        "0"                                      L421
+#    VE_EMBEDDING_LOG_DEBUG                     "0"                                      L422
+#    VE_GEMINI_LOG_DEBUG                        "0"                                      L423
+#    VE_HTTP_LOG_DEBUG                          "0"                                      L424
+#    VE_HUD_LOG_DEBUG                           "0"                                      L425
+#    VE_KEYBOARD_LOG_DEBUG                      "0"                                      L426
+#    VE_KWS_LOG_DEBUG                           "0"                                      L427
+#    VE_LLM_LOG_DEBUG                           "0"                                      L428
+#    VE_M365_LOG_DEBUG                          "0"                                      L429
+#    VE_M365_LOG_RELAY_TRACE                    inherits VE_M365_LOG_DEBUG               L430
+#    VE_M365_LOG_ATTACHMENT                     inherits VE_M365_LOG_DEBUG               L434
+#    VE_MEMORY_LOG_DEBUG                        "0"                                      L438
+#    VE_QWEN_LOG_DEBUG                          "0"                                      L439
+#    VE_RERANK_LOG_DEBUG                        "0"                                      L440
+#    VE_SHUTDOWN_LOG_DEBUG                      "0"                                      L441
+#    VE_TRANSCRIPTION_LOG_DEBUG                 "0"                                      L442
+#    VE_TTS_LOG_DEBUG                           "0"                                      L443
+#    VE_VLM_LOG_DEBUG                           "0"                                      L444
+#    VE_XIAOAI_LOG_DEBUG                        "0"                                      L445
 #
 #  【语音对话 (VE_VOICE_CHAT)】
-#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42933
-#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42956
-#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42983
-#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L43042
-#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43585
-#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43588
-#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43596
-#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43608
-#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43610
-#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43619
-#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43625
-#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43631
-#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43647
-#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43652
-#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43659
-#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43666
-#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43675
-#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43682
-#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43730
-#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45499
-#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45500
-#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45501
+#    VE_VOICE_CHAT_ENABLED                  "0"                                          L42934
+#    VE_VOICE_CHAT_ALIAS_DEEPSEEK           "DeepSeek"                                   L42957
+#    VE_VOICE_CHAT_ALIAS_DOUBAO             "豆包"                                        L42984
+#    VE_VOICE_CHAT_KWS_ENGINE               "apple"                                      L43043
+#    VE_VOICE_CHAT_KWS_THRESHOLD            "0.20"                                       L43586
+#    VE_VOICE_CHAT_KWS_SCORE                "2.0"                                        L43589
+#    VE_VOICE_CHAT_CAPTURE_LOCALES          "zh-CN,en-US"                                L43597
+#    VE_VOICE_CHAT_TTS_VOICE                "zh"                                         L43609
+#    VE_VOICE_CHAT_TTS_SPEED                "1.0"                                        L43611
+#    VE_VOICE_CHAT_DICTATION_TIMEOUT        "15.0"                                       L43620
+#    VE_VOICE_CHAT_COMMAND_SILENCE_SECONDS  "2.0"                                        L43626
+#    VE_VOICE_CHAT_SHOW_HUD                 "0"                                          L43632
+#    VE_VOICE_CHAT_FASTFAIL_MIN_INTERVAL    "2.0"                                        L43648
+#    VE_VOICE_CHAT_ANSWER_TIMEOUT           "90.0"                                       L43653
+#    VE_VOICE_CHAT_STREAM_READ_TIMEOUT      "30.0"                                       L43660
+#    VE_VOICE_CHAT_HISTORY_CHAR_BUDGET      "6000"                                       L43667
+#    VE_VOICE_CHAT_RECOVERY_NUDGE_INTERVAL  "3.0"                                        L43676
+#    VE_VOICE_CHAT_ROUTE_SETTLE_TIMEOUT     "8.0"                                        L43683
+#    VE_VOICE_CHAT_USER_LABEL               "用户"                                        L43731
+#    VE_VOICE_CHAT_FIRST_CHARS              "18"                                         L45500
+#    VE_VOICE_CHAT_TARGET_CHARS             "42"                                         L45501
+#    VE_VOICE_CHAT_MAX_CHARS                "96"                                         L45502
 #
 #  【Qwen】
-#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15154
-#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15156
-#    QWEN_BROWSER_HEADLESS                  "1"                                          L15157
-#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15163
-#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15165
-#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15168
-#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15176
-#    QWEN_COOKIE_HEADER                     ""                                           L15180
-#    QWEN_TOKENS                            ""                                           L15188
-#    QWEN_TOKEN                             ""                                           L15189
+#    QWEN_BROWSER_BASE_URL                  "https://chat.qwen.ai"                       L15155
+#    QWEN_BROWSER_MODEL                     "qwen3.7-plus"                               L15157
+#    QWEN_BROWSER_HEADLESS                  "1"                                          L15158
+#    QWEN_BROWSER_POOL_SIZE                 "1"                                          L15164
+#    QWEN_BROWSER_FIRST_EVENT_TIMEOUT       "45"                                         L15166
+#    QWEN_BROWSER_IDLE_TIMEOUT              "180"                                        L15169
+#    QWEN_STALE_REDIRECT_PROBE_SECONDS      "5"                                          L15177
+#    QWEN_COOKIE_HEADER                     ""                                           L15181
+#    QWEN_TOKENS                            ""                                           L15189
+#    QWEN_TOKEN                             ""                                           L15190
 #
 #  【DeepSeek】
-#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1905
-#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16823
-#    DEEPSEEK_AUTHORIZATION                 ""                                           L16824
-#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16826
-#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16828
-#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16830
-#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16833
-#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16836
-#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16839
-#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16960
-#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16963
+#    DEEPSEEK_TOOLCALL_SENTINEL             "\u27e6TOOLCALL\u27e7"                       L1906
+#    DEEPSEEK_COOKIE_HEADER                 ""                                           L16824
+#    DEEPSEEK_AUTHORIZATION                 ""                                           L16825
+#    DEEPSEEK_CLIENT_VERSION                "2.2.0"                                      L16827
+#    DEEPSEEK_CLIENT_LOCALE                 "zh_CN"                                      L16829
+#    DEEPSEEK_CLIENT_TIMEZONE_OFFSET        "28800"                                      L16831
+#    DEEPSEEK_BROWSER_FIRST_EVENT_TIMEOUT   "60"                                         L16834
+#    DEEPSEEK_BROWSER_IDLE_TIMEOUT          "180"                                        L16837
+#    DEEPSEEK_BROWSER_LOGIN_TIMEOUT         "300"                                        L16840
+#    DEEPSEEK_UPLOAD_MAX_BYTES              str(50 * 1024 * 1024                         L16961
+#    DEEPSEEK_FILE_PARSE_TIMEOUT            "30"                                         L16964
 #
 #  【豆包 Doubao / Firefox 鉴权同步】
-#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19509
-#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19510
-#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19516
-#    DOUBAO_FP                              "doubao_voice_edge"                          L19517
-#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19525
-#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19527
-#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19530
-#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19532
-#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19534
-#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19538
-#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19565
-#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19568
-#    DOUBAO_WEB_AID                         "497858"                                     L19570
-#    DOUBAO_WEB_REGION                      "CN"                                         L19571
-#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19572
-#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19573
-#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19575
-#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19624
-#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19616
-#    DOUBAO_COOKIE_HEADER                   ""                                           L19926
-#    DOUBAO_SESSION_IDS                     ""                                           L19968
-#    DOUBAO_SESSION_ID                      ""                                           L19972
-#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20483
-#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20492
-#    DOUBAO_SESSION_ID_SS                   ""                                           L20674
-#    DOUBAO_SID_TT                          ""                                           L20677
+#    DOUBAO_BROWSER_ENGINE                  "camoufox"                                   L19510
+#    DOUBAO_BROWSER_HEADLESS                "1"                                          L19511
+#    DOUBAO_BOT_ID                          "7338286299411103781"                        L19517
+#    DOUBAO_FP                              "doubao_voice_edge"                          L19518
+#    DOUBAO_REQUEST_TIMEOUT                 "1800"                                       L19526
+#    DOUBAO_STREAM_FIRST_EVENT_TIMEOUT      "45"                                         L19528
+#    DOUBAO_STREAM_IDLE_TIMEOUT             "120"                                        L19531
+#    DOUBAO_STREAM_MAX_RETRIES              "3"                                          L19533
+#    DOUBAO_STREAM_RETRY_BASE_DELAY         "0.75"                                       L19535
+#    DOUBAO_STREAM_RETRY_MAX_DELAY          "6.0"                                        L19539
+#    DOUBAO_FETCH_HOOK_WAIT_SECONDS         "12"                                         L19566
+#    DOUBAO_BROWSER_IDENTITY_WAIT_SECONDS   "20"                                         L19569
+#    DOUBAO_WEB_AID                         "497858"                                     L19571
+#    DOUBAO_WEB_REGION                      "CN"                                         L19572
+#    DOUBAO_WEB_LANGUAGE                    "zh"                                         L19573
+#    DOUBAO_WEB_TIMEZONE                    "Asia/Shanghai"                              L19574
+#    DOUBAO_VERIFICATION_COOLDOWN           "3600"                                       L19576
+#    FIREFOX_AUTH_SYNC_MAX_MESSAGE_BYTES    "2097152"                                    L19625
+#    FIREFOX_AUTH_SYNC_SOCKET               "~/.voice-edge/auth-sync.sock"               L19617
+#    DOUBAO_COOKIE_HEADER                   ""                                           L19927
+#    DOUBAO_SESSION_IDS                     ""                                           L19969
+#    DOUBAO_SESSION_ID                      ""                                           L19973
+#    DOUBAO_CAMOUFOX_HUMANIZE               "1"                                          L20484
+#    DOUBAO_CAMOUFOX_OS                     "macos"                                      L20493
+#    DOUBAO_SESSION_ID_SS                   ""                                           L20675
+#    DOUBAO_SID_TT                          ""                                           L20678
 #
 #  【M365 / SharePoint】
-#    M365_ENTRY_URL                         ""                                           L25070
-#    SHAREPOINT_HOME_URL                    ""                                           L25071
-#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L25072
-#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L25073
-#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L25100
-#    M365_BRIDGE_PORT                       "5003"                                       L25101
-#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L25102
-#    M365_IDLE_BASE_SECONDS                 "180"                                        L25103
-#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L25105
-#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L25108
-#    M365_IDLE_MAX_SECONDS                  "900"                                        L25111
-#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25119
-#    M365_GETCHATS_TIMEOUT                  "20"                                         L25121
-#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25141
-#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25148
-#    M365_CONV_MAP_MAX                      "1024"                                       L25317
-#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25966
-#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25984
+#    M365_ENTRY_URL                         ""                                           L25071
+#    SHAREPOINT_HOME_URL                    ""                                           L25072
+#    SHAREPOINT_UPLOAD_FOLDER               ""                                           L25073
+#    SHAREPOINT_DOWNLOAD_FOLDER             ""                                           L25074
+#    M365_BRIDGE_HOST                       "127.0.0.1"                                  L25101
+#    M365_BRIDGE_PORT                       "5003"                                       L25102
+#    M365_FIRST_EVENT_TIMEOUT               "60"                                         L25103
+#    M365_IDLE_BASE_SECONDS                 "180"                                        L25104
+#    M365_IDLE_SECONDS_PER_FILE             "15"                                         L25106
+#    M365_IDLE_SECONDS_PER_MIB              "12"                                         L25109
+#    M365_IDLE_MAX_SECONDS                  "900"                                        L25112
+#    M365_CODE_EXECUTION_MAX_SECONDS        "1800"                                       L25120
+#    M365_GETCHATS_TIMEOUT                  "20"                                         L25122
+#    M365_TERMINAL_DRAIN_SECONDS            "6.0"                                        L25142
+#    M365_BRIDGE_MAX_MSG_SIZE               str(32 * 1024 * 1024                         L25149
+#    M365_CONV_MAP_MAX                      "1024"                                       L25318
+#    M365_UPLOAD_MAX_BYTES                  str(50 * 1024 * 1024                         L25967
+#    M365_TOOL_RESULT_INLINE_MAX_BYTES      str(6 * 1024                                 L25985
 #
 #  【小爱 XiaoAI / 小米 MI】
-#    XIAOAI_ENABLED                         "0"                                          L38273
-#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38483
-#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38545
-#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38567
-#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38574
-#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38669
-#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38671
-#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38675
-#    XIAOAI_LOCAL_DEVICES                   ""                                           L39868
-#    MI_USER                                ""                                           L39594
-#    MI_PASS                                ""                                           L39620
-#    XIAOAI_HARDWARE                        "LX06"                                       L39622
-#    MI_DID                                 ""                                           L39624
-#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39627
-#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39631
-#    XIAOAI_WAKEUP_ARGS                     ""                                           L39634
-#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39637
-#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39643
-#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39654
-#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39659
-#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39640
-#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39650
-#    XIAOAI_MODEL                           "LLM:doubao"                                 L39670
-#    XIAOAI_VOICE                           "zh"                                         L39672
-#    XIAOAI_TTS_SPEED                       "1.0"                                        L39674
-#    XIAOAI_MAX_TOKENS                      "500"                                        L39677
-#    XIAOAI_TEMPERATURE                     "0.3"                                        L39680
-#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39683
-#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39687
-#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39691
-#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39696
-#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39701
-#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39706
-#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39711
-#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39716
-#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39724
-#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39729
-#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39734
-#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39739
-#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39744
-#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39749
-#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39754
-#    XIAOAI_AUDIO_PORT                      "8050"                                       L39757
-#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39761
-#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39765
-#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39769
-#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39774
-#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39779
-#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39783
-#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39786
-#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39789
-#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39792
-#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39795
-#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39798
-#    XIAOAI_HISTORY_TURNS                   "6"                                          L39801
-#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39804
-#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39811
-#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39817
-#    XIAOAI_MP3_BITRATE                     "64k"                                        L39821
+#    XIAOAI_ENABLED                         "0"                                          L38274
+#    XIAOAI_AUDIO_PUBLIC_HOST               ""                                           L38484
+#    XIAOAI_OTP_FILE                        "~/.mi.otp"                                  L38546
+#    XIAOAI_OTP_TIMEOUT                     "300"                                        L38568
+#    XIAOAI_OTP_POLL_INTERVAL               "0.5"                                        L38575
+#    XIAOAI_PLAY_MAX_RETRIES                "3"                                          L38670
+#    XIAOAI_PLAY_RETRY_BASE_DELAY           "0.6"                                        L38672
+#    XIAOAI_PLAY_RETRY_MAX_DELAY            "3.0"                                        L38676
+#    XIAOAI_LOCAL_DEVICES                   ""                                           L39869
+#    MI_USER                                ""                                           L39595
+#    MI_PASS                                ""                                           L39621
+#    XIAOAI_HARDWARE                        "LX06"                                       L39623
+#    MI_DID                                 ""                                           L39625
+#    XIAOAI_WAKEUP_MODE                     "directive"                                  L39628
+#    XIAOAI_WAKEUP_COMMAND                  ""                                           L39632
+#    XIAOAI_WAKEUP_ARGS                     ""                                           L39635
+#    XIAOAI_KEYWORDS                        "帮我,请"                                     L39638
+#    XIAOAI_NATIVE_KEYWORDS                 "天气,时间,几点,现在,星期几,前天,昨天,今天,明天,后天" L39644
+#    XIAOAI_STOP_PHRASES                    "停止回答,停止,停下,停一下"                   L39655
+#    XIAOAI_NEW_CONVERSATION                "新建对话,新对话,新会话,清空上下文,换个话题,重新开始" L39660
+#    XIAOAI_TRIGGER_WITHOUT_KEYWORD         "1"                                          L39641
+#    XIAOAI_NATIVE_PLAY_START_TIMEOUT       "3.0"                                        L39651
+#    XIAOAI_MODEL                           "LLM:doubao"                                 L39671
+#    XIAOAI_VOICE                           "zh"                                         L39673
+#    XIAOAI_TTS_SPEED                       "1.0"                                        L39675
+#    XIAOAI_MAX_TOKENS                      "500"                                        L39678
+#    XIAOAI_TEMPERATURE                     "0.3"                                        L39681
+#    XIAOAI_POLL_INTERVAL                   "1.0"                                        L39684
+#    XIAOAI_POLL_LOG_EVERY                  "60"                                         L39688
+#    XIAOAI_POLL_MIN_INTERVAL               "0.10"                                       L39692
+#    XIAOAI_POLL_ERROR_BACKOFF_MAX          "30"                                         L39697
+#    XIAOAI_POLL_AUTH_RECOVERY_COOLDOWN     "60"                                         L39702
+#    XIAOAI_POLL_AUTH_RECOVERY_MAX_ATTEMPTS "2"                                          L39707
+#    XIAOAI_QUERY_DEBOUNCE_SECONDS          "4.0"                                        L39712
+#    XIAOAI_WAKEUP_SUPPRESS_SECONDS         "0"                                          L39717
+#    XIAOAI_PLAYBACK_DRAIN_MARGIN           "0.25"                                       L39725
+#    XIAOAI_PLAYBACK_DRAIN_MAX              "180"                                        L39730
+#    XIAOAI_PLAYBACK_STATUS_POLL_INTERVAL   "0.15"                                       L39735
+#    XIAOAI_PLAYBACK_STATUS_MAX_WAIT        "4.0"                                        L39740
+#    XIAOAI_PLAYBACK_IDLE_CONFIRMATIONS     "1"                                          L39745
+#    XIAOAI_PLAYBACK_TAIL_GUARD             "1"                                          L39750
+#    XIAOAI_AUDIO_BIND_HOST                 "0.0.0.0"                                    L39755
+#    XIAOAI_AUDIO_PORT                      "8050"                                       L39758
+#    XIAOAI_AUDIO_MAX_BUFFER_BYTES          "524288"                                     L39762
+#    XIAOAI_AUDIO_PREBUFFER_BYTES           "12288"                                      L39766
+#    XIAOAI_PREBUFFER_TIMEOUT               "20"                                         L39770
+#    XIAOAI_PREBUFFER_AUDIO_RETRIES         "1"                                          L39775
+#    XIAOAI_PREBUFFER_RETRY_DELAY           "0.5"                                        L39780
+#    XIAOAI_AUDIO_CONNECT_TIMEOUT           "10"                                         L39784
+#    XIAOAI_PLAYBACK_TIMEOUT                "300"                                        L39787
+#    XIAOAI_SPEECH_QUEUE_SIZE               "6"                                          L39790
+#    XIAOAI_FIRST_SPEECH_CHARS              "18"                                         L39793
+#    XIAOAI_SPEECH_TARGET_CHARS             "42"                                         L39796
+#    XIAOAI_SPEECH_MAX_CHARS                "96"                                         L39799
+#    XIAOAI_HISTORY_TURNS                   "6"                                          L39802
+#    XIAOAI_TAVILY_TOOL_ENABLED             "1"                                          L39805
+#    XIAOAI_TAVILY_TOOL_MAX_RESULTS         "3"                                          L39812
+#    XIAOAI_TAVILY_TOOL_TIMEOUT             "30"                                         L39818
+#    XIAOAI_MP3_BITRATE                     "64k"                                        L39822
 #
 #  【中继提供商 (OpenRouter / OpenCode / Gemini)】
-#    VE_OPENROUTER_API_KEYS                 ""                                           L48261
-#    VE_OPENCODE_API_KEYS                   ""                                           L49199
-#    VE_OPENCODE_FREE                       "1"                                          L49237
-#    VE_OPENCODE_GO                         "0"                                          L49242
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L72850
-#    VE_GEMINI_API_KEYS                     ""                                           L72854
-#    VE_GEMINI_BACKEND                      "auto"                                       L72873
-#    VE_GEMINI_PROJECT_ID                   ""                                           L72880
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L55684
-#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1537
-#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1538
-#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1539
-#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1540
-#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1541
-#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1542
-#    VE_GEMINI_APP_BINARY                   ""                                           L1562
-#    VE_GEMINI_AGY_BINARY                   ""                                           L1577
-#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1595
-#    GEMINI_PQ_RECOVERY_BUDGET_SECONDS      "45.0"                                       L1783
-#    GEMINI_PQ_WAITING_TOOLS_PROBE_SECONDS  "30.0"                                       L1786
+#    VE_OPENROUTER_API_KEYS                 ""                                           L48262
+#    VE_OPENCODE_API_KEYS                   ""                                           L49200
+#    VE_OPENCODE_FREE                       "1"                                          L49238
+#    VE_OPENCODE_GO                         "0"                                          L49243
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L73531
+#    VE_GEMINI_API_KEYS                     ""                                           L73535
+#    VE_GEMINI_BACKEND                      "auto"                                       L73554
+#    VE_GEMINI_PROJECT_ID                   ""                                           L73561
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L56336
+#    VE_GEMINI_APP_CLIENT_ID                ""                                           L1538
+#    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1539
+#    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1540
+#    VE_GEMINI_AGY_HUB_CLIENT_SECRET        ""                                           L1541
+#    VE_GEMINI_AGY_CLI_CLIENT_ID            ""                                           L1542
+#    VE_GEMINI_AGY_CLI_CLIENT_SECRET        ""                                           L1543
+#    VE_GEMINI_APP_BINARY                   ""                                           L1563
+#    VE_GEMINI_AGY_BINARY                   ""                                           L1578
+#    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1596
+#    GEMINI_PQ_RECOVERY_BUDGET_SECONDS      "45.0"                                       L1784
+#    GEMINI_PQ_WAITING_TOOLS_PROBE_SECONDS  "30.0"                                       L1787
+#    GEMINI_ROBIN_EXT_EXPERIMENTS_B64       ""                                           L52948
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L73909
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L73913
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L73917
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L73939
-#    VE_RELAY_PQ_WAIT_SECONDS               "1.5"                                        L74292
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L73905
-#    VE_RELAY_TOOL_WAIT_MAX_SECONDS         "180.0"                                      L74294
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L73895
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L73883
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L73891
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L73887
-# 合计 225 个唯一环境变量。
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L74590
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L74594
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L74598
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L74620
+#    VE_RELAY_PQ_WAIT_SECONDS               "1.5"                                        L74973
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L74586
+#    VE_RELAY_TOOL_WAIT_MAX_SECONDS         "180.0"                                      L74975
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L74576
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L74564
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L74572
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L74568
+# 合计 226 个唯一环境变量。
 # ============================================================================
 
 
@@ -51835,7 +51836,8 @@ GEMINI_ROBIN_UPLOAD_CLIENT_PCTX = "CgcSBWikpKQk"
 GEMINI_ROBIN_UPLOAD_MAX_FILES = 10
 GEMINI_ROBIN_UPLOAD_MAX_BYTES = 100 * 1024 * 1024
 GEMINI_ROBIN_UPLOAD_CACHE_TTL_SECONDS = 3600.0
-GEMINI_ROBIN_GRPC_USER_AGENT = "grpc-objc-cfstream/1.86.0-dev grpc-c++/1.86.0-dev"
+GEMINI_ROBIN_GRPC_USER_AGENT = "JanusMacOS grpc-swift grpc-objc"
+_ROBIN_DEFAULT_LOCALE = "en"
 
 GEMINI_ROBIN_MCP_SERVER_NAME = "veh"
 GEMINI_ROBIN_MCP_SERVER_DESCRIPTION = (
@@ -52038,7 +52040,6 @@ GEMINI_ROBIN_CLIENT_CAPABILITIES: tuple[int, ...] = (
     617,
     128,
     129,
-    2,
     341,
     290,
     496,
@@ -52094,6 +52095,182 @@ GEMINI_ROBIN_CLIENT_CAPABILITIES: tuple[int, ...] = (
     935,
     803,
     776,
+    123,
+    376,
+    633,
+    697,
+    716,
+    760,
+    792,
+    800,
+    810,
+    822,
+    843,
+    863,
+    864,
+    865,
+    866,
+    875,
+    896,
+    901,
+    921,
+    962,
+    967,
+    972,
+    974,
+    999,
+)
+
+# Ordered packed varint sequence for HTTP/2 metadata header `x-goog-ext-202964622-bin`
+# (`f1 { f1=3, f2=<packed varints> }`). Order and repetitions are wire-significant.
+_ROBIN_DEFAULT_EXT_EXPERIMENTS_IDS: tuple[int, ...] = (
+    13,
+    837,
+    130062536,
+    51546,
+    271868,
+    0,
+    204610,
+    5,
+    264794,
+    0,
+    104067,
+    4,
+    14441,
+    5,
+    42966,
+    0,
+    104310,
+    0,
+    79316,
+    5,
+    92,
+    4,
+    207487,
+    0,
+    6,
+    0,
+    82276,
+    4,
+    86645,
+    0,
+    83128,
+    3,
+    30302,
+    0,
+    6,
+    0,
+    51887,
+    0,
+    99357,
+    0,
+    3438,
+    3,
+    1813227,
+    4,
+    3443,
+    4,
+    98293,
+    3,
+    6854,
+    4,
+    14222,
+    0,
+    90982,
+    0,
+    12828,
+    0,
+    15367,
+    0,
+    78991,
+    4,
+    79138,
+    0,
+    11600,
+    0,
+    15046,
+    0,
+    24919,
+    0,
+    10524,
+    0,
+    9388,
+    0,
+    3305,
+    3,
+    57140,
+    4,
+    15650,
+    0,
+    107841,
+    0,
+    87499,
+    0,
+    6,
+    0,
+    32997,
+    0,
+    80072,
+    3,
+    625,
+    0,
+    5976,
+    4,
+    381,
+    0,
+    105713,
+    4,
+    7013,
+    2,
+    112930,
+    0,
+    2646,
+    0,
+    83593,
+    4,
+    89226,
+    0,
+    10884,
+    14,
+    387647,
+    0,
+    21,
+    64,
+    112607835,
+    4348,
+    84506,
+    58,
+    11686,
+    4,
+    4,
+    4,
+    7428,
+    11287,
+    109291,
+    100604,
+    84676,
+    10539,
+    109492,
+    855,
+    13939,
+    112278,
+    99090,
+    100365,
+    5182,
+    6287,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    549,
+    260917,
+    33605,
+    3,
+    3,
+    101277,
 )
 
 # Packed repeated varints for DesktopDeviceInfo.supported_client_capabilities (field 7).
@@ -52726,14 +52903,70 @@ def _pb_decode_struct(raw: bytes) -> dict[str, Any]:
     return out
 
 
-def _robin_pack_grpc_frames(messages: list[bytes]) -> bytes:
+def _robin_pack_grpc_frames(messages: list[bytes], *, compress: bool = False) -> bytes:
     """Pack one or more serialized protobuf messages into length-prefixed gRPC frames."""
+    import gzip
+
     out = bytearray()
     for msg in messages:
         raw = bytes(msg)
-        out.extend(struct.pack(">BI", 0, len(raw)))
-        out.extend(raw)
+        if compress:
+            payload = gzip.compress(raw)
+            out.extend(struct.pack(">BI", 1, len(payload)))
+            out.extend(payload)
+        else:
+            out.extend(struct.pack(">BI", 0, len(raw)))
+            out.extend(raw)
     return bytes(out)
+
+
+_ROBIN_DEFAULT_EXT_EXPERIMENTS_OVERLONG_INDICES: frozenset[int] = frozenset(
+    {12, 50, 116}
+)
+
+
+def _robin_encode_default_ext_experiments_bytes() -> bytes:
+    """Encode `_ROBIN_DEFAULT_EXT_EXPERIMENTS_IDS` as `f1 { f1=3, f2=<packed varints> }` (278B wire-exact)."""
+    parts: list[bytes] = []
+    for idx, val in enumerate(_ROBIN_DEFAULT_EXT_EXPERIMENTS_IDS):
+        raw_v = bytearray(_pb_encode_varint(val))
+        if idx in _ROBIN_DEFAULT_EXT_EXPERIMENTS_OVERLONG_INDICES:
+            raw_v[-1] |= 0x80
+            raw_v.append(0)
+        parts.append(bytes(raw_v))
+    packed = b"".join(parts)
+    inner = _pb_varint_field(1, 3) + _pb_bytes_field(2, packed)
+    return _pb_bytes_field(1, inner)
+
+
+_ROBIN_DEFAULT_EXT_EXPERIMENTS_B64_CACHE: str = ""
+
+
+def _robin_ext_experiments_header_b64() -> str:
+    """Return Base64 metadata value for `x-goog-ext-202964622-bin`, or `""` when disabled."""
+    global _ROBIN_DEFAULT_EXT_EXPERIMENTS_B64_CACHE
+    raw_override = os.environ.get("GEMINI_ROBIN_EXT_EXPERIMENTS_B64", "").strip()
+    if raw_override:
+        if raw_override.lower() in ("off", "none", "0", "false"):
+            return ""
+        return raw_override
+    if not _ROBIN_DEFAULT_EXT_EXPERIMENTS_B64_CACHE:
+        _ROBIN_DEFAULT_EXT_EXPERIMENTS_B64_CACHE = base64.b64encode(
+            _robin_encode_default_ext_experiments_bytes()
+        ).decode("ascii")
+    return _ROBIN_DEFAULT_EXT_EXPERIMENTS_B64_CACHE
+
+
+def _robin_apply_standard_grpc_headers(
+    headers: dict[str, str], *, compressed: bool
+) -> dict[str, str]:
+    """Attach standard Robin gRPC compression and experiment metadata headers in place."""
+    if compressed:
+        headers["grpc-encoding"] = "gzip"
+    ext_b64 = _robin_ext_experiments_header_b64()
+    if ext_b64:
+        headers["x-goog-ext-202964622-bin"] = ext_b64
+    return headers
 
 
 _ROBIN_GRPC_MAX_FRAME_BYTES: int = 32 * 1024 * 1024
@@ -52802,7 +53035,7 @@ def _robin_get_device_id(
 
 
 def _robin_build_request_metadata(
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     *,
     device_id: str = "",
     bard_mode_id: str | None = None,
@@ -52847,7 +53080,9 @@ def _robin_build_request_metadata(
     )
 
 
-def _robin_build_get_user_status_request(locale: str = "en-US") -> bytes:
+def _robin_build_get_user_status_request(
+    locale: str = _ROBIN_DEFAULT_LOCALE,
+) -> bytes:
     """Build GetUserStatusRequest."""
     return _pb_bytes_field(1, _robin_build_request_metadata(locale=locale))
 
@@ -53172,7 +53407,7 @@ def _robin_build_register_device_request(
     device_id: str,
     device_name: str | None = None,
     connected_folders: Sequence[str] | None = None,
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     tools: Sequence[Any] | None = None,
     *,
     dsh_sandbox_mode: str = "workspace-write",
@@ -53422,7 +53657,7 @@ def _robin_build_process_file_request(
     file_name: str,
     *,
     storage_type: int = 1,
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     device_id: str = "",
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -53623,7 +53858,7 @@ def _robin_build_process_query_frames(
     device_name: str | None = None,
     connected_folders: Sequence[str] | None = None,
     tools: Sequence[Any] | None = None,
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     *,
     include_thinking_field_48: bool = False,
     dsh_sandbox_mode: str = "workspace-write",
@@ -53685,7 +53920,7 @@ def _robin_build_resume_turn_frames(
     conversation_id: str,
     request_id: str,
     device_id: str = "",
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     *,
     device_name: str | None = None,
     connected_folders: Sequence[str] | None = None,
@@ -54123,7 +54358,7 @@ def _robin_build_robin_op_result_frames(
 def _robin_build_report_presence_frame(
     conversation_id: str,
     device_id: str = "",
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     *,
     is_active: bool = True,
     bard_mode_id: str | None = None,
@@ -54143,7 +54378,7 @@ def _robin_build_abort_generation_frame(
     conversation_id: str,
     request_id: str,
     device_id: str = "",
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     *,
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -54162,27 +54397,32 @@ def _robin_build_abort_generation_frame(
 def _robin_build_list_turns_frame(
     conversation_id: str,
     device_id: str = "",
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     limit: int = 100,
     *,
     bard_mode_id: str | None = None,
 ) -> bytes:
-    """Build ListConversationTurnsRequest (`{ 1: conv_id, 2: limit, 4: { 1: 1 }, 6: RequestMetadata }`)."""
+    """Build ListConversationTurnsRequest (`{ 1: conv_id, 2: limit, 4: { 1: 1 }, 6: RequestMetadata, 7: DeviceContext }`)."""
     req_meta = _robin_build_request_metadata(
         locale=locale, device_id=device_id, bard_mode_id=bard_mode_id
+    )
+    dev_ctx = _pb_bytes_field(
+        1004,
+        _pb_bytes_field(4, _pb_bytes_field(1, _robin_desktop_identity().time_zone)),
     )
     return (
         _pb_bytes_field(1, conversation_id)
         + _pb_varint_field(2, max(1, int(limit)))
         + _pb_bytes_field(4, _pb_varint_field(1, 1))
         + _pb_bytes_field(6, req_meta)
+        + _pb_bytes_field(7, dev_ctx)
     )
 
 
 def _robin_build_list_conversations_request(
     limit: int = 20,
     device_id: str = "",
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     *,
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -54907,7 +55147,241 @@ _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES: tuple[str, ...] = (
     "https://www.google.com/search?q=",
     "http://www.google.com/search?q=",
 )
-_ROBIN_UNWRAPPED_URL_DELIMS = " \t\r\n)>]\"'`<"
+_ROBIN_UNWRAPPED_URL_DELIMS = (
+    " \t\r\n)>]\"'`<，。）、；：！？「」『』【】《》\u201c\u201d\u2018\u2019"
+)
+_ROBIN_REDIRECT_DOMAIN_TLDS: frozenset[str] = frozenset(
+    {
+        "com",
+        "org",
+        "net",
+        "io",
+        "edu",
+        "gov",
+        "co",
+        "ai",
+        "app",
+        "dev",
+        "me",
+        "us",
+        "uk",
+        "cn",
+        "jp",
+        "de",
+        "fr",
+        "ca",
+        "au",
+        "ru",
+        "info",
+        "biz",
+        "xyz",
+        "tv",
+        "cc",
+        "gg",
+        "ly",
+        "to",
+        "so",
+        "fm",
+        "in",
+        "id",
+        "it",
+        "es",
+        "nl",
+        "se",
+        "ch",
+        "kr",
+        "tw",
+        "hk",
+        "sg",
+        "br",
+        "mx",
+        "pl",
+        "be",
+        "at",
+        "dk",
+        "no",
+        "fi",
+        "cz",
+        "tr",
+        "za",
+        "nz",
+        "il",
+        "ae",
+        "sa",
+        "cloud",
+        "site",
+        "online",
+        "store",
+        "tech",
+        "blog",
+        "news",
+        "page",
+        "link",
+        "pro",
+        "top",
+        "vip",
+        "club",
+        "shop",
+        "work",
+        "live",
+        "world",
+        "space",
+        "fun",
+        "art",
+        "design",
+        "studio",
+        "digital",
+        "network",
+        "systems",
+        "solutions",
+        "services",
+        "agency",
+        "media",
+        "group",
+        "team",
+        "zone",
+        "wiki",
+        "docs",
+        "tools",
+        "run",
+        "build",
+        "codes",
+        "software",
+    }
+)
+_ROBIN_REDIRECT_LOCAL_EXTS: frozenset[str] = frozenset(
+    {
+        "py",
+        "pyi",
+        "js",
+        "jsx",
+        "ts",
+        "tsx",
+        "mjs",
+        "cjs",
+        "sh",
+        "bash",
+        "zsh",
+        "fish",
+        "md",
+        "mdx",
+        "txt",
+        "rst",
+        "json",
+        "jsonc",
+        "jsonl",
+        "yaml",
+        "yml",
+        "toml",
+        "ini",
+        "cfg",
+        "conf",
+        "env",
+        "xml",
+        "html",
+        "htm",
+        "css",
+        "scss",
+        "less",
+        "sql",
+        "c",
+        "h",
+        "cc",
+        "cpp",
+        "cxx",
+        "hpp",
+        "hh",
+        "rs",
+        "go",
+        "java",
+        "kt",
+        "kts",
+        "swift",
+        "rb",
+        "php",
+        "pl",
+        "pm",
+        "lua",
+        "r",
+        "m",
+        "mm",
+        "cs",
+        "fs",
+        "vb",
+        "scala",
+        "clj",
+        "ex",
+        "exs",
+        "erl",
+        "hs",
+        "ml",
+        "dart",
+        "zig",
+        "nim",
+        "v",
+        "vue",
+        "svelte",
+        "astro",
+        "proto",
+        "graphql",
+        "gql",
+        "tf",
+        "tfvars",
+        "hcl",
+        "dockerfile",
+        "makefile",
+        "cmake",
+        "gradle",
+        "lock",
+        "log",
+        "csv",
+        "tsv",
+        "pdf",
+        "doc",
+        "docx",
+        "xls",
+        "xlsx",
+        "ppt",
+        "pptx",
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp",
+        "svg",
+        "ico",
+        "mp3",
+        "mp4",
+        "wav",
+        "zip",
+        "tar",
+        "gz",
+        "tgz",
+        "bz2",
+        "xz",
+        "7z",
+        "sqlite",
+        "sqlite3",
+        "db",
+        "har",
+        "pem",
+        "crt",
+        "key",
+        "pub",
+        "plist",
+        "xcconfig",
+        "pbxproj",
+        "xcodeproj",
+        "xcworkspace",
+        "ipynb",
+        "tex",
+        "bib",
+        "org",
+        "adoc",
+        "diff",
+        "patch",
+    }
+)
 
 
 def _robin_redirect_prefix_replacement(prefix: str) -> str:
@@ -54915,8 +55389,61 @@ def _robin_redirect_prefix_replacement(prefix: str) -> str:
     return "/" if prefix.endswith("file:///") else ""
 
 
+def _robin_is_wrapped_local_redirect_target(pfx: str, raw_span: str) -> bool:
+    """Return True only when `pfx + raw_span` is a Google-wrapped local file/path target."""
+    if not raw_span:
+        return False
+    if "&" in raw_span:
+        return False
+    if pfx.endswith("file:///"):
+        return True
+    has_plus = "+" in raw_span
+    normalized = raw_span.replace("%23", "#").replace("%20", " ")
+    if has_plus:
+        normalized = normalized.replace("+", " ")
+    decoded = urllib.parse.unquote(normalized)
+    path_part, sep, frag = decoded.partition("#")
+    if not path_part or path_part.startswith(("http://", "https://")):
+        return False
+    if path_part.startswith(("/", "./", "../", "~/")):
+        return True
+    has_line_frag = bool(sep and _ROBIN_INVALID_URL_LINE_FRAG_RE.match(frag.strip()))
+    has_local_ext = False
+    basename = path_part.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].strip()
+    if "." in basename:
+        ext = basename.rsplit(".", 1)[-1].lower()
+        if ext in _ROBIN_REDIRECT_LOCAL_EXTS and ext not in _ROBIN_REDIRECT_DOMAIN_TLDS:
+            has_local_ext = True
+    if has_plus:
+        return ("/" in path_part or "\\" in path_part) and (
+            has_line_frag or has_local_ext
+        )
+    if "/" in path_part or "\\" in path_part:
+        return True
+    if has_line_frag or has_local_ext:
+        return True
+    return False
+
+
+def _robin_format_google_search_redirect(
+    pfx: str, raw_span: str, *, in_md_link_target: bool
+) -> str:
+    """Format a matched Google search redirect span consistently for whole-text and streaming paths."""
+    if not _robin_is_wrapped_local_redirect_target(pfx, raw_span):
+        return pfx + raw_span
+    target_span = raw_span.replace("%23", "#").replace("%20", " ").replace("+", " ")
+    res = _robin_redirect_prefix_replacement(pfx) + target_span
+    if (
+        in_md_link_target
+        and any(ch.isspace() for ch in res)
+        and not (res.startswith("<") and res.endswith(">"))
+    ):
+        res = f"<{res}>"
+    return res
+
+
 def _robin_unwrap_google_search_redirect_text(text: str) -> str:
-    """Strip `https://www.google.com/search?q=` redirect wrappers (converting wrapped `file:///` to `/`) and restore `%23` line anchors."""
+    """Strip Google search redirect wrappers around local paths while preserving real search URLs."""
     if not text or not any(
         pfx in text for pfx in _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES
     ):
@@ -54944,23 +55471,26 @@ def _robin_unwrap_google_search_redirect_text(text: str) -> str:
             out.append(best_pfx)
             cursor = target_start
             continue
-        target_span = (
-            text[target_start:target_end].replace("%23", "#").replace("%20", " ")
+        in_md_link_target = best_idx >= 2 and text[best_idx - 2 : best_idx] == "]("
+        raw_span = text[target_start:target_end]
+        out.append(
+            _robin_format_google_search_redirect(
+                best_pfx, raw_span, in_md_link_target=in_md_link_target
+            )
         )
-        out.append(_robin_redirect_prefix_replacement(best_pfx))
-        out.append(target_span)
         cursor = target_end
     return "".join(out)
 
 
 def _robin_strip_action_card_markers(text: str) -> tuple[str, bool]:
-    """Strip every `action_card_content` / `lmdx_content` marker and unwrap Google search redirects from a *complete* text.
+    """Restore `[invalid URL]` links, unwrap local Google search redirects, and strip card markers from a *complete* text.
 
     Returns `(clean_text, seen)`. Only use this on whole answers (terminal snapshots);
-    incremental deltas go through `_RobinActionCardFilter` so a marker split across two
-    chunks cannot leak its prefix.
+    incremental deltas go through `_RobinAnswerProjector` + `_RobinActionCardFilter` so
+    a marker split across two chunks cannot leak its prefix.
     """
-    unwrapped = _robin_unwrap_google_search_redirect_text(text)
+    restored = _robin_restore_invalid_url_links(text)
+    unwrapped = _robin_unwrap_google_search_redirect_text(restored)
     if not any(m in unwrapped for m in GEMINI_ROBIN_ACTION_CARD_MARKERS):
         return unwrapped, False
     out: list[str] = []
@@ -54995,27 +55525,56 @@ def _robin_clean_action_card_text(text: str) -> str:
 
 
 class _RobinActionCardFilter:
-    """Strip `action_card_content` and `lmdx_content` markers and `https://www.google.com/search?q=` from streamed answer deltas.
+    """Strip `action_card_content` and `lmdx_content` markers and local Google redirects from streamed answer deltas.
 
-    Deltas arrive in arbitrary slices, so a marker can straddle two chunks: a trailing
-    slice that could still grow into a marker is held back until the next delta resolves
-    it.
+    Deltas arrive in arbitrary slices, so both markers and wrapped Google redirect URLs
+    are buffered across chunk boundaries until resolved or flushed.
     """
 
     def __init__(self) -> None:
         self._pending = ""
         self._in_card_id = False
-        self._in_unwrapped_url = False
+        self._url_pfx = ""
+        self._url_buf = ""
+        self._url_in_md_target = False
+        self._tail_two = ""
         self.seen = False
 
+    def _emit_plain(self, out: list[str], piece: str) -> None:
+        if piece:
+            out.append(piece)
+            self._tail_two = (self._tail_two + piece)[-2:]
+
+    def _finalize_buffered_url(self, out: list[str]) -> None:
+        if not self._url_pfx:
+            return
+        if not self._url_buf:
+            self._emit_plain(out, self._url_pfx)
+        else:
+            formatted = _robin_format_google_search_redirect(
+                self._url_pfx,
+                self._url_buf,
+                in_md_link_target=self._url_in_md_target,
+            )
+            self._emit_plain(out, formatted)
+        self._url_pfx = ""
+        self._url_buf = ""
+        self._url_in_md_target = False
+
     def _filter_unwrapped_url_chunk(self, chunk: str, *, is_flush: bool = False) -> str:
-        if not chunk:
-            return ""
         out: list[str] = []
         i = 0
         n = len(chunk)
         while i < n:
-            if not self._in_unwrapped_url:
+            if self._url_pfx:
+                end_i = i
+                while end_i < n and chunk[end_i] not in _ROBIN_UNWRAPPED_URL_DELIMS:
+                    end_i += 1
+                self._url_buf += chunk[i:end_i]
+                i = end_i
+                if i < n:
+                    self._finalize_buffered_url(out)
+            else:
                 hit = -1
                 hit_pfx = ""
                 for pfx in _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES:
@@ -55024,41 +55583,15 @@ class _RobinActionCardFilter:
                         hit = idx
                         hit_pfx = pfx
                 if hit < 0:
-                    out.append(chunk[i:])
+                    self._emit_plain(out, chunk[i:])
                     break
-                out.append(chunk[i:hit])
-                after_pfx = hit + len(hit_pfx)
-                if after_pfx == n:
-                    if is_flush:
-                        out.append(hit_pfx)
-                    else:
-                        self._pending = hit_pfx + self._pending
-                    break
-                if chunk[after_pfx] in _ROBIN_UNWRAPPED_URL_DELIMS:
-                    out.append(hit_pfx)
-                    i = after_pfx
-                    continue
-                repl = _robin_redirect_prefix_replacement(hit_pfx)
-                if repl:
-                    out.append(repl)
-                i = after_pfx
-                self._in_unwrapped_url = True
-            else:
-                end_i = i
-                while end_i < n and chunk[end_i] not in _ROBIN_UNWRAPPED_URL_DELIMS:
-                    end_i += 1
-                span = chunk[i:end_i]
-                if not is_flush and end_i == n:
-                    if span.endswith("%"):
-                        self._pending = "%" + self._pending
-                        span = span[:-1]
-                    elif span.endswith("%2"):
-                        self._pending = "%2" + self._pending
-                        span = span[:-2]
-                out.append(span.replace("%23", "#").replace("%20", " "))
-                i = end_i
-                if i < n:
-                    self._in_unwrapped_url = False
+                self._emit_plain(out, chunk[i:hit])
+                self._url_pfx = hit_pfx
+                self._url_buf = ""
+                self._url_in_md_target = self._tail_two == "]("
+                i = hit + len(hit_pfx)
+        if is_flush and self._url_pfx:
+            self._finalize_buffered_url(out)
         return "".join(out)
 
     def feed(self, delta: str) -> str:
@@ -55105,16 +55638,34 @@ class _RobinActionCardFilter:
         return self._filter_unwrapped_url_chunk("".join(out), is_flush=False)
 
     def flush(self) -> str:
-        if not self._pending:
-            self._in_unwrapped_url = False
-            return ""
         rem = self._pending
         self._pending = ""
-        clean, seen = _robin_strip_action_card_markers(rem)
-        if seen:
-            self.seen = True
+        if rem:
+            clean = rem
+            if any(m in clean for m in GEMINI_ROBIN_ACTION_CARD_MARKERS):
+                parts: list[str] = []
+                cursor = 0
+                while True:
+                    hit, matched_prefix = _robin_find_next_card_marker(clean, cursor)
+                    if hit < 0:
+                        parts.append(clean[cursor:])
+                        break
+                    parts.append(clean[cursor:hit])
+                    cursor = hit + len(matched_prefix)
+                    while cursor < len(clean) and (
+                        clean[cursor].isalnum() or clean[cursor] in "-_"
+                    ):
+                        cursor += 1
+                    self.seen = True
+                clean = "".join(parts)
+        else:
+            clean = ""
         res = self._filter_unwrapped_url_chunk(clean, is_flush=True)
-        self._in_unwrapped_url = False
+        self._in_card_id = False
+        self._url_pfx = ""
+        self._url_buf = ""
+        self._url_in_md_target = False
+        self._tail_two = ""
         return res
 
 
@@ -55159,17 +55710,27 @@ def _robin_restore_invalid_url_links(text: str) -> str:
         basename = path_part.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].strip()
         if not basename:
             return match.group(0)
+        # Case-sensitive local prefix deduplication: only trim the head of `basename`,
+        # never mutate `prefix`, preserving streaming prefix invariance.
+        tail_seg = prefix.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+        display_name = basename
+        if tail_seg and basename.startswith(tail_seg) and len(tail_seg) < len(basename):
+            display_name = basename[len(tail_seg) :]
         line_suffix = ""
-        if not suffix and frag:
+        if frag:
             m_ln = _ROBIN_INVALID_URL_LINE_FRAG_RE.match(frag.strip())
             if m_ln:
                 start_ln = m_ln.group(1)
                 end_ln = m_ln.group(2)
-                line_suffix = f":{start_ln}-{end_ln}" if end_ln else f":{start_ln}"
+                cand_line = f":{start_ln}-{end_ln}" if end_ln else f":{start_ln}"
+                if not suffix or (
+                    not re.match(r"^:\d+", suffix) and cand_line not in suffix
+                ):
+                    line_suffix = cand_line
         final_target = unwrapped_target if unwrapped_target != target else raw_target
         if not open_ang and not close_ang and any(ch.isspace() for ch in final_target):
             open_ang, close_ang = "<", ">"
-        return f"[{prefix}{basename}{line_suffix}{suffix}]({open_ang}{final_target}{close_ang})"
+        return f"[{prefix}{display_name}{line_suffix}{suffix}]({open_ang}{final_target}{close_ang})"
 
     return _ROBIN_INVALID_URL_MD_LINK_RE.sub(_repl, text)
 
@@ -55180,8 +55741,8 @@ def _robin_invalid_url_safe_emit_end(text: str, start: int) -> int:
     if not tail:
         return start
     tail_lower = tail.lower()
-    # 1. Hold back any single-line unclosed `[...[invalid URL]...](...` regardless of length;
-    #    newlines release immediately and `flush()`/`final=True` always drains the tail.
+    # 1. Hold back any single-line unclosed `[...[invalid URL]...](...` back to the outer `[`
+    #    (clamped to `start`); newlines release immediately and `flush()`/`final=True` drains.
     marker_idx = tail_lower.rfind(_ROBIN_INVALID_URL_TOKEN_LOWER)
     if marker_idx >= 0:
         abs_marker_idx = start + marker_idx
@@ -55193,12 +55754,13 @@ def _robin_invalid_url_safe_emit_end(text: str, start: int) -> int:
         open_br = before_on_line.rfind("[")
         inside_outer_bracket = open_br >= 0 and "]" not in before_on_line[open_br + 1 :]
         if inside_outer_bracket:
+            abs_open_br = line_start + 1 + open_br
             after = tail[marker_idx + len(_ROBIN_INVALID_URL_TOKEN) :]
             if "\n" not in after and "\r" not in after:
                 close_br = after.find("]")
                 if close_br < 0:
                     if "[" not in after:
-                        return abs_marker_idx
+                        return max(start, abs_open_br)
                 else:
                     suffix_part = after[:close_br]
                     post_br = after[close_br + 1 :]
@@ -55206,12 +55768,22 @@ def _robin_invalid_url_safe_emit_end(text: str, start: int) -> int:
                         post_br == ""
                         or (post_br.startswith("(") and ")" not in post_br)
                     ):
-                        return abs_marker_idx
-    # 2. Hold back a trailing strict prefix of `[invalid URL]` (e.g. `[`, `[inval`)
+                        return max(start, abs_open_br)
+    # 2. Hold back a trailing strict prefix of `[invalid URL]` (e.g. `[`, `[inval`),
+    #    retreating to an unclosed same-line outer `[` when present.
     max_pfx = min(len(tail_lower), len(_ROBIN_INVALID_URL_TOKEN_LOWER) - 1)
     for k in range(max_pfx, 0, -1):
         if _ROBIN_INVALID_URL_TOKEN_LOWER.startswith(tail_lower[-k:]):
-            return len(text) - k
+            abs_pfx_idx = len(text) - k
+            line_start = max(
+                text.rfind("\n", 0, abs_pfx_idx),
+                text.rfind("\r", 0, abs_pfx_idx),
+            )
+            before_on_line = text[line_start + 1 : abs_pfx_idx]
+            open_br = before_on_line.rfind("[")
+            if open_br >= 0 and "]" not in before_on_line[open_br + 1 :]:
+                return max(start, line_start + 1 + open_br)
+            return abs_pfx_idx
     return len(text)
 
 
@@ -55229,6 +55801,12 @@ class _RobinAnswerProjector:
         if len(snapshot) >= self._max_raw_len:
             self._max_raw_len = len(snapshot)
             self.committed_text = _robin_restore_invalid_url_links(snapshot)
+        elif final:
+            cand = _robin_restore_invalid_url_links(snapshot)
+            if len(cand) > self.delivered_char_offset and cand.startswith(
+                self.committed_text[: self.delivered_char_offset]
+            ):
+                self.committed_text = cand
         if len(self.committed_text) <= self.delivered_char_offset:
             return ""
         emit_end = (
@@ -55572,13 +56150,87 @@ def _robin_parse_conversation_turns(raw: bytes) -> list[dict[str, Any]]:
                             "utf-8", errors="replace"
                         )
             elif mfno == 7 and mwtype == 2 and isinstance(mval, (bytes, bytearray)):
-                for afno, awtype, aval in _pb_iter_fields(bytes(mval)):
-                    if (
-                        afno == 1
-                        and awtype == 2
-                        and isinstance(aval, (bytes, bytearray))
-                    ):
-                        fallback_text = bytes(aval).decode("utf-8", errors="replace")
+                raw_f7 = bytes(mval)
+                nested_text = ""
+                # Decode nested `afno == 1` only when `raw_f7` is a complete, valid protobuf message;
+                # otherwise `shareable_text_response` is a direct UTF-8 string.
+                pos = 0
+                valid_pb = bool(raw_f7)
+                while valid_pb and pos < len(raw_f7):
+                    tag = 0
+                    shift = 0
+                    while pos < len(raw_f7):
+                        b = raw_f7[pos]
+                        pos += 1
+                        tag |= (b & 0x7F) << shift
+                        if not (b & 0x80):
+                            break
+                        shift += 7
+                        if shift > 63:
+                            valid_pb = False
+                            break
+                    else:
+                        valid_pb = False
+                        break
+                    if not valid_pb:
+                        break
+                    afno = tag >> 3
+                    awtype = tag & 7
+                    if afno <= 0 or awtype not in (0, 1, 2, 5):
+                        valid_pb = False
+                        break
+                    if awtype == 0:
+                        shift = 0
+                        while pos < len(raw_f7):
+                            b = raw_f7[pos]
+                            pos += 1
+                            if not (b & 0x80):
+                                break
+                            shift += 7
+                            if shift > 63:
+                                valid_pb = False
+                                break
+                        else:
+                            valid_pb = False
+                            break
+                    elif awtype == 1:
+                        if pos + 8 > len(raw_f7):
+                            valid_pb = False
+                            break
+                        pos += 8
+                    elif awtype == 5:
+                        if pos + 4 > len(raw_f7):
+                            valid_pb = False
+                            break
+                        pos += 4
+                    elif awtype == 2:
+                        ln = 0
+                        shift = 0
+                        while pos < len(raw_f7):
+                            b = raw_f7[pos]
+                            pos += 1
+                            ln |= (b & 0x7F) << shift
+                            if not (b & 0x80):
+                                break
+                            shift += 7
+                            if shift > 63:
+                                valid_pb = False
+                                break
+                        else:
+                            valid_pb = False
+                            break
+                        if not valid_pb or pos + ln > len(raw_f7):
+                            valid_pb = False
+                            break
+                        if afno == 1:
+                            nested_text = raw_f7[pos : pos + ln].decode(
+                                "utf-8", errors="replace"
+                            )
+                        pos += ln
+                if valid_pb and pos == len(raw_f7) and nested_text:
+                    fallback_text = nested_text
+                else:
+                    fallback_text = raw_f7.decode("utf-8", errors="replace")
             elif mfno == 19 and mwtype == 0 and int(mval) == 2:
                 turn_info["is_completed"] = True
         if not turn_info["answer_text"] and fallback_text:
@@ -67155,17 +67807,20 @@ class _RobinRunActor:
                 device_id=self.device_id,
                 bard_mode_id=account_mode_id,
             )
-            payload = _robin_pack_grpc_frames(resume_frames)
-            headers = {
-                "Authorization": f"Bearer {self.access_token}",
-                "Content-Type": "application/grpc",
-                "TE": "trailers",
-                "grpc-accept-encoding": "identity,deflate,gzip",
-                "accept-encoding": "identity,gzip",
-                "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
-                "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-                "accept-language": "en",
-            }
+            payload = _robin_pack_grpc_frames(resume_frames, compress=True)
+            headers = _robin_apply_standard_grpc_headers(
+                {
+                    "Authorization": f"Bearer {self.access_token}",
+                    "Content-Type": "application/grpc",
+                    "TE": "trailers",
+                    "grpc-accept-encoding": "identity,deflate,gzip",
+                    "accept-encoding": "identity,gzip",
+                    "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
+                    "x-ios-bundle-identifier": "com.google.GeminiMacOS",
+                    "accept-language": "en",
+                },
+                compressed=True,
+            )
             if self.server_token:
                 headers["X-Server-Token"] = self.server_token
             self.run.pq_transport_state = "ROLLING_OVER"
@@ -67892,6 +68547,20 @@ def _robin_pop_parked_stream(*keys: str) -> _RobinRunActor | None:
         return parked
 
 
+def _robin_is_dead_parked_actor(cand: _RobinRunActor) -> bool:
+    """Return True if a parked actor cannot be resumed or flushed by a follow-up turn."""
+    if cand.http_session.closed or cand.unplanned_no_progress_failed:
+        return True
+    if cand.run.execution_state != "TERMINAL":
+        return False
+    # Preserve two-phase finalized TOOL_HANDOFF runs awaiting client flush handoff.
+    return not (
+        cand.run.outcome_state == "SUCCEEDED"
+        and cand.run.attachment_state == "TOOL_HANDOFF"
+        and cand.run.cancellation_state == "NONE"
+    )
+
+
 def _robin_evict_specific_parked_actor(
     target: _RobinRunActor, *extra_keys: str
 ) -> _RobinRunActor:
@@ -67918,11 +68587,7 @@ def _robin_evict_specific_parked_actor(
             cur = _ROBIN_PARKED_STREAMS.get(k)
             if cur is target:
                 _ROBIN_PARKED_STREAMS.pop(k, None)
-            elif cur is not None and (
-                cur.http_session.closed
-                or cur.run.execution_state == "TERMINAL"
-                or cur.unplanned_no_progress_failed
-            ):
+            elif cur is not None and _robin_is_dead_parked_actor(cur):
                 _ROBIN_PARKED_STREAMS.pop(k, None)
                 if all(cur is not d for d in dead_to_release):
                     dead_to_release.append(cur)
@@ -67986,11 +68651,7 @@ def _robin_resolve_parked_actor_for_turn(
         cand = _robin_peek_parked_stream(k)
         if cand is None:
             continue
-        if (
-            cand.http_session.closed
-            or cand.run.execution_state == "TERMINAL"
-            or cand.unplanned_no_progress_failed
-        ):
+        if _robin_is_dead_parked_actor(cand):
             with _ROBIN_PARKED_STREAMS_LOCK:
                 if _ROBIN_PARKED_STREAMS.get(k) is cand:
                     _ROBIN_PARKED_STREAMS.pop(k, None)
@@ -68009,9 +68670,7 @@ def _robin_resolve_parked_actor_for_turn(
                 if (
                     cand is None
                     or id(cand) in seen_actor_ids
-                    or cand.http_session.closed
-                    or cand.run.execution_state == "TERMINAL"
-                    or cand.unplanned_no_progress_failed
+                    or _robin_is_dead_parked_actor(cand)
                 ):
                     continue
                 if (
@@ -70396,7 +71055,12 @@ class _RobinHTTP2Mux:
         if accept_encoding:
             request_headers.append(("accept-encoding", accept_encoding))
         lower_headers = {str(k).lower(): v for k, v in headers.items()}
-        for extra_name in ("x-ios-bundle-identifier", "accept-language"):
+        for extra_name in (
+            "x-ios-bundle-identifier",
+            "accept-language",
+            "grpc-encoding",
+            "x-goog-ext-202964622-bin",
+        ):
             extra_value = lower_headers.get(extra_name)
             if extra_value:
                 request_headers.append((extra_name, str(extra_value)))
@@ -71502,7 +72166,7 @@ async def _robin_fetch_conversation_title(
 
 def _robin_build_list_remy_goals_request(
     device_id: str = "",
-    locale: str = "en-US",
+    locale: str = _ROBIN_DEFAULT_LOCALE,
     *,
     bard_mode_id: str | None = None,
 ) -> bytes:
@@ -71650,16 +72314,19 @@ async def _robin_reconcile_via_list_turns(
         device_id=device_id,
         bard_mode_id=account_mode_id,
     )
-    payload = _robin_pack_grpc_frames([req_pb])
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/grpc",
-        "TE": "trailers",
-        "grpc-accept-encoding": "identity,deflate,gzip",
-        "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
-        "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "en",
-    }
+    payload = _robin_pack_grpc_frames([req_pb], compress=True)
+    headers = _robin_apply_standard_grpc_headers(
+        {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/grpc",
+            "TE": "trailers",
+            "grpc-accept-encoding": "identity,deflate,gzip",
+            "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
+            "x-ios-bundle-identifier": "com.google.GeminiMacOS",
+            "accept-language": "en",
+        },
+        compressed=True,
+    )
     if server_token:
         headers["X-Server-Token"] = server_token
     try:
@@ -71728,28 +72395,39 @@ async def _robin_reconcile_via_list_turns(
                         thought_delta, had_block_rows=had_block_rows
                     )
                 )
+        is_final = bool(matched.get("is_completed"))
         if matched.get("answer_text"):
-            # Terminal snapshot: strip any ActionCard marker before projecting, then fall
-            # back to the closure sentence when the card was the whole answer.
-            clean_answer, card_seen = _robin_strip_action_card_markers(
-                str(matched["answer_text"])
-            )
+            raw_answer = str(matched["answer_text"])
             ans_delta = decoder.run.answer_projector.update_snapshot(
-                clean_answer, final=True
+                raw_answer, final=is_final
             )
-            if ans_delta:
+            if is_final:
+                proj_tail = decoder.run.answer_projector.flush()
+                raw_stream = ans_delta + proj_tail
+                visible_delta = (
+                    decoder.action_card_filter.feed(raw_stream) if raw_stream else ""
+                ) + decoder.action_card_filter.flush()
+            else:
+                visible_delta = (
+                    decoder.action_card_filter.feed(ans_delta) if ans_delta else ""
+                )
+            if visible_delta:
                 out_chunks.extend(decoder._maybe_emit_model_attribution_chunk())
-                decoder.emitted_answer_chars += len(ans_delta)
-                decoder.emitted_answer_text += ans_delta
-                out_chunks.append(decoder._make_chunk({"content": ans_delta}))
-            if card_seen and not decoder.emitted_answer_text.strip():
+                decoder.emitted_answer_chars += len(visible_delta)
+                decoder.emitted_answer_text += visible_delta
+                out_chunks.append(decoder._make_chunk({"content": visible_delta}))
+            if (
+                is_final
+                and decoder.action_card_filter.seen
+                and not decoder.emitted_answer_text.strip()
+            ):
                 out_chunks.extend(decoder._maybe_emit_model_attribution_chunk())
                 decoder.emitted_answer_chars += len(_ROBIN_ACTION_CARD_CLOSURE)
                 decoder.emitted_answer_text += _ROBIN_ACTION_CARD_CLOSURE
                 out_chunks.append(
                     decoder._make_chunk({"content": _ROBIN_ACTION_CARD_CLOSURE})
                 )
-        if matched.get("is_completed"):
+        if is_final:
             decoder.is_completed = True
             decoder.eod = True
             decoder.run.execution_state = "TERMINAL"
@@ -71787,16 +72465,19 @@ async def _robin_resolve_response_id_via_list_turns(
         device_id=device_id,
         bard_mode_id=account_mode_id,
     )
-    payload = _robin_pack_grpc_frames([req_pb])
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/grpc",
-        "TE": "trailers",
-        "grpc-accept-encoding": "identity,deflate,gzip",
-        "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
-        "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-        "accept-language": "en",
-    }
+    payload = _robin_pack_grpc_frames([req_pb], compress=True)
+    headers = _robin_apply_standard_grpc_headers(
+        {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/grpc",
+            "TE": "trailers",
+            "grpc-accept-encoding": "identity,deflate,gzip",
+            "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
+            "x-ios-bundle-identifier": "com.google.GeminiMacOS",
+            "accept-language": "en",
+        },
+        compressed=True,
+    )
     if server_token:
         headers["X-Server-Token"] = server_token
     try:
@@ -76344,17 +77025,20 @@ class GeminiHTTPClient:
                 else None
             ),
         )
-        robin_body = _robin_pack_grpc_frames(robin_frames)
-        robin_headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/grpc",
-            "TE": "trailers",
-            "grpc-accept-encoding": "identity,deflate,gzip",
-            "accept-encoding": "identity,gzip",
-            "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
-            "x-ios-bundle-identifier": "com.google.GeminiMacOS",
-            "accept-language": "en",
-        }
+        robin_body = _robin_pack_grpc_frames(robin_frames, compress=True)
+        robin_headers = _robin_apply_standard_grpc_headers(
+            {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/grpc",
+                "TE": "trailers",
+                "grpc-accept-encoding": "identity,deflate,gzip",
+                "accept-encoding": "identity,gzip",
+                "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
+                "x-ios-bundle-identifier": "com.google.GeminiMacOS",
+                "accept-language": "en",
+            },
+            compressed=True,
+        )
         robin_targets: list[tuple[str, str, dict[str, str], dict[str, Any] | bytes]] = [
             (
                 GEMINI_BACKEND_ROBIN,
@@ -102703,8 +103387,7 @@ def test_gemini_end_to_end_oauth_refresh_and_ccpa_relay():
                 return _MockResponse(200, sse_bytes, chunks=[sse_bytes])
             if url == GEMINI_ROBIN_PROD_URL:
                 raw_data = bytes(data or b"")
-                _, f1_len = struct.unpack(">BI", raw_data[:5])
-                f1_msg = raw_data[5 : 5 + f1_len]
+                f1_msg = _robin_unpack_grpc_frames(bytearray(raw_data))[0]
                 f1_top_map = {fno: val for fno, _, val in _pb_iter_fields(f1_msg)}
                 init_map = {
                     fno: val for fno, _, val in _pb_iter_fields(bytes(f1_top_map[1000]))
@@ -112410,10 +113093,13 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             len(veh_captured_wire_bodies) == 1
             and veh_captured_urls[0] == GEMINI_ROBIN_PROD_URL
         )
-        assert (
-            f"切换到账号B后继续提问{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
-            in veh_captured_wire_bodies[0]
-        )
+
+        def _selftest_unpack_wire(body: bytes) -> bytes:
+            return b"".join(_robin_unpack_grpc_frames(bytearray(body)))
+
+        assert f"切换到账号B后继续提问{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
+            "utf-8"
+        ) in _selftest_unpack_wire(veh_captured_wire_bodies[0])
 
         # 6b. Same-account fork (`::fork::br_veh_fork_01`, `conv_id == ""`, same `boot_key`):
         fork_msgs: list[dict[str, Any]] = [
@@ -112445,7 +113131,7 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             f"在同一账号下从历史分叉出新分支提问{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
                 "utf-8"
             )
-            in veh_captured_wire_bodies[0]
+            in _selftest_unpack_wire(veh_captured_wire_bodies[0])
         )
 
         # 6c. Initial `_open_stream` failure followed by retry on the same `boot_key` (`conv_id == ""`):
@@ -112473,14 +113159,12 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         assert err_v3_ok is None and gen_v3_ok is not None
         asyncio.run(_selftest_consume_sse_chunks(gen_v3_ok))
         assert len(veh_captured_wire_bodies) == 2
-        assert (
-            f"首轮打开失败后重试{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
-            in veh_captured_wire_bodies[0]
-        )
-        assert (
-            f"首轮打开失败后重试{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
-            in veh_captured_wire_bodies[1]
-        )
+        assert f"首轮打开失败后重试{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
+            "utf-8"
+        ) in _selftest_unpack_wire(veh_captured_wire_bodies[0])
+        assert f"首轮打开失败后重试{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
+            "utf-8"
+        ) in _selftest_unpack_wire(veh_captured_wire_bodies[1])
 
         # 6d. Continuation on an existing remote conversation with the SAME already-injected
         #     toolset (`c_veh_new_01` committed by 6b) does NOT re-inject:
@@ -112496,10 +113180,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         assert err_v4 is None and gen_v4 is not None
         asyncio.run(_selftest_consume_sse_chunks(gen_v4))
         assert len(veh_captured_wire_bodies) == 1
-        assert (
-            _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
-            not in veh_captured_wire_bodies[0]
-        )
+        assert _VE_RELAY_VEH_MENTION_SUFFIX.encode(
+            "utf-8"
+        ) not in _selftest_unpack_wire(veh_captured_wire_bodies[0])
 
         # 6e. Toolset transitions on the SAME remote conversation:
         #     tool-less turn -> Plan (read-only) -> Plan (same) -> Agent (expanded) -> Plan (shrunk) -> tool-less turn:
@@ -112562,10 +113245,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         assert err_r1 is None and gen_r1 is not None
         asyncio.run(_selftest_consume_sse_chunks(gen_r1))
         assert len(veh_captured_wire_bodies) == 1
-        assert (
-            _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
-            not in veh_captured_wire_bodies[0]
-        )
+        assert _VE_RELAY_VEH_MENTION_SUFFIX.encode(
+            "utf-8"
+        ) not in _selftest_unpack_wire(veh_captured_wire_bodies[0])
 
         # R2: Switch to Plan mode (read-only tools) on the SAME `conv_id` -> late inject `@VEH MCP Server`
         cont_r2_msgs: list[dict[str, Any]] = [
@@ -112587,10 +113269,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         assert err_r2 is None and gen_r2 is not None
         asyncio.run(_selftest_consume_sse_chunks(gen_r2))
         assert len(veh_captured_wire_bodies) == 1
-        assert (
-            f"切到 Plan 模式看下代码{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
-            in veh_captured_wire_bodies[0]
-        )
+        assert f"切到 Plan 模式看下代码{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
+            "utf-8"
+        ) in _selftest_unpack_wire(veh_captured_wire_bodies[0])
 
         # R3: Stay in Plan mode (same toolset) -> must NOT re-inject
         cont_r3_msgs: list[dict[str, Any]] = [
@@ -112612,10 +113293,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         assert err_r3 is None and gen_r3 is not None
         asyncio.run(_selftest_consume_sse_chunks(gen_r3))
         assert len(veh_captured_wire_bodies) == 1
-        assert (
-            _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
-            not in veh_captured_wire_bodies[0]
-        )
+        assert _VE_RELAY_VEH_MENTION_SUFFIX.encode(
+            "utf-8"
+        ) not in _selftest_unpack_wire(veh_captured_wire_bodies[0])
 
         # R4: Switch Plan -> Agent (expanded toolset) -> re-injects to refresh `tools/list`;
         #     also verify 6f: if `_open_stream` fails first (502), retry still injects!
@@ -112643,14 +113323,12 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         assert err_r4_ok is None and gen_r4_ok is not None
         asyncio.run(_selftest_consume_sse_chunks(gen_r4_ok))
         assert len(veh_captured_wire_bodies) == 2
-        assert (
-            f"切到 Agent 模式修改文件{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
-            in veh_captured_wire_bodies[0]
-        )
-        assert (
-            f"切到 Agent 模式修改文件{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
-            in veh_captured_wire_bodies[1]
-        )
+        assert f"切到 Agent 模式修改文件{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
+            "utf-8"
+        ) in _selftest_unpack_wire(veh_captured_wire_bodies[0])
+        assert f"切到 Agent 模式修改文件{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
+            "utf-8"
+        ) in _selftest_unpack_wire(veh_captured_wire_bodies[1])
 
         # R5: Switch Agent -> Plan (shrunk read-only toolset) -> refreshes mention AND Relay
         #     blocks write tool `edit_existing_file` while listing current Plan tools
@@ -112673,10 +113351,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
         assert err_r5 is None and gen_r5 is not None
         asyncio.run(_selftest_consume_sse_chunks(gen_r5))
         assert len(veh_captured_wire_bodies) == 1
-        assert (
-            f"切回 Plan 只读模式{_VE_RELAY_VEH_MENTION_SUFFIX}".encode("utf-8")
-            in veh_captured_wire_bodies[0]
-        )
+        assert f"切回 Plan 只读模式{_VE_RELAY_VEH_MENTION_SUFFIX}".encode(
+            "utf-8"
+        ) in _selftest_unpack_wire(veh_captured_wire_bodies[0])
         plan_check_run = _RobinRunState(
             run_id="run_selftest_plan_guard",
             session_key=str(base_r5.get("_ve_session_key") or ""),
@@ -112732,10 +113409,9 @@ def test_robin_unplanned_eof_resume_fork_account_and_cache_usage():
             assert err_r6 is None and gen_r6 is not None
             asyncio.run(_selftest_consume_sse_chunks(gen_r6))
             assert _relay_active_run() is None
-            assert (
-                _VE_RELAY_VEH_MENTION_SUFFIX.encode("utf-8")
-                not in veh_captured_wire_bodies[0]
-            )
+            assert _VE_RELAY_VEH_MENTION_SUFFIX.encode(
+                "utf-8"
+            ) not in _selftest_unpack_wire(veh_captured_wire_bodies[0])
             st_chat, _, body_chat = asyncio.run(
                 _relay_mcp_tools_call(
                     "read_file",
@@ -116588,6 +117264,10 @@ def test_pq_recovery_contract():
                 self._payloads = list(payloads)
                 self.calls = 0
                 self.released: list[bool] = []
+                self.closed = False
+
+            async def close(self) -> None:
+                self.closed = True
 
             async def post(
                 self, url: str, data: Any = None, headers: Any = None
@@ -116855,7 +117535,115 @@ def test_pq_recovery_contract():
                             or ""
                         )
             assert drained_text == "Final answer reconciled while parked."
+
+            # Two-phase handoff consumer verification: parked TERMINAL + SUCCEEDED + TOOL_HANDOFF
+            # must stay resolvable by both same-key and cross-key tool continuations.
+            cont_msgs_3b = [
+                {"role": "user", "content": "Wait for background task completion."},
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": "call_selftest_wt_1",
+                            "type": "function",
+                            "function": {"name": "wait_agent", "arguments": "{}"},
+                        }
+                    ],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call_selftest_wt_1",
+                    "content": '{"timedOut": true}',
+                },
+            ]
+            transcript_3b = _gemini_parse_transcript(cont_msgs_3b)
+            assert transcript_3b.is_tool_continuation is True
+            assert _robin_is_dead_parked_actor(actor_3b) is False
+            with _ROBIN_PARKED_STREAMS_LOCK:
+                _ROBIN_PARKED_STREAMS[actor_3b.session_id] = actor_3b
+                _ROBIN_PARKED_STREAMS[actor_3b.session_key] = actor_3b
+            # (a) Same-key lookup without pop:
+            res_a, kind_a, _ = _robin_resolve_parked_actor_for_turn(
+                transcript_3b,
+                session_id=actor_3b.session_id,
+                session_key=actor_3b.session_key,
+                boot_key=actor_3b.boot_key,
+                pop_matched=False,
+            )
+            assert res_a is actor_3b and kind_a == "CRASH_RECOVERY_FLUSH_AND_CHAIN"
+            # (b) Cross-key lookup matched via tail_tool_ids with pop:
+            res_b, kind_b, _ = _robin_resolve_parked_actor_for_turn(
+                transcript_3b,
+                session_id="s_selftest_pq_3b_other",
+                session_key="boot_selftest_pq_3b_other",
+                pop_matched=True,
+            )
+            assert res_b is actor_3b and kind_b == "CRASH_RECOVERY_FLUSH_AND_CHAIN"
+            # (c) Negative cases must be treated as dead and evicted cleanly:
+            for neg_idx, (neg_out, neg_att, neg_cancel) in enumerate(
+                (
+                    ("FAILED", "TOOL_HANDOFF", "NONE"),
+                    ("SUCCEEDED", "TOOL_HANDOFF", "CLIENT_CANCELLED"),
+                    ("SUCCEEDED", "CLOSED", "NONE"),
+                ),
+                start=1,
+            ):
+                neg_run = _RobinRunState(
+                    run_id=f"run_selftest_pq_3b_neg_{neg_idx}",
+                    session_key=f"boot_selftest_pq_3b_neg_{neg_idx}",
+                    client_session_id=f"boot_selftest_pq_3b_neg_{neg_idx}",
+                    principal_id="p_selftest",
+                    execution_state="TERMINAL",
+                    outcome_state=neg_out,
+                    attachment_state=neg_att,
+                    cancellation_state=neg_cancel,
+                    conversation_id="c_selftest_0002",
+                    request_id="r_selftest_0002",
+                )
+                neg_dec = _RobinStreamDecoder(
+                    f"chatcmpl-selftest-3b-neg-{neg_idx}",
+                    0,
+                    "gemini:gemini-4-argon",
+                    run=neg_run,
+                )
+                neg_dec.is_completed = True
+                neg_run.tool_ledger.by_public_id["call_selftest_wt_1"] = inv_wt1
+                neg_actor = _RobinRunActor(
+                    session_id=f"s_selftest_pq_3b_neg_{neg_idx}",
+                    session_key=f"boot_selftest_pq_3b_neg_{neg_idx}",
+                    boot_key=f"boot_selftest_pq_3b_neg_{neg_idx}",
+                    full_key="",
+                    http_session=cast(Any, _SpyListTurnsSession([])),
+                    response=_StubH2Resp(),
+                    iterator=_ChunkIter([]),
+                    decoder=neg_dec,
+                    run=neg_run,
+                )
+                assert _robin_is_dead_parked_actor(neg_actor) is True
+                with _ROBIN_PARKED_STREAMS_LOCK:
+                    _ROBIN_PARKED_STREAMS[neg_actor.session_id] = neg_actor
+                neg_res, neg_kind, _ = _robin_resolve_parked_actor_for_turn(
+                    transcript_3b,
+                    session_id=neg_actor.session_id,
+                    session_key=neg_actor.session_key,
+                    boot_key=neg_actor.boot_key,
+                    pop_matched=True,
+                )
+                assert neg_res is None and neg_kind == ""
+                with _ROBIN_PARKED_STREAMS_LOCK:
+                    assert neg_actor.session_id not in _ROBIN_PARKED_STREAMS
         finally:
+            with _ROBIN_PARKED_STREAMS_LOCK:
+                for pk in (
+                    actor_3b.session_id,
+                    actor_3b.session_key,
+                    actor_3b.boot_key,
+                    "s_selftest_pq_3b_neg_1",
+                    "s_selftest_pq_3b_neg_2",
+                    "s_selftest_pq_3b_neg_3",
+                ):
+                    _ROBIN_PARKED_STREAMS.pop(pk, None)
             _relay_clear_active_run(run_3b)
             _ROBIN_ACTIVE_RUNS.pop(run_3b.run_id, None)
             _relay_drop_waiter("call_selftest_wt_1")
@@ -117910,6 +118698,594 @@ def test_relay_liveness_contract():
     asyncio.run(_run_group_3c_and_4())
 
 
+def test_robin_protocol_alignment_contract() -> None:
+    """Group 1 contract: protocol headers, gzip framing, capabilities, locale, LCT f7, and ERT invariance."""
+    import gzip
+
+    assert GEMINI_ROBIN_GRPC_USER_AGENT == "JanusMacOS grpc-swift grpc-objc"
+    assert _ROBIN_DEFAULT_LOCALE == "en"
+    assert len(GEMINI_ROBIN_CLIENT_CAPABILITIES) == 194
+    assert len(set(GEMINI_ROBIN_CLIENT_CAPABILITIES)) == 194
+    assert 726 not in GEMINI_ROBIN_CLIENT_CAPABILITIES
+    for cap in (
+        123,
+        376,
+        633,
+        697,
+        716,
+        760,
+        792,
+        800,
+        810,
+        822,
+        843,
+        863,
+        864,
+        865,
+        866,
+        875,
+        896,
+        901,
+        921,
+        962,
+        967,
+        972,
+        974,
+        999,
+    ):
+        assert cap in GEMINI_ROBIN_CLIENT_CAPABILITIES
+
+    assert len(_ROBIN_DEFAULT_EXT_EXPERIMENTS_IDS) == 147
+    assert len(set(_ROBIN_DEFAULT_EXT_EXPERIMENTS_IDS)) == 86
+    raw_ext = _robin_encode_default_ext_experiments_bytes()
+    assert len(raw_ext) == 278
+
+    old_ext_env = os.environ.get("GEMINI_ROBIN_EXT_EXPERIMENTS_B64")
+    try:
+        os.environ.pop("GEMINI_ROBIN_EXT_EXPERIMENTS_B64", None)
+        default_b64 = _robin_ext_experiments_header_b64()
+        assert base64.b64decode(default_b64) == raw_ext
+        hdr_default = _robin_apply_standard_grpc_headers({}, compressed=True)
+        assert hdr_default["grpc-encoding"] == "gzip"
+        assert hdr_default["x-goog-ext-202964622-bin"] == default_b64
+
+        os.environ["GEMINI_ROBIN_EXT_EXPERIMENTS_B64"] = "off"
+        assert _robin_ext_experiments_header_b64() == ""
+        hdr_off = _robin_apply_standard_grpc_headers({}, compressed=True)
+        assert hdr_off["grpc-encoding"] == "gzip"
+        assert "x-goog-ext-202964622-bin" not in hdr_off
+
+        os.environ["GEMINI_ROBIN_EXT_EXPERIMENTS_B64"] = "AQID"
+        assert _robin_ext_experiments_header_b64() == "AQID"
+    finally:
+        if old_ext_env is None:
+            os.environ.pop("GEMINI_ROBIN_EXT_EXPERIMENTS_B64", None)
+        else:
+            os.environ["GEMINI_ROBIN_EXT_EXPERIMENTS_B64"] = old_ext_env
+
+    async def _run_mux_check() -> None:
+        sent_headers_log: list[list[tuple[str, str]]] = []
+        sent_data_log: list[bytes] = []
+
+        class _FakeH2Conn:
+            def __init__(self) -> None:
+                self._next_id = 1
+                self.max_outbound_frame_size = 16384
+
+            def get_next_available_stream_id(self) -> int:
+                sid = self._next_id
+                self._next_id += 2
+                return sid
+
+            def send_headers(
+                self,
+                stream_id: int,
+                headers: list[tuple[str, str]],
+                end_stream: bool = False,
+            ) -> None:
+                _ = (stream_id, end_stream)
+                sent_headers_log.append(list(headers))
+
+            def send_data(
+                self, stream_id: int, data: bytes, end_stream: bool = False
+            ) -> None:
+                _ = (stream_id, end_stream)
+                sent_data_log.append(bytes(data))
+
+            def local_flow_control_window(self, stream_id: int) -> int:
+                _ = stream_id
+                return 65535
+
+            def data_to_send(self) -> bytes:
+                return b""
+
+        class _FakeReader:
+            def __init__(self) -> None:
+                self._done = asyncio.Event()
+
+            async def read(self, n: int = 65536) -> bytes:
+                _ = n
+                await self._done.wait()
+                return b""
+
+        class _FakeWriter:
+            def __init__(self, reader: _FakeReader) -> None:
+                self._reader = reader
+
+            def write(self, data: bytes) -> None:
+                _ = data
+
+            async def drain(self) -> None:
+                return None
+
+            def is_closing(self) -> bool:
+                return self._reader._done.is_set()
+
+            def close(self) -> None:
+                self._reader._done.set()
+
+        fake_reader = _FakeReader()
+        mux = _RobinHTTP2Mux(
+            "robinfrontend-pa.googleapis.com",
+            cast(Any, fake_reader),
+            cast(Any, _FakeWriter(fake_reader)),
+            cast(Any, _FakeH2Conn()),
+        )
+
+        async def _fake_flush() -> None:
+            for st in list(mux.streams.values()):
+                if st.headers_ready is not None and not st.headers_ready.done():
+                    st.status = 200
+                    st.headers["grpc-status"] = "0"
+                    st.ended = True
+                    st.headers_ready.set_result(True)
+
+        cast(Any, mux)._flush_locked = _fake_flush
+        hdrs = _robin_apply_standard_grpc_headers(
+            {
+                "Authorization": "Bearer tok_selftest",
+                "Content-Type": "application/grpc",
+                "TE": "trailers",
+                "grpc-accept-encoding": "identity,deflate,gzip",
+                "User-Agent": GEMINI_ROBIN_GRPC_USER_AGENT,
+                "x-ios-bundle-identifier": "com.google.GeminiMacOS",
+                "accept-language": "en",
+            },
+            compressed=True,
+        )
+        wire = _robin_pack_grpc_frames([b"\x0a\x02hi"], compress=True)
+        resp = await mux.open_stream(
+            "/assistant.mobile.robin.RobinService/ProcessQuery",
+            hdrs,
+            wire,
+            end_stream=True,
+        )
+        assert resp.status == 200
+        hmap = dict(sent_headers_log[0])
+        assert hmap["user-agent"] == "JanusMacOS grpc-swift grpc-objc"
+        assert hmap["grpc-encoding"] == "gzip"
+        ext_bytes = base64.b64decode(hmap["x-goog-ext-202964622-bin"])
+        assert len(ext_bytes) == 278
+        top_f = {fno: val for fno, _, val in _pb_iter_fields(ext_bytes)}
+        inner_f = {fno: val for fno, _, val in _pb_iter_fields(bytes(top_f[1]))}
+        assert int(inner_f[1]) == 3
+        packed_varints = bytes(inner_f[2])
+        decoded_ids: list[int] = []
+        pos = 0
+        while pos < len(packed_varints):
+            v = 0
+            sh = 0
+            while True:
+                b = packed_varints[pos]
+                pos += 1
+                v |= (b & 0x7F) << sh
+                if not (b & 0x80):
+                    break
+                sh += 7
+            decoded_ids.append(v)
+        assert tuple(decoded_ids) == _ROBIN_DEFAULT_EXT_EXPERIMENTS_IDS
+        assert sent_data_log and sent_data_log[0][0] == 1
+        assert gzip.decompress(sent_data_log[0][5:]) == b"\x0a\x02hi"
+        fake_reader._done.set()
+        if mux._reader_task is not None:
+            await mux._reader_task
+
+    asyncio.run(_run_mux_check())
+
+    def _extract_meta_locale_and_caps(meta_bytes: bytes) -> tuple[str, list[int]]:
+        mf = {fno: val for fno, _, val in _pb_iter_fields(meta_bytes)}
+        loc = bytes(mf[7]).decode("utf-8")
+        cf = {fno: val for fno, _, val in _pb_iter_fields(bytes(mf[6]))}
+        packed = bytes(cf[2])
+        caps: list[int] = []
+        pos = 0
+        while pos < len(packed):
+            v = 0
+            sh = 0
+            while True:
+                b = packed[pos]
+                pos += 1
+                v |= (b & 0x7F) << sh
+                if not (b & 0x80):
+                    break
+                sh += 7
+            caps.append(v)
+        return loc, caps
+
+    pq_frames = _robin_build_process_query_frames(
+        "hello",
+        device_id="00000000-0000-4000-8000-000000000001",
+        mode_category=GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK,
+    )
+    pq_packed = _robin_pack_grpc_frames(pq_frames, compress=True)
+    assert pq_packed[0] == 1
+    pq_unpacked = _robin_unpack_grpc_frames(bytearray(pq_packed))
+    pq_init = {fno: val for fno, _, val in _pb_iter_fields(pq_unpacked[0])}[1000]
+    pq_init_f = {fno: val for fno, _, val in _pb_iter_fields(bytes(pq_init))}
+    pq_loc, pq_caps = _extract_meta_locale_and_caps(bytes(pq_init_f[1]))
+    assert pq_loc == "en"
+    assert len(pq_caps) == 194 and len(set(pq_caps)) == 194 and 726 not in pq_caps
+    cgr_f = {
+        fno: val
+        for fno, _, val in _pb_iter_fields(
+            bytes(
+                {fno: val for fno, _, val in _pb_iter_fields(bytes(pq_init_f[1001]))}[1]
+            )
+        )
+    }
+    assert int(cgr_f[47]) == GEMINI_ROBIN_MODE_CATEGORY_COMPLEX_TASK
+    assert 51 in cgr_f
+
+    resume_frames = _robin_build_resume_turn_frames("c_test_01", "r_test_01")
+    res_init = {fno: val for fno, _, val in _pb_iter_fields(resume_frames[0])}[1000]
+    res_meta = {fno: val for fno, _, val in _pb_iter_fields(bytes(res_init))}[1]
+    assert _extract_meta_locale_and_caps(bytes(res_meta))[0] == "en"
+
+    lct_pb = _robin_build_list_turns_frame("c_test_01")
+    lct_f = {fno: val for fno, _, val in _pb_iter_fields(lct_pb)}
+    assert _extract_meta_locale_and_caps(bytes(lct_f[6]))[0] == "en"
+    assert 7 in lct_f
+    lct_f7_1004 = {fno: val for fno, _, val in _pb_iter_fields(bytes(lct_f[7]))}[1004]
+    lct_f7_4 = {fno: val for fno, _, val in _pb_iter_fields(bytes(lct_f7_1004))}[4]
+    lct_tz = bytes(
+        {fno: val for fno, _, val in _pb_iter_fields(bytes(lct_f7_4))}[1]
+    ).decode("utf-8")
+    assert lct_tz == _robin_desktop_identity().time_zone
+
+    for meta_blob in (
+        {
+            fno: val
+            for fno, _, val in _pb_iter_fields(_robin_build_get_user_status_request())
+        }[1],
+        {
+            fno: val
+            for fno, _, val in _pb_iter_fields(
+                _robin_build_register_device_request("dev_1")
+            )
+        }[1],
+        {
+            fno: val
+            for fno, _, val in _pb_iter_fields(
+                _robin_build_process_file_request(
+                    "/contrib_service/ttl_1d/selftest_blob_0001",
+                    "application/pdf",
+                    "test.pdf",
+                )
+            )
+        }[2],
+        {
+            fno: val
+            for fno, _, val in _pb_iter_fields(
+                _robin_build_report_presence_frame("c_test_01")
+            )
+        }[3],
+        {
+            fno: val
+            for fno, _, val in _pb_iter_fields(
+                _robin_build_abort_generation_frame("c_test_01", "r_test_01")
+            )
+        }[4],
+        {
+            fno: val
+            for fno, _, val in _pb_iter_fields(
+                _robin_build_list_conversations_request()
+            )
+        }[4],
+        {
+            fno: val
+            for fno, _, val in _pb_iter_fields(_robin_build_list_remy_goals_request())
+        }[1],
+    ):
+        assert _extract_meta_locale_and_caps(bytes(meta_blob))[0] == "en"
+
+    direct_f7_text = "\nCheck loop.is_closed() in voice_edge.py"
+    resp_direct_f7 = (
+        _pb_bytes_field(1, "rc_test_f7_direct")
+        + _pb_bytes_field(7, direct_f7_text.encode("utf-8"))
+        + _pb_varint_field(19, 2)
+    )
+    turn_direct = _pb_bytes_field(
+        1, _pb_bytes_field(1, "c_test_01") + _pb_bytes_field(2, "r_test_direct")
+    ) + _pb_bytes_field(4, _pb_bytes_field(1, resp_direct_f7))
+    parsed_direct = _robin_parse_conversation_turns(
+        _robin_pack_grpc_frames([_pb_bytes_field(1, turn_direct)], compress=True)
+    )
+    assert len(parsed_direct) == 1
+    assert parsed_direct[0]["answer_text"] == direct_f7_text
+    assert parsed_direct[0]["is_completed"] is True
+
+    nested_f7_text = "Nested shareable response"
+    resp_nested_f7 = _pb_bytes_field(1, "rc_test_f7_nested") + _pb_bytes_field(
+        7, _pb_bytes_field(1, nested_f7_text.encode("utf-8"))
+    )
+    turn_nested = _pb_bytes_field(
+        1, _pb_bytes_field(1, "c_test_01") + _pb_bytes_field(2, "r_test_nested")
+    ) + _pb_bytes_field(4, _pb_bytes_field(1, resp_nested_f7))
+    parsed_nested = _robin_parse_conversation_turns(
+        _robin_pack_grpc_frames([_pb_bytes_field(1, turn_nested)], compress=False)
+    )
+    assert len(parsed_nested) == 1
+    assert parsed_nested[0]["answer_text"] == nested_f7_text
+
+    ert_packed = _robin_pack_grpc_frames([b"\x08\x01"])
+    assert ert_packed[0] == 0
+
+
+def test_robin_invalid_url_boundary_and_negative_matrix() -> None:
+    """Group 3 contract: full boundary & negative matrix with char-by-char streaming and flush."""
+    g_pfx = _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES[2]
+    g_file_pfx = _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES[0]
+
+    def _stream_all(raw: str, step: int = 1) -> str:
+        proj = _RobinAnswerProjector()
+        filt = _RobinActionCardFilter()
+        out = ""
+        for idx in range(step, len(raw) + 1, step):
+            d = proj.update_snapshot(raw[:idx])
+            if d:
+                out += filt.feed(d)
+        if len(raw) % step != 0:
+            d = proj.update_snapshot(raw)
+            if d:
+                out += filt.feed(d)
+        t = proj.flush()
+        if t:
+            out += filt.feed(t)
+        out += filt.flush()
+        return out
+
+    cases: list[tuple[str, str]] = [
+        (
+            "[voice_[invalid URL]](voice_edge.py) / [Voice_[invalid URL]](voice_edge.py)",
+            "[voice_edge.py](voice_edge.py) / [Voice_voice_edge.py](voice_edge.py)",
+        ),
+        (
+            "[scripts/voice_[invalid URL]](scripts/voice_edge.py) 和 [10[invalid URL]](1024_report.md)",
+            "[scripts/voice_edge.py](scripts/voice_edge.py) 和 [1024_report.md](1024_report.md)",
+        ),
+        (
+            "[[invalid URL]:322-324](scripts/sample.sh#L322-L324) 与 [[invalid URL] (note)](scripts/sample.sh#L12)",
+            "[sample.sh:322-324](scripts/sample.sh#L322-L324) 与 [sample.sh:12 (note)](scripts/sample.sh#L12)",
+        ),
+        (
+            "[[invalid URL]](a.py)[[invalid URL]](b.py) []() [unclosed [invalid URL] 与 `[invalid URL]`",
+            "[a.py](a.py)[b.py](b.py) []() [unclosed [invalid URL] 与 `[invalid URL]`",
+        ),
+        (
+            "```python\nloop.is_closed()\napp.io()\n```\n检查 `mod.py`, `run.sh`, req.id, cfg.in",
+            "```python\nloop.is_closed()\napp.io()\n```\n检查 `mod.py`, `run.sh`, req.id, cfg.in",
+        ),
+        (
+            f"搜索 {g_pfx}python+asyncio 和 {g_pfx}foo+bar 和 {g_pfx}how+to+use+python 和 {g_pfx}compare+a/b+test 和 {g_pfx}foo.py&oq=bar 和 {g_pfx}example.com 和 {g_pfx}service.io 和 https://example.org/a",
+            f"搜索 {g_pfx}python+asyncio 和 {g_pfx}foo+bar 和 {g_pfx}how+to+use+python 和 {g_pfx}compare+a/b+test 和 {g_pfx}foo.py&oq=bar 和 {g_pfx}example.com 和 {g_pfx}service.io 和 https://example.org/a",
+        ),
+        (
+            f"位置 {g_pfx}app.io%23L5，以及 {g_pfx}scripts/run.sh%23L8。",
+            "位置 app.io#L5，以及 scripts/run.sh#L8。",
+        ),
+        (
+            f"[doc]({g_pfx}docs/my%20doc.md%23L3) 和 [f]({g_file_pfx}w/workspace/my%20file.txt)",
+            "[doc](<docs/my doc.md#L3>) 和 [f](</w/workspace/my file.txt>)",
+        ),
+        (
+            f"[my [invalid URL]](<{g_pfx}scripts/my+file.md%23L12>) 与 [my file.md](<{g_pfx}scripts/my+file.md%23L12>) 及 [my file.md]({g_pfx}scripts/my+file.md%23L12) 和 [f]({g_file_pfx}w/workspace/my+file.txt)",
+            "[my file.md:12](<scripts/my file.md#L12>) 与 [my file.md](<scripts/my file.md#L12>) 及 [my file.md](<scripts/my file.md#L12>) 和 [f](</w/workspace/my file.txt>)",
+        ),
+        (
+            f"中文路径：{g_pfx}文档/测试.md「完成」",
+            "中文路径：文档/测试.md「完成」",
+        ),
+    ]
+
+    for raw, exp in cases:
+        full_out, _ = _robin_strip_action_card_markers(raw)
+        assert full_out == exp, f"full mismatch: {full_out!r} != {exp!r}"
+        for step in (1, 3, 7):
+            s_out = _stream_all(raw, step=step)
+            assert s_out == exp, f"stream(step={step}) mismatch: {s_out!r} != {exp!r}"
+
+    partial_1 = "见 [scripts/[invalid URL]"
+    assert _robin_invalid_url_safe_emit_end(partial_1, 0) == partial_1.index(
+        "[scripts/"
+    )
+    partial_2 = "见 [scripts/[inval"
+    assert _robin_invalid_url_safe_emit_end(partial_2, 0) == partial_2.index(
+        "[scripts/"
+    )
+
+    long_p = "/".join(["nested_segment_dir"] * 240) + "/target.py"
+    long_raw = f"见 [target_[invalid URL]]({g_pfx}{long_p}%23L9) 完"
+    assert len(long_raw) > 4200
+    long_exp = f"见 [target_target.py:9]({long_p}#L9) 完"
+    assert _robin_strip_action_card_markers(long_raw)[0] == long_exp
+    assert _stream_all(long_raw, step=19) == long_exp
+
+    filt_reset = _RobinActionCardFilter()
+    assert (
+        filt_reset.feed(f"prefix {GEMINI_ROBIN_ACTION_CARD_MARKERS[0]}abc123")
+        == "prefix "
+    )
+    assert filt_reset._in_card_id is True
+    assert filt_reset.flush() == ""
+    assert filt_reset._in_card_id is False
+    assert filt_reset.feed("next_token") == "next_token"
+    assert filt_reset.flush() == ""
+
+
+def test_robin_invalid_url_cross_path_consistency_contract() -> None:
+    """Group 2 contract: 5 output paths produce byte-identical text including pre-rollover reconcile."""
+    card_marker = f"{GEMINI_ROBIN_ACTION_CARD_MARKERS[0]}card_selftest_01"
+    g_pfx = _ROBIN_GOOGLE_SEARCH_REDIRECT_PREFIXES[2]
+    sample_raw = (
+        "检查 `loop.is_closed()`、`app.io()` 与 [voice_[invalid URL]](voice_edge.py)，"
+        "以及 [10[invalid URL]](1024_report.md) 和 "
+        f"[[invalid URL]]({g_pfx}scripts/sample.sh%23L10-L20)、"
+        f"[notes]({g_pfx}docs/my%20note.md%23L5)、"
+        f"[my [invalid URL]](<{g_pfx}scripts/my+file.md%23L12>)、"
+        f"[my file.md]({g_pfx}scripts/my+file.md%23L12)。"
+        f"{card_marker} "
+        "外链 https://example.org/a 与搜索 "
+        f"{g_pfx}python+asyncio、"
+        f"{g_pfx}compare+a/b+test 及 "
+        f"{g_pfx}example.com 保持原样。"
+    )
+    expected = (
+        "检查 `loop.is_closed()`、`app.io()` 与 [voice_edge.py](voice_edge.py)，"
+        "以及 [1024_report.md](1024_report.md) 和 "
+        "[sample.sh:10-20](scripts/sample.sh#L10-L20)、"
+        "[notes](<docs/my note.md#L5>)、"
+        "[my file.md:12](<scripts/my file.md#L12>)、"
+        "[my file.md](<scripts/my file.md#L12>)。"
+        " 外链 https://example.org/a 与搜索 "
+        f"{g_pfx}python+asyncio、"
+        f"{g_pfx}compare+a/b+test 及 "
+        f"{g_pfx}example.com 保持原样。"
+    )
+
+    full_clean, full_seen = _robin_strip_action_card_markers(sample_raw)
+    assert full_seen is True and full_clean == expected
+
+    p5_proj, p5_filt, p5_out = _RobinAnswerProjector(), _RobinActionCardFilter(), ""
+    for i in range(1, len(sample_raw) + 1):
+        d = p5_proj.update_snapshot(sample_raw[:i])
+        if d:
+            p5_out += p5_filt.feed(d)
+    p5_tail = p5_proj.flush()
+    if p5_tail:
+        p5_out += p5_filt.feed(p5_tail)
+    p5_out += p5_filt.flush()
+    assert p5_out == expected
+
+    def _mk_pq(text: str, *, done: bool = False, eod: bool = False) -> bytes:
+        resp_msg = _pb_bytes_field(1, "rc_test_cross") + _pb_bytes_field(
+            2, _pb_bytes_field(1, text.encode("utf-8"))
+        )
+        if done:
+            resp_msg += _pb_varint_field(19, 2)
+        f1003_1 = _pb_bytes_field(1, resp_msg) + (
+            _pb_varint_field(4, 1) if eod else b""
+        )
+        return _pb_bytes_field(1003, _pb_bytes_field(1, f1003_1))
+
+    def _join_content(chunks: list[dict[str, Any]]) -> str:
+        return "".join(
+            str((ch.get("choices") or [{}])[0].get("delta", {}).get("content") or "")
+            for ch in chunks
+        )
+
+    def _mk_dec(tag: str) -> _RobinStreamDecoder:
+        run = _RobinRunState(
+            run_id=f"run_selftest_{tag}",
+            session_key=f"boot_{tag}",
+            client_session_id=f"boot_{tag}",
+            principal_id="p_selftest",
+        )
+        return _RobinStreamDecoder(f"cmpl-{tag}", 0, "gemini:gemini-4-argon", run=run)
+
+    dec1 = _mk_dec("x1")
+    p1_chunks: list[dict[str, Any]] = []
+    for cut in (20, 42, 75, 130, 195, len(sample_raw)):
+        p1_chunks.extend(
+            dec1.feed_pq_frame(_mk_pq(sample_raw[:cut], done=(cut == len(sample_raw))))
+        )
+    p1_chunks.extend(dec1.finalize())
+    assert _join_content(p1_chunks) == expected
+
+    dec2 = _mk_dec("x2")
+    mid_cut = sample_raw.index("[invalid URL]") + 6
+    p2_chunks = dec2.feed_pq_frame(_mk_pq(sample_raw[:mid_cut], eod=True))
+    dec2.on_pq_stream_rollover()
+    p2_chunks.extend(dec2.feed_pq_frame(_mk_pq(sample_raw, done=True, eod=True)))
+    p2_chunks.extend(dec2.finalize())
+    assert _join_content(p2_chunks) == expected
+
+    def _mk_lct(req_id: str, ans_text: str, *, done: bool) -> bytes:
+        resp_msg = _pb_bytes_field(1, "rc_test_lct") + _pb_bytes_field(
+            2, _pb_bytes_field(1, ans_text.encode("utf-8"))
+        )
+        if done:
+            resp_msg += _pb_varint_field(19, 2)
+        turn = _pb_bytes_field(
+            1, _pb_bytes_field(1, "c_test_lct") + _pb_bytes_field(2, req_id)
+        ) + _pb_bytes_field(4, _pb_bytes_field(1, resp_msg))
+        return _robin_pack_grpc_frames([_pb_bytes_field(1, turn)], compress=True)
+
+    class _FakeResp:
+        def __init__(self, raw: bytes) -> None:
+            self._raw = raw
+
+        async def read(self) -> bytes:
+            return self._raw
+
+        def release(self) -> None:
+            return None
+
+    class _FakeSess:
+        def __init__(self, raw: bytes) -> None:
+            self._raw = raw
+            self.hdrs: list[dict[str, str]] = []
+            self.bodies: list[bytes] = []
+
+        async def post(
+            self, url: str, data: bytes = b"", headers: dict[str, str] | None = None
+        ) -> _FakeResp:
+            _ = url
+            self.bodies.append(bytes(data))
+            self.hdrs.append(dict(headers or {}))
+            return _FakeResp(self._raw)
+
+    dec3a = _mk_dec("x3a")
+    s3a = _FakeSess(_mk_lct("r_test_3a", sample_raw, done=True))
+    c3a = asyncio.run(
+        _robin_reconcile_via_list_turns(
+            cast(Any, s3a), "tok_selftest", "c_test_lct", "r_test_3a", dec3a
+        )
+    )
+    assert s3a.bodies and s3a.bodies[0][0] == 1
+    assert s3a.hdrs[0].get("grpc-encoding") == "gzip"
+    assert _join_content(c3a) == expected
+
+    dec3b = _mk_dec("x3b")
+    url_mid = sample_raw.index("docs/my%20note.md") + 7
+    s3b = _FakeSess(_mk_lct("r_test_3b", sample_raw[:url_mid], done=False))
+    c3b_pre = asyncio.run(
+        _robin_reconcile_via_list_turns(
+            cast(Any, s3b), "tok_selftest", "c_test_lct", "r_test_3b", dec3b
+        )
+    )
+    assert dec3b.is_completed is False
+    assert "[invalid URL]" not in _join_content(c3b_pre)
+    c3b_post = dec3b.feed_pq_frame(_mk_pq(sample_raw, done=True, eod=True))
+    assert _join_content(c3b_pre + c3b_post + dec3b.finalize()) == expected
+
+    shrink_proj = _RobinAnswerProjector()
+    d1 = shrink_proj.update_snapshot("Hello [voice_[invalid URL]")
+    assert d1 == "Hello "
+    assert (
+        d1 + shrink_proj.update_snapshot("Hello world!", final=True) == "Hello world!"
+    )
+
+
 def run_self_tests():
     """Run built-in self-tests to verify core functionality."""
     tests = [
@@ -118059,6 +119435,9 @@ def run_self_tests():
         test_gemini_multi_client_refactor_and_stream_driver,
         test_pq_recovery_contract,
         test_relay_liveness_contract,
+        test_robin_protocol_alignment_contract,
+        test_robin_invalid_url_cross_path_consistency_contract,
+        test_robin_invalid_url_boundary_and_negative_matrix,
     ]
 
     passed = 0
