@@ -364,11 +364,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49200
 #    VE_OPENCODE_FREE                       "1"                                          L49238
 #    VE_OPENCODE_GO                         "0"                                          L49243
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L74136
-#    VE_GEMINI_API_KEYS                     ""                                           L74140
-#    VE_GEMINI_BACKEND                      "auto"                                       L74159
-#    VE_GEMINI_PROJECT_ID                   ""                                           L74166
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L56473
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L74188
+#    VE_GEMINI_API_KEYS                     ""                                           L74192
+#    VE_GEMINI_BACKEND                      "auto"                                       L74211
+#    VE_GEMINI_PROJECT_ID                   ""                                           L74218
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L56521
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1538
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1539
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1540
@@ -384,17 +384,17 @@ if sys.version_info < (3, 11):
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L75195
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L75199
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L75203
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L75225
-#    VE_RELAY_PQ_WAIT_SECONDS               "1.5"                                        L75587
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L75191
-#    VE_RELAY_TOOL_WAIT_MAX_SECONDS         "180.0"                                      L75589
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L75181
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L75169
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L75177
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L75173
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L75247
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L75251
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L75255
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L75277
+#    VE_RELAY_PQ_WAIT_SECONDS               "1.5"                                        L75639
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L75243
+#    VE_RELAY_TOOL_WAIT_MAX_SECONDS         "180.0"                                      L75641
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L75233
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L75221
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L75229
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L75225
 # 合计 226 个唯一环境变量。
 # ============================================================================
 
@@ -55148,6 +55148,53 @@ class _RobinStateTape:
         return False
 
 
+_ROBIN_THOUGHT_CJK_TERMINAL_PUNCT: frozenset[str] = frozenset("。！？…：；")
+_ROBIN_THOUGHT_EN_TERMINAL_PUNCT: frozenset[str] = frozenset(".!?:;")
+_ROBIN_THOUGHT_CLOSING_WRAPPERS: str = ")]}\"'`*\u201d’）\uff3d\uff5d】》」』〉\u3015"
+_ROBIN_THOUGHT_CLOSING_WRAPPER_SET: frozenset[str] = frozenset(
+    _ROBIN_THOUGHT_CLOSING_WRAPPERS
+)
+_ROBIN_THOUGHT_CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+
+
+def _robin_thought_text_separator(prev_text: str) -> str:
+    """Return the boundary separator inserted after `prev_text` before the next same-block text row."""
+    if not prev_text or prev_text.endswith("\n"):
+        return ""
+    has_trailing_space = prev_text[-1].isspace()
+    trimmed = prev_text.rstrip()
+    if not trimmed:
+        return ""
+    last_ch = trimmed[-1]
+    if last_ch in _ROBIN_THOUGHT_CJK_TERMINAL_PUNCT:
+        return ""
+    if last_ch in _ROBIN_THOUGHT_EN_TERMINAL_PUNCT:
+        return "" if has_trailing_space else " "
+    if last_ch in _ROBIN_THOUGHT_CLOSING_WRAPPER_SET:
+        core = trimmed.rstrip(_ROBIN_THOUGHT_CLOSING_WRAPPERS)
+        if core:
+            core_last = core[-1]
+            if core_last in _ROBIN_THOUGHT_CJK_TERMINAL_PUNCT:
+                return ""
+            if core_last in _ROBIN_THOUGHT_EN_TERMINAL_PUNCT:
+                return "" if has_trailing_space else " "
+    if _ROBIN_THOUGHT_CJK_RE.search(trimmed):
+        return "。"
+    return ". "
+
+
+def _strip_leading_control_newlines(delta: str) -> str:
+    """Strip leading control newlines (including GFM hard break '  \\n') without trimming spaces."""
+    while delta:
+        if delta.startswith("  \n"):
+            delta = delta[3:]
+        elif delta[0] in "\r\n":
+            delta = delta[1:]
+        else:
+            break
+    return delta
+
+
 class _RobinThoughtProjector:
     """Projects a `_RobinStateTape` into ordered visible `ThoughtProjection` rows via pure sequential append."""
 
@@ -55213,12 +55260,12 @@ class _RobinThoughtProjector:
     def full_text(self) -> str:
         """Join projected rows for DSH's GFM renderer.
 
-        DSH renders `reasoning_content` as GFM, where a single `\\n` is a soft break and
-        collapses to a space. Tool status rows must stay one-per-line, so any boundary
-        touching a `tool` row uses a GFM hard break (two spaces + newline). Text-to-text
-        boundaries keep the soft newline so prose still flows normally.
+        Tool status rows must stay one-per-line, so any boundary touching a `tool` row
+        uses a GFM hard break (two spaces + newline). Same-block `text` to `text`
+        boundaries use `_robin_thought_text_separator(prev.text)` so consecutive
+        thought sentences stay cleanly segmented without mutating `row.text`.
         Exception: the first row of any thought block (index 0 or after a tool handoff)
-        never receives a leading newline, regardless of whether it is `text` or `tool`.
+        never receives a leading separator, regardless of whether it is `text` or `tool`.
         """
         self.project()
         if not self.rows:
@@ -55229,9 +55276,10 @@ class _RobinThoughtProjector:
             row = self.rows[idx]
             if idx in self._block_start_row_indices:
                 sep = ""
+            elif row.kind == "tool" or prev.kind == "tool":
+                sep = "  \n"
             else:
-                hard = row.kind == "tool" or prev.kind == "tool"
-                sep = "  \n" if hard else "\n"
+                sep = _robin_thought_text_separator(prev.text)
             parts.append(sep + row.text)
         return "".join(parts)
 
@@ -70298,15 +70346,19 @@ class _RobinStreamDecoder:
             leading_newline=had_block_rows
         )
         if attr_chunks and had_block_rows:
-            thought_delta = thought_delta.lstrip(" \n")
+            thought_delta = _strip_leading_control_newlines(thought_delta)
         out.extend(attr_chunks)
         if thought_delta:
+            pure_thought = thought_delta
             if self._prior_stream_reasoning:
                 self._prior_stream_reasoning = False
-                thought_delta = f"\n\n---\n\n{thought_delta.lstrip()}"
-            self.emitted_reasoning_chars += len(thought_delta)
-            self.emitted_reasoning_text += thought_delta
-            out.append(self._make_chunk({"reasoning_content": thought_delta}))
+                pure_thought = _strip_leading_control_newlines(thought_delta)
+                emitted_delta = f"\n\n---\n\n{pure_thought}"
+            else:
+                emitted_delta = pure_thought
+            self.emitted_reasoning_chars += len(pure_thought)
+            self.emitted_reasoning_text += pure_thought
+            out.append(self._make_chunk({"reasoning_content": emitted_delta}))
         return out
 
     def _make_chunk(
@@ -98156,7 +98208,7 @@ def test_gemini_model_spec_and_envelopes():
         "我已使用多个来源提炼了初步的理解。"
     )
     expected_turn2 = (
-        "我已尝试随机调用客户端工具并准备好回复了。\n"
+        "我已尝试随机调用客户端工具并准备好回复了。"
         "我已并行调用了两个不同的工具，检索了指定目录中的文件列表，并按名称搜索了另一个目录。  \n"
         "Listing directory  \n"
         "Finding by name  \n"
@@ -105404,7 +105456,7 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
     assert tape_s7.update_count == prev_updates + 6
     assert len(tape_s7.entries) == 8
     post_rollover_delta = proj_s7.consume_delta()
-    assert post_rollover_delta == "\nThought D"
+    assert post_rollover_delta == ". Thought D"
     # Second rollover where server skips `Thought C` & `Thought D` in replay and emits brand-new `Thought E`
     # while `seq < len(tape_s7.entries)` (pointing at a non-empty slot `t_c`):
     tape_s7.on_stream_rollover()
@@ -105413,7 +105465,7 @@ def test_robin_state_seq_rollover_and_compaction_provisional_binding():
         tape_s7.append_live(raw_item, response_id="rc_s7")
     assert tape_s7.projection_conflict is False
     assert len(tape_s7.entries) == 9
-    assert proj_s7.consume_delta() == "\nThought E"
+    assert proj_s7.consume_delta() == ". Thought E"
 
     # 100-char truncated provisional title must be recognized as provisional, and
     # `_robin_store_continuation` must update existing session in-place so title waiters see updates:
@@ -121605,6 +121657,491 @@ def test_tool_call_event_observability_contract() -> None:
         globals()["_gemini_debug_log_event"] = orig_log_ev
 
 
+def test_robin_thought_segmentation_bug_repro_contract():
+    """Group 1 (BUG_REPRO): locked oracles, closing wrappers, append-only timing, control-block space preservation, and `---` usage."""
+
+    def _mk_text_state(text: str) -> bytes:
+        return _pb_bytes_field(
+            13, _pb_bytes_field(4, (text + "\n\n\n").encode("utf-8"))
+        )
+
+    def _mk_tool_state(label: str) -> bytes:
+        return _pb_bytes_field(
+            13, _pb_bytes_field(1, _pb_bytes_field(1, label.encode("utf-8")))
+        )
+
+    def _project_pair(a: str, b: str) -> str:
+        tape = _RobinStateTape()
+        proj = _RobinThoughtProjector(tape)
+        tape.append_live(_mk_text_state(a), response_id="rc_seg_pair")
+        tape.append_live(_mk_text_state(b), response_id="rc_seg_pair")
+        return proj.full_text()
+
+    # 1. Five locked Oracle pairs
+    oracle_pairs = [
+        ("检查 config.yaml", "确认字段", "检查 config.yaml。确认字段"),
+        ("Check config.yaml", "Continue", "Check config.yaml. Continue"),
+        ("Done.", "Continue", "Done. Continue"),
+        ("Next step:", "Check config", "Next step: Check config"),
+        ("检查 foo()", "继续", "检查 foo()。继续"),
+    ]
+    for prev_txt, next_txt, expected in oracle_pairs:
+        got = _project_pair(prev_txt, next_txt)
+        assert got == expected, (
+            f"Oracle mismatch for {prev_txt!r} + {next_txt!r}: {got!r} != {expected!r}"
+        )
+
+    # 2. Language, switching, bare closing wrappers, wrapped terminal punctuation, ellipsis, trailing space
+    boundary_cases = [
+        ("准备读取配置", "检查字段", "准备读取配置。检查字段"),
+        ("Read config", "Verify schema", "Read config. Verify schema"),
+        ("检查配置", "Continue", "检查配置。Continue"),
+        ("Check config", "继续", "Check config. 继续"),
+        ("检查 (item)", "继续", "检查 (item)。继续"),
+        ("Check [idx]", "Next", "Check [idx]. Next"),
+        ("Check {k}", "Next", "Check {k}. Next"),
+        ('Check "ok"', "Next", 'Check "ok". Next'),
+        ("Check 'ok'", "Next", "Check 'ok'. Next"),
+        ("Check `fn`", "Next", "Check `fn`. Next"),
+        ("检查 **重点**", "继续", "检查 **重点**。继续"),
+        ("检查【配置】", "继续", "检查【配置】。继续"),
+        ("完成。\u201d", "继续", "完成。\u201d继续"),
+        ('Done."', "Next", 'Done." Next'),
+        ("确认。）", "继续", "确认。）继续"),
+        ("Done.)", "Next", "Done.) Next"),
+        ("**完成。**", "继续", "**完成。**继续"),
+        ("**Done.**", "Next", "**Done.** Next"),
+        ("Loading...", "Next", "Loading... Next"),
+        ("正在加载…", "继续", "正在加载…继续"),
+        ("Done. ", "Continue", "Done. Continue"),
+        ("Check! ", "Next", "Check! Next"),
+        ("第一句。", "第二句", "第一句。第二句"),
+        ("第一句！", "第二句", "第一句！第二句"),
+        ("第一句？", "第二句", "第一句？第二句"),
+        ("第一句…", "第二句", "第一句…第二句"),
+        ("第一句：", "第二句", "第一句：第二句"),
+        ("第一句；", "第二句", "第一句；第二句"),
+    ]
+    for prev_txt, next_txt, expected in boundary_cases:
+        got = _project_pair(prev_txt, next_txt)
+        assert got == expected, (
+            f"Boundary mismatch for {prev_txt!r} + {next_txt!r}: {got!r} != {expected!r}"
+        )
+    assert _robin_thought_text_separator("") == ""
+    assert _robin_thought_text_separator("   ") == ""
+    assert _robin_thought_text_separator("Line 1\n") == ""
+
+    # 3. Append-Only multi-chunk timing equivalence across 4 consumption schedules
+    seq_items = [
+        _mk_text_state("检查 config.yaml"),
+        _mk_text_state("确认字段"),
+        _mk_tool_state("Listing directory"),
+        _mk_text_state("Done."),
+        _mk_text_state("Continue"),
+        _mk_text_state("检查 foo()"),
+        _mk_text_state("继续"),
+    ]
+    expected_seq = (
+        "检查 config.yaml。确认字段  \n"
+        "Listing directory  \n"
+        "Done. Continue. 检查 foo()。继续"
+    )
+    schedules = [
+        [1, 1, 1, 1, 1, 1, 1],
+        [7],
+        [1, 0, 2, 0, 0, 2, 2, 0],
+        [2, 1, 3, 1],
+    ]
+    for sched in schedules:
+        tape_s = _RobinStateTape()
+        proj_s = _RobinThoughtProjector(tape_s)
+        deltas: list[str] = []
+        prev_full = ""
+        cursor = 0
+        for batch in sched:
+            for _ in range(batch):
+                tape_s.append_live(seq_items[cursor], response_id="rc_seg_sched")
+                cursor += 1
+            cur_full = proj_s.full_text()
+            assert cur_full.startswith(prev_full), (
+                f"Non-monotonic prefix: {cur_full!r} does not start with {prev_full!r}"
+            )
+            prev_full = cur_full
+            deltas.append(proj_s.consume_delta())
+        assert "".join(deltas) == proj_s.full_text() == expected_seq
+
+    # 4. Control blocks: normal continuation, late attribution banner, PQ rollover `---`, and usage accounting
+    def _mk_pq_frame(
+        live_raw: bytes, *, response_id: str = "", attribution: str = ""
+    ) -> bytes:
+        f1003_1 = b""
+        if response_id:
+            f1003_1 += _pb_bytes_field(
+                1, _pb_bytes_field(1, response_id.encode("utf-8"))
+            )
+        f1003_1 += _pb_bytes_field(6, live_raw)
+        if attribution:
+            f1003_1 += _pb_bytes_field(30, attribution.encode("utf-8"))
+        return _pb_bytes_field(1003, _pb_bytes_field(1, f1003_1))
+
+    # 4a. Normal same-block continuation (`Done.` + `Continue`) preserves boundary space
+    dec_norm = _RobinStreamDecoder(
+        "chatcmpl-seg-norm", 1700000000, "gemini:gemini-4-argon"
+    )
+    ch1 = dec_norm.feed_pq_frame(
+        _mk_pq_frame(
+            _mk_text_state("Done."),
+            response_id="rc_seg_1",
+            attribution="Used 4 Argon model",
+        )
+    )
+    ch2 = dec_norm.feed_pq_frame(
+        _mk_pq_frame(_mk_text_state("Continue"), response_id="rc_seg_1")
+    )
+    rc_norm = [
+        c["choices"][0]["delta"]["reasoning_content"]
+        for c in (ch1 + ch2)
+        if c["choices"][0]["delta"].get("reasoning_content")
+    ]
+    assert rc_norm == ["Used 4 Argon model\n\n", "Done.", " Continue"]
+    assert dec_norm.emitted_reasoning_text == "Done. Continue"
+    assert dec_norm.emitted_reasoning_chars == len("Done. Continue")
+
+    # 4b. Late attribution banner after `Done.` must NOT swallow leading boundary space
+    dec_late = _RobinStreamDecoder(
+        "chatcmpl-seg-late", 1700000000, "gemini:gemini-4-argon"
+    )
+    ch_l1 = dec_late.feed_pq_frame(
+        _mk_pq_frame(_mk_text_state("Done."), response_id="rc_seg_2")
+    )
+    ch_l2 = dec_late.feed_pq_frame(
+        _mk_pq_frame(
+            _mk_text_state("Continue"),
+            response_id="rc_seg_2",
+            attribution="Used 4 Argon model",
+        )
+    )
+    rc_late = [
+        c["choices"][0]["delta"]["reasoning_content"]
+        for c in (ch_l1 + ch_l2)
+        if c["choices"][0]["delta"].get("reasoning_content")
+    ]
+    assert rc_late == ["Done.", "\n\nUsed 4 Argon model\n\n", " Continue"]
+    assert dec_late.emitted_reasoning_text == "Done. Continue"
+    assert dec_late.emitted_reasoning_chars == len("Done. Continue")
+
+    # 4c. Late attribution banner after `tool` row strips leading GFM hard break `  \n`
+    dec_tool_late = _RobinStreamDecoder(
+        "chatcmpl-seg-tlate", 1700000000, "gemini:gemini-4-argon"
+    )
+    ch_tl1 = dec_tool_late.feed_pq_frame(
+        _mk_pq_frame(_mk_tool_state("Listing directory"))
+    )
+    ch_tl2 = dec_tool_late.feed_pq_frame(
+        _mk_pq_frame(
+            _mk_text_state("Next text"),
+            response_id="rc_seg_3",
+            attribution="Used 4 Argon model",
+        )
+    )
+    rc_tl = [
+        c["choices"][0]["delta"]["reasoning_content"]
+        for c in (ch_tl1 + ch_tl2)
+        if c["choices"][0]["delta"].get("reasoning_content")
+    ]
+    assert rc_tl == ["Listing directory", "\n\nUsed 4 Argon model\n\n", "Next text"]
+    assert dec_tool_late.emitted_reasoning_text == "Listing directoryNext text"
+    assert dec_tool_late.emitted_reasoning_chars == len(
+        dec_tool_late.emitted_reasoning_text
+    )
+
+    # 4d. PQ rollover `---` preserves boundary space AND excludes `\n\n---\n\n` from usage accounting
+    dec_roll = _RobinStreamDecoder(
+        "chatcmpl-seg-roll", 1700000000, "gemini:gemini-4-argon"
+    )
+    dec_roll.feed_pq_frame(
+        _mk_pq_frame(
+            _mk_text_state("Done."),
+            response_id="rc_seg_4",
+            attribution="Used 4 Argon model",
+        )
+    )
+    dec_roll._prior_stream_reasoning = True
+    ch_r2 = dec_roll.feed_pq_frame(
+        _mk_pq_frame(_mk_text_state("Continue"), response_id="rc_seg_4")
+    )
+    rc_r2 = [
+        c["choices"][0]["delta"]["reasoning_content"]
+        for c in ch_r2
+        if c["choices"][0]["delta"].get("reasoning_content")
+    ]
+    assert rc_r2 == ["\n\n---\n\n Continue"]
+    assert dec_roll.emitted_reasoning_text == "Done. Continue"
+    assert dec_roll.emitted_reasoning_chars == len("Done. Continue")
+    assert "---" not in dec_roll.emitted_reasoning_text
+    assert dec_roll.estimated_completion_tokens() == _robin_estimate_tokens(
+        "Done. Continue"
+    )
+
+    # 4e. PQ rollover `---` after `tool` row strips leading GFM hard break `  \n`
+    dec_troll = _RobinStreamDecoder(
+        "chatcmpl-seg-troll", 1700000000, "gemini:gemini-4-argon"
+    )
+    dec_troll.feed_pq_frame(
+        _mk_pq_frame(
+            _mk_tool_state("Listing directory"),
+            response_id="rc_seg_5",
+            attribution="Used 4 Argon model",
+        )
+    )
+    dec_troll._prior_stream_reasoning = True
+    ch_tr2 = dec_troll.feed_pq_frame(
+        _mk_pq_frame(_mk_text_state("After rollover"), response_id="rc_seg_5")
+    )
+    rc_tr2 = [
+        c["choices"][0]["delta"]["reasoning_content"]
+        for c in ch_tr2
+        if c["choices"][0]["delta"].get("reasoning_content")
+    ]
+    assert rc_tr2 == ["\n\n---\n\nAfter rollover"]
+    assert dec_troll.emitted_reasoning_text == "Listing directoryAfter rollover"
+
+    # 4f. Chinese boundary unaffected under late banner and `---`
+    dec_zh = _RobinStreamDecoder("chatcmpl-seg-zh", 1700000000, "gemini:gemini-4-argon")
+    dec_zh.feed_pq_frame(_mk_pq_frame(_mk_text_state("检查配置")))
+    ch_zh2 = dec_zh.feed_pq_frame(
+        _mk_pq_frame(
+            _mk_text_state("继续"),
+            response_id="rc_seg_6",
+            attribution="Used 4 Argon model",
+        )
+    )
+    rc_zh2 = [
+        c["choices"][0]["delta"]["reasoning_content"]
+        for c in ch_zh2
+        if c["choices"][0]["delta"].get("reasoning_content")
+    ]
+    assert rc_zh2 == ["\n\nUsed 4 Argon model\n\n", "。继续"]
+
+
+def test_robin_thought_segmentation_preservation_contract():
+    """Group 2 (PRESERVATION): verbatim body preservation, Chinese punctuation, tool breaks, block starts, SQLite raw rows."""
+
+    def _mk_text_state(text: str) -> bytes:
+        return _pb_bytes_field(
+            13, _pb_bytes_field(4, (text + "\n\n\n").encode("utf-8"))
+        )
+
+    def _mk_tool_state(label: str) -> bytes:
+        return _pb_bytes_field(
+            13, _pb_bytes_field(1, _pb_bytes_field(1, label.encode("utf-8")))
+        )
+
+    # 1. Internal `...`, `../path`, code snippets, valid internal `\n` remain verbatim; single & final sentence untouched
+    raw_body = "检查 ../config/app.yaml 与 `foo...bar`\n第二行保留"
+    tape_single = _RobinStateTape()
+    proj_single = _RobinThoughtProjector(tape_single)
+    tape_single.append_live(_mk_text_state(raw_body), response_id="rc_pres_1")
+    assert proj_single.full_text() == raw_body
+    assert proj_single.rows[0].text == raw_body
+
+    raw_tail = "最后一句不补句号"
+    tape_single.append_live(_mk_text_state(raw_tail), response_id="rc_pres_1")
+    full_two = proj_single.full_text()
+    assert full_two.startswith(raw_body)
+    assert full_two.endswith(raw_tail)
+    assert proj_single.rows[0].text == raw_body
+    assert proj_single.rows[1].text == raw_tail
+
+    # 2. Existing Chinese terminal punctuation adds neither duplicate `。` nor space
+    for ch_punct in ("。", "！", "？", "…", "：", "；"):
+        tape_zh = _RobinStateTape()
+        proj_zh = _RobinThoughtProjector(tape_zh)
+        tape_zh.append_live(
+            _mk_text_state(f"第一句{ch_punct}"), response_id="rc_pres_zh"
+        )
+        tape_zh.append_live(_mk_text_state("第二句"), response_id="rc_pres_zh")
+        full_zh = proj_zh.full_text()
+        assert full_zh.startswith(f"第一句{ch_punct}") and full_zh.endswith("第二句")
+        assert f"{ch_punct}。" not in full_zh
+        assert f"{ch_punct} " not in full_zh
+
+    # 3. Tool boundaries keep GFM hard break `  \n` and `mark_new_thought_block()` has no leading separator
+    tape_mix = _RobinStateTape()
+    proj_mix = _RobinThoughtProjector(tape_mix)
+    tape_mix.append_live(_mk_text_state("先查目录"), response_id="rc_pres_mix")
+    tape_mix.append_live(_mk_tool_state("Listing directory"), response_id="rc_pres_mix")
+    tape_mix.append_live(_mk_text_state("准备读文件"), response_id="rc_pres_mix")
+    tape_mix.append_live(_mk_tool_state("Reading file"), response_id="rc_pres_mix")
+    tape_mix.append_live(_mk_tool_state("Searching code"), response_id="rc_pres_mix")
+    tape_mix.append_live(_mk_text_state("完成检查"), response_id="rc_pres_mix")
+    assert proj_mix.full_text() == (
+        "先查目录  \nListing directory  \n准备读文件  \nReading file  \nSearching code  \n完成检查"
+    )
+    assert proj_mix.consume_delta() == proj_mix.full_text()
+    proj_mix.mark_new_thought_block()
+    tape_mix.append_live(_mk_text_state("新块首句"), response_id="rc_pres_mix")
+    assert proj_mix.consume_delta() == "新块首句"
+    proj_mix.mark_new_thought_block()
+    tape_mix.append_live(_mk_tool_state("New block tool"), response_id="rc_pres_mix")
+    assert proj_mix.consume_delta() == "New block tool"
+
+    # 4. Usage & SQLite persistence: banner excluded from usage, SQLite `thought_rows` stores raw `row.text` only
+    dec_db = _RobinStreamDecoder(
+        "chatcmpl-pres-db", 1700000000, "gemini:gemini-4-argon"
+    )
+    f1 = _pb_bytes_field(
+        1003,
+        _pb_bytes_field(
+            1,
+            _pb_bytes_field(1, _pb_bytes_field(1, b"rc_pres_db"))
+            + _pb_bytes_field(6, _mk_text_state("检查 config.yaml"))
+            + _pb_bytes_field(30, b"Used 4 Argon model"),
+        ),
+    )
+    f2 = _pb_bytes_field(
+        1003,
+        _pb_bytes_field(
+            1,
+            _pb_bytes_field(1, _pb_bytes_field(1, b"rc_pres_db"))
+            + _pb_bytes_field(6, _mk_text_state("确认字段")),
+        ),
+    )
+    dec_db.feed_pq_frame(f1)
+    dec_db.feed_pq_frame(f2)
+    assert "Used 4 Argon model" not in dec_db.emitted_reasoning_text
+    assert dec_db.emitted_reasoning_chars == len(dec_db.emitted_reasoning_text)
+    assert [r.text for r in dec_db.run.thought_projector.rows] == [
+        "检查 config.yaml",
+        "确认字段",
+    ]
+    tmp_db_dir = Path(tempfile.mkdtemp(prefix="ve_seg_pres_db_"))
+    try:
+        store = _GeminiDshStore(tmp_db_dir / "state.sqlite3")
+        store.save_run(dec_db.run)
+        with sqlite3.connect(tmp_db_dir / "state.sqlite3") as conn:
+            db_rows = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT display_text FROM thought_rows WHERE run_id = ? ORDER BY row_idx",
+                    (dec_db.run.run_id,),
+                ).fetchall()
+            ]
+        assert db_rows == ["检查 config.yaml", "确认字段"]
+    finally:
+        shutil.rmtree(tmp_db_dir, ignore_errors=True)
+
+    # 5. AnswerProjector remains completely unaffected
+    ans_proj = _RobinAnswerProjector()
+    assert (
+        ans_proj.update_snapshot("Answer body unchanged.", final=True)
+        == "Answer body unchanged."
+    )
+
+
+def test_robin_thought_segmentation_cross_path_consistency_contract():
+    """Group 3: 5-path consistency across live PQ, rollover+S.7, LCT reconcile, legacy_thoughts, and one-shot full_text."""
+
+    def _mk_text_state(text: str) -> bytes:
+        return _pb_bytes_field(
+            13, _pb_bytes_field(4, (text + "\n\n\n").encode("utf-8"))
+        )
+
+    def _mk_tool_state(label: str) -> bytes:
+        return _pb_bytes_field(
+            13, _pb_bytes_field(1, _pb_bytes_field(1, label.encode("utf-8")))
+        )
+
+    s7_empty = _pb_bytes_field(13, _pb_bytes_field(7, b"\x08\x01"))
+    text_seq = ["检查 config.yaml", "确认字段", "Done.", "Continue"]
+    raw_states = [_mk_text_state(t) for t in text_seq]
+    expected_text_only = "检查 config.yaml。确认字段。Done. Continue"
+
+    # Path 1: live feed_pq_frame
+    dec_live = _RobinStreamDecoder("chatcmpl-cp-1", 1700000000, "gemini:gemini-4-argon")
+    for st in raw_states:
+        frame = _pb_bytes_field(
+            1003,
+            _pb_bytes_field(
+                1,
+                _pb_bytes_field(1, _pb_bytes_field(2, b"rc_cp_1"))
+                + _pb_bytes_field(6, st),
+            ),
+        )
+        dec_live.feed_pq_frame(frame)
+    assert dec_live.run.state_tape.projection_conflict is False
+    out_p1 = dec_live.run.thought_projector.full_text()
+
+    # Path 2: resumeTurn rollover replay with S.7 collapse
+    tape_roll = _RobinStateTape()
+    proj_roll = _RobinThoughtProjector(tape_roll)
+    for st in (s7_empty, raw_states[0], s7_empty, raw_states[1], s7_empty):
+        tape_roll.append_live(st, response_id="rc_cp_2")
+    delta_a = proj_roll.consume_delta()
+    tape_roll.on_stream_rollover()
+    proj_roll.on_stream_rollover()
+    for st in (s7_empty, raw_states[0], raw_states[1], raw_states[2], raw_states[3]):
+        tape_roll.append_live(st, response_id="rc_cp_2")
+    delta_b = proj_roll.consume_delta()
+    assert tape_roll.projection_conflict is False
+    out_p2 = proj_roll.full_text()
+    assert delta_a + delta_b == out_p2
+
+    # Path 3: reconcile_terminal_history (LCT)
+    tape_lct = _RobinStateTape()
+    proj_lct = _RobinThoughtProjector(tape_lct)
+    assert (
+        tape_lct.reconcile_terminal_history(raw_states, response_id="rc_cp_3") is True
+    )
+    assert tape_lct.projection_conflict is False
+    out_p3 = proj_lct.full_text()
+
+    # Path 4: legacy_thoughts fallback (candidate field 12)
+    dec_legacy = _RobinStreamDecoder(
+        "chatcmpl-cp-4", 1700000000, "gemini:gemini-4-argon"
+    )
+    legacy_cand = _pb_bytes_field(2, b"rc_cp_4") + b"".join(
+        _pb_bytes_field(12, _pb_bytes_field(1, t.encode("utf-8"))) for t in text_seq
+    )
+    legacy_frame = _pb_bytes_field(
+        1003, _pb_bytes_field(1, _pb_bytes_field(1, legacy_cand))
+    )
+    dec_legacy.feed_pq_frame(legacy_frame)
+    assert dec_legacy.run.state_tape.projection_conflict is False
+    out_p4 = dec_legacy.run.thought_projector.full_text()
+
+    # Path 5: one-shot full_text()
+    tape_one = _RobinStateTape()
+    proj_one = _RobinThoughtProjector(tape_one)
+    for st in raw_states:
+        tape_one.append_live(st, response_id="rc_cp_5")
+    assert tape_one.projection_conflict is False
+    out_p5 = proj_one.full_text()
+
+    assert out_p1 == out_p2 == out_p3 == out_p4 == out_p5 == expected_text_only
+
+    # Also verify mixed text+tool sequence across tool-capable paths
+    mixed_states = [
+        _mk_text_state("检查 config.yaml"),
+        _mk_text_state("确认字段"),
+        _mk_tool_state("Listing directory"),
+        _mk_text_state("Done."),
+        _mk_text_state("Continue"),
+    ]
+    expected_mixed = "检查 config.yaml。确认字段  \nListing directory  \nDone. Continue"
+    tape_m_live = _RobinStateTape()
+    proj_m_live = _RobinThoughtProjector(tape_m_live)
+    for st in mixed_states:
+        tape_m_live.append_live(st, response_id="rc_cp_m1")
+    tape_m_lct = _RobinStateTape()
+    proj_m_lct = _RobinThoughtProjector(tape_m_lct)
+    assert (
+        tape_m_lct.reconcile_terminal_history(mixed_states, response_id="rc_cp_m2")
+        is True
+    )
+    assert proj_m_live.full_text() == proj_m_lct.full_text() == expected_mixed
+
+
 def run_self_tests():
     """Run built-in self-tests to verify core functionality."""
     tests = [
@@ -121761,6 +122298,9 @@ def run_self_tests():
         test_relay_routing_liveness_and_barrier_contract,
         test_large_frame_keepalive_and_combo_matrix_contract,
         test_tool_call_event_observability_contract,
+        test_robin_thought_segmentation_bug_repro_contract,
+        test_robin_thought_segmentation_preservation_contract,
+        test_robin_thought_segmentation_cross_path_consistency_contract,
     ]
 
     passed = 0
