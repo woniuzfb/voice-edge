@@ -364,11 +364,11 @@ if sys.version_info < (3, 11):
 #    VE_OPENCODE_API_KEYS                   ""                                           L49200
 #    VE_OPENCODE_FREE                       "1"                                          L49238
 #    VE_OPENCODE_GO                         "0"                                          L49243
-#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L73531
-#    VE_GEMINI_API_KEYS                     ""                                           L73535
-#    VE_GEMINI_BACKEND                      "auto"                                       L73554
-#    VE_GEMINI_PROJECT_ID                   ""                                           L73561
-#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L56336
+#    VE_GEMINI_OAUTH_TOKENS                 ""                                           L74136
+#    VE_GEMINI_API_KEYS                     ""                                           L74140
+#    VE_GEMINI_BACKEND                      "auto"                                       L74159
+#    VE_GEMINI_PROJECT_ID                   ""                                           L74166
+#    VE_GEMINI_STATE_DB                     "~/.voice-edge/gemini_dsh_state.sqlite3"     L56473
 #    VE_GEMINI_APP_CLIENT_ID                ""                                           L1538
 #    VE_GEMINI_APP_CLIENT_SECRET            ""                                           L1539
 #    VE_GEMINI_AGY_HUB_CLIENT_ID            ""                                           L1540
@@ -380,21 +380,21 @@ if sys.version_info < (3, 11):
 #    VE_GEMINI_CLIENT_CACHE_PATH            "~/.voice-edge/gemini_oauth_clients.json"    L1596
 #    GEMINI_PQ_RECOVERY_BUDGET_SECONDS      "45.0"                                       L1784
 #    GEMINI_PQ_WAITING_TOOLS_PROBE_SECONDS  "30.0"                                       L1787
-#    GEMINI_ROBIN_EXT_EXPERIMENTS_B64       ""                                           L52948
+#    GEMINI_ROBIN_EXT_EXPERIMENTS_B64       ""                                           L53085
 #
 #
 #  【用户端工具 Relay (VE_USER_TOOL_RELAY_* / VE_RELAY_*)】
-#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L74590
-#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L74594
-#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L74598
-#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L74620
-#    VE_RELAY_PQ_WAIT_SECONDS               "1.5"                                        L74973
-#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L74586
-#    VE_RELAY_TOOL_WAIT_MAX_SECONDS         "180.0"                                      L74975
-#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L74576
-#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L74564
-#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L74572
-#    VE_USER_TOOL_RELAY_URL                 ""                                           L74568
+#    VE_RELAY_OAUTH_CLIENT_ID               ""                                           L75195
+#    VE_RELAY_OAUTH_CLIENT_SECRET           ""                                           L75199
+#    VE_RELAY_OAUTH_REDIRECT_URI            ""                                           L75203
+#    VE_RELAY_OAUTH_DB                      "~/.voice-edge/relay_oauth.sqlite3"          L75225
+#    VE_RELAY_PQ_WAIT_SECONDS               "1.5"                                        L75587
+#    VE_RELAY_PUBLIC_BASE_URL               ""                                           L75191
+#    VE_RELAY_TOOL_WAIT_MAX_SECONDS         "180.0"                                      L75589
+#    VE_USER_TOOL_RELAY_EDGE_ID             ""                                           L75181
+#    VE_USER_TOOL_RELAY_ENABLED             "0"                                          L75169
+#    VE_USER_TOOL_RELAY_TOKEN               ""                                           L75177
+#    VE_USER_TOOL_RELAY_URL                 ""                                           L75173
 # 合计 226 个唯一环境变量。
 # ============================================================================
 
@@ -52653,6 +52653,143 @@ def _gemini_debug_log_event(
         return None
 
 
+_TOOL_CALL_EVENT_SEQ_LOCK = threading.Lock()
+_TOOL_CALL_EVENT_SEQ = 0
+_TOOL_CALL_WAIT_OWNERS: frozenset[str] = frozenset(
+    {
+        "LOCAL_RELAY_ROUTING",
+        "ROBIN_TOOL_DISPATCH_OR_TRANSPORT",
+        "DSH_TOOL_EXECUTION",
+        "LOCAL_CONTINUATION_RECONCILE",
+        "LOCAL_ERT_TRANSPORT_WRITE",
+        "ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT",
+        "ROBIN_EXPLICIT_ERROR",
+        "CLIENT_ABORT_OR_DISCONNECT",
+        "UNKNOWN",
+    }
+)
+
+
+def _tool_call_args_digest(args: Any) -> str:
+    """Return a 16-hex SHA-256 digest of canonical JSON args without logging raw payloads."""
+    if args is None or args == {} or args == "":
+        return ""
+    try:
+        canonical = json.dumps(args, sort_keys=True, ensure_ascii=False, default=str)
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+    except Exception:
+        return ""
+
+
+def _emit_tool_call_event(
+    session_id: str,
+    *,
+    phase: str,
+    run: Any = None,
+    decoder: Any = None,
+    run_id: str = "",
+    public_tool_call_id: str = "",
+    wire_call_id: str = "",
+    command_id: str = "",
+    tool_name: str = "",
+    source: str = "",
+    execution_state: str = "",
+    attachment_state: str = "",
+    ert_transport_state: str = "",
+    pending_ert: int | None = None,
+    pending_relay: int | None = None,
+    delivered: int | None = None,
+    reconciled: int = 0,
+    wait_owner: str = "UNKNOWN",
+    elapsed_ms: float = 0.0,
+    timeout_budget_ms: float = 0.0,
+    attempt: int = 0,
+    outcome: str = "",
+    error_class: str = "",
+    args_digest: str = "",
+    payload_len: int = 0,
+    extra: dict[str, Any] | None = None,
+) -> Path | None:
+    """Emit a privacy-safe structured `tool_call_event` debug record; swallow all errors."""
+    global _TOOL_CALL_EVENT_SEQ
+    try:
+        if not _gemini_debug_enabled():
+            return None
+        with _TOOL_CALL_EVENT_SEQ_LOCK:
+            _TOOL_CALL_EVENT_SEQ += 1
+            seq = _TOOL_CALL_EVENT_SEQ
+        eff_run_id = str(
+            run_id or (getattr(run, "run_id", "") if run is not None else "")
+        )
+        eff_exec = str(
+            execution_state
+            or (getattr(run, "execution_state", "") if run is not None else "")
+        )
+        eff_attach = str(
+            attachment_state
+            or (getattr(run, "attachment_state", "") if run is not None else "")
+        )
+        eff_ert_state = str(
+            ert_transport_state
+            or (getattr(run, "ert_transport_state", "") if run is not None else "")
+        )
+        if pending_ert is None:
+            pending_ert = (
+                len(decoder._ert_pending_tool_calls())
+                if decoder is not None and hasattr(decoder, "_ert_pending_tool_calls")
+                else 0
+            )
+        if pending_relay is None:
+            pending_relay = (
+                len(decoder._relay_pending_tool_calls())
+                if decoder is not None and hasattr(decoder, "_relay_pending_tool_calls")
+                else 0
+            )
+        if delivered is None:
+            delivered = (
+                len(getattr(decoder, "delivered_tool_call_ids", set()) or set())
+                if decoder is not None
+                else 0
+            )
+        eff_owner = wait_owner if wait_owner in _TOOL_CALL_WAIT_OWNERS else "UNKNOWN"
+        payload: dict[str, Any] = {
+            "event_seq": seq,
+            "ts": round(time.time(), 6),
+            "monotonic_ts": round(time.monotonic(), 6),
+            "run_id": eff_run_id,
+            "public_tool_call_id": str(public_tool_call_id or ""),
+            "wire_call_id": str(wire_call_id or ""),
+            "command_id": str(command_id or ""),
+            "tool_name": str(tool_name or ""),
+            "source": str(source or ""),
+            "phase": str(phase or ""),
+            "execution_state": eff_exec,
+            "attachment_state": eff_attach,
+            "ert_transport_state": eff_ert_state,
+            "pending_ert": int(pending_ert),
+            "pending_relay": int(pending_relay),
+            "delivered": int(delivered),
+            "reconciled": int(reconciled),
+            "wait_owner": eff_owner,
+            "elapsed_ms": round(float(elapsed_ms), 2),
+            "timeout_budget_ms": round(float(timeout_budget_ms), 2),
+            "attempt": int(attempt),
+            "outcome": str(outcome or ""),
+            "error_class": str(error_class or ""),
+            "args_digest": str(args_digest or ""),
+            "payload_len": int(payload_len),
+        }
+        if extra:
+            for ek, ev in extra.items():
+                if ek not in payload:
+                    payload[ek] = ev
+        return _gemini_debug_log_event(
+            str(session_id or "relay"), "tool_call_event", payload
+        )
+    except Exception:
+        return None
+
+
 def _gemini_log_ais_bridge_frame(
     direction: str, payload: dict[str, Any], *, session_id: str = ""
 ) -> None:
@@ -62059,6 +62196,19 @@ def _robin_reconcile_tool_outputs(
     # An explicit but foreign id means a replay of an older call, so it is not rebound.
     unlabeled = [idx for idx in leftovers if not raw_ids[idx]]
     free = [k for k in order if k not in claimed]
+    free_delivered = [
+        k for k in free if by_id[k].get("_delivery_state") == "DELIVERED_TO_DSH"
+    ]
+    if free_delivered:
+        free = free_delivered
+    else:
+        free_non_staged = [
+            k for k in free if by_id[k].get("_delivery_state") != "STAGED_FOR_DSH"
+        ]
+        if free_non_staged:
+            free = free_non_staged
+        elif any(by_id[k].get("_delivery_state") == "DELIVERED_TO_DSH" for k in order):
+            free = []
     for tc_id, idx in zip(reversed(free), reversed(unlabeled), strict=False):
         bound[idx] = tc_id
 
@@ -65461,7 +65611,40 @@ class _RobinRunActor:
     _non_watchdog_idle_timeout_seconds: float | None = None
     _token_refresh_timeout_seconds: float | None = None
 
+    def __getattribute__(self, name: str) -> Any:
+        if name == "pending_tool_calls":
+            inst_dict = object.__getattribute__(self, "__dict__")
+            if inst_dict.get("_pending_delegate_ready"):
+                dec = inst_dict.get("decoder")
+                if dec is not None:
+                    return dec.pending_tool_calls
+            fb = inst_dict.get("_pending_tool_calls_fallback")
+            if fb is None:
+                fb = []
+                inst_dict["_pending_tool_calls_fallback"] = fb
+            return fb
+        return object.__getattribute__(self, name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name == "pending_tool_calls":
+            inst_dict = object.__getattribute__(self, "__dict__")
+            if inst_dict.get("_pending_delegate_ready"):
+                dec = inst_dict.get("decoder")
+                if dec is not None:
+                    dec.pending_tool_calls = value
+                    return
+            inst_dict["_pending_tool_calls_fallback"] = value
+            return
+        object.__setattr__(self, name, value)
+
     def __post_init__(self) -> None:
+        inst_dict = object.__getattribute__(self, "__dict__")
+        init_pending = inst_dict.get("_pending_tool_calls_fallback")
+        if self.decoder is not None and init_pending:
+            self.decoder.pending_tool_calls = [
+                dict(tc) if isinstance(tc, dict) else tc for tc in init_pending
+            ]
+        inst_dict["_pending_delegate_ready"] = True
         if self.mux_queue is None:
             self.mux_queue = asyncio.Queue()
         if self.loop is None:
@@ -65482,6 +65665,137 @@ class _RobinRunActor:
                 self.recovery_event = asyncio.Event()
             except RuntimeError:
                 pass
+
+    def _retire_pending_tool_call(
+        self,
+        tc_id: str,
+        *,
+        reason: str,
+        terminal_status: str = "REPORTED",
+    ) -> bool:
+        """Atomically retire one pending tool call from decoder pending list, delivered set, mux_queue, and ledger."""
+        tid = str(tc_id or "").strip()
+        if not tid:
+            return False
+        changed = False
+        dec = self.decoder
+        tool_name = ""
+        tc_source = ""
+        wire_id = ""
+        if dec is not None:
+            before_len = len(dec.pending_tool_calls)
+            remaining: list[dict[str, Any]] = []
+            for tc in dec.pending_tool_calls:
+                if isinstance(tc, dict) and str(tc.get("id") or "").strip() == tid:
+                    tool_name = str(tc.get("name") or tool_name)
+                    tc_source = str(tc.get("_source") or tc_source)
+                    wire_id = str(tc.get("wire_call_id") or wire_id)
+                    continue
+                remaining.append(tc)
+            if len(remaining) != before_len:
+                changed = True
+                for idx_r, tc_r in enumerate(remaining):
+                    if isinstance(tc_r, dict):
+                        tc_r["index"] = idx_r
+                dec.pending_tool_calls = remaining
+            delivered_ids = getattr(dec, "delivered_tool_call_ids", None)
+            if isinstance(delivered_ids, set) and tid in delivered_ids:
+                delivered_ids.discard(tid)
+                changed = True
+        if self.mux_queue is not None:
+            retained_q: list[tuple[str, Any]] = []
+            while not self.mux_queue.empty():
+                try:
+                    q_k, q_v = self.mux_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+                if q_k == "ert_chunks" and isinstance(q_v, list):
+                    filtered_chunks: list[dict[str, Any]] = []
+                    for c_d in q_v:
+                        if not isinstance(c_d, dict):
+                            filtered_chunks.append(c_d)
+                            continue
+                        choices = c_d.get("choices") or []
+                        has_tc = any(
+                            (ch.get("delta") or {}).get("tool_calls")
+                            for ch in choices
+                            if isinstance(ch, dict)
+                        )
+                        if not has_tc:
+                            filtered_chunks.append(c_d)
+                            continue
+                        new_choices: list[dict[str, Any]] = []
+                        kept_any_tc = False
+                        for ch in choices:
+                            if not isinstance(ch, dict):
+                                continue
+                            delta = ch.get("delta") or {}
+                            tcs = delta.get("tool_calls")
+                            if not isinstance(tcs, list):
+                                new_choices.append(ch)
+                                continue
+                            kept_tcs = [
+                                tc_item
+                                for tc_item in tcs
+                                if str(
+                                    (
+                                        tc_item.get("id")
+                                        if isinstance(tc_item, dict)
+                                        else ""
+                                    )
+                                    or ""
+                                ).strip()
+                                != tid
+                            ]
+                            if len(kept_tcs) != len(tcs):
+                                changed = True
+                            if kept_tcs:
+                                kept_any_tc = True
+                                ch_copy = dict(ch)
+                                delta_copy = dict(delta)
+                                delta_copy["tool_calls"] = kept_tcs
+                                ch_copy["delta"] = delta_copy
+                                new_choices.append(ch_copy)
+                        if kept_any_tc and new_choices:
+                            cd_copy = dict(c_d)
+                            cd_copy["choices"] = new_choices
+                            filtered_chunks.append(cd_copy)
+                    q_v = filtered_chunks
+                    if not q_v:
+                        continue
+                retained_q.append((q_k, q_v))
+            for r_item in retained_q:
+                self.mux_queue.put_nowait(r_item)
+        ledger = getattr(self.run, "tool_ledger", None)
+        inv = ledger.by_public_id.get(tid) if ledger is not None else None
+        if inv is not None:
+            if not tool_name:
+                tool_name = inv.dsh_tool_name
+            if not tc_source:
+                tc_source = inv.source
+            if not wire_id:
+                wire_id = inv.wire_call_id
+            if inv.status in ("DISPATCHED", "BACKGROUNDED"):
+                inv.status = terminal_status
+        if changed or inv is not None:
+            _emit_tool_call_event(
+                self.session_id,
+                phase="retired",
+                run=self.run,
+                decoder=dec,
+                public_tool_call_id=tid,
+                wire_call_id=wire_id,
+                command_id=inv.bg_command_id if inv is not None else "",
+                tool_name=tool_name,
+                source=tc_source,
+                wait_owner=(
+                    "CLIENT_ABORT_OR_DISCONNECT"
+                    if "abort" in reason or "cancel" in reason
+                    else "LOCAL_CONTINUATION_RECONCILE"
+                ),
+                outcome=reason,
+            )
+        return changed
 
     def _effective_pq_recovery_budget(self) -> float:
         if self._pq_recovery_budget_seconds is not None:
@@ -65637,8 +65951,17 @@ class _RobinRunActor:
         """Two-phase terminal closure from driver: release blockers now, keep parked buffer if TOOL_HANDOFF."""
         self._relay_cancel_pending(reason=reason)
         _relay_clear_active_run(self.run)
+        rem_ids = [
+            str(tc.get("id") or "").strip()
+            for tc in list(self.decoder.pending_tool_calls)
+            if isinstance(tc, dict) and str(tc.get("id") or "").strip()
+        ]
+        for rem_id in rem_ids:
+            self._retire_pending_tool_call(
+                rem_id, reason=reason, terminal_status="REPORTED"
+            )
         self.decoder.pending_tool_calls.clear()
-        self.pending_tool_calls.clear()
+        self.decoder.delivered_tool_call_ids.clear()
         self.decoder.finish_reason = None
         if outcome == "SUCCEEDED":
             self.decoder.is_completed = True
@@ -65648,6 +65971,39 @@ class _RobinRunActor:
         self.run.finalization_state = "CLOSED"
         if self.run.attachment_state != "TOOL_HANDOFF":
             self.run.attachment_state = "CLOSED"
+        reason_lc = str(reason or "").lower()
+        if outcome != "FAILED":
+            term_owner = "ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT"
+        elif any(k in reason_lc for k in ("cancel", "abort", "disconnect", "client")):
+            term_owner = "CLIENT_ABORT_OR_DISCONNECT"
+        elif any(k in reason_lc for k in ("timeout", "silence", "idle", "stalled")):
+            term_owner = "ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT"
+        elif any(
+            k in reason_lc
+            for k in (
+                "error",
+                "grpc",
+                "rst",
+                "eof",
+                "desync",
+                "fail",
+                "exception",
+                "500",
+                "502",
+                "503",
+            )
+        ):
+            term_owner = "ROBIN_EXPLICIT_ERROR"
+        else:
+            term_owner = "UNKNOWN"
+        _emit_tool_call_event(
+            self.session_id,
+            phase="terminal_cleanup",
+            run=self.run,
+            decoder=self.decoder,
+            wait_owner=term_owner,
+            outcome=f"{outcome}:{reason}",
+        )
         _GEMINI_DSH_STORE.save_run(self.run)
         cur_task = None
         try:
@@ -65760,6 +66116,7 @@ class _RobinRunActor:
             while self.decoder.pending_ert_outbound_frames:
                 frame_to_send = self.decoder.pending_ert_outbound_frames[0]
                 sent_ok = False
+                timed_out = False
                 last_err = ""
                 t0 = time.monotonic()
                 for attempt in range(2):
@@ -65809,6 +66166,7 @@ class _RobinRunActor:
                                 timeout=ert_io_timeout,
                             )
                         except asyncio.TimeoutError:
+                            timed_out = True
                             last_err = (
                                 f"ert stream open timed out after {ert_io_timeout:.1f}s"
                             )
@@ -65829,6 +66187,16 @@ class _RobinRunActor:
                         self.ert_response, "send_grpc_frames"
                     ):
                         ert_send_timeout = self._effective_ert_io_timeout()
+                        _emit_tool_call_event(
+                            self.session_id,
+                            phase="ert_outbound_start",
+                            run=self.run,
+                            decoder=self.decoder,
+                            source="ert",
+                            wait_owner="LOCAL_ERT_TRANSPORT_WRITE",
+                            timeout_budget_ms=ert_send_timeout * 1000.0,
+                            payload_len=len(frame_to_send),
+                        )
                         try:
                             await asyncio.wait_for(
                                 self.ert_response.send_grpc_frames(
@@ -65837,15 +66205,20 @@ class _RobinRunActor:
                                 timeout=ert_send_timeout,
                             )
                             sent_ok = True
+                            timed_out = False
                             break
                         except asyncio.TimeoutError:
+                            timed_out = True
                             last_err = f"ert send_grpc_frames timed out after {ert_send_timeout:.1f}s"
                         except Exception as exc:
+                            timed_out = False
                             last_err = str(exc)
                     elif self.ert_response is not None:
+                        timed_out = False
                         last_err = f"transport {type(self.ert_response).__name__} cannot push frames after connect"
                         break
                     else:
+                        timed_out = False
                         last_err = "ert_response is None"
                 elapsed_ms = round((time.monotonic() - t0) * 1000.0, 1)
                 _gemini_debug_log_event(
@@ -65859,6 +66232,34 @@ class _RobinRunActor:
                         "ms": elapsed_ms,
                         "error": last_err if not sent_ok else "",
                     },
+                )
+                _emit_tool_call_event(
+                    self.session_id,
+                    phase="ert_outbound_done",
+                    run=self.run,
+                    decoder=self.decoder,
+                    source="ert",
+                    wait_owner=(
+                        "ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT"
+                        if sent_ok
+                        else (
+                            "LOCAL_ERT_TRANSPORT_WRITE"
+                            if timed_out
+                            else "ROBIN_EXPLICIT_ERROR"
+                        )
+                    ),
+                    elapsed_ms=elapsed_ms,
+                    outcome="ok" if sent_ok else "send_failed",
+                    error_class=(
+                        ""
+                        if sent_ok
+                        else (
+                            "ert_outbound_timeout"
+                            if timed_out
+                            else "ert_outbound_error"
+                        )
+                    ),
+                    payload_len=len(frame_to_send),
                 )
                 if sent_ok:
                     if (
@@ -65879,22 +66280,27 @@ class _RobinRunActor:
     ) -> _RobinToolOutputReconcile:
         """Neutral reconciliation core: extract outputs, self-heal, group them by channel."""
         rec = _RobinToolOutputReconcile()
-        pending = list(self.pending_tool_calls or self.decoder.pending_tool_calls or [])
+        pending = list(self.decoder.pending_tool_calls or [])
         rec.pending_before = pending
         outputs = _robin_extract_delta_tool_outputs(
             messages, pending_tool_calls=pending
         )
+        _emit_tool_call_event(
+            self.session_id,
+            phase="dsh_continuation_received",
+            run=self.run,
+            decoder=self.decoder,
+            wait_owner="LOCAL_CONTINUATION_RECONCILE",
+            reconciled=len(outputs),
+            outcome="received" if outputs else "unmatched",
+            payload_len=len(outputs),
+        )
         if not outputs:
             rec.status = "unmatched"
             return rec
-        if pending and len(outputs) < len(pending):
-            _llm_log.warning(
-                "Robin tool continuation: resolved %d of %d pending tool calls",
-                len(outputs),
-                len(pending),
-            )
         ledger = getattr(self.run, "tool_ledger", None)
         reconciled_ids: set[str] = set()
+        has_crash_or_abort_output = False
 
         def _queue_spliced_notice(notice: str) -> None:
             n_s = notice.strip()
@@ -65940,6 +66346,10 @@ class _RobinRunActor:
                     rec.ert_touched = True
                 continue
             out_str = _dsh_stringify_tool_output(out_item.get("output"))
+            if _dsh_is_crashed_tool_output(out_str) or _dsh_is_aborted_tool_output(
+                out_str
+            ):
+                has_crash_or_abort_output = True
             inv = (
                 ledger.by_public_id.get(tc_id) if ledger is not None and tc_id else None
             )
@@ -65951,6 +66361,20 @@ class _RobinRunActor:
                     reconciled_ids.add(tc_id)
                 rec.absorbed_bg = True
                 rec.relay_touched = True
+                _emit_tool_call_event(
+                    self.session_id,
+                    phase="reconcile_item",
+                    run=self.run,
+                    decoder=self.decoder,
+                    public_tool_call_id=tc_id,
+                    command_id=inv.bg_command_id,
+                    tool_name=inv.dsh_tool_name,
+                    source="relay",
+                    wait_owner="LOCAL_CONTINUATION_RECONCILE",
+                    reconciled=len(reconciled_ids),
+                    outcome="late",
+                    payload_len=len(out_str),
+                )
                 continue
             moved_job_id = ""
             if inv is not None and ledger is not None:
@@ -65986,6 +66410,9 @@ class _RobinRunActor:
                                 "id": synth_read_id,
                                 "name": "read",
                                 "_source": inv.source,
+                                "_delivery_state": "STAGED_FOR_DSH",
+                                "_delivered_monotonic": 0.0,
+                                "_replay_count": 0,
                                 "args": read_args,
                                 "_synth_absorb_only": True,
                             }
@@ -66021,6 +66448,9 @@ class _RobinRunActor:
                                 "_mcp_server": inv.mcp_server,
                                 "_mcp_tool": inv.mcp_tool,
                                 "_source": inv.source,
+                                "_delivery_state": "STAGED_FOR_DSH",
+                                "_delivered_monotonic": 0.0,
+                                "_replay_count": 0,
                                 "args": edit_args,
                             }
                         )
@@ -66357,7 +66787,34 @@ class _RobinRunActor:
         ):
             rec.status = "unmatched"
             return rec
-        remaining_pending = [
+        delivered_ids = getattr(self.decoder, "delivered_tool_call_ids", set())
+
+        def _is_delivered_tc(tc_obj: dict[str, Any]) -> bool:
+            tid_chk = str(tc_obj.get("id") or "").strip()
+            state_chk = str(tc_obj.get("_delivery_state") or "")
+            if state_chk == "DELIVERED_TO_DSH":
+                return True
+            if state_chk == "STAGED_FOR_DSH":
+                return bool(tid_chk and tid_chk in delivered_ids)
+            return bool(tid_chk and tid_chk in delivered_ids)
+
+        for matched_id in sorted(reconciled_ids):
+            inv_m = ledger.by_public_id.get(matched_id) if ledger is not None else None
+            _emit_tool_call_event(
+                self.session_id,
+                phase="reconcile_item",
+                run=self.run,
+                decoder=self.decoder,
+                public_tool_call_id=matched_id,
+                wire_call_id=inv_m.wire_call_id if inv_m is not None else "",
+                command_id=inv_m.bg_command_id if inv_m is not None else "",
+                tool_name=inv_m.dsh_tool_name if inv_m is not None else "",
+                source=inv_m.source if inv_m is not None else "",
+                wait_owner="LOCAL_CONTINUATION_RECONCILE",
+                reconciled=len(reconciled_ids),
+                outcome="matched",
+            )
+        raw_remaining = [
             tc
             for tc in self.decoder.pending_tool_calls
             if str(tc.get("id") or "").strip() not in reconciled_ids
@@ -66367,12 +66824,48 @@ class _RobinRunActor:
             for tc in rec.synth_pending_calls
             if isinstance(tc, dict) and str(tc.get("id") or "").strip()
         }
-        delivered_ids = getattr(self.decoder, "delivered_tool_call_ids", set())
-        for tc in remaining_pending:
+        final_remaining: list[dict[str, Any]] = []
+        b2_retired_ids: list[str] = []
+        b2_missing_count = 0
+        staged_count = 0
+        for tc in raw_remaining:
             if not isinstance(tc, dict):
                 continue
             tc_id_rem = str(tc.get("id") or "").strip()
-            if tc_id_rem and tc_id_rem not in synth_ids and tc_id_rem in delivered_ids:
+            tc_source = str(tc.get("_source") or "ert")
+            inv_rem = (
+                ledger.by_public_id.get(tc_id_rem)
+                if ledger is not None and tc_id_rem
+                else None
+            )
+            if inv_rem is not None and not tc.get("_source"):
+                tc_source = inv_rem.source
+            if not tc_id_rem or tc_id_rem in synth_ids:
+                final_remaining.append(tc)
+                continue
+            if not _is_delivered_tc(tc):
+                # Class A: late STAGED_FOR_DSH call still in mux_queue; never warn or replay.
+                staged_count += 1
+                final_remaining.append(tc)
+                _emit_tool_call_event(
+                    self.session_id,
+                    phase="reconcile_item",
+                    run=self.run,
+                    decoder=self.decoder,
+                    public_tool_call_id=tc_id_rem,
+                    wire_call_id=str(tc.get("wire_call_id") or ""),
+                    tool_name=str(tc.get("name") or ""),
+                    source=tc_source,
+                    wait_owner="LOCAL_CONTINUATION_RECONCILE",
+                    reconciled=len(reconciled_ids),
+                    outcome="unstaged",
+                )
+                continue
+            # Class B: DELIVERED_TO_DSH item missing from this continuation batch.
+            replay_count = int(tc.get("_replay_count") or 0)
+            if has_crash_or_abort_output and replay_count < 1:
+                # Class B1: bounded single-shot crash/abort recovery replay (max_replay=1).
+                tc["_replay_count"] = replay_count + 1
                 rec.synth_tool_deltas.append(
                     {
                         "index": len(rec.synth_tool_deltas),
@@ -66386,14 +66879,123 @@ class _RobinRunActor:
                         },
                     }
                 )
+                final_remaining.append(tc)
+                _emit_tool_call_event(
+                    self.session_id,
+                    phase="reconcile_item",
+                    run=self.run,
+                    decoder=self.decoder,
+                    public_tool_call_id=tc_id_rem,
+                    wire_call_id=str(tc.get("wire_call_id") or ""),
+                    tool_name=str(tc.get("name") or ""),
+                    source=tc_source,
+                    wait_owner="LOCAL_CONTINUATION_RECONCILE",
+                    reconciled=len(reconciled_ids),
+                    attempt=int(tc["_replay_count"]),
+                    outcome="missing",
+                )
+                continue
+            # Class B2: non-crash genuine partial return or replay budget exhausted.
+            # Zero replay; synthesize channel-matched error result and retire cleanly.
+            b2_missing_count += 1
+            if tc_source == "relay":
+                err_dict = {
+                    "status": "error",
+                    "error": (
+                        "Tool call result missing from client continuation; "
+                        "aborted without replay to prevent duplicate execution."
+                    ),
+                }
+                if inv_rem is not None:
+                    inv_rem.result_str = err_dict["error"]
+                    inv_rem.status = "REPORTED"
+                    rec.relay_deliveries.append(
+                        _RobinRelayDelivery(
+                            inv=inv_rem,
+                            result_dict=err_dict,
+                            is_error=True,
+                        )
+                    )
+                rec.relay_touched = True
+            else:
+                prev_st_rem = inv_rem.status if inv_rem is not None else ""
+                prev_res_rem = inv_rem.result_str if inv_rem is not None else ""
+                b2_err_msg = (
+                    "Error: Tool call result missing from client continuation; "
+                    "aborted without replay."
+                )
+                synth_err_item: dict[str, Any] = {
+                    "tool_call_id": tc_id_rem,
+                    "id": tc_id_rem,
+                    "wire_call_id": str(tc.get("wire_call_id") or ""),
+                    "wire_call_id_present": bool(tc.get("wire_call_id_present")),
+                    "orig_id": str(tc.get("orig_id") or tc.get("wire_call_id") or ""),
+                    "name": str(tc.get("name") or ""),
+                    "_orig_call_name": str(
+                        tc.get("_orig_call_name") or tc.get("name") or ""
+                    ),
+                    "_orig_args": tc.get("_orig_args") or tc.get("args") or {},
+                    "_mcp_server": str(tc.get("_mcp_server") or ""),
+                    "_mcp_tool": str(tc.get("_mcp_tool") or ""),
+                    "output": b2_err_msg,
+                }
+                err_frames = _robin_build_execute_remote_tools_result_frames(
+                    [synth_err_item]
+                )
+                if inv_rem is not None:
+                    inv_rem.result_str = b2_err_msg
+                    if err_frames:
+                        inv_rem.last_response_frame = err_frames[0]
+                    inv_rem.status = "REPORTED"
+                for f_bytes in err_frames:
+                    rec.frames.append(f_bytes)
+                    rec.frame_records.append(
+                        (tc_id_rem, inv_rem, prev_st_rem, prev_res_rem, f_bytes)
+                    )
+                rec.ert_touched = True
+            reconciled_ids.add(tc_id_rem)
+            b2_retired_ids.append(tc_id_rem)
+            _emit_tool_call_event(
+                self.session_id,
+                phase="reconcile_item",
+                run=self.run,
+                decoder=self.decoder,
+                public_tool_call_id=tc_id_rem,
+                wire_call_id=str(tc.get("wire_call_id") or ""),
+                tool_name=str(tc.get("name") or ""),
+                source=tc_source,
+                wait_owner="LOCAL_CONTINUATION_RECONCILE",
+                reconciled=len(reconciled_ids),
+                attempt=replay_count,
+                outcome="missing",
+                error_class="missing_tool_result",
+            )
+        if b2_missing_count > 0:
+            delivered_total = sum(
+                1 for tc in pending if isinstance(tc, dict) and _is_delivered_tc(tc)
+            )
+            resolved_delivered = max(0, delivered_total - b2_missing_count)
+            _llm_log.warning(
+                "Robin tool continuation: resolved %d of %d delivered tool calls (missing=%d, staged=%d)",
+                resolved_delivered,
+                delivered_total,
+                b2_missing_count,
+                staged_count,
+            )
+        for tc_id_ret in b2_retired_ids:
+            self._retire_pending_tool_call(
+                tc_id_ret, reason="missing_result_b2", terminal_status="REPORTED"
+            )
+        for tc_id_rec in reconciled_ids:
+            if tc_id_rec not in b2_retired_ids:
+                delivered_ids.discard(tc_id_rec)
         if rec.synth_pending_calls:
-            remaining_pending.extend(rec.synth_pending_calls)
-        for idx, tc in enumerate(remaining_pending):
+            final_remaining.extend(rec.synth_pending_calls)
+        for idx, tc in enumerate(final_remaining):
             tc["index"] = idx
-        rec.remaining_pending = remaining_pending
-        self.decoder.pending_tool_calls = remaining_pending
-        self.pending_tool_calls = list(remaining_pending)
-        self.decoder.finish_reason = "tool_calls" if remaining_pending else None
+        rec.remaining_pending = final_remaining
+        self.decoder.pending_tool_calls = final_remaining
+        self.decoder.finish_reason = "tool_calls" if final_remaining else None
         return rec
 
     async def submit_tool_results(
@@ -66805,23 +67407,13 @@ class _RobinRunActor:
                 inv.bg_done_delivered = True
                 poll_pub_id = str(inv.public_tool_call_id or "").strip()
                 if poll_pub_id:
-                    before_len = len(self.decoder.pending_tool_calls)
-                    remaining_dec = [
-                        tc
-                        for tc in self.decoder.pending_tool_calls
-                        if str(tc.get("id") or "").strip() != poll_pub_id
-                    ]
-                    if len(remaining_dec) != before_len:
-                        for idx_r, tc_r in enumerate(remaining_dec):
-                            tc_r["index"] = idx_r
-                        self.decoder.pending_tool_calls = remaining_dec
-                        self.pending_tool_calls = [
-                            tc
-                            for tc in self.pending_tool_calls
-                            if str(tc.get("id") or "").strip() != poll_pub_id
-                        ]
-                        for idx_a, tc_a in enumerate(self.pending_tool_calls):
-                            tc_a["index"] = idx_a
+                    removed_poll = self._retire_pending_tool_call(
+                        poll_pub_id,
+                        reason="relay_release_carrier",
+                        terminal_status="REPORTED",
+                    )
+                    if removed_poll:
+                        remaining_dec = self.decoder.pending_tool_calls
                         self.decoder.finish_reason = (
                             "tool_calls" if remaining_dec else None
                         )
@@ -66886,21 +67478,11 @@ class _RobinRunActor:
         """Remove an aborted Relay `tools/call` from pending state so it cannot deadlock the run."""
         if not job_id:
             return
-        ledger = getattr(self.run, "tool_ledger", None)
-        inv = ledger.by_public_id.get(job_id) if ledger is not None else None
-        if inv is not None and inv.status in ("DISPATCHED", "BACKGROUNDED"):
-            inv.status = "REPORTED"
-        before_len = len(self.decoder.pending_tool_calls)
-        remaining = [
-            tc
-            for tc in self.decoder.pending_tool_calls
-            if str(tc.get("id") or "").strip() != job_id
-        ]
-        if len(remaining) != before_len:
-            for idx, tc in enumerate(remaining):
-                tc["index"] = idx
-            self.decoder.pending_tool_calls = remaining
-            self.pending_tool_calls = list(remaining)
+        removed = self._retire_pending_tool_call(
+            job_id, reason="relay_abort", terminal_status="REPORTED"
+        )
+        if removed:
+            remaining = self.decoder.pending_tool_calls
             self.decoder.finish_reason = "tool_calls" if remaining else None
             if not remaining:
                 if self.run.execution_state != "TERMINAL":
@@ -66921,10 +67503,16 @@ class _RobinRunActor:
         for inv in ledger._source_candidates("relay"):
             if inv.status not in ("DISPATCHED", "BACKGROUNDED"):
                 continue
-            inv.status = "REPORTED"
             ctx = inv.relay_carrier_ctx or inv.relay_ctx
             job_id = str((ctx or {}).get("relay_job_id") or "")
             inv.relay_carrier_ctx = {}
+            retire_id = str(inv.public_tool_call_id or job_id or "").strip()
+            if retire_id:
+                self._retire_pending_tool_call(
+                    retire_id, reason=reason, terminal_status="REPORTED"
+                )
+            else:
+                inv.status = "REPORTED"
             _relay_settle(
                 job_id,
                 {
@@ -67923,89 +68511,18 @@ class _RobinRunActor:
 
     def _handle_ert_session_complete_wakeup(self) -> None:
         """Clear only ERT-sourced pending calls and chunks on RemoteToolSessionComplete."""
-        all_pending = self.decoder.pending_tool_calls or self.pending_tool_calls or []
+        all_pending = list(self.decoder.pending_tool_calls or [])
         dropped_ert_tc_ids = {
-            str(tc.get("id") or "")
+            str(tc.get("id") or "").strip()
             for tc in all_pending
             if isinstance(tc, dict)
             and tc.get("id")
             and str(tc.get("_source") or "ert") == "ert"
         }
-        retained_dec_pending = [
-            tc
-            for tc in self.decoder.pending_tool_calls
-            if not (isinstance(tc, dict) and str(tc.get("_source") or "ert") == "ert")
-        ]
-        for idx_p, tc_p in enumerate(retained_dec_pending):
-            if isinstance(tc_p, dict):
-                tc_p["index"] = idx_p
-        self.decoder.pending_tool_calls = retained_dec_pending
-        retained_actor_pending = [
-            tc
-            for tc in self.pending_tool_calls
-            if not (isinstance(tc, dict) and str(tc.get("_source") or "ert") == "ert")
-        ]
-        for idx_p, tc_p in enumerate(retained_actor_pending):
-            if isinstance(tc_p, dict):
-                tc_p["index"] = idx_p
-        self.pending_tool_calls = retained_actor_pending
-        retained_q: list[tuple[str, Any]] = []
-        while not self.mux_queue.empty():
-            try:
-                q_k, q_v = self.mux_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                break
-            if q_k == "ert_chunks" and isinstance(q_v, list) and dropped_ert_tc_ids:
-                filtered_chunks: list[dict[str, Any]] = []
-                for c_d in q_v:
-                    if not isinstance(c_d, dict):
-                        filtered_chunks.append(c_d)
-                        continue
-                    choices = c_d.get("choices") or []
-                    has_tc = any(
-                        (ch.get("delta") or {}).get("tool_calls")
-                        for ch in choices
-                        if isinstance(ch, dict)
-                    )
-                    if not has_tc:
-                        filtered_chunks.append(c_d)
-                        continue
-                    new_choices: list[dict[str, Any]] = []
-                    kept_any_tc = False
-                    for ch in choices:
-                        if not isinstance(ch, dict):
-                            continue
-                        delta = ch.get("delta") or {}
-                        tcs = delta.get("tool_calls")
-                        if not isinstance(tcs, list):
-                            new_choices.append(ch)
-                            continue
-                        kept_tcs = [
-                            tc_item
-                            for tc_item in tcs
-                            if str(
-                                (tc_item.get("id") if isinstance(tc_item, dict) else "")
-                                or ""
-                            )
-                            not in dropped_ert_tc_ids
-                        ]
-                        if kept_tcs:
-                            kept_any_tc = True
-                            ch_copy = dict(ch)
-                            delta_copy = dict(delta)
-                            delta_copy["tool_calls"] = kept_tcs
-                            ch_copy["delta"] = delta_copy
-                            new_choices.append(ch_copy)
-                    if kept_any_tc and new_choices:
-                        cd_copy = dict(c_d)
-                        cd_copy["choices"] = new_choices
-                        filtered_chunks.append(cd_copy)
-                q_v = filtered_chunks
-                if not q_v:
-                    continue
-            retained_q.append((q_k, q_v))
-        for r_item in retained_q:
-            self.mux_queue.put_nowait(r_item)
+        for tc_id in sorted(dropped_ert_tc_ids):
+            self._retire_pending_tool_call(
+                tc_id, reason="ert_session_complete", terminal_status="REPORTED"
+            )
         self.run.ert_transport_state = "ENDED"
         if not self.decoder.pending_tool_calls:
             self.decoder.finish_reason = None
@@ -69954,7 +70471,7 @@ class _RobinStreamDecoder:
                                     self.step_unmatched_pq_tool_monotonic = (
                                         time.monotonic()
                                     )
-                    elif it.raw_status == 1 and (
+                    elif (
                         it.display_text == "VEH MCP Server"
                         or "VEH MCP Server" in it.display_text
                         or (
@@ -69966,18 +70483,51 @@ class _RobinStreamDecoder:
                             )
                         )
                     ):
-                        ann_key = (
-                            f"cid:{it.call_id}"
-                            if it.call_id
-                            else f"seq:{entry.state_seq}:{item_idx}"
+                        pq_sid = str(
+                            self.run.client_session_id
+                            or self.run.session_key
+                            or self.run.run_id
                         )
-                        if ann_key not in self.relay_pq_announced_keys:
-                            self.relay_pq_announced_keys.add(ann_key)
-                            _relay_record_pq_announcement(
-                                self.run.run_id,
-                                tool_name=it.tool_name,
-                                call_id=it.call_id,
+                        if it.raw_status == 1:
+                            ann_key = (
+                                f"cid:{it.call_id}"
+                                if it.call_id
+                                else f"seq:{entry.state_seq}:{item_idx}"
                             )
+                            if ann_key not in self.relay_pq_announced_keys:
+                                self.relay_pq_announced_keys.add(ann_key)
+                                _relay_record_pq_announcement(
+                                    self.run.run_id,
+                                    tool_name=it.tool_name,
+                                    call_id=it.call_id,
+                                )
+                                _emit_tool_call_event(
+                                    pq_sid,
+                                    phase="pq_announced",
+                                    run=self.run,
+                                    decoder=self,
+                                    wire_call_id=it.call_id,
+                                    tool_name=it.tool_name,
+                                    source="relay",
+                                    wait_owner="LOCAL_RELAY_ROUTING",
+                                    outcome="announced",
+                                )
+                        elif it.call_id:
+                            retired_cnt = _relay_retire_pq_announcements(
+                                self.run.run_id, call_id=it.call_id
+                            )
+                            if retired_cnt > 0:
+                                _emit_tool_call_event(
+                                    pq_sid,
+                                    phase="pq_announce_retired",
+                                    run=self.run,
+                                    decoder=self,
+                                    wire_call_id=it.call_id,
+                                    tool_name=it.tool_name,
+                                    source="relay",
+                                    wait_owner="LOCAL_RELAY_ROUTING",
+                                    outcome="status_retired",
+                                )
 
         # 2. Reconcile terminal history H = .1003.1.8[] if present
         if parsed["history_states_raw"]:
@@ -70090,6 +70640,7 @@ class _RobinStreamDecoder:
             self.run.execution_state = "TERMINAL"
             self.run.outcome_state = "SUCCEEDED"
             self.run.finalization_state = "CLOSED"
+            _relay_clear_active_run(self.run)
         if parsed["eod"]:
             if self.is_completed:
                 self.eod = True
@@ -70138,17 +70689,49 @@ class _RobinStreamDecoder:
     def feed_ert_bytes(self, chunk: bytes) -> list[dict[str, Any]]:
         """Feed raw ExecuteRemoteTools HTTP/2 DATA bytes."""
         now_mono = time.monotonic()
+        had_partial_before = bool(self._ert_buf)
+        partial_started_before = self._ert_partial_since_monotonic
         if chunk:
             was_empty = not self._ert_buf
             self.last_ert_inbound_monotonic = now_mono
             self._ert_buf.extend(chunk)
             if was_empty:
                 self._ert_partial_since_monotonic = now_mono
+        buf_len_before_unpack = len(self._ert_buf)
         frames = _robin_unpack_grpc_frames(self._ert_buf, strict=True)
         if not self._ert_buf:
             self._ert_partial_since_monotonic = 0.0
         elif frames:
             self._ert_partial_since_monotonic = now_mono
+        if not had_partial_before and bool(self._ert_buf) and not frames:
+            _emit_tool_call_event(
+                self.run.client_session_id or self.run.session_key or self.run.run_id,
+                phase="ert_large_frame_first",
+                run=self.run,
+                decoder=self,
+                source="ert",
+                wait_owner="ROBIN_TOOL_DISPATCH_OR_TRANSPORT",
+                payload_len=len(self._ert_buf),
+                outcome="partial",
+            )
+        elif had_partial_before and frames:
+            elapsed_ms = (
+                (now_mono - partial_started_before) * 1000.0
+                if partial_started_before > 0.0
+                else 0.0
+            )
+            _emit_tool_call_event(
+                self.run.client_session_id or self.run.session_key or self.run.run_id,
+                phase="ert_large_frame_complete",
+                run=self.run,
+                decoder=self,
+                source="ert",
+                wait_owner="ROBIN_TOOL_DISPATCH_OR_TRANSPORT",
+                elapsed_ms=elapsed_ms,
+                payload_len=max(0, buf_len_before_unpack - len(self._ert_buf)),
+                outcome="complete",
+                extra={"decoded_frames": len(frames)},
+            )
         out_chunks: list[dict[str, Any]] = []
         for frame in frames:
             out_chunks.extend(self.feed_ert_frame(frame))
@@ -70240,6 +70823,9 @@ class _RobinStreamDecoder:
                     )
                 )
         dsh_tool_deltas: list[dict[str, Any]] = []
+        stage_sid = str(
+            self.run.client_session_id or self.run.session_key or self.run.run_id
+        )
         for inv in invocations:
             idx = len(self.pending_tool_calls)
             self.tool_call_count += 1
@@ -70255,9 +70841,13 @@ class _RobinStreamDecoder:
                 "_mcp_server": inv.mcp_server,
                 "_mcp_tool": inv.mcp_tool,
                 "_source": inv.source,
+                "_delivery_state": "STAGED_FOR_DSH",
+                "_delivered_monotonic": 0.0,
+                "_replay_count": 0,
                 "args": inv.adapted_args,
             }
             self.pending_tool_calls.append(tc_entry)
+            args_json = json.dumps(inv.adapted_args, ensure_ascii=False)
             dsh_tool_deltas.append(
                 {
                     "index": idx,
@@ -70265,9 +70855,24 @@ class _RobinStreamDecoder:
                     "type": "function",
                     "function": {
                         "name": inv.dsh_tool_name,
-                        "arguments": json.dumps(inv.adapted_args, ensure_ascii=False),
+                        "arguments": args_json,
                     },
                 }
+            )
+            _emit_tool_call_event(
+                stage_sid,
+                phase="staged",
+                run=self.run,
+                decoder=self,
+                public_tool_call_id=inv.public_tool_call_id,
+                wire_call_id=inv.wire_call_id,
+                command_id=inv.bg_command_id,
+                tool_name=inv.dsh_tool_name,
+                source=inv.source,
+                wait_owner="LOCAL_CONTINUATION_RECONCILE",
+                outcome="staged",
+                args_digest=_tool_call_args_digest(inv.adapted_args),
+                payload_len=len(args_json),
             )
         if dsh_tool_deltas:
             self.run.execution_state = "WAITING_TOOLS"
@@ -74966,10 +75571,19 @@ class _RelayPqAnnouncement:
     tool_name: str
     call_id: str
     created_monotonic: float
+    expires_monotonic: float = 0.0
     claimed: bool = False
+    conflict_barrier: bool = False
+
+    def __post_init__(self) -> None:
+        if self.expires_monotonic <= 0.0:
+            self.expires_monotonic = (
+                self.created_monotonic + _RELAY_PQ_ANNOUNCE_TTL_SECONDS
+            )
 
 
 _RELAY_PQ_ANNOUNCE_TTL_SECONDS = 15.0
+_RELAY_PQ_CONFLICT_BARRIER_SECONDS = 2.5
 _RELAY_PQ_WAIT_SECONDS = max(0.05, float(os.getenv("VE_RELAY_PQ_WAIT_SECONDS", "1.5")))
 VE_RELAY_TOOL_WAIT_MAX_SECONDS = max(
     1.0, float(os.getenv("VE_RELAY_TOOL_WAIT_MAX_SECONDS", "180.0"))
@@ -74978,7 +75592,9 @@ _RELAY_ACTOR_CALL_TIMEOUT_SECONDS = 15.0
 _RELAY_ACTOR_CLEANUP_TIMEOUT_SECONDS = 5.0
 
 
-def _relay_is_run_live(run: _RobinRunState | None) -> bool:
+def _relay_is_run_live(
+    run: _RobinRunState | None, actor: _RobinRunActor | None = None
+) -> bool:
     if run is None:
         return False
     if _ROBIN_ACTIVE_RUNS.get(run.run_id) is not run:
@@ -74991,6 +75607,17 @@ def _relay_is_run_live(run: _RobinRunState | None) -> bool:
         return False
     if not run.dsh_tools:
         return False
+    if actor is not None:
+        dec = getattr(actor, "decoder", None)
+        if dec is not None and bool(getattr(dec, "is_completed", False)):
+            return False
+        actor_loop = getattr(actor, "loop", None)
+        if (
+            actor_loop is not None
+            and hasattr(actor_loop, "is_closed")
+            and actor_loop.is_closed()
+        ):
+            return False
     return True
 
 
@@ -74999,11 +75626,13 @@ def _relay_active_run() -> _RobinRunState | None:
         run_id = _RELAY_ACTIVE_RUN_ID
         if run_id:
             run = _ROBIN_ACTIVE_RUNS.get(run_id)
-            if _relay_is_run_live(run):
+            actor = _RELAY_ACTIVE_ACTORS.get(run_id)
+            if _relay_is_run_live(run, actor):
                 return run
         for rid in reversed(list(_RELAY_ACTIVE_RUNS.keys())):
             cand = _RELAY_ACTIVE_RUNS.get(rid)
-            if _relay_is_run_live(cand):
+            cand_actor = _RELAY_ACTIVE_ACTORS.get(rid)
+            if _relay_is_run_live(cand, cand_actor):
                 return cand
             _RELAY_ACTIVE_RUNS.pop(rid, None)
             _RELAY_ACTIVE_ACTORS.pop(rid, None)
@@ -75015,17 +75644,17 @@ def _relay_active_actor() -> _RobinRunActor | None:
         run_id = _RELAY_ACTIVE_RUN_ID
         if run_id:
             run = _ROBIN_ACTIVE_RUNS.get(run_id)
-            if _relay_is_run_live(run):
-                actor = _RELAY_ACTIVE_ACTOR
+            actor = _RELAY_ACTIVE_ACTOR
+            if _relay_is_run_live(run, actor):
                 if actor is not None and actor.run is run:
                     return actor
                 return None
         for rid in reversed(list(_RELAY_ACTIVE_RUNS.keys())):
             cand = _RELAY_ACTIVE_RUNS.get(rid)
-            if _relay_is_run_live(cand):
-                actor = _RELAY_ACTIVE_ACTORS.get(rid)
-                if actor is not None and actor.run is cand:
-                    return actor
+            cand_actor = _RELAY_ACTIVE_ACTORS.get(rid)
+            if _relay_is_run_live(cand, cand_actor):
+                if cand_actor is not None and cand_actor.run is cand:
+                    return cand_actor
             else:
                 _RELAY_ACTIVE_RUNS.pop(rid, None)
                 _RELAY_ACTIVE_ACTORS.pop(rid, None)
@@ -75038,11 +75667,11 @@ def _relay_live_actors() -> list[tuple[_RobinRunState, _RobinRunActor]]:
     with _RELAY_REGISTRY_LOCK:
         for rid in list(_RELAY_ACTIVE_RUNS.keys()):
             run = _RELAY_ACTIVE_RUNS.get(rid)
-            if not _relay_is_run_live(run):
+            actor = _RELAY_ACTIVE_ACTORS.get(rid)
+            if not _relay_is_run_live(run, actor):
                 _RELAY_ACTIVE_RUNS.pop(rid, None)
                 _RELAY_ACTIVE_ACTORS.pop(rid, None)
                 continue
-            actor = _RELAY_ACTIVE_ACTORS.get(rid)
             if actor is not None and run is not None and actor.run is run:
                 out.append((run, actor))
     return out
@@ -75091,9 +75720,9 @@ def _relay_clear_active_run(run: _RobinRunState | None = None) -> None:
                 _RELAY_ACTIVE_ACTOR = None
                 for rem_id in reversed(list(_RELAY_ACTIVE_RUNS.keys())):
                     rem_run = _RELAY_ACTIVE_RUNS.get(rem_id)
-                    if _relay_is_run_live(rem_run):
+                    rem_actor = _RELAY_ACTIVE_ACTORS.get(rem_id)
+                    if _relay_is_run_live(rem_run, rem_actor):
                         _RELAY_ACTIVE_RUN_ID = rem_id
-                        rem_actor = _RELAY_ACTIVE_ACTORS.get(rem_id)
                         _RELAY_ACTIVE_ACTOR = (
                             rem_actor
                             if rem_actor is not None and rem_actor.run is rem_run
@@ -75118,13 +75747,12 @@ def _relay_record_pq_announcement(
     if not run_id:
         return
     now = time.monotonic()
-    cutoff = now - _RELAY_PQ_ANNOUNCE_TTL_SECONDS
     waiters_snapshot: list[tuple[asyncio.AbstractEventLoop, asyncio.Event]]
     with _RELAY_REGISTRY_LOCK:
         _RELAY_PQ_ANNOUNCEMENTS[:] = [
             ann
             for ann in _RELAY_PQ_ANNOUNCEMENTS
-            if not ann.claimed and ann.created_monotonic >= cutoff
+            if not ann.claimed and ann.expires_monotonic > now
         ]
         _RELAY_PQ_ANNOUNCEMENTS.append(
             _RelayPqAnnouncement(
@@ -75132,6 +75760,7 @@ def _relay_record_pq_announcement(
                 tool_name=str(tool_name or "").strip(),
                 call_id=str(call_id or "").strip(),
                 created_monotonic=now,
+                expires_monotonic=now + _RELAY_PQ_ANNOUNCE_TTL_SECONDS,
             )
         )
         waiters_snapshot = list(_RELAY_PQ_NOTIFY_WAITERS)
@@ -75143,19 +75772,45 @@ def _relay_record_pq_announcement(
             pass
 
 
+def _relay_retire_pq_announcements(run_id: str, *, call_id: str = "") -> int:
+    """Precisely retire PQ announcements for `run_id` (optionally scoped to `call_id`)."""
+    rid = str(run_id or "").strip()
+    cid = str(call_id or "").strip()
+    if not rid:
+        return 0
+    waiters_snapshot: list[tuple[asyncio.AbstractEventLoop, asyncio.Event]] = []
+    removed = 0
+    with _RELAY_REGISTRY_LOCK:
+        kept: list[_RelayPqAnnouncement] = []
+        for ann in _RELAY_PQ_ANNOUNCEMENTS:
+            if ann.run_id == rid and (not cid or ann.call_id == cid):
+                removed += 1
+                continue
+            kept.append(ann)
+        if removed:
+            _RELAY_PQ_ANNOUNCEMENTS[:] = kept
+            waiters_snapshot = list(_RELAY_PQ_NOTIFY_WAITERS)
+    for loop, evt in waiters_snapshot:
+        try:
+            if not loop.is_closed():
+                loop.call_soon_threadsafe(evt.set)
+        except RuntimeError:
+            pass
+    return removed
+
+
 def _relay_claim_pq_announcement(
     tool_name: str, wire_call_id: str, candidate_run_ids: set[str]
 ) -> tuple[str, str] | None:
     """Claim the best matching unclaimed PQ announcement among `candidate_run_ids`."""
     now = time.monotonic()
-    cutoff = now - _RELAY_PQ_ANNOUNCE_TTL_SECONDS
     tname = str(tool_name or "").strip()
     wid = str(wire_call_id or "").strip()
     with _RELAY_REGISTRY_LOCK:
         _RELAY_PQ_ANNOUNCEMENTS[:] = [
             ann
             for ann in _RELAY_PQ_ANNOUNCEMENTS
-            if not ann.claimed and ann.created_monotonic >= cutoff
+            if not ann.claimed and ann.expires_monotonic > now
         ]
         if wid:
             for ann in _RELAY_PQ_ANNOUNCEMENTS:
@@ -75184,17 +75839,29 @@ def _relay_claim_pq_announcement(
             ann.run_id for ann in matching_generic
         }
         if len(distinct_runs) > 1:
+            barrier_cap = now + _RELAY_PQ_CONFLICT_BARRIER_SECONDS
+            for ann in (*matching_named, *matching_generic):
+                ann.conflict_barrier = True
+                ann.expires_monotonic = min(ann.expires_monotonic, barrier_cap)
             return "", "ambiguous"
         if len(distinct_runs) == 1:
-            if matching_named:
-                chosen = matching_named[0]
+            claimable_named = [
+                ann for ann in matching_named if not ann.conflict_barrier
+            ]
+            if claimable_named:
+                chosen = claimable_named[0]
                 chosen.claimed = True
                 _RELAY_PQ_ANNOUNCEMENTS.remove(chosen)
                 return chosen.run_id, "pq_tool_name"
-            chosen = matching_generic[0]
-            chosen.claimed = True
-            _RELAY_PQ_ANNOUNCEMENTS.remove(chosen)
-            return chosen.run_id, "pq_mcp_display"
+            claimable_generic = [
+                ann for ann in matching_generic if not ann.conflict_barrier
+            ]
+            if claimable_generic:
+                chosen = claimable_generic[0]
+                chosen.claimed = True
+                _RELAY_PQ_ANNOUNCEMENTS.remove(chosen)
+                return chosen.run_id, "pq_mcp_display"
+            return "", "ambiguous"
     return None
 
 
@@ -75229,7 +75896,8 @@ def _relay_merged_tool_catalog() -> list[dict[str, Any]]:
     with _RELAY_REGISTRY_LOCK:
         for rid in reversed(list(_RELAY_ACTIVE_RUNS.keys())):
             r = _RELAY_ACTIVE_RUNS.get(rid)
-            if _relay_is_run_live(r) and r is not None:
+            a = _RELAY_ACTIVE_ACTORS.get(rid)
+            if _relay_is_run_live(r, a) and r is not None:
                 live_runs.append(r)
             else:
                 _RELAY_ACTIVE_RUNS.pop(rid, None)
@@ -75255,13 +75923,79 @@ async def _relay_resolve_target(
     abort_evt: asyncio.Event | None,
 ) -> tuple[_RobinRunState | None, _RobinRunActor | None, str]:
     """Resolve which live `(run, actor)` owns an incoming Relay MCP `tools/call`."""
+    route_t0 = time.monotonic()
+
+    def _emit_route_done(
+        r_obj: _RobinRunState | None,
+        a_obj: _RobinRunActor | None,
+        reason: str,
+        *,
+        cand_ids_snap: list[str] | None = None,
+    ) -> tuple[_RobinRunState | None, _RobinRunActor | None, str]:
+        elapsed = (time.monotonic() - route_t0) * 1000.0
+        if r_obj is not None and a_obj is not None:
+            _emit_tool_call_event(
+                str(r_obj.client_session_id or r_obj.session_key or r_obj.run_id),
+                phase="relay_route_resolved",
+                run=r_obj,
+                decoder=getattr(a_obj, "decoder", None),
+                wire_call_id=wire_call_id,
+                tool_name=tool_name,
+                source="relay",
+                wait_owner="LOCAL_RELAY_ROUTING",
+                elapsed_ms=elapsed,
+                timeout_budget_ms=_RELAY_PQ_WAIT_SECONDS * 1000.0,
+                outcome=reason,
+            )
+        else:
+            with _RELAY_REGISTRY_LOCK:
+                ann_snap = [
+                    {
+                        "run_id": ann.run_id,
+                        "tool_name": ann.tool_name,
+                        "conflict_barrier": ann.conflict_barrier,
+                    }
+                    for ann in _RELAY_PQ_ANNOUNCEMENTS
+                    if not ann.claimed
+                ]
+            _emit_tool_call_event(
+                "relay",
+                phase="relay_route_failed",
+                wire_call_id=wire_call_id,
+                tool_name=tool_name,
+                source="relay",
+                wait_owner=(
+                    "CLIENT_ABORT_OR_DISCONNECT"
+                    if reason == "aborted"
+                    else "LOCAL_RELAY_ROUTING"
+                ),
+                elapsed_ms=elapsed,
+                timeout_budget_ms=_RELAY_PQ_WAIT_SECONDS * 1000.0,
+                outcome=reason,
+                error_class=reason,
+                extra={
+                    "candidate_run_ids": list(cand_ids_snap or []),
+                    "pq_announcements": ann_snap,
+                },
+            )
+        return r_obj, a_obj, reason
+
+    _emit_tool_call_event(
+        "relay",
+        phase="relay_route_start",
+        wire_call_id=wire_call_id,
+        tool_name=tool_name,
+        source="relay",
+        wait_owner="LOCAL_RELAY_ROUTING",
+        timeout_budget_ms=_RELAY_PQ_WAIT_SECONDS * 1000.0,
+    )
     if abort_evt is not None and abort_evt.is_set():
-        return None, None, "aborted"
+        return _emit_route_done(None, None, "aborted")
     live = _relay_live_actors()
     if not live:
-        return None, None, "none"
+        return _emit_route_done(None, None, "none")
     if len(live) == 1:
-        return live[0][0], live[0][1], "single_active"
+        return _emit_route_done(live[0][0], live[0][1], "single_active")
 
     candidates = [
         (r, a)
@@ -75270,7 +76004,7 @@ async def _relay_resolve_target(
         or tool_name in r.tool_ledger.local_tool_names
     ]
     if len(candidates) == 1:
-        return candidates[0][0], candidates[0][1], "unique_tool_owner"
+        return _emit_route_done(candidates[0][0], candidates[0][1], "unique_tool_owner")
     had_named_owner = bool(candidates)
     if not candidates:
         candidates = live
@@ -75288,10 +76022,16 @@ async def _relay_resolve_target(
                 if r.tool_ledger.has_exact_background_command_id(cmd_id, source="relay")
             ]
             if len(exact_matches) == 1:
-                return exact_matches[0][0], exact_matches[0][1], "command_id"
+                return _emit_route_done(
+                    exact_matches[0][0], exact_matches[0][1], "command_id"
+                )
             if len(exact_matches) > 1:
-                return None, None, "ambiguous"
-            return None, None, "command_id_not_found"
+                return _emit_route_done(
+                    None, None, "ambiguous", cand_ids_snap=sorted(cand_ids)
+                )
+            return _emit_route_done(
+                None, None, "command_id_not_found", cand_ids_snap=sorted(cand_ids)
+            )
         bg_owners = [
             (r, a)
             for r, a in candidates
@@ -75302,22 +76042,24 @@ async def _relay_resolve_target(
             )
         ]
         if len(bg_owners) == 1:
-            return bg_owners[0][0], bg_owners[0][1], "command_id"
-        return None, None, "ambiguous"
+            return _emit_route_done(bg_owners[0][0], bg_owners[0][1], "command_id")
+        return _emit_route_done(None, None, "ambiguous", cand_ids_snap=sorted(cand_ids))
 
     if wire_call_id:
         for r, a in reversed(candidates):
             if wire_call_id in a.decoder.announced_client_tool_ids:
-                return r, a, "wire_call_id"
+                return _emit_route_done(r, a, "wire_call_id")
 
     claimed = _relay_claim_pq_announcement(tool_name, wire_call_id, cand_ids)
     if claimed is not None:
         matched_rid, reason = claimed
         if reason == "ambiguous":
-            return None, None, "ambiguous"
+            return _emit_route_done(
+                None, None, "ambiguous", cand_ids_snap=sorted(cand_ids)
+            )
         pair = by_id.get(matched_rid)
         if pair is not None:
-            return pair[0], pair[1], reason
+            return _emit_route_done(pair[0], pair[1], reason)
 
     # `POST /mcp` can arrive 10-150ms ahead of the owning run's `ProcessQuery` live frame;
     # wait briefly with instant wakeup when any PQ announcement arrives.
@@ -75331,10 +76073,10 @@ async def _relay_resolve_target(
         while True:
             notify_evt.clear()
             if abort_evt is not None and abort_evt.is_set():
-                return None, None, "aborted"
+                return _emit_route_done(None, None, "aborted")
             live_now = _relay_live_actors()
             if not live_now:
-                return None, None, "none"
+                return _emit_route_done(None, None, "none")
             cands_now = [
                 (r, a)
                 for r, a in live_now
@@ -75343,27 +76085,33 @@ async def _relay_resolve_target(
             ]
             if not cands_now:
                 if had_named_owner:
-                    return None, None, "none"
+                    return _emit_route_done(None, None, "none")
                 cands_now = live_now
             by_id = {r.run_id: (r, a) for r, a in cands_now}
             if not wire_call_id:
                 if len(live_now) == 1 and live_now[0][0].run_id in by_id:
-                    return live_now[0][0], live_now[0][1], "single_active"
+                    return _emit_route_done(
+                        live_now[0][0], live_now[0][1], "single_active"
+                    )
                 if len(cands_now) == 1:
-                    return cands_now[0][0], cands_now[0][1], "unique_tool_owner"
+                    return _emit_route_done(
+                        cands_now[0][0], cands_now[0][1], "unique_tool_owner"
+                    )
             else:
                 for r, a in reversed(cands_now):
                     if wire_call_id in a.decoder.announced_client_tool_ids:
-                        return r, a, "wire_call_id"
+                        return _emit_route_done(r, a, "wire_call_id")
             cand_ids = set(by_id.keys())
             claimed = _relay_claim_pq_announcement(tool_name, wire_call_id, cand_ids)
             if claimed is not None:
                 matched_rid, reason = claimed
                 if reason == "ambiguous":
-                    return None, None, "ambiguous"
+                    return _emit_route_done(
+                        None, None, "ambiguous", cand_ids_snap=sorted(cand_ids)
+                    )
                 pair = by_id.get(matched_rid)
                 if pair is not None:
-                    return pair[0], pair[1], reason
+                    return _emit_route_done(pair[0], pair[1], reason)
             remaining = deadline - time.monotonic()
             if remaining <= 0.0:
                 break
@@ -75392,8 +76140,10 @@ async def _relay_resolve_target(
                 pass
 
     if abort_evt is not None and abort_evt.is_set():
-        return None, None, "aborted"
-    return None, None, "ambiguous_no_announcement"
+        return _emit_route_done(None, None, "aborted")
+    return _emit_route_done(
+        None, None, "ambiguous_no_announcement", cand_ids_snap=sorted(cand_ids)
+    )
 
 
 def _relay_mcp_tool_catalog(ledger: _RobinToolLedger) -> list[dict[str, Any]]:
@@ -75746,6 +76496,24 @@ async def _relay_mcp_tools_call(
         if isinstance(tool_args, dict)
         else ""
     )
+    args_len = 0
+    if isinstance(tool_args, dict):
+        try:
+            args_len = len(json.dumps(tool_args, ensure_ascii=False, default=str))
+        except Exception:
+            args_len = 0
+    _emit_tool_call_event(
+        "relay",
+        phase="relay_mcp_received",
+        wire_call_id=peek_wire_id,
+        tool_name=tool_name,
+        source="relay",
+        wait_owner="LOCAL_RELAY_ROUTING",
+        args_digest=_tool_call_args_digest(
+            tool_args if isinstance(tool_args, dict) else {}
+        ),
+        payload_len=args_len,
+    )
     run, actor, routed_by = await _relay_resolve_target(
         tool_name,
         tool_args if isinstance(tool_args, dict) else {},
@@ -75789,7 +76557,8 @@ async def _relay_mcp_tools_call(
                     "status": "error",
                     "error": (
                         f"ambiguous relay routing ({routed_by}): multiple active sessions "
-                        f"could own tool {tool_name!r}; retry or use native client:* tools."
+                        f"could own tool {tool_name!r}; retry after a short staggered delay "
+                        "or use native client:* tools."
                     ),
                 },
                 is_error=True,
@@ -75996,6 +76765,47 @@ async def _relay_mcp_tools_call(
 
     wait_started = time.monotonic()
     overall_deadline = wait_started + max(0.01, max_tool_wait)
+    relay_sid = str(run.client_session_id or run.session_key or run.run_id)
+    _emit_tool_call_event(
+        relay_sid,
+        phase="relay_http_start",
+        run=run,
+        decoder=getattr(actor, "decoder", None),
+        public_tool_call_id=job_id,
+        wire_call_id=wire_call_id,
+        tool_name=tool_name,
+        source="relay",
+        wait_owner="DSH_TOOL_EXECUTION",
+        timeout_budget_ms=max_tool_wait * 1000.0,
+        args_digest=_tool_call_args_digest(tool_args),
+    )
+
+    def _emit_relay_done(
+        *, outcome: str, wait_owner: str, error_class: str = "", res_obj: Any = None
+    ) -> None:
+        res_len = 0
+        if res_obj is not None:
+            try:
+                res_len = len(json.dumps(res_obj, ensure_ascii=False, default=str))
+            except Exception:
+                res_len = 0
+        _emit_tool_call_event(
+            relay_sid,
+            phase="relay_http_done",
+            run=run,
+            decoder=getattr(actor, "decoder", None),
+            public_tool_call_id=job_id,
+            wire_call_id=wire_call_id,
+            tool_name=tool_name,
+            source="relay",
+            wait_owner=wait_owner,
+            elapsed_ms=(time.monotonic() - wait_started) * 1000.0,
+            timeout_budget_ms=max_tool_wait * 1000.0,
+            outcome=outcome,
+            error_class=error_class,
+            payload_len=res_len,
+        )
+
     ledger_r = getattr(actor.run, "tool_ledger", None)
     client_native_bg = bool(
         ledger_r is not None and ledger_r._client_supports_native_bg_jobs()
@@ -76006,10 +76816,16 @@ async def _relay_mcp_tools_call(
         first_wait = min(handoff_rem, max(0.0, overall_deadline - time.monotonic()))
         state, payload = await _relay_wait_with_abort(fut, abort_evt, first_wait)
         if state == "result" and payload is not None:
+            res_dict = payload.get("result") or {}
+            _emit_relay_done(
+                outcome="error" if payload.get("is_error") else "ok",
+                wait_owner="ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT",
+                res_obj=res_dict,
+            )
             return _relay_jsonrpc_result(
                 rpc_id,
                 _relay_mcp_tool_result(
-                    payload.get("result") or {}, is_error=bool(payload.get("is_error"))
+                    res_dict, is_error=bool(payload.get("is_error"))
                 ),
             )
         if state == "abort":
@@ -76022,6 +76838,11 @@ async def _relay_mcp_tools_call(
             except asyncio.TimeoutError:
                 pass
             _relay_drop_waiter(job_id)
+            _emit_relay_done(
+                outcome="aborted",
+                wait_owner="CLIENT_ABORT_OR_DISCONNECT",
+                error_class="http_abort",
+            )
             return _relay_jsonrpc_result(
                 rpc_id,
                 _relay_mcp_tool_result(
@@ -76040,15 +76861,26 @@ async def _relay_mcp_tools_call(
                 handoff = None
             if fut.done():
                 payload = fut.result()
+                res_dict = payload.get("result") or {}
+                _emit_relay_done(
+                    outcome="error" if payload.get("is_error") else "ok",
+                    wait_owner="ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT",
+                    res_obj=res_dict,
+                )
                 return _relay_jsonrpc_result(
                     rpc_id,
                     _relay_mcp_tool_result(
-                        payload.get("result") or {},
+                        res_dict,
                         is_error=bool(payload.get("is_error")),
                     ),
                 )
             if handoff is not None:
                 _relay_drop_waiter(job_id)
+                _emit_relay_done(
+                    outcome="background_handoff",
+                    wait_owner="ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT",
+                    res_obj=handoff,
+                )
                 return _relay_jsonrpc_result(
                     rpc_id, _relay_mcp_tool_result(handoff, is_error=False)
                 )
@@ -76071,6 +76903,11 @@ async def _relay_mcp_tools_call(
             pass
         _relay_drop_waiter(job_id)
         if state == "timeout":
+            _emit_relay_done(
+                outcome="timeout",
+                wait_owner="DSH_TOOL_EXECUTION",
+                error_class="relay_tool_wait_timeout",
+            )
             return _relay_jsonrpc_result(
                 rpc_id,
                 _relay_mcp_tool_result(
@@ -76084,17 +76921,26 @@ async def _relay_mcp_tools_call(
                     is_error=True,
                 ),
             )
+        _emit_relay_done(
+            outcome="aborted",
+            wait_owner="CLIENT_ABORT_OR_DISCONNECT",
+            error_class="http_abort",
+        )
         return _relay_jsonrpc_result(
             rpc_id,
             _relay_mcp_tool_result(
                 {"status": "cancelled", "error": "http request aborted"}, is_error=True
             ),
         )
+    res_dict = payload.get("result") or {}
+    _emit_relay_done(
+        outcome="error" if payload.get("is_error") else "ok",
+        wait_owner="ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT",
+        res_obj=res_dict,
+    )
     return _relay_jsonrpc_result(
         rpc_id,
-        _relay_mcp_tool_result(
-            payload.get("result") or {}, is_error=bool(payload.get("is_error"))
-        ),
+        _relay_mcp_tool_result(res_dict, is_error=bool(payload.get("is_error"))),
     )
 
 
@@ -78738,13 +79584,56 @@ class GeminiHTTPClient:
                                 ]
                                 _att.delivered_tool_ids.add(tc_id_str)
                                 _att.decoder.delivered_tool_call_ids.add(tc_id_str)
+                                now_deliv = time.monotonic()
+                                deliv_source = ""
+                                deliv_name = str(
+                                    (tool_call.get("function") or {}).get("name") or ""
+                                )
+                                for tc_entry in _att.decoder.pending_tool_calls:
+                                    if (
+                                        isinstance(tc_entry, dict)
+                                        and str(tc_entry.get("id") or "") == tc_id_str
+                                    ):
+                                        tc_entry["_delivery_state"] = "DELIVERED_TO_DSH"
+                                        tc_entry["_delivered_monotonic"] = now_deliv
+                                        deliv_source = str(
+                                            tc_entry.get("_source") or deliv_source
+                                        )
+                                        if not deliv_name:
+                                            deliv_name = str(tc_entry.get("name") or "")
+                                        break
                                 inv_deliv = _att.run.tool_ledger.by_public_id.get(
                                     tc_id_str
                                 )
                                 if inv_deliv is not None:
-                                    inv_deliv.dispatched_monotonic = (
-                                        time.monotonic() + 2.5
-                                    )
+                                    inv_deliv.dispatched_monotonic = now_deliv + 2.5
+                                    if not deliv_source:
+                                        deliv_source = inv_deliv.source
+                                    if not deliv_name:
+                                        deliv_name = inv_deliv.dsh_tool_name
+                                _emit_tool_call_event(
+                                    _att.run.client_session_id
+                                    or _att.run.session_key
+                                    or _att.run.run_id,
+                                    phase="delivered_to_dsh",
+                                    run=_att.run,
+                                    decoder=_att.decoder,
+                                    public_tool_call_id=tc_id_str,
+                                    wire_call_id=(
+                                        inv_deliv.wire_call_id
+                                        if inv_deliv is not None
+                                        else ""
+                                    ),
+                                    command_id=(
+                                        inv_deliv.bg_command_id
+                                        if inv_deliv is not None
+                                        else ""
+                                    ),
+                                    tool_name=deliv_name,
+                                    source=deliv_source,
+                                    wait_owner="DSH_TOOL_EXECUTION",
+                                    outcome="delivered",
+                                )
 
                 def _handoff_ready(
                     _att: _RobinAttemptContext = attempt,
@@ -99814,6 +100703,9 @@ def test_relay_channel_isolation_and_relay_only_submit():
     try:
 
         async def _cross_hop_and_abort_scenario() -> None:
+            # Part 1 (Class A - STAGED_FOR_DSH): hop_a delivered, hop_b remains STAGED_FOR_DSH in mux_queue.
+            # Submitting hop_a must keep hop_b staged without duplicating it in synth_tool_deltas;
+            # aborting hop_b must atomically clear pending_tool_calls, mux_queue, and wake tools_resumed_event.
             inv_a, _ = await actor._relay_dispatch_tool_call(
                 "bash",
                 {"command": "step-a"},
@@ -99827,16 +100719,11 @@ def test_relay_channel_isolation_and_relay_only_submit():
                 {"relay_job_id": "call_relay_hop_b", "relay_http_id": "h_hop_b"},
             )
             assert inv_a is not None and inv_b is not None
-            # Drain initial mux_queue chunks and simulate that both were delivered in SSE
-            while not actor.mux_queue.empty():
-                actor.mux_queue.get_nowait()
-            decoder.delivered_tool_call_ids.update(
-                {"call_relay_hop_a", "call_relay_hop_b"}
-            )
+            # Simulate hop_a delivered to DSH while hop_b is still staged in mux_queue
+            decoder.delivered_tool_call_ids.add("call_relay_hop_a")
+            decoder.pending_tool_calls[0]["_delivery_state"] = "DELIVERED_TO_DSH"
             fut_a = _relay_open_waiter("call_relay_hop_a")
             assert fut_a is not None
-            # Client submits only `call_relay_hop_a`; `call_relay_hop_b` must be re-queued
-            # in `mux_queue` as a synthetic tool delta so the next SSE hop never deadlocks.
             st_a = await actor.submit_tool_results(
                 [
                     {
@@ -99851,18 +100738,61 @@ def test_relay_channel_isolation_and_relay_only_submit():
             assert fut_a.done()
             assert len(decoder.pending_tool_calls) == 1
             assert decoder.pending_tool_calls[0]["id"] == "call_relay_hop_b"
-            assert not actor.mux_queue.empty()
-            q_kind, q_chunks = actor.mux_queue.get_nowait()
-            assert q_kind == "ert_chunks" and len(q_chunks) == 1
-            re_emitted = q_chunks[0]["choices"][0]["delta"]["tool_calls"]
-            assert len(re_emitted) == 1 and re_emitted[0]["id"] == "call_relay_hop_b"
+            assert decoder.pending_tool_calls[0]["_delivery_state"] == "STAGED_FOR_DSH"
 
-            # Aborting the remaining Relay call clears `pending_tool_calls` and sets `tools_resumed_event`.
+            # Aborting the remaining staged Relay call atomically clears pending, mux_queue, and wakes tools_resumed_event.
             actor.tools_resumed_event.clear()
             await actor._relay_abort_tool_call("call_relay_hop_b")
             assert decoder.pending_tool_calls == []
             assert actor.pending_tool_calls == []
             assert inv_b.status == "REPORTED"
+            assert actor.run.execution_state == "RUNNING"
+            assert actor.tools_resumed_event.is_set()
+
+            # Part 2 (Class B2 - non-crash DELIVERED_TO_DSH partial return):
+            # Zero replay, immediate isError=True settlement, and clean SSE resumption without deadlock.
+            while not actor.mux_queue.empty():
+                actor.mux_queue.get_nowait()
+            inv_c, _ = await actor._relay_dispatch_tool_call(
+                "bash",
+                {"command": "step-c"},
+                "call_relay_hop_c",
+                {"relay_job_id": "call_relay_hop_c", "relay_http_id": "h_hop_c"},
+            )
+            inv_d, _ = await actor._relay_dispatch_tool_call(
+                "bash",
+                {"command": "step-d"},
+                "call_relay_hop_d",
+                {"relay_job_id": "call_relay_hop_d", "relay_http_id": "h_hop_d"},
+            )
+            assert inv_c is not None and inv_d is not None
+            while not actor.mux_queue.empty():
+                actor.mux_queue.get_nowait()
+            decoder.delivered_tool_call_ids.update(
+                {"call_relay_hop_c", "call_relay_hop_d"}
+            )
+            for tc_cd in decoder.pending_tool_calls:
+                tc_cd["_delivery_state"] = "DELIVERED_TO_DSH"
+            fut_c = _relay_open_waiter("call_relay_hop_c")
+            fut_d = _relay_open_waiter("call_relay_hop_d")
+            assert fut_c is not None and fut_d is not None
+            actor.tools_resumed_event.clear()
+            st_c = await actor.submit_tool_results(
+                [
+                    {
+                        "role": "tool",
+                        "tool_call_id": "call_relay_hop_c",
+                        "name": "bash",
+                        "content": "out-c\n",
+                    }
+                ]
+            )
+            assert st_c == "ok"
+            assert fut_c.done() and not fut_c.result()["is_error"]
+            assert fut_d.done() and fut_d.result()["is_error"] is True
+            assert actor.mux_queue.empty()
+            assert decoder.pending_tool_calls == []
+            assert actor.pending_tool_calls == []
             assert actor.run.execution_state == "RUNNING"
             assert actor.tools_resumed_event.is_set()
 
@@ -100950,11 +101880,21 @@ def test_relay_catalog_handoff_and_veh_injection():
                 r_wid,
                 by_wid,
             )
+            (
+                r_rem_unscoped,
+                a_rem_unscoped,
+                by_rem_unscoped,
+            ) = await _relay_resolve_target("wait_agent", {}, "", None)
+            assert (
+                r_rem_unscoped is None
+                and a_rem_unscoped is None
+                and by_rem_unscoped == "ambiguous"
+            ), (r_rem_unscoped, by_rem_unscoped)
             r_rem, a_rem, by_rem = await _relay_resolve_target(
-                "wait_agent", {}, "", None
+                "wait_agent", {}, "wire_amb_lead_1", None
             )
             assert (
-                r_rem is run_lead and a_rem is actor_lead and by_rem == "pq_tool_name"
+                r_rem is run_lead and a_rem is actor_lead and by_rem == "pq_wire_id"
             ), (r_rem, by_rem)
 
             # 5b) Carrying `wire_call_id` must NEVER downgrade to tool_name/generic match
@@ -119286,6 +120226,1385 @@ def test_robin_invalid_url_cross_path_consistency_contract() -> None:
     )
 
 
+def test_continuation_lifecycle_and_closure_contract() -> None:
+    """Group 1 contract: single-source pending, A/B1/B2 closure, Pass 2 guard, atomic retire."""
+    _RELAY_HTTP_WAITERS.clear()
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "bash",
+                "description": "run shell",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"command": {"type": "string"}},
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "read",
+                "description": "read file",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"file_path": {"type": "string"}},
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "edit",
+                "description": "edit file",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"file_path": {"type": "string"}},
+                },
+            },
+        },
+    ]
+
+    class _CapERT:
+        def __init__(self) -> None:
+            self.sent: list[bytes] = []
+            self.keep_open = True
+
+        async def send_grpc_frames(
+            self, frames: list[bytes], end_stream: bool = False
+        ) -> None:
+            _ = end_stream
+            self.sent.extend(frames)
+
+    def _mk_actor(tag: str, *, init_pending: list[dict[str, Any]] | None = None):
+        run = _RobinRunState(
+            run_id=f"run_st_cont_{tag}",
+            conversation_id=f"c_st_cont_{tag}",
+            session_key=f"sk_st_cont_{tag}",
+            boot_key=f"bk_st_cont_{tag}",
+            full_key=f"fk_st_cont_{tag}",
+            client_session_id=f"sid_st_cont_{tag}",
+            principal_id="p_selftest",
+            dsh_tools=tools,
+        )
+        run.tool_ledger = _RobinToolLedger(run_id=run.run_id, dsh_tools=tools)
+        dec = _RobinStreamDecoder(f"cmpl-{tag}", 0, "gemini:gemini-4-argon", run=run)
+        dec.conversation_id = run.conversation_id
+        ert = _CapERT()
+        kwargs: dict[str, Any] = {
+            "session_id": run.client_session_id,
+            "session_key": run.session_key,
+            "boot_key": run.boot_key,
+            "full_key": run.full_key,
+            "http_session": cast(Any, None),
+            "response": None,
+            "iterator": None,
+            "decoder": dec,
+            "run": run,
+            "conversation_id": run.conversation_id,
+            "ert_response": ert,
+        }
+        if init_pending is not None:
+            kwargs["pending_tool_calls"] = init_pending
+        act = _RobinRunActor(**kwargs)
+        return run, dec, act, ert
+
+    orig_save = _GEMINI_DSH_STORE.save_run
+    cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+    try:
+        # 1. BUG_REPRO: Single Source of Truth + @dataclass kwarg compatibility + decoder=None fallback
+        _, dec_ssot, act_ssot, _ = _mk_actor("ssot")
+        arg_entry = _pb_bytes_field(1, b"CommandLine") + _pb_bytes_field(
+            2, _pb_bytes_field(3, b"echo hi")
+        )
+        fc_ssot = (
+            _pb_bytes_field(1, b"client:run_command")
+            + _pb_bytes_field(2, b"wire_st_ssot_1")
+            + _pb_bytes_field(3, _pb_bytes_field(1, arg_entry))
+        )
+        ert_resp_frame = _pb_bytes_field(2, _pb_bytes_field(1, fc_ssot))
+        dec_ssot.feed_ert_bytes(_robin_pack_grpc_frames([ert_resp_frame]))
+        assert len(dec_ssot.pending_tool_calls) == 1
+        assert act_ssot.pending_tool_calls is dec_ssot.pending_tool_calls
+        assert dec_ssot.pending_tool_calls[0]["_delivery_state"] == "STAGED_FOR_DSH"
+        assert dec_ssot.pending_tool_calls[0]["_replay_count"] == 0
+
+        _, dec_kw, act_kw, _ = _mk_actor(
+            "kw",
+            init_pending=[{"id": "call_st_kw_1", "name": "bash", "_source": "ert"}],
+        )
+        assert len(dec_kw.pending_tool_calls) == 1
+        assert act_kw.pending_tool_calls is dec_kw.pending_tool_calls
+        act_no_dec = _RobinRunActor(
+            session_id="sid_nodec",
+            session_key="sk_nodec",
+            boot_key="bk_nodec",
+            full_key="fk_nodec",
+            http_session=cast(Any, None),
+            response=None,
+            iterator=None,
+            decoder=cast(Any, None),
+            run=act_kw.run,
+            pending_tool_calls=[{"id": "call_st_fb_1"}],
+        )
+        assert act_no_dec.pending_tool_calls == [{"id": "call_st_fb_1"}]
+
+        # 2. BUG_REPRO: Pass 2 unlabeled output must NOT misbind to late STAGED_FOR_DSH
+        reconciled_p2 = _robin_reconcile_tool_outputs(
+            [
+                {
+                    "id": "call_st_p2_deliv",
+                    "name": "bash",
+                    "_delivery_state": "DELIVERED_TO_DSH",
+                },
+                {
+                    "id": "call_st_p2_staged",
+                    "name": "read",
+                    "_delivery_state": "STAGED_FOR_DSH",
+                },
+            ],
+            [{"tool_call_id": "", "name": "", "output": "ok"}],
+        )
+        assert len(reconciled_p2) == 1
+        assert reconciled_p2[0]["tool_call_id"] == "call_st_p2_deliv"
+        reconciled_p2_extra = _robin_reconcile_tool_outputs(
+            [
+                {
+                    "id": "call_st_p2_deliv",
+                    "name": "bash",
+                    "_delivery_state": "DELIVERED_TO_DSH",
+                },
+                {
+                    "id": "call_st_p2_staged",
+                    "name": "read",
+                    "_delivery_state": "STAGED_FOR_DSH",
+                },
+            ],
+            [
+                {"tool_call_id": "call_st_p2_deliv", "name": "bash", "output": "ok1"},
+                {"tool_call_id": "", "name": "", "output": "orphan"},
+            ],
+        )
+        assert [x["tool_call_id"] for x in reconciled_p2_extra] == ["call_st_p2_deliv"]
+
+        # 3. BUG_REPRO: Class A (late STAGED_FOR_DSH) must NOT warn `1 of 2` and must NOT replay
+        async def _run_async_cases() -> None:
+            warn_records: list[str] = []
+
+            class _WarnCapture(logging.Handler):
+                def emit(self, record: logging.LogRecord) -> None:
+                    if record.levelno >= logging.WARNING:
+                        warn_records.append(record.getMessage())
+
+            cap_h = _WarnCapture()
+            _llm_log.addHandler(cap_h)
+            try:
+                _, dec_a, act_a, _ = _mk_actor("class_a")
+                await act_a._relay_dispatch_tool_call(
+                    "bash",
+                    {"command": "echo a"},
+                    "call_st_ca_1",
+                    {"relay_job_id": "call_st_ca_1"},
+                )
+                await act_a._relay_dispatch_tool_call(
+                    "read",
+                    {"file_path": "/w/workspace/sample_doc.txt"},
+                    "call_st_ca_2",
+                    {"relay_job_id": "call_st_ca_2"},
+                )
+                # Mark only call 1 as DELIVERED_TO_DSH; call 2 remains STAGED_FOR_DSH in mux_queue
+                dec_a.delivered_tool_call_ids.add("call_st_ca_1")
+                dec_a.pending_tool_calls[0]["_delivery_state"] = "DELIVERED_TO_DSH"
+                fut_ca1 = _relay_open_waiter("call_st_ca_1")
+                assert fut_ca1 is not None
+                warn_records.clear()
+                st_ca = await act_a.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": "call_st_ca_1",
+                            "name": "bash",
+                            "content": "done-a\n",
+                        }
+                    ]
+                )
+                assert st_ca == "ok"
+                assert fut_ca1.done()
+                assert not any("Robin tool continuation" in m for m in warn_records)
+                assert [tc["id"] for tc in dec_a.pending_tool_calls] == ["call_st_ca_2"]
+                assert (
+                    dec_a.pending_tool_calls[0]["_delivery_state"] == "STAGED_FOR_DSH"
+                )
+                # Atomic retire of STAGED_FOR_DSH clears pending AND mux_queue chunk
+                await act_a._relay_abort_tool_call("call_st_ca_2")
+                assert dec_a.pending_tool_calls == []
+                assert act_a.pending_tool_calls == []
+                rem_ids_in_q: list[str] = []
+                while not act_a.mux_queue.empty():
+                    qk, qv = act_a.mux_queue.get_nowait()
+                    if qk == "ert_chunks":
+                        for ch in qv:
+                            for c in ch.get("choices") or []:
+                                for tc_q in (c.get("delta") or {}).get(
+                                    "tool_calls"
+                                ) or []:
+                                    rem_ids_in_q.append(str(tc_q.get("id") or ""))
+                assert "call_st_ca_2" not in rem_ids_in_q
+
+                # 4. BUG_REPRO: Class B2 (non-crash genuine partial return) for Relay & ERT
+                _, dec_b2r, act_b2r, ert_b2r = _mk_actor("b2_relay")
+                await act_b2r._relay_dispatch_tool_call(
+                    "bash",
+                    {"command": "echo 1"},
+                    "call_st_b2r_1",
+                    {"relay_job_id": "call_st_b2r_1"},
+                )
+                await act_b2r._relay_dispatch_tool_call(
+                    "bash",
+                    {"command": "echo 2"},
+                    "call_st_b2r_2",
+                    {"relay_job_id": "call_st_b2r_2"},
+                )
+                while not act_b2r.mux_queue.empty():
+                    act_b2r.mux_queue.get_nowait()
+                for tc in dec_b2r.pending_tool_calls:
+                    tc["_delivery_state"] = "DELIVERED_TO_DSH"
+                    dec_b2r.delivered_tool_call_ids.add(tc["id"])
+                fut_b2r_1 = _relay_open_waiter("call_st_b2r_1")
+                fut_b2r_2 = _relay_open_waiter("call_st_b2r_2")
+                assert fut_b2r_1 is not None and fut_b2r_2 is not None
+                act_b2r.tools_resumed_event.clear()
+                warn_records.clear()
+                st_b2r = await act_b2r.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": "call_st_b2r_1",
+                            "name": "bash",
+                            "content": "ok-1\n",
+                        }
+                    ]
+                )
+                assert st_b2r == "ok"
+                assert fut_b2r_1.done() and not fut_b2r_1.result()["is_error"]
+                assert fut_b2r_2.done() and fut_b2r_2.result()["is_error"] is True
+                assert act_b2r.mux_queue.empty()
+                assert dec_b2r.pending_tool_calls == []
+                assert act_b2r.run.execution_state == "RUNNING"
+                assert act_b2r.run.attachment_state == "STREAMING"
+                assert act_b2r.tools_resumed_event.is_set()
+                assert ert_b2r.sent == []
+                assert dec_b2r.step_ert_received_count == 0
+                assert any(
+                    "resolved 1 of 2 delivered tool calls (missing=1, staged=0)" in m
+                    for m in warn_records
+                )
+
+                # B2 for ERT: synthesizes error FunctionResponse frame and clears debt
+                _, dec_b2e, act_b2e, ert_b2e = _mk_actor("b2_ert")
+                dec_b2e._ingest_raw_tool_calls(
+                    [
+                        {
+                            "id": "wire_b2e_1",
+                            "name": "client:run_command",
+                            "args": {"CommandLine": "ls"},
+                        },
+                        {
+                            "id": "wire_b2e_2",
+                            "name": "client:run_command",
+                            "args": {"CommandLine": "pwd"},
+                        },
+                    ]
+                )
+                for tc in dec_b2e.pending_tool_calls:
+                    tc["_delivery_state"] = "DELIVERED_TO_DSH"
+                    dec_b2e.delivered_tool_call_ids.add(tc["id"])
+                tc1_id = dec_b2e.pending_tool_calls[0]["id"]
+                act_b2e.tools_resumed_event.clear()
+                st_b2e = await act_b2e.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": tc1_id,
+                            "name": "bash",
+                            "content": "file_a\n",
+                        }
+                    ]
+                )
+                assert st_b2e == "ok"
+                assert len(ert_b2e.sent) == 2
+                assert act_b2e.mux_queue.empty()
+                assert dec_b2e.pending_tool_calls == []
+                assert act_b2e.tools_resumed_event.is_set()
+
+                # 5. B1 crash recovery cap: max_replay=1, 2nd miss downgrades to B2
+                _, dec_b1, act_b1, ert_b1 = _mk_actor("b1_cap")
+                dec_b1._ingest_raw_tool_calls(
+                    [
+                        {
+                            "id": "wire_b1_1",
+                            "name": "client:run_command",
+                            "args": {"CommandLine": "ls"},
+                        },
+                        {
+                            "id": "wire_b1_2",
+                            "name": "client:run_command",
+                            "args": {"CommandLine": "pwd"},
+                        },
+                    ]
+                )
+                for tc in dec_b1.pending_tool_calls:
+                    tc["_delivery_state"] = "DELIVERED_TO_DSH"
+                    dec_b1.delivered_tool_call_ids.add(tc["id"])
+                b1_id1 = dec_b1.pending_tool_calls[0]["id"]
+                b1_id2 = dec_b1.pending_tool_calls[1]["id"]
+                st_b1_1 = await act_b1.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": b1_id1,
+                            "name": "bash",
+                            "content": "Command was interrupted after it was recorded; tool outcome unknown.\n[exit code: -1]",
+                        }
+                    ]
+                )
+                assert st_b1_1 == "ok"
+                assert len(dec_b1.pending_tool_calls) == 1
+                assert dec_b1.pending_tool_calls[0]["id"] == b1_id2
+                assert dec_b1.pending_tool_calls[0]["_replay_count"] == 1
+                assert not act_b1.mux_queue.empty()
+                act_b1.mux_queue.get_nowait()
+                # Re-ingest a dummy crash call so hop 2 has an output while b1_id2 is still missing
+                dec_b1._ingest_raw_tool_calls(
+                    [
+                        {
+                            "id": "wire_b1_3",
+                            "name": "client:run_command",
+                            "args": {"CommandLine": "id"},
+                        }
+                    ]
+                )
+                b1_id3 = dec_b1.pending_tool_calls[1]["id"]
+                dec_b1.pending_tool_calls[1]["_delivery_state"] = "DELIVERED_TO_DSH"
+                dec_b1.delivered_tool_call_ids.add(b1_id3)
+                st_b1_2 = await act_b1.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": b1_id3,
+                            "name": "bash",
+                            "content": "Command was interrupted after it was recorded; tool outcome unknown.\n[exit code: -1]",
+                        }
+                    ]
+                )
+                assert st_b1_2 == "ok"
+                assert dec_b1.pending_tool_calls == []
+                assert len(ert_b1.sent) == 3
+            finally:
+                _llm_log.removeHandler(cap_h)
+
+        asyncio.run(_run_async_cases())
+    finally:
+        cast(Any, _GEMINI_DSH_STORE).save_run = orig_save
+        _RELAY_HTTP_WAITERS.clear()
+
+
+def test_relay_routing_liveness_and_barrier_contract() -> None:
+    """Group 2 contract: liveness filter, TERMINAL immediate wake, PQ retire, 2.5s shrink-only barrier."""
+    _relay_clear_active_run(None)
+    _RELAY_HTTP_WAITERS.clear()
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "team_task_update",
+                "description": "update task",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"task_id": {"type": "string"}},
+                },
+            },
+        }
+    ]
+
+    def _mk_pair(tag: str, *, loop_obj: Any = None):
+        run = _RobinRunState(
+            run_id=f"run_st_rt_{tag}",
+            conversation_id=f"c_st_rt_{tag}",
+            session_key=f"sk_st_rt_{tag}",
+            boot_key=f"bk_st_rt_{tag}",
+            full_key=f"fk_st_rt_{tag}",
+            client_session_id=f"sid_st_rt_{tag}",
+            principal_id="p_selftest",
+            dsh_tools=tools,
+        )
+        run.tool_ledger = _RobinToolLedger(run_id=run.run_id, dsh_tools=tools)
+        dec = _RobinStreamDecoder(f"cmpl-{tag}", 0, "gemini:gemini-4-argon", run=run)
+        act = _RobinRunActor(
+            session_id=run.client_session_id,
+            session_key=run.session_key,
+            boot_key=run.boot_key,
+            full_key=run.full_key,
+            http_session=cast(Any, None),
+            response=None,
+            iterator=None,
+            decoder=dec,
+            run=run,
+            loop=loop_obj,
+        )
+        _ROBIN_ACTIVE_RUNS[run.run_id] = run
+        _relay_bind_active_run(run, act)
+        return run, dec, act
+
+    orig_save = _GEMINI_DSH_STORE.save_run
+    cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+    created_ids: list[str] = []
+    try:
+        # 1. BUG_REPRO: filter is_completed & closed loop; preserve WAITING_TOOLS; no lock re-entry
+        class _ClosedLoop:
+            def is_closed(self) -> bool:
+                return True
+
+        r_live, d_live, a_live = _mk_pair("live")
+        r_done, d_done, a_done = _mk_pair("done")
+        r_dead, _, a_dead = _mk_pair("dead", loop_obj=_ClosedLoop())
+        created_ids.extend([r_live.run_id, r_done.run_id, r_dead.run_id])
+
+        r_live.execution_state = "WAITING_TOOLS"
+        assert _relay_is_run_live(r_live, a_live) is True
+        d_done.is_completed = True
+        assert _relay_is_run_live(r_done, a_done) is False
+        assert _relay_is_run_live(r_dead, a_dead) is False
+        live_pairs = _relay_live_actors()
+        assert [r.run_id for r, _ in live_pairs] == [r_live.run_id]
+
+        # 2. BUG_REPRO: feed_pq_frame raw_status!=1 retires announcement without touching ERT counters
+        r_a, d_a, a_a = _mk_pair("pq_a")
+        r_b, d_b, a_b = _mk_pair("pq_b")
+        created_ids.extend([r_a.run_id, r_b.run_id])
+        _relay_clear_active_run(r_live)
+
+        def _mk_relay_pq_frame(
+            call_id: str, tool_name: str, status: int, *, completed: bool = False
+        ) -> bytes:
+            decl_inner = _pb_bytes_field(1, b"custom_mcp__veh") + _pb_bytes_field(
+                2, tool_name.encode("utf-8")
+            )
+            t_fields = (
+                _pb_bytes_field(1, b"VEH MCP Server")
+                + _pb_varint_field(4, status)
+                + _pb_bytes_field(8, _pb_bytes_field(1, decl_inner))
+                + _pb_bytes_field(10, call_id.encode("utf-8"))
+            )
+            l_msg = _pb_bytes_field(13, _pb_bytes_field(1, t_fields))
+            c1 = _pb_bytes_field(6, l_msg)
+            if completed:
+                cand = (
+                    _pb_bytes_field(1, b"rc_st_pq")
+                    + _pb_bytes_field(2, _pb_bytes_field(1, b"done"))
+                    + _pb_varint_field(19, 2)
+                )
+                c1 += _pb_bytes_field(1, cand)
+            return _pb_bytes_field(1003, _pb_bytes_field(1, c1))
+
+        d_a.feed_pq_frame(_mk_relay_pq_frame("pq_cid_1", "team_task_update", 1))
+        assert d_a.step_announced_count == 0
+        assert not d_a.announced_client_tool_ids
+        with _RELAY_REGISTRY_LOCK:
+            assert any(ann.call_id == "pq_cid_1" for ann in _RELAY_PQ_ANNOUNCEMENTS)
+        d_a.feed_pq_frame(_mk_relay_pq_frame("pq_cid_1", "team_task_update", 2))
+        with _RELAY_REGISTRY_LOCK:
+            assert not any(ann.call_id == "pq_cid_1" for ann in _RELAY_PQ_ANNOUNCEMENTS)
+        assert d_a.step_announced_count == 0
+
+        # 3. BUG_REPRO: Symmetric shrink-only 2.5s conflict_barrier (virtual clock, zero sleep)
+        fake_now = [100.0]
+        orig_mono = time.monotonic
+        cast(Any, time).monotonic = lambda: fake_now[0]
+        try:
+            _relay_record_pq_announcement(
+                r_a.run_id, tool_name="team_task_update", call_id="c_bar_a"
+            )
+            _relay_record_pq_announcement(
+                r_b.run_id, tool_name="team_task_update", call_id="c_bar_b"
+            )
+            fake_now[0] = 100.1
+            c1 = _relay_claim_pq_announcement(
+                "team_task_update", "", {r_a.run_id, r_b.run_id}
+            )
+            assert c1 == ("", "ambiguous")
+            with _RELAY_REGISTRY_LOCK:
+                assert len(_RELAY_PQ_ANNOUNCEMENTS) == 2
+                assert all(ann.conflict_barrier for ann in _RELAY_PQ_ANNOUNCEMENTS)
+                assert all(
+                    abs(ann.expires_monotonic - 102.6) < 1e-6
+                    for ann in _RELAY_PQ_ANNOUNCEMENTS
+                )
+            # Shrink-only: retry at 101.5 must NOT extend barrier to 104.0
+            fake_now[0] = 101.5
+            c2 = _relay_claim_pq_announcement(
+                "team_task_update", "", {r_a.run_id, r_b.run_id}
+            )
+            assert c2 == ("", "ambiguous")
+            with _RELAY_REGISTRY_LOCK:
+                assert all(
+                    abs(ann.expires_monotonic - 102.6) < 1e-6
+                    for ann in _RELAY_PQ_ANNOUNCEMENTS
+                )
+            # Hard constraint: retiring B leaves only A's conflict_barrier=True; MUST NOT claim A alone!
+            _relay_retire_pq_announcements(r_b.run_id, call_id="c_bar_b")
+            c3 = _relay_claim_pq_announcement(
+                "team_task_update", "", {r_a.run_id, r_b.run_id}
+            )
+            assert c3 == ("", "ambiguous")
+            # After 2.5s barrier expires (well before 15s TTL), fresh announcement claims cleanly
+            fake_now[0] = 102.7
+            _relay_record_pq_announcement(
+                r_a.run_id, tool_name="team_task_update", call_id="c_fresh_a"
+            )
+            c4 = _relay_claim_pq_announcement(
+                "team_task_update", "", {r_a.run_id, r_b.run_id}
+            )
+            assert c4 == (r_a.run_id, "pq_tool_name")
+        finally:
+            cast(Any, time).monotonic = orig_mono
+
+        # 4. BUG_REPRO + PRESERVATION: TERMINAL immediately wakes waiter and resolves to surviving run
+        async def _test_terminal_wakeup() -> None:
+            loop = asyncio.get_running_loop()
+            a_a.loop = loop
+            a_b.loop = loop
+            resolve_task = asyncio.create_task(
+                _relay_resolve_target("team_task_update", {}, "", None)
+            )
+            # Yield once so waiter registers on _RELAY_PQ_NOTIFY_WAITERS
+            await asyncio.sleep(0)
+            d_b.feed_pq_frame(
+                _mk_relay_pq_frame("pq_done_b", "team_task_update", 2, completed=True)
+            )
+            got_r, got_a, routed_by = await asyncio.wait_for(resolve_task, timeout=1.0)
+            assert got_r is r_a and got_a is a_a and routed_by == "single_active"
+
+            # Re-bind r_b live and verify staggered retry hint on ambiguous fail-closed response
+            r_b.execution_state = "RUNNING"
+            r_b.finalization_state = "OPEN"
+            d_b.is_completed = False
+            _ROBIN_ACTIVE_RUNS[r_b.run_id] = r_b
+            _relay_bind_active_run(r_b, a_b)
+            _relay_record_pq_announcement(
+                r_a.run_id, tool_name="team_task_update", call_id="c_st_amb_a"
+            )
+            _relay_record_pq_announcement(
+                r_b.run_id, tool_name="team_task_update", call_id="c_st_amb_b"
+            )
+            status_code, _, body_bytes = await _relay_mcp_tools_call(
+                "team_task_update",
+                {"task_id": "t1"},
+                "rpc_amb_1",
+                http_id="h_amb_1",
+                connection_id="ws_amb_1",
+                abort_evt=None,
+            )
+            assert status_code == 200
+            resp_obj = json.loads(body_bytes.decode("utf-8"))
+            assert resp_obj["result"]["isError"] is True
+            err_txt = resp_obj["result"]["content"][0]["text"]
+            assert "ambiguous relay routing" in err_txt
+            assert "staggered delay" in err_txt
+
+        asyncio.run(_test_terminal_wakeup())
+    finally:
+        cast(Any, _GEMINI_DSH_STORE).save_run = orig_save
+        _relay_clear_active_run(None)
+        for rid in created_ids:
+            _ROBIN_ACTIVE_RUNS.pop(rid, None)
+        _RELAY_HTTP_WAITERS.clear()
+
+
+def test_large_frame_keepalive_and_combo_matrix_contract() -> None:
+    """Group 3 contract: 6 large-frame cross scenarios, 8 keepalive points, 5 high-risk combos."""
+    _relay_clear_active_run(None)
+    _RELAY_HTTP_WAITERS.clear()
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "write",
+                "description": "write file",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "file_path": {"type": "string"},
+                        "content": {"type": "string"},
+                    },
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "bash",
+                "description": "run shell",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"command": {"type": "string"}},
+                },
+            },
+        },
+    ]
+
+    def _mk_ert_call_frame(
+        wire_id: str, tool_name: str, extra_args: dict[str, str]
+    ) -> bytes:
+        entries = b"".join(
+            _pb_bytes_field(
+                1,
+                _pb_bytes_field(1, k.encode("utf-8"))
+                + _pb_bytes_field(2, _pb_bytes_field(3, v.encode("utf-8"))),
+            )
+            for k, v in extra_args.items()
+        )
+        fc_pb = (
+            _pb_bytes_field(1, tool_name.encode("utf-8"))
+            + _pb_bytes_field(2, wire_id.encode("utf-8"))
+            + _pb_bytes_field(3, entries)
+        )
+        resp_pb = _pb_bytes_field(2, _pb_bytes_field(1, fc_pb))
+        return _robin_pack_grpc_frames([resp_pb])
+
+    class _LockTrackERT:
+        def __init__(self, *, fail_once: bool = False) -> None:
+            self.sent: list[bytes] = []
+            self.keep_open = True
+            self.in_flight = 0
+            self.max_in_flight = 0
+            self.fail_once = fail_once
+
+        async def send_grpc_frames(
+            self, frames: list[bytes], end_stream: bool = False
+        ) -> None:
+            _ = end_stream
+            self.in_flight += 1
+            self.max_in_flight = max(self.max_in_flight, self.in_flight)
+            try:
+                await asyncio.sleep(0)
+                if self.fail_once:
+                    self.fail_once = False
+                    raise RuntimeError("transient keepalive send error")
+                self.sent.extend(frames)
+            finally:
+                self.in_flight -= 1
+
+        def release(self) -> None:
+            pass
+
+    orig_save = _GEMINI_DSH_STORE.save_run
+    cast(Any, _GEMINI_DSH_STORE).save_run = lambda r: None
+    try:
+        # Large-frame scenarios 1-6: >16 KiB frame interleaved with small call, dedupe, rollover, mixed Relay, B2 + late, terminal cleanup
+        run = _RobinRunState(
+            run_id="run_st_lf_1",
+            conversation_id="c_st_lf_1",
+            session_key="sk_st_lf_1",
+            boot_key="bk_st_lf_1",
+            full_key="fk_st_lf_1",
+            client_session_id="sid_st_lf_1",
+            principal_id="p_selftest",
+            dsh_tools=tools,
+        )
+        run.tool_ledger = _RobinToolLedger(
+            run_id=run.run_id, dsh_tools=tools, connected_folders=[_SELFTEST_WORKSPACE]
+        )
+        dec = _RobinStreamDecoder("cmpl-lf1", 0, "gemini:gemini-4-argon", run=run)
+        dec.conversation_id = run.conversation_id
+        ert = _LockTrackERT()
+        act = _RobinRunActor(
+            session_id=run.client_session_id,
+            session_key=run.session_key,
+            boot_key=run.boot_key,
+            full_key=run.full_key,
+            http_session=cast(Any, None),
+            response=None,
+            iterator=None,
+            decoder=dec,
+            run=run,
+            conversation_id=run.conversation_id,
+            ert_response=ert,
+        )
+        big_payload = "A" * 20000
+        big_frame = _mk_ert_call_frame(
+            "wire_lf_big_1",
+            "client:write_to_file",
+            {
+                "TargetFile": f"{_SELFTEST_WORKSPACE}/sample_big.txt",
+                "Content": big_payload,
+            },
+        )
+        assert len(big_frame) > 16384
+        # Split into 4 chunks and verify partial frame grace + completion
+        part_sz = len(big_frame) // 4
+        assert dec.feed_ert_bytes(big_frame[:part_sz]) == []
+        assert dec.has_active_ert_partial_frame() is True
+        assert dec.feed_ert_bytes(big_frame[part_sz : part_sz * 2]) == []
+        assert dec.feed_ert_bytes(big_frame[part_sz * 2 : part_sz * 3]) == []
+        chunks_big = dec.feed_ert_bytes(big_frame[part_sz * 3 :])
+        assert len(chunks_big) == 1
+        assert dec.has_active_ert_partial_frame() is False
+        assert len(dec.pending_tool_calls) == 1
+        assert act.pending_tool_calls is dec.pending_tool_calls
+
+        # Duplicate wire_call_id redelivery must be deduplicated
+        dup_chunks = dec.feed_ert_bytes(big_frame)
+        assert dup_chunks == []
+        assert len(dec.pending_tool_calls) == 1
+
+        # Interleaved small call + mixed Relay call + partial B2 + late staged preservation (Combo #2 & #5)
+        small_frame = _mk_ert_call_frame(
+            "wire_lf_small_2", "client:run_command", {"CommandLine": "echo ok"}
+        )
+        assert len(dec.feed_ert_bytes(small_frame)) == 1
+        assert len(dec.pending_tool_calls) == 2
+
+        async def _run_combo_and_keepalive() -> None:
+            # Add a late STAGED_FOR_DSH Relay call
+            inv_rel, _ = await act._relay_dispatch_tool_call(
+                "bash",
+                {"command": "echo rel"},
+                "call_st_lf_rel",
+                {"relay_job_id": "call_st_lf_rel"},
+            )
+            assert inv_rel is not None
+            # Mark the two ERT calls DELIVERED_TO_DSH; Relay call remains STAGED_FOR_DSH
+            big_id = dec.pending_tool_calls[0]["id"]
+            small_id = dec.pending_tool_calls[1]["id"]
+            dec.pending_tool_calls[0]["_delivery_state"] = "DELIVERED_TO_DSH"
+            dec.pending_tool_calls[1]["_delivery_state"] = "DELIVERED_TO_DSH"
+            dec.delivered_tool_call_ids.update({big_id, small_id})
+            # Submit only big_id: small_id closes via B2 ERT error frame, Relay staged call preserved!
+            st_mix = await act.submit_tool_results(
+                [
+                    {
+                        "role": "tool",
+                        "tool_call_id": big_id,
+                        "name": "write",
+                        "content": "wrote ok",
+                    }
+                ]
+            )
+            assert st_mix == "ok"
+            assert len(ert.sent) == 2
+            assert [tc["id"] for tc in dec.pending_tool_calls] == ["call_st_lf_rel"]
+            assert dec.pending_tool_calls[0]["_delivery_state"] == "STAGED_FOR_DSH"
+
+            # Keepalive 8-point checks (real ensure_ert_and_presence + virtual-clock / Event):
+            # Point 1 & 2: real ensure_ert_and_presence never spawns duplicate presence_task,
+            # and _presence_driver_loop fires periodic presence on virtual-clock gate during WAITING_TOOLS
+            pres_calls: list[str] = []
+            pres_tick_gate = asyncio.Event()
+            pres_second_done = asyncio.Event()
+            orig_send_pres = globals()["_robin_send_report_presence"]
+            orig_sleep = asyncio.sleep
+
+            async def _fake_send_presence(
+                _sess: Any,
+                _tok: str,
+                cid: str,
+                **_kw: Any,
+            ) -> bool:
+                pres_calls.append(cid)
+                if len(pres_calls) >= 2:
+                    pres_second_done.set()
+                return True
+
+            async def _virt_sleep(delay: float, *args: Any, **kwargs: Any) -> Any:
+                if delay >= GEMINI_ROBIN_PRESENCE_INTERVAL_SECONDS:
+                    await pres_tick_gate.wait()
+                    pres_tick_gate.clear()
+                    return None
+                return await orig_sleep(delay, *args, **kwargs)
+
+            globals()["_robin_send_report_presence"] = _fake_send_presence
+            cast(Any, asyncio).sleep = _virt_sleep
+            try:
+                act.has_robin_tools = False
+                run.execution_state = "WAITING_TOOLS"
+                await act.ensure_ert_and_presence(run.conversation_id)
+                first_pt = act.presence_task
+                assert first_pt is not None and not first_pt.done()
+                assert len(pres_calls) == 1
+                # Calling ensure_ert_and_presence a second time MUST NOT spawn a duplicate task
+                await act.ensure_ert_and_presence(run.conversation_id)
+                assert act.presence_task is first_pt
+                assert len(pres_calls) == 1
+                # Trigger one virtual-clock presence interval while in WAITING_TOOLS
+                pres_tick_gate.set()
+                await asyncio.wait_for(pres_second_done.wait(), timeout=1.0)
+                assert len(pres_calls) >= 2
+            finally:
+                globals()["_robin_send_report_presence"] = orig_send_pres
+                cast(Any, asyncio).sleep = orig_sleep
+
+            # Point 3 & 4: ERT keepalive frames serialize under ert_flush_lock and never pollute delivered_tool_call_ids
+            delivered_before = set(dec.delivered_tool_call_ids)
+            dec.pending_ert_outbound_frames.extend([b"frame_ka_1", b"frame_res_2"])
+            await asyncio.gather(
+                act.flush_pending_ert_outbound(),
+                act.flush_pending_ert_outbound(),
+            )
+            assert ert.max_in_flight == 1
+            assert dec.delivered_tool_call_ids == delivered_before
+
+            # Point 5 & 8: collect_async_keepalive_frames only scans ERT source (never Relay),
+            # and non-VEH STAGED_FOR_DSH ERT boundary behaves deterministically without polluting delivered_tool_call_ids
+            inv_rel.dispatched_monotonic = time.monotonic() - 25.0
+            ka_frames_relay = run.tool_ledger.collect_async_keepalive_frames(
+                now_monotonic=time.monotonic()
+            )
+            assert ka_frames_relay == []
+            # Non-VEH client (no job_output) with ERT backgroundable call past 10s emits 1 ERT handoff frame
+            dec._ingest_raw_tool_calls(
+                [
+                    {
+                        "id": "wire_st_nonveh_ka",
+                        "name": "client:run_command",
+                        "args": {"CommandLine": "sleep 30"},
+                    }
+                ]
+            )
+            nonveh_pub_id = dec.pending_tool_calls[-1]["id"]
+            nonveh_inv = run.tool_ledger.by_public_id[nonveh_pub_id]
+            nonveh_inv.dispatched_monotonic = time.monotonic() - 15.0
+            ka_frames_ert = run.tool_ledger.collect_async_keepalive_frames(
+                now_monotonic=time.monotonic()
+            )
+            assert len(ka_frames_ert) == 1
+            assert nonveh_inv.status == "BACKGROUNDED"
+            assert nonveh_pub_id not in dec.delivered_tool_call_ids
+
+            # Point 6 & 8: ERT keepalive send failure does not stall actor or crash main path
+            act.ert_response = _LockTrackERT(fail_once=True)
+            dec.pending_ert_outbound_frames.append(b"frame_ka_err")
+            await act.flush_pending_ert_outbound()
+            assert dec.pending_ert_outbound_frames == [b"frame_ka_err"]
+            dec.pending_ert_outbound_frames.clear()
+
+            # Point 7 & Large-frame scenario 6: Terminal cleanup cancels presence_task and empties all pending/delivered
+            act._finalize_parked_or_terminal_from_driver(
+                outcome="SUCCEEDED", reason="selftest_terminal"
+            )
+            await asyncio.sleep(0)
+            assert first_pt.cancelled() or first_pt.done()
+            assert dec.pending_tool_calls == []
+            assert act.pending_tool_calls == []
+            assert dec.delivered_tool_call_ids == set()
+
+            # Combo #1: ERT large frame partial + rollover + fresh stream redelivery + continuation
+            r_c1 = _RobinRunState(
+                run_id="run_st_c1",
+                conversation_id="c_st_c1",
+                session_key="sk_st_c1",
+                boot_key="bk_st_c1",
+                full_key="fk_st_c1",
+                client_session_id="sid_st_c1",
+                principal_id="p_selftest",
+                dsh_tools=tools,
+            )
+            r_c1.tool_ledger = _RobinToolLedger(
+                run_id=r_c1.run_id,
+                dsh_tools=tools,
+                connected_folders=[_SELFTEST_WORKSPACE],
+            )
+            d_c1 = _RobinStreamDecoder("cmpl-c1", 0, "gemini:gemini-4-argon", run=r_c1)
+            d_c1.conversation_id = r_c1.conversation_id
+            ert_c1 = _LockTrackERT()
+            a_c1 = _RobinRunActor(
+                session_id=r_c1.client_session_id,
+                session_key=r_c1.session_key,
+                boot_key=r_c1.boot_key,
+                full_key=r_c1.full_key,
+                http_session=cast(Any, None),
+                response=None,
+                iterator=None,
+                decoder=d_c1,
+                run=r_c1,
+                conversation_id=r_c1.conversation_id,
+                ert_response=ert_c1,
+            )
+            c1_frame = _mk_ert_call_frame(
+                "wire_c1_big",
+                "client:write_to_file",
+                {"TargetFile": f"{_SELFTEST_WORKSPACE}/c1.txt", "Content": "B" * 18000},
+            )
+            assert d_c1.feed_ert_bytes(c1_frame[:4096]) == []
+            assert d_c1.has_active_ert_partial_frame() is True
+            d_c1.on_ert_stream_rollover()
+            assert d_c1.has_active_ert_partial_frame() is False
+            assert len(d_c1.feed_ert_bytes(c1_frame)) == 1
+            c1_pub = d_c1.pending_tool_calls[0]["id"]
+            d_c1.pending_tool_calls[0]["_delivery_state"] = "DELIVERED_TO_DSH"
+            d_c1.delivered_tool_call_ids.add(c1_pub)
+            st_c1 = await a_c1.submit_tool_results(
+                [
+                    {
+                        "role": "tool",
+                        "tool_call_id": c1_pub,
+                        "name": "write",
+                        "content": "ok",
+                    }
+                ]
+            )
+            assert st_c1 == "ok" and len(ert_c1.sent) == 1
+
+            # Combo #3: Two sessions same tool + one aborts + late PQ announcement resolves cleanly
+            loop_cur = asyncio.get_running_loop()
+            r_c3a = _RobinRunState(
+                run_id="run_st_c3a",
+                conversation_id="c_st_c3a",
+                session_key="sk_st_c3a",
+                boot_key="bk_st_c3a",
+                full_key="fk_st_c3a",
+                client_session_id="sid_st_c3a",
+                principal_id="p_selftest",
+                dsh_tools=tools,
+            )
+            r_c3a.tool_ledger = _RobinToolLedger(run_id=r_c3a.run_id, dsh_tools=tools)
+            d_c3a = _RobinStreamDecoder(
+                "cmpl-c3a", 0, "gemini:gemini-4-argon", run=r_c3a
+            )
+            a_c3a = _RobinRunActor(
+                session_id=r_c3a.client_session_id,
+                session_key=r_c3a.session_key,
+                boot_key=r_c3a.boot_key,
+                full_key=r_c3a.full_key,
+                http_session=cast(Any, None),
+                response=None,
+                iterator=None,
+                decoder=d_c3a,
+                run=r_c3a,
+                loop=loop_cur,
+            )
+            r_c3b = _RobinRunState(
+                run_id="run_st_c3b",
+                conversation_id="c_st_c3b",
+                session_key="sk_st_c3b",
+                boot_key="bk_st_c3b",
+                full_key="fk_st_c3b",
+                client_session_id="sid_st_c3b",
+                principal_id="p_selftest",
+                dsh_tools=tools,
+            )
+            r_c3b.tool_ledger = _RobinToolLedger(run_id=r_c3b.run_id, dsh_tools=tools)
+            d_c3b = _RobinStreamDecoder(
+                "cmpl-c3b", 0, "gemini:gemini-4-argon", run=r_c3b
+            )
+            a_c3b = _RobinRunActor(
+                session_id=r_c3b.client_session_id,
+                session_key=r_c3b.session_key,
+                boot_key=r_c3b.boot_key,
+                full_key=r_c3b.full_key,
+                http_session=cast(Any, None),
+                response=None,
+                iterator=None,
+                decoder=d_c3b,
+                run=r_c3b,
+                loop=loop_cur,
+            )
+            _ROBIN_ACTIVE_RUNS[r_c3a.run_id] = r_c3a
+            _ROBIN_ACTIVE_RUNS[r_c3b.run_id] = r_c3b
+            _relay_bind_active_run(r_c3a, a_c3a)
+            _relay_bind_active_run(r_c3b, a_c3b)
+            try:
+                c3_task = asyncio.create_task(
+                    _relay_resolve_target("bash", {}, "", None)
+                )
+                await asyncio.sleep(0)
+                a_c3b._finalize_parked_or_terminal_from_driver(
+                    outcome="FAILED", reason="client_abort"
+                )
+                _relay_record_pq_announcement(
+                    r_c3a.run_id, tool_name="bash", call_id="c3_late"
+                )
+                c3_r, c3_a, c3_by = await asyncio.wait_for(c3_task, timeout=1.0)
+                assert c3_r is r_c3a and c3_a is a_c3a and c3_by == "single_active"
+
+                # Combo #4: Relay routing failure (ambiguous) creates zero orphan pending while sibling tool succeeds
+                r_c4b = _RobinRunState(
+                    run_id="run_st_c4b",
+                    conversation_id="c_st_c4b",
+                    session_key="sk_st_c4b",
+                    boot_key="bk_st_c4b",
+                    full_key="fk_st_c4b",
+                    client_session_id="sid_st_c4b",
+                    principal_id="p_selftest",
+                    dsh_tools=[tools[1]],  # bash only; write is unique to r_c3a
+                )
+                r_c4b.tool_ledger = _RobinToolLedger(
+                    run_id=r_c4b.run_id, dsh_tools=[tools[1]]
+                )
+                d_c4b = _RobinStreamDecoder(
+                    "cmpl-c4b", 0, "gemini:gemini-4-argon", run=r_c4b
+                )
+                a_c4b = _RobinRunActor(
+                    session_id=r_c4b.client_session_id,
+                    session_key=r_c4b.session_key,
+                    boot_key=r_c4b.boot_key,
+                    full_key=r_c4b.full_key,
+                    http_session=cast(Any, None),
+                    response=None,
+                    iterator=None,
+                    decoder=d_c4b,
+                    run=r_c4b,
+                    loop=loop_cur,
+                )
+                _ROBIN_ACTIVE_RUNS[r_c4b.run_id] = r_c4b
+                _relay_bind_active_run(r_c4b, a_c4b)
+                _relay_record_pq_announcement(
+                    r_c3a.run_id, tool_name="bash", call_id="c4_a"
+                )
+                _relay_record_pq_announcement(
+                    r_c4b.run_id, tool_name="bash", call_id="c4_b"
+                )
+                st_c4, _, body_c4 = await _relay_mcp_tools_call(
+                    "bash",
+                    {"command": "echo amb"},
+                    "rpc_c4_amb",
+                    http_id="h_c4_amb",
+                    connection_id="ws_c4",
+                    abort_evt=None,
+                )
+                assert st_c4 == 200 and json.loads(body_c4)["result"]["isError"] is True
+                assert d_c3a.pending_tool_calls == [] and d_c4b.pending_tool_calls == []
+                # Sibling unique tool `write` resolves and completes submit_tool_results cleanly
+                c4_r, c4_a, c4_by = await _relay_resolve_target("write", {}, "", None)
+                assert c4_r is r_c3a and c4_a is a_c3a and c4_by == "unique_tool_owner"
+                inv_c4w, _ = await a_c3a._relay_dispatch_tool_call(
+                    "write",
+                    {"file_path": f"{_SELFTEST_WORKSPACE}/c4.txt", "content": "hi"},
+                    "call_c4_write",
+                    {"relay_job_id": "call_c4_write"},
+                )
+                assert inv_c4w is not None
+                d_c3a.pending_tool_calls[0]["_delivery_state"] = "DELIVERED_TO_DSH"
+                d_c3a.delivered_tool_call_ids.add("call_c4_write")
+                fut_c4w = _relay_open_waiter("call_c4_write")
+                assert fut_c4w is not None
+                st_c4w = await a_c3a.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": "call_c4_write",
+                            "name": "write",
+                            "content": "ok",
+                        }
+                    ]
+                )
+                assert (
+                    st_c4w == "ok" and fut_c4w.done() and d_c3a.pending_tool_calls == []
+                )
+            finally:
+                _ROBIN_ACTIVE_RUNS.pop("run_st_c3a", None)
+                _ROBIN_ACTIVE_RUNS.pop("run_st_c3b", None)
+                _ROBIN_ACTIVE_RUNS.pop("run_st_c4b", None)
+
+        asyncio.run(_run_combo_and_keepalive())
+    finally:
+        cast(Any, _GEMINI_DSH_STORE).save_run = orig_save
+        _relay_clear_active_run(None)
+        _RELAY_HTTP_WAITERS.clear()
+
+
+def test_tool_call_event_observability_contract() -> None:
+    """Group 4 contract: 25 fields, 9 wait_owners, large-frame first/last only, redaction, error isolation."""
+    expected_25_fields = {
+        "event_seq",
+        "ts",
+        "monotonic_ts",
+        "run_id",
+        "public_tool_call_id",
+        "wire_call_id",
+        "command_id",
+        "tool_name",
+        "source",
+        "phase",
+        "execution_state",
+        "attachment_state",
+        "ert_transport_state",
+        "pending_ert",
+        "pending_relay",
+        "delivered",
+        "reconciled",
+        "wait_owner",
+        "elapsed_ms",
+        "timeout_budget_ms",
+        "attempt",
+        "outcome",
+        "error_class",
+        "args_digest",
+        "payload_len",
+    }
+    captured: list[tuple[str, str, dict[str, Any]]] = []
+    orig_enabled = _gemini_debug_enabled
+    orig_log_ev = _gemini_debug_log_event
+    try:
+        # 1. Debug disabled -> fast no-op
+        globals()["_gemini_debug_enabled"] = lambda: False
+        globals()["_gemini_debug_log_event"] = lambda sid, et, pl: (
+            captured.append((sid, et, dict(pl))) or None
+        )
+        assert _emit_tool_call_event("sid_off", phase="staged") is None
+        assert captured == []
+
+        # 2. Debug enabled -> verify 25 fields, strict monotonic seq, 9 wait_owners, redaction
+        globals()["_gemini_debug_enabled"] = lambda: True
+        secret_token = "SECRET_TOKEN_XYZ_999"
+        digest = _tool_call_args_digest(
+            {"token": secret_token, "path": "/w/workspace/a.txt"}
+        )
+        assert len(digest) == 16 and secret_token not in digest
+        for owner in sorted(_TOOL_CALL_WAIT_OWNERS):
+            _emit_tool_call_event(
+                "sid_obs",
+                phase="relay_route_start",
+                run_id="run_obs_1",
+                public_tool_call_id="call_obs_1",
+                tool_name="bash",
+                source="relay",
+                wait_owner=owner,
+                args_digest=digest,
+                payload_len=42,
+            )
+        # Invalid wait_owner must normalize to UNKNOWN
+        _emit_tool_call_event("sid_obs", phase="staged", wait_owner="BOGUS_OWNER")
+        assert len(captured) == len(_TOOL_CALL_WAIT_OWNERS) + 1
+        seqs = [ev[2]["event_seq"] for ev in captured]
+        assert seqs == sorted(seqs) and len(set(seqs)) == len(seqs)
+        for _, ev_type, payload in captured:
+            assert ev_type == "tool_call_event"
+            assert expected_25_fields.issubset(payload.keys())
+            assert payload["wait_owner"] in _TOOL_CALL_WAIT_OWNERS
+            serialized = json.dumps(payload, ensure_ascii=False)
+            assert secret_token not in serialized
+        assert captured[-1][2]["wait_owner"] == "UNKNOWN"
+
+        # 3. Large ERT frame (10 chunks) emits ONLY 1 first + 1 complete (zero per-chunk spam)
+        captured.clear()
+        run_obs = _RobinRunState(
+            run_id="run_obs_lf",
+            conversation_id="c_obs_lf",
+            session_key="sk_obs_lf",
+            boot_key="bk_obs_lf",
+            full_key="fk_obs_lf",
+            client_session_id="sid_obs_lf",
+            principal_id="p_selftest",
+            dsh_tools=[],
+        )
+        run_obs.tool_ledger = _RobinToolLedger(run_id=run_obs.run_id, dsh_tools=[])
+        dec_obs = _RobinStreamDecoder(
+            "cmpl-obs", 0, "gemini:gemini-4-argon", run=run_obs
+        )
+        big_raw = _robin_pack_grpc_frames([_pb_bytes_field(1, "X" * 20000)])
+        step = max(1, len(big_raw) // 10)
+        for off in range(0, len(big_raw), step):
+            dec_obs.feed_ert_bytes(big_raw[off : off + step])
+        lf_phases = [ev[2]["phase"] for ev in captured]
+        assert lf_phases.count("ert_large_frame_first") == 1
+        assert lf_phases.count("ert_large_frame_complete") == 1
+
+        # 4. End-to-end production path: route failure -> staged/reconcile -> ERT write timeout -> terminal cleanup
+        captured.clear()
+        orig_save_obs = _GEMINI_DSH_STORE.save_run
+        cast(Any, _GEMINI_DSH_STORE).save_run = lambda _r: None
+        _relay_clear_active_run(None)
+        _RELAY_HTTP_WAITERS.clear()
+        e2e_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "bash",
+                    "description": "run shell",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"command": {"type": "string"}},
+                    },
+                },
+            }
+        ]
+        try:
+            r_e1 = _RobinRunState(
+                run_id="run_obs_e2e_1",
+                conversation_id="c_obs_e2e_1",
+                session_key="sk_obs_e2e_1",
+                boot_key="bk_obs_e2e_1",
+                full_key="fk_obs_e2e_1",
+                client_session_id="sid_obs_e2e_1",
+                principal_id="p_selftest",
+                dsh_tools=e2e_tools,
+            )
+            r_e1.tool_ledger = _RobinToolLedger(run_id=r_e1.run_id, dsh_tools=e2e_tools)
+            d_e1 = _RobinStreamDecoder("cmpl-e1", 0, "gemini:gemini-4-argon", run=r_e1)
+            d_e1.conversation_id = r_e1.conversation_id
+
+            class _SlowTimeoutERT:
+                keep_open = True
+
+                async def send_grpc_frames(
+                    self, frames: list[bytes], end_stream: bool = False
+                ) -> None:
+                    _ = frames, end_stream
+                    await asyncio.Event().wait()
+
+                def release(self) -> None:
+                    pass
+
+            a_e1 = _RobinRunActor(
+                session_id=r_e1.client_session_id,
+                session_key=r_e1.session_key,
+                boot_key=r_e1.boot_key,
+                full_key=r_e1.full_key,
+                http_session=cast(Any, None),
+                response=None,
+                iterator=None,
+                decoder=d_e1,
+                run=r_e1,
+                conversation_id=r_e1.conversation_id,
+                ert_response=_SlowTimeoutERT(),
+                _ert_io_timeout_seconds=0.02,
+            )
+            r_e2 = _RobinRunState(
+                run_id="run_obs_e2e_2",
+                conversation_id="c_obs_e2e_2",
+                session_key="sk_obs_e2e_2",
+                boot_key="bk_obs_e2e_2",
+                full_key="fk_obs_e2e_2",
+                client_session_id="sid_obs_e2e_2",
+                principal_id="p_selftest",
+                dsh_tools=e2e_tools,
+            )
+            r_e2.tool_ledger = _RobinToolLedger(run_id=r_e2.run_id, dsh_tools=e2e_tools)
+            d_e2 = _RobinStreamDecoder("cmpl-e2", 0, "gemini:gemini-4-argon", run=r_e2)
+            a_e2 = _RobinRunActor(
+                session_id=r_e2.client_session_id,
+                session_key=r_e2.session_key,
+                boot_key=r_e2.boot_key,
+                full_key=r_e2.full_key,
+                http_session=cast(Any, None),
+                response=None,
+                iterator=None,
+                decoder=d_e2,
+                run=r_e2,
+            )
+            _ROBIN_ACTIVE_RUNS[r_e1.run_id] = r_e1
+            _ROBIN_ACTIVE_RUNS[r_e2.run_id] = r_e2
+            _relay_bind_active_run(r_e1, a_e1)
+            _relay_bind_active_run(r_e2, a_e2)
+
+            async def _run_e2e_obs() -> None:
+                # 4a) Route failure -> LOCAL_RELAY_ROUTING
+                _relay_record_pq_announcement(
+                    r_e1.run_id, tool_name="bash", call_id="c_obs_a"
+                )
+                _relay_record_pq_announcement(
+                    r_e2.run_id, tool_name="bash", call_id="c_obs_b"
+                )
+                rr, ra, rby = await _relay_resolve_target("bash", {}, "", None)
+                assert rr is None and ra is None and rby == "ambiguous"
+
+                # 4b) Dispatch with sensitive synthetic payload -> staged (redacted) -> submit_tool_results
+                secret_payload = "SECRET_PAYLOAD_999"
+                inv_e, _ = await a_e1._relay_dispatch_tool_call(
+                    "bash",
+                    {"command": f"echo {secret_payload} {secret_token}"},
+                    "call_obs_e2e_1",
+                    {"relay_job_id": "call_obs_e2e_1"},
+                )
+                assert inv_e is not None
+                d_e1.delivered_tool_call_ids.add("call_obs_e2e_1")
+                d_e1.pending_tool_calls[0]["_delivery_state"] = "DELIVERED_TO_DSH"
+                fut_e = _relay_open_waiter("call_obs_e2e_1")
+                assert fut_e is not None
+                st_e = await a_e1.submit_tool_results(
+                    [
+                        {
+                            "role": "tool",
+                            "tool_call_id": "call_obs_e2e_1",
+                            "name": "bash",
+                            "content": f"result:{secret_payload}",
+                        }
+                    ]
+                )
+                assert st_e == "ok" and fut_e.done()
+
+                # 4c) ERT outbound write timeout -> LOCAL_ERT_TRANSPORT_WRITE (never ROBIN_EXPLICIT_ERROR)
+                d_e1.conversation_id = ""
+                d_e1.pending_ert_outbound_frames.append(b"frame_timeout_obs")
+                await a_e1.flush_pending_ert_outbound()
+                d_e1.pending_ert_outbound_frames.clear()
+
+                # 4d) Terminal cleanup reason classification
+                a_e1._finalize_parked_or_terminal_from_driver(
+                    outcome="FAILED", reason="client_abort"
+                )
+                a_e2._finalize_parked_or_terminal_from_driver(
+                    outcome="FAILED", reason="waiting_tools_timeout"
+                )
+
+            asyncio.run(_run_e2e_obs())
+            assert any(ev[1] == "ert_outbound" for ev in captured)
+            tc_evs = [ev for ev in captured if ev[1] == "tool_call_event"]
+            e2e_phases = [ev[2]["phase"] for ev in tc_evs]
+            assert "relay_route_start" in e2e_phases
+            assert "relay_route_failed" in e2e_phases
+            assert "staged" in e2e_phases
+            assert "dsh_continuation_received" in e2e_phases
+            assert "reconcile_item" in e2e_phases
+            assert "ert_outbound_start" in e2e_phases
+            assert "ert_outbound_done" in e2e_phases
+            assert "terminal_cleanup" in e2e_phases
+            assert e2e_phases.index("relay_route_start") < e2e_phases.index(
+                "relay_route_failed"
+            )
+            assert e2e_phases.index("staged") < e2e_phases.index(
+                "dsh_continuation_received"
+            )
+            assert e2e_phases.index("ert_outbound_start") < e2e_phases.index(
+                "ert_outbound_done"
+            )
+            e2e_seqs = [ev[2]["event_seq"] for ev in tc_evs]
+            assert e2e_seqs == sorted(e2e_seqs) and len(set(e2e_seqs)) == len(e2e_seqs)
+            ert_done_evs = [
+                ev[2] for ev in tc_evs if ev[2]["phase"] == "ert_outbound_done"
+            ]
+            assert (
+                ert_done_evs
+                and ert_done_evs[-1]["wait_owner"] == "LOCAL_ERT_TRANSPORT_WRITE"
+            )
+            term_evs = [ev[2] for ev in tc_evs if ev[2]["phase"] == "terminal_cleanup"]
+            assert len(term_evs) == 2
+            assert term_evs[0]["wait_owner"] == "CLIENT_ABORT_OR_DISCONNECT"
+            assert term_evs[1]["wait_owner"] == "ROBIN_AFTER_TOOL_RESULT_OR_TRANSPORT"
+            for _, _, pl in tc_evs:
+                assert expected_25_fields.issubset(pl.keys())
+                s_pl = json.dumps(pl, ensure_ascii=False)
+                assert "SECRET_PAYLOAD_999" not in s_pl
+                assert secret_token not in s_pl
+        finally:
+            cast(Any, _GEMINI_DSH_STORE).save_run = orig_save_obs
+            _relay_clear_active_run(None)
+            _ROBIN_ACTIVE_RUNS.pop("run_obs_e2e_1", None)
+            _ROBIN_ACTIVE_RUNS.pop("run_obs_e2e_2", None)
+            _RELAY_HTTP_WAITERS.clear()
+
+        # 5. Write failure isolation: exception inside _gemini_debug_log_event is silently swallowed
+        def _boom(_sid: str, _et: str, _pl: dict[str, Any]) -> Path | None:
+            raise OSError("disk full")
+
+        globals()["_gemini_debug_log_event"] = _boom
+        assert _emit_tool_call_event("sid_err", phase="retired") is None
+    finally:
+        globals()["_gemini_debug_enabled"] = orig_enabled
+        globals()["_gemini_debug_log_event"] = orig_log_ev
+
+
 def run_self_tests():
     """Run built-in self-tests to verify core functionality."""
     tests = [
@@ -119438,6 +121757,10 @@ def run_self_tests():
         test_robin_protocol_alignment_contract,
         test_robin_invalid_url_cross_path_consistency_contract,
         test_robin_invalid_url_boundary_and_negative_matrix,
+        test_continuation_lifecycle_and_closure_contract,
+        test_relay_routing_liveness_and_barrier_contract,
+        test_large_frame_keepalive_and_combo_matrix_contract,
+        test_tool_call_event_observability_contract,
     ]
 
     passed = 0
